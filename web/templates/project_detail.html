@@ -1,0 +1,111 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">{{.Project.Project.Category}}</p>
+    <h1>{{.Project.Project.Name}}</h1>
+  </div>
+  <div class="header-actions">
+    <a class="button secondary" href="/projects/{{.Project.Project.ID}}/edit">Edit</a>
+    <a class="button secondary" href="/projects">Back</a>
+  </div>
+</section>
+
+<section class="detail-layout">
+  <article class="glass-panel focus-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Project Pulse</p>
+        <h2>{{.Project.Progress}}% complete</h2>
+      </div>
+      <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>
+    </div>
+    <div class="progress large"><span style="width: {{progressWidth .Project.Progress}}"></span></div>
+    <canvas class="project-pulse-chart" data-chart="line" data-max="100"
+      data-labels="{{join .Project.Momentum.Labels "|"}}"
+      data-values="{{joinInts .Project.Momentum.Values "|"}}"></canvas>
+    <div class="stat-grid compact-stats">
+      <div><span>Items</span><strong>{{.Project.CompletedItems}} / {{.Project.TotalItems}}</strong></div>
+      <div><span>Target</span><strong>{{niceDate .Project.Project.TargetDate}}</strong></div>
+      <div><span>Next</span><strong>{{if .Project.NextDueItem}}{{.Project.NextDueItem}}{{else}}No pending item{{end}}</strong></div>
+    </div>
+    <p class="body-copy">{{if .Project.Project.Notes}}{{.Project.Project.Notes}}{{else}}{{.Project.Project.Description}}{{end}}</p>
+  </article>
+
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Add Checklist Item</h2>
+    </div>
+    <form class="form-stack" method="post" action="/projects/{{.Project.Project.ID}}/items">
+      <label class="field">
+        <span>Title</span>
+        <input name="title" required>
+      </label>
+      <label class="field">
+        <span>Description</span>
+        <textarea name="description" rows="3"></textarea>
+      </label>
+      <div class="form-row">
+        <label class="field">
+          <span>Priority</span>
+          <select name="priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Due</span>
+          <input type="date" name="due_date">
+        </label>
+      </div>
+      <button class="button" type="submit">Add Item</button>
+    </form>
+  </article>
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Checklist</p>
+      <h2>Execution Queue</h2>
+    </div>
+    <span class="count">{{len .Items}}</span>
+  </div>
+
+  {{if .Items}}
+    <div class="checklist-list">
+      {{range .Items}}
+        <article class="checklist-item status-row-{{.Status}}">
+          <div>
+            <h3>{{.Title}}</h3>
+            <small>{{if .DueDate}}{{niceDate .DueDate}}{{else}}No due date{{end}} / {{.Priority}}</small>
+            {{if .Description}}<p>{{.Description}}</p>{{end}}
+          </div>
+          <div class="quick-actions">
+            {{if eq .Status "completed"}}
+              <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/reopen">
+                <button class="button small secondary" type="submit">Reopen</button>
+              </form>
+            {{else}}
+              <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/complete">
+                <button class="button small" type="submit">Done</button>
+              </form>
+            {{end}}
+            <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/delete">
+              <button class="button small danger" type="submit">Delete</button>
+            </form>
+          </div>
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No checklist items yet.</p>
+  {{end}}
+</section>
+
+<section class="danger-zone">
+  <form method="post" action="/projects/{{.Project.Project.ID}}/archive">
+    <button class="button danger" type="submit">Archive Project</button>
+  </form>
+</section>
+{{end}}

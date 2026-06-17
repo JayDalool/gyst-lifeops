@@ -1,0 +1,90 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">{{.Goal.Goal.Type}} / {{.Goal.Goal.Category}}</p>
+    <h1>{{.Goal.Goal.Title}}</h1>
+  </div>
+  <a class="button secondary" href="/goals">Back</a>
+</section>
+
+<section class="detail-layout">
+  <article class="glass-panel focus-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Progress</p>
+        <h2>{{.Goal.Progress}}% complete</h2>
+      </div>
+      <span class="badge status-{{.Goal.Goal.Status}}">{{.Goal.Goal.Status}}</span>
+    </div>
+    <div class="goal-ring large-ring" style="--value: {{.Goal.Progress}};">
+      <strong>{{.Goal.Progress}}%</strong>
+    </div>
+    <div class="stat-grid compact-stats">
+      <div><span>Current</span><strong>{{niceNumber .Goal.Goal.CurrentValue}} {{.Goal.Goal.Unit}}</strong></div>
+      <div><span>Target</span><strong>{{niceNumber .Goal.Goal.TargetValue}} {{.Goal.Goal.Unit}}</strong></div>
+      <div><span>End</span><strong>{{niceDate .Goal.Goal.EndDate}}</strong></div>
+    </div>
+    <p class="body-copy">{{.Goal.Goal.Description}}</p>
+  </article>
+
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Update Progress</h2>
+    </div>
+    <form class="form-stack" method="post" action="/goals/{{.Goal.Goal.ID}}/progress">
+      <div class="form-row">
+        <label class="field">
+          <span>Value</span>
+          <input type="number" step="0.1" min="0" name="value" value="{{niceNumber .Goal.Goal.CurrentValue}}">
+        </label>
+        <label class="field">
+          <span>Date</span>
+          <input type="date" name="entry_date" value="{{.Today}}">
+        </label>
+      </div>
+      <label class="field">
+        <span>Notes</span>
+        <textarea name="notes" rows="4"></textarea>
+      </label>
+      <button class="button" type="submit">Update Goal</button>
+    </form>
+  </article>
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">History</p>
+      <h2>Progress Signal</h2>
+    </div>
+  </div>
+  <canvas class="chart" data-chart="line" data-labels="{{join .HistoryLabels "|"}}"
+    data-values="{{joinInts .HistoryValues "|"}}"></canvas>
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <h2>Entries</h2>
+    <span class="count">{{len .Entries}}</span>
+  </div>
+  {{if .Entries}}
+    <div class="timeline">
+      {{range .Entries}}
+        <article>
+          <time>{{niceDate .EntryDate}}</time>
+          <strong>{{niceNumber .Value}}</strong>
+          <p>{{.Notes}}</p>
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No progress entries yet.</p>
+  {{end}}
+</section>
+
+<section class="danger-zone">
+  <form method="post" action="/goals/{{.Goal.Goal.ID}}/archive">
+    <button class="button danger" type="submit">Archive Goal</button>
+  </form>
+</section>
+{{end}}

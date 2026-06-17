@@ -1,0 +1,99 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">More / Health</p>
+    <h1>Consistency</h1>
+  </div>
+  <a class="button" href="/goals/new">New Health Goal</a>
+</section>
+
+<section class="mission-control mission-control-compact" aria-label="Body rhythm">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Body Rhythm</p>
+      <h2>Weekly Gym Strip</h2>
+    </div>
+    <strong>{{.Mission.GymWeekCompletion}}%</strong>
+  </div>
+
+  <div class="mission-grid mission-grid-health">
+    <article class="mission-panel mission-panel-wide">
+      <div class="mission-panel-head">
+        <span>This Week</span>
+        <strong>{{.Mission.GymWeekCompletion}}%</strong>
+      </div>
+      <div class="gym-strip">
+        {{range .Mission.GymWeek}}
+          <form method="post" action="/trackers/gym/toggle">
+            <input type="hidden" name="log_date" value="{{.Date}}">
+            <button class="gym-day status-{{.Status}}" type="button" title="{{.Label}} {{.Date}}: {{.Status}}">
+              <span>{{.Label}}</span>
+            </button>
+          </form>
+        {{end}}
+      </div>
+    </article>
+
+    <article class="mission-panel">
+      <div class="mission-panel-head">
+        <span>Movement Signal</span>
+        <strong>{{.Mission.GymWeekCompletion}}%</strong>
+      </div>
+      <canvas class="mini-chart" data-chart="line" data-mini="true" data-max="100"
+        data-labels="{{join .BodyRhythm.Labels "|"}}"
+        data-values="{{joinInts .BodyRhythm.Values "|"}}"></canvas>
+    </article>
+  </div>
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Habit-based only</p>
+      <h2>Wellness Goals</h2>
+    </div>
+    <span class="count">{{len .HealthGoals}}</span>
+  </div>
+  {{if .HealthGoals}}
+    <div class="goal-grid embedded-grid">
+      {{range .HealthGoals}}
+        <a class="goal-card" href="/goals/{{.Goal.ID}}">
+          <div class="goal-ring" style="--value: {{.Progress}};"><strong>{{.Progress}}%</strong></div>
+          <div class="goal-copy">
+            <span class="badge">{{.Goal.Type}}</span>
+            <h2>{{.Goal.Title}}</h2>
+            <small>{{niceNumber .Goal.CurrentValue}} of {{niceNumber .Goal.TargetValue}} {{.Goal.Unit}}</small>
+            <canvas class="micro-chart" data-chart="line" data-mini="true" data-max="100"
+              data-labels="{{join .Momentum.Labels "|"}}"
+              data-values="{{joinInts .Momentum.Values "|"}}"></canvas>
+          </div>
+        </a>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No health goals yet. Keep them focused on sessions, sleep consistency, walking days, hydration check-ins, or stretching.</p>
+  {{end}}
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <h2>Health Tasks</h2>
+    <span class="count">{{len .HealthTasks}}</span>
+  </div>
+  {{if .HealthTasks}}
+    <div class="task-card-list compact-list">
+      {{range .HealthTasks}}
+        <article class="task-card">
+          <div class="task-card-copy">
+            <a href="/tasks/{{.ID}}">{{.Title}}</a>
+            <small>{{niceDate .DueDate}} / {{.RepeatType}} / {{.Priority}}</small>
+          </div>
+          <span class="badge status-{{.Status}}">{{.Status}}</span>
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No health tasks in the active queue.</p>
+  {{end}}
+</section>
+{{end}}

@@ -1,0 +1,47 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">More / All Tasks</p>
+    <h1>Task Library</h1>
+  </div>
+  <a class="button" href="/tasks/new">New Task</a>
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <h2>Active Tasks</h2>
+    <span class="count">{{len .Tasks}}</span>
+  </div>
+  {{if .Tasks}}
+    <div class="task-card-list">
+      {{range .Tasks}}
+        <article class="task-card">
+          <div class="task-card-copy">
+            <a href="/tasks/{{.ID}}">{{.Title}}</a>
+            <small>{{.Category}} / {{niceDate .DueDate}} / {{.RepeatType}}</small>
+          </div>
+          <div class="task-state">
+            <span class="badge priority-{{.Priority}}">{{.Priority}}</span>
+            <span class="badge status-{{.Status}}">{{.Status}}</span>
+          </div>
+          <div class="quick-actions">
+            <a class="button small secondary" href="/tasks/{{.ID}}/edit">Edit</a>
+            {{if eq .Status "pending"}}
+              <form method="post" action="/tasks/{{.ID}}/complete">
+                <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
+                <button class="button small" type="submit">Done</button>
+              </form>
+              <form method="post" action="/tasks/{{.ID}}/skip">
+                <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
+                <button class="button small secondary" type="submit">Skip</button>
+              </form>
+            {{end}}
+          </div>
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No active tasks yet.</p>
+  {{end}}
+</section>
+{{end}}

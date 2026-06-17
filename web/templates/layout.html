@@ -1,0 +1,170 @@
+{{define "layout"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LifeOps</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <script defer src="/static/js/charts.js"></script>
+</head>
+<body>
+  {{template "iconSprite" .}}
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="LifeOps home">
+        <span class="brand-mark">LO</span>
+        <span class="brand-copy">
+          <strong>LifeOps</strong>
+          <small>Local command center</small>
+        </span>
+      </a>
+      {{if ne .Page "dashboard"}}
+        <nav class="top-nav" aria-label="Primary">
+          <a class="{{if eq .Page "today"}}active{{end}}" href="/today">Today</a>
+          <a class="{{if eq .Page "projects"}}active{{end}}" href="/projects">Projects</a>
+          <a class="{{if eq .Page "goals"}}active{{end}}" href="/goals">Goals</a>
+          <button type="button" data-more-open>More</button>
+        </nav>
+      {{end}}
+    </header>
+
+    <main class="main">
+      {{template "content" .}}
+    </main>
+  </div>
+
+  {{template "fabMenu" .}}
+  {{template "moreDrawer" .}}
+</body>
+</html>
+{{end}}
+
+{{define "fabMenu"}}
+<details class="fab-menu">
+  <summary aria-label="Add new item">+ Add</summary>
+  <div class="fab-panel">
+    <a href="/tasks/new">New Task</a>
+    <a href="/projects/new">New Project</a>
+    <a href="/goals/new">New Goal</a>
+  </div>
+</details>
+{{end}}
+
+{{define "moreDrawer"}}
+<div class="drawer-backdrop" data-more-close></div>
+<aside class="more-drawer" aria-label="More menu" aria-hidden="true">
+  <div class="drawer-head">
+    <div>
+      <p class="eyebrow">More</p>
+      <h2>Control Surfaces</h2>
+    </div>
+    <button class="icon-button" type="button" data-more-close aria-label="Close More menu">
+      <svg class="ui-icon" aria-hidden="true"><use href="#icon-x"></use></svg>
+    </button>
+  </div>
+  <nav class="drawer-grid">
+    <a href="/monthly">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+      <span>Monthly View</span>
+      <small>Calendar-level completion</small>
+    </a>
+    <a href="/tasks">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-list-check"></use></svg>
+      <span>All Tasks</span>
+      <small>Full task library</small>
+    </a>
+    <a href="/reminders">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-bell"></use></svg>
+      <span>Reminders</span>
+      <small>Due and overdue pings</small>
+    </a>
+    <a href="/analytics">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-chart-line"></use></svg>
+      <span>Analytics</span>
+      <small>Progress and streak signals</small>
+    </a>
+    <a href="/health">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-heart-pulse"></use></svg>
+      <span>Health</span>
+      <small>Habit consistency only</small>
+    </a>
+    <a href="/archive">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-archive"></use></svg>
+      <span>Archive</span>
+      <small>Completed storage</small>
+    </a>
+    <a href="/settings">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-gear"></use></svg>
+      <span>Settings</span>
+      <small>Theme and local preferences</small>
+    </a>
+  </nav>
+</aside>
+{{end}}
+
+{{define "iconSprite"}}
+<svg class="icon-sprite" aria-hidden="true" focusable="false">
+  <symbol id="icon-check-circle" viewBox="0 0 24 24">
+    <path d="M9 12l2 2 4-5"></path>
+    <circle cx="12" cy="12" r="9"></circle>
+  </symbol>
+  <symbol id="icon-rocket" viewBox="0 0 24 24">
+    <path d="M4.5 16.5c-1 1.7-1.3 3.2-1 4 .8.3 2.3 0 4-1"></path>
+    <path d="M8 16l-3-3 4-7 4 1 4 4 1 4-7 4-3-3Z"></path>
+    <path d="M14 7l3 3"></path>
+    <circle cx="14.5" cy="9.5" r="1.5"></circle>
+  </symbol>
+  <symbol id="icon-target" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9"></circle>
+    <circle cx="12" cy="12" r="5"></circle>
+    <circle cx="12" cy="12" r="1.5"></circle>
+  </symbol>
+  <symbol id="icon-grid" viewBox="0 0 24 24">
+    <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+    <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+    <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+    <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+  </symbol>
+  <symbol id="icon-calendar" viewBox="0 0 24 24">
+    <path d="M7 3v4M17 3v4"></path>
+    <rect x="4" y="5" width="16" height="15" rx="2"></rect>
+    <path d="M4 10h16"></path>
+  </symbol>
+  <symbol id="icon-list-check" viewBox="0 0 24 24">
+    <path d="M4 6l1.5 1.5L8 5"></path>
+    <path d="M11 6h9M4 12l1.5 1.5L8 11"></path>
+    <path d="M11 12h9M4 18l1.5 1.5L8 17"></path>
+    <path d="M11 18h9"></path>
+  </symbol>
+  <symbol id="icon-bell" viewBox="0 0 24 24">
+    <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+    <path d="M10 21h4"></path>
+  </symbol>
+  <symbol id="icon-chart-line" viewBox="0 0 24 24">
+    <path d="M4 19V5"></path>
+    <path d="M4 19h16"></path>
+    <path d="M7 15l4-4 3 3 5-7"></path>
+  </symbol>
+  <symbol id="icon-heart-pulse" viewBox="0 0 24 24">
+    <path d="M20.8 8.6a5.4 5.4 0 0 0-9.2-3.8L12 5.2l.4-.4a5.4 5.4 0 0 1 7.6 7.6L12 20l-8-7.6a5.4 5.4 0 0 1 7.6-7.6l.4.4"></path>
+    <path d="M4 12h4l2-3 3 6 2-3h5"></path>
+  </symbol>
+  <symbol id="icon-archive" viewBox="0 0 24 24">
+    <rect x="3" y="4" width="18" height="4" rx="1"></rect>
+    <path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"></path>
+    <path d="M10 12h4"></path>
+  </symbol>
+  <symbol id="icon-gear" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"></path>
+    <circle cx="12" cy="12" r="7"></circle>
+  </symbol>
+  <symbol id="icon-x" viewBox="0 0 24 24">
+    <path d="M18 6 6 18M6 6l12 12"></path>
+  </symbol>
+</svg>
+{{end}}

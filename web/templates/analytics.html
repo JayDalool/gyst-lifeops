@@ -1,0 +1,55 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">More / Analytics</p>
+    <h1>Signals</h1>
+  </div>
+</section>
+
+<section class="summary-strip">
+  <article class="mini-card">
+    <span>Today</span>
+    <strong>{{.Dashboard.TodayCompletion}}%</strong>
+    <small>completion</small>
+  </article>
+  <article class="mini-card">
+    <span>Streak</span>
+    <strong>{{.Dashboard.CurrentStreak}}</strong>
+    <small>complete days</small>
+  </article>
+  <article class="mini-card">
+    <span>Month</span>
+    <strong>{{.Dashboard.MonthlyCompletionPercent}}%</strong>
+    <small>completion</small>
+  </article>
+  <article class="mini-card">
+    <span>Overdue</span>
+    <strong>{{len .Dashboard.OverdueTasks}}</strong>
+    <small>tasks</small>
+  </article>
+</section>
+
+<section class="analytics-grid">
+  <article class="glass-panel wide-panel">
+    <div class="panel-heading">
+      <h2>Last 30 Days</h2>
+    </div>
+    <canvas class="chart" data-chart="line" data-max="100" data-labels="{{join .Dashboard.DailyCompletion.Labels "|"}}"
+      data-values="{{joinInts .Dashboard.DailyCompletion.Values "|"}}"></canvas>
+  </article>
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Project Progress</h2>
+    </div>
+    <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Dashboard.ProjectProgress.Labels "|"}}"
+      data-values="{{joinInts .Dashboard.ProjectProgress.Values "|"}}"></canvas>
+  </article>
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Yearly Goals</h2>
+    </div>
+    <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Dashboard.YearlyGoalProgress.Labels "|"}}"
+      data-values="{{joinInts .Dashboard.YearlyGoalProgress.Values "|"}}"></canvas>
+  </article>
+</section>
+{{end}}

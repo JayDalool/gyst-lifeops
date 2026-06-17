@@ -1,0 +1,56 @@
+{{define "content"}}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Projects</p>
+    <h1>{{.Title}}</h1>
+  </div>
+  <a class="button secondary" href="/projects">Back</a>
+</section>
+
+<form class="panel form-grid" method="post" action="{{.Action}}">
+  <label class="field span-2">
+    <span>Name</span>
+    <input name="name" required value="{{.Project.Name}}">
+  </label>
+  <label class="field span-2">
+    <span>Description</span>
+    <textarea name="description" rows="4">{{.Project.Description}}</textarea>
+  </label>
+  <label class="field">
+    <span>Category</span>
+    <select name="category">
+      <option value="coding" {{if eq .Project.Category "coding"}}selected{{end}}>Coding</option>
+      <option value="sim rig" {{if eq .Project.Category "sim rig"}}selected{{end}}>Sim Rig</option>
+      <option value="car" {{if eq .Project.Category "car"}}selected{{end}}>Car</option>
+      <option value="health" {{if eq .Project.Category "health"}}selected{{end}}>Health</option>
+      <option value="business" {{if eq .Project.Category "business"}}selected{{end}}>Business</option>
+      <option value="personal" {{if eq .Project.Category "personal"}}selected{{end}}>Personal</option>
+      <option value="other" {{if eq .Project.Category "other"}}selected{{end}}>Other</option>
+    </select>
+  </label>
+  <label class="field">
+    <span>Status</span>
+    <select name="status">
+      <option value="active" {{if eq .Project.Status "active"}}selected{{end}}>Active</option>
+      <option value="paused" {{if eq .Project.Status "paused"}}selected{{end}}>Paused</option>
+      <option value="completed" {{if eq .Project.Status "completed"}}selected{{end}}>Completed</option>
+      <option value="archived" {{if eq .Project.Status "archived"}}selected{{end}}>Archived</option>
+    </select>
+  </label>
+  <label class="field">
+    <span>Start Date</span>
+    <input type="date" name="start_date" value="{{.Project.StartDate}}">
+  </label>
+  <label class="field">
+    <span>Target Date</span>
+    <input type="date" name="target_date" value="{{.Project.TargetDate}}">
+  </label>
+  <label class="field span-2">
+    <span>Notes</span>
+    <textarea name="notes" rows="5">{{.Project.Notes}}</textarea>
+  </label>
+  <div class="form-actions span-2">
+    <button class="button" type="submit">Save Project</button>
+  </div>
+</form>
+{{end}}

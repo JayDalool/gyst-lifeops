@@ -1,0 +1,61 @@
+{{define "content"}}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Tasks</p>
+    <h1>{{.Title}}</h1>
+  </div>
+  <a class="button secondary" href="/tasks">Back</a>
+</section>
+
+<form class="panel form-grid" method="post" action="{{.Action}}">
+  <label class="field span-2">
+    <span>Title</span>
+    <input name="title" required value="{{.Task.Title}}">
+  </label>
+  <label class="field span-2">
+    <span>Description</span>
+    <textarea name="description" rows="4">{{.Task.Description}}</textarea>
+  </label>
+  <label class="field">
+    <span>Category</span>
+    <input name="category" value="{{.Task.Category}}">
+  </label>
+  <label class="field">
+    <span>Priority</span>
+    <select name="priority">
+      <option value="low" {{if eq .Task.Priority "low"}}selected{{end}}>Low</option>
+      <option value="medium" {{if eq .Task.Priority "medium"}}selected{{end}}>Medium</option>
+      <option value="high" {{if eq .Task.Priority "high"}}selected{{end}}>High</option>
+    </select>
+  </label>
+  <label class="field">
+    <span>Status</span>
+    <select name="status">
+      <option value="pending" {{if eq .Task.Status "pending"}}selected{{end}}>Pending</option>
+      <option value="completed" {{if eq .Task.Status "completed"}}selected{{end}}>Completed</option>
+      <option value="skipped" {{if eq .Task.Status "skipped"}}selected{{end}}>Skipped</option>
+    </select>
+  </label>
+  <label class="field">
+    <span>Repeat</span>
+    <select name="repeat_type">
+      <option value="none" {{if eq .Task.RepeatType "none"}}selected{{end}}>None</option>
+      <option value="daily" {{if eq .Task.RepeatType "daily"}}selected{{end}}>Daily</option>
+      <option value="weekly" {{if eq .Task.RepeatType "weekly"}}selected{{end}}>Weekly</option>
+      <option value="monthly" {{if eq .Task.RepeatType "monthly"}}selected{{end}}>Monthly</option>
+      <option value="yearly" {{if eq .Task.RepeatType "yearly"}}selected{{end}}>Yearly</option>
+    </select>
+  </label>
+  <label class="field">
+    <span>Due Date</span>
+    <input type="date" name="due_date" value="{{.Task.DueDate}}">
+  </label>
+  <label class="field">
+    <span>Reminder Time</span>
+    <input type="time" name="reminder_time" value="{{.Task.ReminderTime}}">
+  </label>
+  <div class="form-actions span-2">
+    <button class="button" type="submit">Save Task</button>
+  </div>
+</form>
+{{end}}

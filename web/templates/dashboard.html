@@ -1,0 +1,228 @@
+{{define "content"}}
+<section class="home-hero">
+  <div class="hero-copy">
+    <p class="eyebrow">{{niceDate .Today}}</p>
+    <h1>LifeOps</h1>
+    <p class="hero-greeting">{{greeting}}</p>
+  </div>
+
+  <div class="progress-orb" style="--value: {{.DailyMission.DeenCompletion}};">
+    <div>
+      <strong>{{.DailyMission.DeenCompletion}}%</strong>
+      <span>Mission</span>
+    </div>
+  </div>
+</section>
+
+<section class="mission-control" aria-label="Daily Mission">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Daily Mission</p>
+      <h2>Mission Control</h2>
+    </div>
+    <strong>{{.DailyMission.DeenCompletion}}%</strong>
+  </div>
+
+  <div class="mission-grid">
+    <article class="mission-panel">
+      <div class="mission-panel-head">
+        <span>Prayer</span>
+        <strong>{{.DailyMission.PrayerCompletion}}%</strong>
+      </div>
+      <div class="tracker-row prayer-row">
+        {{range .DailyMission.PrayerItems}}
+          <form method="post" action="/trackers/{{.Item.Key}}/toggle">
+            <input type="hidden" name="log_date" value="{{.Date}}">
+            <button class="tracker-dot status-{{.Status}}" type="button" title="{{.Item.Title}}: {{.Status}}">
+              <span></span>
+              {{.Item.Title}}
+            </button>
+          </form>
+        {{end}}
+      </div>
+    </article>
+
+    <article class="mission-panel">
+      <div class="mission-panel-head">
+        <span>Athkar</span>
+        <strong>{{.DailyMission.AthkarCompletion}}%</strong>
+      </div>
+      <div class="tracker-row athkar-row">
+        {{range .DailyMission.AthkarItems}}
+          <form method="post" action="/trackers/{{.Item.Key}}/toggle">
+            <input type="hidden" name="log_date" value="{{.Date}}">
+            <button class="tracker-dot status-{{.Status}}" type="button" title="{{.Item.Title}}: {{.Status}}">
+              <span></span>
+              {{.Item.Title}}
+            </button>
+          </form>
+        {{end}}
+      </div>
+    </article>
+
+    <article class="mission-panel mission-panel-wide">
+      <div class="mission-panel-head">
+        <span>Gym Rhythm</span>
+        <strong>{{.DailyMission.GymWeekCompletion}}%</strong>
+      </div>
+      <div class="gym-strip">
+        {{range .DailyMission.GymWeek}}
+          <form method="post" action="/trackers/gym/toggle">
+            <input type="hidden" name="log_date" value="{{.Date}}">
+            <button class="gym-day status-{{.Status}}" type="button" title="{{.Label}} {{.Date}}: {{.Status}}">
+              <span>{{.Label}}</span>
+            </button>
+          </form>
+        {{end}}
+      </div>
+    </article>
+
+    <article class="mission-panel mission-panel-projects">
+      <div class="mission-panel-head">
+        <span>Project Quick Tracker</span>
+        <strong>{{len .ActiveProjects}}</strong>
+      </div>
+      {{if .ActiveProjects}}
+        <div class="project-quick-grid">
+          {{range .ActiveProjects}}
+            <a class="project-quick-card" href="/projects/{{.Project.ID}}">
+              <div>
+                <strong>{{.Project.Name}}</strong>
+                <small>{{if .NextDueItem}}{{.NextDueItem}}{{else}}{{niceDate .Project.TargetDate}}{{end}}</small>
+              </div>
+              <span>{{.Progress}}%</span>
+              <canvas class="micro-chart" data-chart="line" data-mini="true" data-max="100"
+                data-labels="{{join .Momentum.Labels "|"}}"
+                data-values="{{joinInts .Momentum.Values "|"}}"></canvas>
+            </a>
+          {{end}}
+        </div>
+      {{else}}
+        <p class="empty">No active project signal.</p>
+      {{end}}
+    </article>
+  </div>
+</section>
+
+<section class="home-actions" aria-label="Primary navigation">
+  <a class="action-card action-cyan" href="/today">
+    <span class="action-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg></span>
+    <strong>Today</strong>
+    <small>{{len .TodayItems}} scheduled items</small>
+  </a>
+  <a class="action-card action-blue" href="/projects">
+    <span class="action-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
+    <strong>Projects</strong>
+    <small>{{len .ActiveProjects}} active builds</small>
+  </a>
+  <a class="action-card action-purple" href="/goals">
+    <span class="action-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg></span>
+    <strong>Goals</strong>
+    <small>{{len .YearlyGoals}} yearly targets</small>
+  </a>
+  <button class="action-card action-ghost" type="button" data-more-open>
+    <span class="action-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-grid"></use></svg></span>
+    <strong>More</strong>
+    <small>Monthly, analytics, archive</small>
+  </button>
+</section>
+
+<section class="signal-board" aria-label="Progress signals">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Signal Board</p>
+      <h2>Progress Signals</h2>
+    </div>
+  </div>
+
+  <div class="signal-grid">
+    <a class="signal-card" href="/today">
+      <div class="signal-copy">
+        <span>Deen Consistency</span>
+        <strong>{{.DailyMission.DeenCompletion}}%</strong>
+      </div>
+      <canvas class="mini-chart" data-chart="line" data-mini="true" data-max="100"
+        data-labels="{{join .DeenConsistency.Labels "|"}}"
+        data-values="{{joinInts .DeenConsistency.Values "|"}}"></canvas>
+    </a>
+
+    <a class="signal-card" href="/health">
+      <div class="signal-copy">
+        <span>Body Rhythm</span>
+        <strong>{{.DailyMission.GymWeekCompletion}}%</strong>
+      </div>
+      <canvas class="mini-chart" data-chart="line" data-mini="true" data-max="100"
+        data-labels="{{join .BodyRhythm.Labels "|"}}"
+        data-values="{{joinInts .BodyRhythm.Values "|"}}"></canvas>
+    </a>
+
+    <a class="signal-card" href="/analytics">
+      <div class="signal-copy">
+        <span>Task Flow</span>
+        <strong>{{.TodayCompletion}}%</strong>
+      </div>
+      <canvas class="mini-chart" data-chart="line" data-mini="true"
+        data-labels="{{join .TasksCompletedMini.Labels "|"}}"
+        data-values="{{joinInts .TasksCompletedMini.Values "|"}}"></canvas>
+    </a>
+
+    <a class="signal-card" href="{{.ProjectMomentumURL}}">
+      <div class="signal-copy">
+        <span>Project Momentum</span>
+        <strong>{{len .ActiveProjects}}</strong>
+      </div>
+      <canvas class="mini-chart" data-chart="line" data-mini="true" data-max="100"
+        data-labels="{{join .ProjectMomentum.Labels "|"}}"
+        data-values="{{joinInts .ProjectMomentum.Values "|"}}"></canvas>
+    </a>
+
+    <a class="signal-card" href="/goals">
+      <div class="signal-copy">
+        <span>Goal Progress</span>
+        <strong>{{len .YearlyGoals}}</strong>
+      </div>
+      <canvas class="mini-chart" data-chart="line" data-mini="true" data-max="100"
+        data-labels="{{join .GoalProgressSignal.Labels "|"}}"
+        data-values="{{joinInts .GoalProgressSignal.Values "|"}}"></canvas>
+    </a>
+
+    <a class="signal-card reminder-signal" href="/reminders">
+      <div class="signal-copy">
+        <span>Reminder Load</span>
+        <strong>{{len .RemindersToday}} / {{len .OverdueReminders}}</strong>
+      </div>
+      <canvas class="mini-chart" data-chart="line" data-mini="true"
+        data-labels="{{join .ReminderLoad.Labels "|"}}"
+        data-values="{{joinInts .ReminderLoad.Values "|"}}"></canvas>
+    </a>
+  </div>
+</section>
+
+<section class="summary-strip" aria-label="LifeOps summary">
+  <article class="mini-card">
+    <span>Streak</span>
+    <strong>{{.CurrentStreak}}</strong>
+    <small>complete days</small>
+  </article>
+  <article class="mini-card">
+    <span>Projects</span>
+    <strong>{{len .ActiveProjects}}</strong>
+    <small>active</small>
+  </article>
+  <article class="mini-card">
+    <span>Month</span>
+    <strong>{{.MonthlyCompletionPercent}}%</strong>
+    <small>completion</small>
+  </article>
+  <article class="mini-card mini-card-wide">
+    <span>Next Reminder</span>
+    {{if .NextReminder.Title}}
+      <strong>{{.NextReminder.ReminderTime}}</strong>
+      <small>{{.NextReminder.Title}}</small>
+    {{else}}
+      <strong>Clear</strong>
+      <small>No reminders queued</small>
+    {{end}}
+  </article>
+</section>
+{{end}}

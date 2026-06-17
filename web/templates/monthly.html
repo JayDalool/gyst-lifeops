@@ -1,0 +1,54 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">{{.MonthName}}</p>
+    <h1>Monthly View</h1>
+  </div>
+  <a class="button secondary" href="/tasks/new">New Task</a>
+</section>
+
+<section class="analytics-grid">
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Completion</p>
+        <h2>{{.Progress}}%</h2>
+      </div>
+    </div>
+    <div class="progress large"><span style="width: {{progressWidth .Progress}}"></span></div>
+  </article>
+
+  <article class="glass-panel wide-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Completed Per Day</p>
+        <h2>Monthly Signal</h2>
+      </div>
+    </div>
+    <canvas class="chart" data-chart="bar" data-labels="{{join .Chart.Labels "|"}}"
+      data-values="{{joinInts .Chart.Values "|"}}"></canvas>
+  </article>
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <h2>This Month&apos;s Queue</h2>
+    <span class="count">{{len .Items}}</span>
+  </div>
+  {{if .Items}}
+    <div class="task-card-list compact-list">
+      {{range .Items}}
+        <article class="task-card">
+          <div class="task-card-copy">
+            <a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a>
+            <small>{{niceDate .Date}} / {{.Task.RepeatType}} / {{.Task.Priority}}</small>
+          </div>
+          <span class="badge status-{{.Status}}">{{.Status}}</span>
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No tasks due this month.</p>
+  {{end}}
+</section>
+{{end}}

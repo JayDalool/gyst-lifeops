@@ -1,0 +1,36 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">More / Settings</p>
+    <h1>Preferences</h1>
+  </div>
+</section>
+
+<section class="settings-grid">
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Theme</p>
+        <h2>Interface Mode</h2>
+      </div>
+    </div>
+    <label class="toggle-row">
+      <span>
+        <strong>Light mode</strong>
+        <small>Stored locally in this browser.</small>
+      </span>
+      <input type="checkbox" data-theme-toggle>
+    </label>
+  </article>
+
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Local-first</p>
+        <h2>Data Storage</h2>
+      </div>
+    </div>
+    <p class="body-copy">LifeOps keeps Version 1 data in the local SQLite database configured for this Go app. No cloud sync or push notification service is active yet.</p>
+  </article>
+</section>
+{{end}}

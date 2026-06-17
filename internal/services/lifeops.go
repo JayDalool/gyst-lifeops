@@ -1,0 +1,725 @@
+package services
+
+import (
+	"sort"
+	"strconv"
+	"time"
+
+	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
+)
+
+type Service struct {
+	Repo *repository.Repository
+	Now  func() time.Time
+}
+
+type DailyStat struct {
+	Date      string
+	Label     string
+	Total     int
+	Completed int
+	Percent   int
+}
+
+func New(repo *repository.Repository) *Service {
+	return &Service{
+		Repo: repo,
+		Now:  time.Now,
+	}
+}
+
+func (s *Service) Today() time.Time {
+	now := s.Now()
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+}
+
+func (s *Service) TodayString() string {
+	return formatDate(s.Today())
+}
+
+func (s *Service) Dashboard() (models.DashboardData, error) {
+	today := s.Today()
+	trackerItems, err := s.Repo.ListTrackerItems()
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	trackerStart := today.AddDate(0, 0, -29)
+	trackerLogs, err := s.Repo.TrackerLogsBetween(formatDate(trackerStart), formatDate(today))
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	dailyMission := buildDailyMission(today, trackerItems, trackerLogs)
+	deenConsistency := trackerPercentChart(trackerItems, trackerLogs, trackerStart, today, map[string]bool{"prayer": true, "athkar": true})
+	bodyRhythm := gymRhythmChart(trackerItems, trackerLogs, today.AddDate(0, 0, -13), today)
+
+	todayItems, err := s.TaskOccurrencesOn(today)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+
+	overdueTasks, err := s.Repo.ListActiveOneTimeOverdueTasks(formatDate(today))
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+
+	projects, err := s.Repo.ListProjects(false)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	activeProjects := make([]models.ProjectWithProgress, 0, len(projects))
+	projectChart := models.ChartData{}
+	for _, project := range projects {
+		project.Momentum = trendChart(project.Progress)
+		if project.Project.Status == "active" {
+			activeProjects = append(activeProjects, project)
+		}
+		if project.TotalItems > 0 {
+			projectChart.Labels = append(projectChart.Labels, project.Project.Name)
+			projectChart.Values = append(projectChart.Values, project.Progress)
+		}
+	}
+	projectMomentumURL := "/projects"
+	if len(activeProjects) > 0 {
+		projectMomentumURL = "/projects/" + strconv.FormatInt(activeProjects[0].Project.ID, 10)
+	}
+	projectMomentum := projectMomentumChart(activeProjects)
+
+	goals, err := s.Repo.ListGoals(false)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	yearlyGoals := make([]models.GoalWithProgress, 0, len(goals))
+	yearlyGoalChart := models.ChartData{}
+	for _, goal := range goals {
+		goal.Momentum = trendChart(goal.Progress)
+		if goal.Goal.Type != "yearly" {
+			continue
+		}
+		yearlyGoals = append(yearlyGoals, goal)
+		yearlyGoalChart.Labels = append(yearlyGoalChart.Labels, goal.Goal.Title)
+		yearlyGoalChart.Values = append(yearlyGoalChart.Values, goal.Progress)
+	}
+	goalSignal := goalProgressSparkline(yearlyGoals)
+
+	dailyStats, err := s.DailyCompletionStats(today.AddDate(0, 0, -29), today)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	dailyChart := models.ChartData{}
+	for _, stat := range dailyStats {
+		dailyChart.Labels = append(dailyChart.Labels, stat.Label)
+		dailyChart.Values = append(dailyChart.Values, stat.Percent)
+	}
+	lastSevenChart := tailChart(dailyChart, 7)
+
+	monthlyChart, err := s.MonthlyCompletionChart(today.Year(), today.Month())
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	monthStart := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
+	monthEnd := monthStart.AddDate(0, 1, -1)
+	monthItems, err := s.TaskOccurrencesBetween(monthStart, monthEnd)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	monthStats, err := s.DailyCompletionStats(monthStart, today)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	monthlyScoreChart := models.ChartData{}
+	for _, stat := range monthStats {
+		monthlyScoreChart.Labels = append(monthlyScoreChart.Labels, stat.Label)
+		monthlyScoreChart.Values = append(monthlyScoreChart.Values, stat.Percent)
+	}
+
+	remindersToday, overdueReminders, err := s.ReminderViews(today)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	nextReminder := models.ReminderView{}
+	if len(remindersToday) > 0 {
+		nextReminder = remindersToday[0]
+	} else if len(overdueReminders) > 0 {
+		nextReminder = overdueReminders[0]
+	}
+	reminderLoad := models.ChartData{
+		Labels: []string{"Today", "Overdue"},
+		Values: []int{len(remindersToday), len(overdueReminders)},
+	}
+
+	return models.DashboardData{
+		Page:                     "dashboard",
+		Today:                    formatDate(today),
+		TodayItems:               todayItems,
+		OverdueTasks:             overdueTasks,
+		TodayCompletion:          CompletionPercentage(todayItems),
+		MonthlyCompletionPercent: CompletionPercentage(monthItems),
+		CurrentStreak:            streakFromStats(dailyStats),
+		ActiveProjects:           activeProjects,
+		YearlyGoals:              yearlyGoals,
+		RemindersToday:           remindersToday,
+		OverdueReminders:         overdueReminders,
+		NextReminder:             nextReminder,
+		DailyMission:             dailyMission,
+		DailyCompletion:          dailyChart,
+		LastSevenCompletion:      lastSevenChart,
+		DeenConsistency:          tailChart(deenConsistency, 7),
+		BodyRhythm:               bodyRhythm,
+		MonthlyCompletion:        monthlyChart,
+		MonthlyScore:             monthlyScoreChart,
+		TasksCompletedMini:       tailChart(monthlyChart, 7),
+		ProjectProgress:          projectChart,
+		ProjectMomentum:          projectMomentum,
+		ProjectMomentumURL:       projectMomentumURL,
+		YearlyGoalProgress:       yearlyGoalChart,
+		GoalProgressSignal:       goalSignal,
+		ReminderLoad:             reminderLoad,
+	}, nil
+}
+
+func (s *Service) DailyMission() (models.DailyMissionData, error) {
+	today := s.Today()
+	trackerItems, err := s.Repo.ListTrackerItems()
+	if err != nil {
+		return models.DailyMissionData{}, err
+	}
+	logs, err := s.Repo.TrackerLogsBetween(formatDate(today.AddDate(0, 0, -6)), formatDate(today))
+	if err != nil {
+		return models.DailyMissionData{}, err
+	}
+	return buildDailyMission(today, trackerItems, logs), nil
+}
+
+func (s *Service) BodyRhythmChart() (models.ChartData, error) {
+	today := s.Today()
+	trackerItems, err := s.Repo.ListTrackerItems()
+	if err != nil {
+		return models.ChartData{}, err
+	}
+	start := today.AddDate(0, 0, -13)
+	logs, err := s.Repo.TrackerLogsBetween(formatDate(start), formatDate(today))
+	if err != nil {
+		return models.ChartData{}, err
+	}
+	return gymRhythmChart(trackerItems, logs, start, today), nil
+}
+
+func TrendChart(current int) models.ChartData {
+	return trendChart(current)
+}
+
+func (s *Service) TaskOccurrencesOn(date time.Time) ([]models.TaskOccurrence, error) {
+	occurrences, err := s.TaskOccurrencesBetween(date, date)
+	if err != nil {
+		return nil, err
+	}
+	return occurrences, nil
+}
+
+func (s *Service) TaskOccurrencesBetween(start, end time.Time) ([]models.TaskOccurrence, error) {
+	tasks, err := s.Repo.ListTasks(false)
+	if err != nil {
+		return nil, err
+	}
+
+	completions, err := s.Repo.TaskCompletionsBetween(formatDate(start), formatDate(end))
+	if err != nil {
+		return nil, err
+	}
+	completionByKey := make(map[string]models.TaskCompletion, len(completions))
+	for _, completion := range completions {
+		completionByKey[completionKey(completion.TaskID, completion.OccurrenceDate)] = completion
+	}
+
+	var occurrences []models.TaskOccurrence
+	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
+		dateValue := formatDate(date)
+		for _, task := range tasks {
+			if !taskDueOn(task, date) {
+				continue
+			}
+
+			status := "pending"
+			completedAt := ""
+			if task.RepeatType == "none" && task.Status != "" {
+				status = task.Status
+				completedAt = task.CompletedAt
+			}
+			if completion, ok := completionByKey[completionKey(task.ID, dateValue)]; ok {
+				status = completion.Status
+				completedAt = completion.CompletedAt
+			}
+
+			occurrences = append(occurrences, models.TaskOccurrence{
+				Task:          task,
+				Date:          dateValue,
+				Status:        status,
+				CompletedAt:   completedAt,
+				OccurrenceKey: completionKey(task.ID, dateValue),
+			})
+		}
+	}
+
+	sort.SliceStable(occurrences, func(i, j int) bool {
+		if occurrences[i].Date != occurrences[j].Date {
+			return occurrences[i].Date < occurrences[j].Date
+		}
+		left := priorityRank(occurrences[i].Task.Priority)
+		right := priorityRank(occurrences[j].Task.Priority)
+		if left != right {
+			return left < right
+		}
+		return occurrences[i].Task.Title < occurrences[j].Task.Title
+	})
+
+	return occurrences, nil
+}
+
+func (s *Service) DailyCompletionStats(start, end time.Time) ([]DailyStat, error) {
+	occurrences, err := s.TaskOccurrencesBetween(start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	byDate := map[string][]models.TaskOccurrence{}
+	for _, occurrence := range occurrences {
+		byDate[occurrence.Date] = append(byDate[occurrence.Date], occurrence)
+	}
+
+	var stats []DailyStat
+	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
+		dateValue := formatDate(date)
+		items := byDate[dateValue]
+		completed := 0
+		for _, item := range items {
+			if item.Status == "completed" {
+				completed++
+			}
+		}
+		stats = append(stats, DailyStat{
+			Date:      dateValue,
+			Label:     date.Format("Jan 2"),
+			Total:     len(items),
+			Completed: completed,
+			Percent:   CompletionPercentage(items),
+		})
+	}
+
+	return stats, nil
+}
+
+func (s *Service) MonthlyCompletionChart(year int, month time.Month) (models.ChartData, error) {
+	start := time.Date(year, month, 1, 0, 0, 0, 0, s.Today().Location())
+	end := start.AddDate(0, 1, -1)
+	occurrences, err := s.TaskOccurrencesBetween(start, end)
+	if err != nil {
+		return models.ChartData{}, err
+	}
+
+	completedByDate := map[string]int{}
+	for _, occurrence := range occurrences {
+		if occurrence.Status == "completed" {
+			completedByDate[occurrence.Date]++
+		}
+	}
+
+	chart := models.ChartData{}
+	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
+		dateValue := formatDate(date)
+		chart.Labels = append(chart.Labels, date.Format("2"))
+		chart.Values = append(chart.Values, completedByDate[dateValue])
+	}
+	return chart, nil
+}
+
+func (s *Service) ReminderViews(today time.Time) ([]models.ReminderView, []models.ReminderView, error) {
+	todayValue := formatDate(today)
+	todayItems, err := s.TaskOccurrencesOn(today)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var dueToday []models.ReminderView
+	for _, item := range todayItems {
+		if item.Task.ReminderTime == "" || item.Status != "pending" {
+			continue
+		}
+		dueToday = append(dueToday, models.ReminderView{
+			SourceType:   "task",
+			SourceID:     item.Task.ID,
+			Title:        item.Task.Title,
+			ReminderDate: todayValue,
+			ReminderTime: item.Task.ReminderTime,
+		})
+	}
+
+	overdueTasks, err := s.Repo.ListActiveOneTimeOverdueTasks(todayValue)
+	if err != nil {
+		return nil, nil, err
+	}
+	var overdue []models.ReminderView
+	for _, task := range overdueTasks {
+		if task.ReminderTime == "" {
+			continue
+		}
+		overdue = append(overdue, models.ReminderView{
+			SourceType:   "task",
+			SourceID:     task.ID,
+			Title:        task.Title,
+			ReminderDate: task.DueDate,
+			ReminderTime: task.ReminderTime,
+			Overdue:      true,
+		})
+	}
+
+	standalone, err := s.Repo.ListStandaloneRemindersThrough(todayValue)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, reminder := range standalone {
+		view := models.ReminderView{
+			SourceType:   reminder.SourceType,
+			SourceID:     reminder.SourceID,
+			Title:        reminder.Title,
+			ReminderDate: reminder.ReminderDate,
+			ReminderTime: reminder.ReminderTime,
+		}
+		if reminder.ReminderDate == "" || reminder.ReminderDate == todayValue {
+			dueToday = append(dueToday, view)
+			continue
+		}
+		view.Overdue = true
+		overdue = append(overdue, view)
+	}
+
+	sort.SliceStable(dueToday, func(i, j int) bool {
+		return dueToday[i].ReminderTime < dueToday[j].ReminderTime
+	})
+	sort.SliceStable(overdue, func(i, j int) bool {
+		if overdue[i].ReminderDate != overdue[j].ReminderDate {
+			return overdue[i].ReminderDate < overdue[j].ReminderDate
+		}
+		return overdue[i].ReminderTime < overdue[j].ReminderTime
+	})
+
+	return dueToday, overdue, nil
+}
+
+func CompletionPercentage(items []models.TaskOccurrence) int {
+	if len(items) == 0 {
+		return 0
+	}
+	completed := 0
+	for _, item := range items {
+		if item.Status == "completed" {
+			completed++
+		}
+	}
+	return (completed * 100) / len(items)
+}
+
+func SplitOccurrences(items []models.TaskOccurrence) (pending, completed, skipped []models.TaskOccurrence) {
+	for _, item := range items {
+		switch item.Status {
+		case "completed":
+			completed = append(completed, item)
+		case "skipped":
+			skipped = append(skipped, item)
+		default:
+			pending = append(pending, item)
+		}
+	}
+	return pending, completed, skipped
+}
+
+func buildDailyMission(today time.Time, items []models.TrackerItem, logs []models.TrackerLog) models.DailyMissionData {
+	todayValue := formatDate(today)
+	statusByItemDate := trackerStatusMap(logs)
+	mission := models.DailyMissionData{Date: todayValue}
+
+	var gymItem models.TrackerItem
+	for _, item := range items {
+		status := trackerStatus(item, todayValue, statusByItemDate)
+		view := models.TrackerStatusView{
+			Item:   item,
+			Date:   todayValue,
+			Status: status,
+		}
+		switch item.Type {
+		case "prayer":
+			mission.PrayerItems = append(mission.PrayerItems, view)
+		case "athkar":
+			mission.AthkarItems = append(mission.AthkarItems, view)
+		case "gym":
+			gymItem = item
+		}
+	}
+
+	mission.PrayerCompletion = trackerCompletion(mission.PrayerItems)
+	mission.AthkarCompletion = trackerCompletion(mission.AthkarItems)
+	deenItems := append([]models.TrackerStatusView{}, mission.PrayerItems...)
+	deenItems = append(deenItems, mission.AthkarItems...)
+	mission.DeenCompletion = trackerCompletion(deenItems)
+
+	weekday := int(today.Weekday())
+	if weekday == 0 {
+		weekday = 7
+	}
+	weekStart := today.AddDate(0, 0, -(weekday - 1))
+	doneGymDays := 0
+	for i := 0; i < 7; i++ {
+		date := weekStart.AddDate(0, 0, i)
+		dateValue := formatDate(date)
+		status := "rest"
+		if gymItem.ID != 0 {
+			status = trackerStatus(gymItem, dateValue, statusByItemDate)
+		}
+		if status == "done" {
+			doneGymDays++
+		}
+		mission.GymWeek = append(mission.GymWeek, models.GymDayView{
+			Label:  date.Format("Mon"),
+			Date:   dateValue,
+			Status: status,
+		})
+	}
+	mission.GymWeekCompletion = (doneGymDays * 100) / 7
+
+	return mission
+}
+
+func trackerPercentChart(items []models.TrackerItem, logs []models.TrackerLog, start, end time.Time, types map[string]bool) models.ChartData {
+	statusByItemDate := trackerStatusMap(logs)
+	chart := models.ChartData{}
+	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
+		dateValue := formatDate(date)
+		total := 0
+		done := 0
+		for _, item := range items {
+			if !types[item.Type] {
+				continue
+			}
+			total++
+			if trackerStatus(item, dateValue, statusByItemDate) == "done" {
+				done++
+			}
+		}
+		chart.Labels = append(chart.Labels, date.Format("Jan 2"))
+		if total == 0 {
+			chart.Values = append(chart.Values, 0)
+		} else {
+			chart.Values = append(chart.Values, (done*100)/total)
+		}
+	}
+	return chart
+}
+
+func gymRhythmChart(items []models.TrackerItem, logs []models.TrackerLog, start, end time.Time) models.ChartData {
+	statusByItemDate := trackerStatusMap(logs)
+	var gymItem models.TrackerItem
+	for _, item := range items {
+		if item.Type == "gym" {
+			gymItem = item
+			break
+		}
+	}
+
+	chart := models.ChartData{}
+	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
+		dateValue := formatDate(date)
+		status := "rest"
+		if gymItem.ID != 0 {
+			status = trackerStatus(gymItem, dateValue, statusByItemDate)
+		}
+		value := 35
+		switch status {
+		case "done":
+			value = 100
+		case "not_done":
+			value = 0
+		}
+		chart.Labels = append(chart.Labels, date.Format("Mon"))
+		chart.Values = append(chart.Values, value)
+	}
+	return chart
+}
+
+func projectMomentumChart(projects []models.ProjectWithProgress) models.ChartData {
+	if len(projects) == 0 {
+		return models.ChartData{}
+	}
+	return trendChart(projects[0].Progress)
+}
+
+func goalProgressSparkline(goals []models.GoalWithProgress) models.ChartData {
+	if len(goals) == 0 {
+		return models.ChartData{}
+	}
+	return trendChart(goals[0].Progress)
+}
+
+func trendChart(current int) models.ChartData {
+	if current < 0 {
+		current = 0
+	}
+	if current > 100 {
+		current = 100
+	}
+	offsets := []int{24, 18, 13, 9, 5, 2, 0}
+	chart := models.ChartData{
+		Labels: []string{"D-6", "D-5", "D-4", "D-3", "D-2", "D-1", "Now"},
+	}
+	for _, offset := range offsets {
+		value := current - offset
+		if value < 0 {
+			value = 0
+		}
+		chart.Values = append(chart.Values, value)
+	}
+	return chart
+}
+
+func trackerStatusMap(logs []models.TrackerLog) map[int64]map[string]string {
+	statusByItemDate := make(map[int64]map[string]string)
+	for _, log := range logs {
+		if _, ok := statusByItemDate[log.TrackerItemID]; !ok {
+			statusByItemDate[log.TrackerItemID] = make(map[string]string)
+		}
+		statusByItemDate[log.TrackerItemID][log.LogDate] = log.Status
+	}
+	return statusByItemDate
+}
+
+func trackerStatus(item models.TrackerItem, date string, statusByItemDate map[int64]map[string]string) string {
+	if byDate, ok := statusByItemDate[item.ID]; ok {
+		if status, ok := byDate[date]; ok {
+			return status
+		}
+	}
+	if item.Type == "gym" {
+		return "rest"
+	}
+	return "not_done"
+}
+
+func trackerCompletion(items []models.TrackerStatusView) int {
+	if len(items) == 0 {
+		return 0
+	}
+	done := 0
+	for _, item := range items {
+		if item.Status == "done" {
+			done++
+		}
+	}
+	return (done * 100) / len(items)
+}
+
+func formatDate(date time.Time) string {
+	return date.Format("2006-01-02")
+}
+
+func tailChart(chart models.ChartData, count int) models.ChartData {
+	if count <= 0 || len(chart.Values) <= count {
+		return chart
+	}
+	start := len(chart.Values) - count
+	return models.ChartData{
+		Labels: append([]string(nil), chart.Labels[start:]...),
+		Values: append([]int(nil), chart.Values[start:]...),
+	}
+}
+
+func completionKey(taskID int64, date string) string {
+	return strconv.FormatInt(taskID, 10) + "|" + date
+}
+
+func taskDueOn(task models.Task, date time.Time) bool {
+	if task.ArchivedAt != "" || task.DueDate == "" {
+		return false
+	}
+
+	start, ok := parseDate(task.DueDate, date.Location())
+	if !ok || date.Before(start) {
+		return false
+	}
+
+	switch task.RepeatType {
+	case "daily":
+		return true
+	case "weekly":
+		return date.Weekday() == start.Weekday()
+	case "monthly":
+		return sameMonthDay(start, date)
+	case "yearly":
+		return sameYearDay(start, date)
+	default:
+		return sameDay(start, date)
+	}
+}
+
+func parseDate(value string, location *time.Location) (time.Time, bool) {
+	if value == "" {
+		return time.Time{}, false
+	}
+	parsed, err := time.ParseInLocation("2006-01-02", value, location)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return parsed, true
+}
+
+func sameDay(left, right time.Time) bool {
+	return left.Year() == right.Year() && left.YearDay() == right.YearDay()
+}
+
+func sameMonthDay(start, date time.Time) bool {
+	startDay := start.Day()
+	lastDay := daysInMonth(date.Year(), date.Month())
+	if startDay > lastDay {
+		return date.Day() == lastDay
+	}
+	return date.Day() == startDay
+}
+
+func sameYearDay(start, date time.Time) bool {
+	if start.Month() == time.February && start.Day() == 29 && !isLeapYear(date.Year()) {
+		return date.Month() == time.February && date.Day() == 28
+	}
+	return start.Month() == date.Month() && start.Day() == date.Day()
+}
+
+func daysInMonth(year int, month time.Month) int {
+	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.Local).Day()
+}
+
+func isLeapYear(year int) bool {
+	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
+}
+
+func priorityRank(priority string) int {
+	switch priority {
+	case "high":
+		return 0
+	case "medium":
+		return 1
+	default:
+		return 2
+	}
+}
+
+func streakFromStats(stats []DailyStat) int {
+	streak := 0
+	for i := len(stats) - 1; i >= 0; i-- {
+		stat := stats[i]
+		if stat.Total == 0 {
+			continue
+		}
+		if stat.Percent < 100 {
+			break
+		}
+		streak++
+	}
+	return streak
+}

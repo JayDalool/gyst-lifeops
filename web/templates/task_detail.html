@@ -1,0 +1,48 @@
+{{define "content"}}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">{{.Task.Category}}</p>
+    <h1>{{.Task.Title}}</h1>
+  </div>
+  <div class="header-actions">
+    <a class="button secondary" href="/tasks/{{.Task.ID}}/edit">Edit</a>
+    <a class="button secondary" href="/tasks">Back</a>
+  </div>
+</section>
+
+<section class="detail-grid">
+  <article class="panel">
+    <div class="panel-heading">
+      <h2>Details</h2>
+      <span class="badge status-{{.Task.Status}}">{{.Task.Status}}</span>
+    </div>
+    <dl class="details">
+      <div><dt>Description</dt><dd>{{if .Task.Description}}{{.Task.Description}}{{else}}None{{end}}</dd></div>
+      <div><dt>Due</dt><dd>{{niceDate .Task.DueDate}}</dd></div>
+      <div><dt>Repeat</dt><dd>{{.Task.RepeatType}}</dd></div>
+      <div><dt>Priority</dt><dd>{{.Task.Priority}}</dd></div>
+      <div><dt>Reminder</dt><dd>{{if .Task.ReminderTime}}{{.Task.ReminderTime}}{{else}}None{{end}}</dd></div>
+      <div><dt>Created</dt><dd>{{niceDateTime .Task.CreatedAt}}</dd></div>
+    </dl>
+  </article>
+
+  <article class="panel">
+    <div class="panel-heading">
+      <h2>Actions</h2>
+    </div>
+    <div class="button-stack">
+      <form method="post" action="/tasks/{{.Task.ID}}/complete">
+        <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
+        <button class="button" type="submit">Mark Complete</button>
+      </form>
+      <form method="post" action="/tasks/{{.Task.ID}}/skip">
+        <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
+        <button class="button secondary" type="submit">Mark Skipped</button>
+      </form>
+      <form method="post" action="/tasks/{{.Task.ID}}/archive">
+        <button class="button danger" type="submit">Archive Task</button>
+      </form>
+    </div>
+  </article>
+</section>
+{{end}}

@@ -1,0 +1,48 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">{{niceDate .Today}}</p>
+    <h1>Reminders</h1>
+  </div>
+</section>
+
+<section class="status-columns">
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Due Today</h2>
+      <span class="count">{{len .RemindersToday}}</span>
+    </div>
+    {{if .RemindersToday}}
+      <ul class="stack-list">
+        {{range .RemindersToday}}
+          <li>
+            <span>{{.Title}}</span>
+            <small>{{.ReminderTime}}</small>
+          </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty">No reminders due today.</p>
+    {{end}}
+  </article>
+
+  <article class="glass-panel warning-panel">
+    <div class="panel-heading">
+      <h2>Overdue</h2>
+      <span class="count">{{len .OverdueReminders}}</span>
+    </div>
+    {{if .OverdueReminders}}
+      <ul class="stack-list">
+        {{range .OverdueReminders}}
+          <li>
+            <span>{{.Title}}</span>
+            <small>{{niceDate .ReminderDate}} / {{.ReminderTime}}</small>
+          </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty">No overdue reminders.</p>
+    {{end}}
+  </article>
+</section>
+{{end}}

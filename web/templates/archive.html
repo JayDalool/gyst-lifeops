@@ -1,0 +1,58 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">More / Archive</p>
+    <h1>Cold Storage</h1>
+  </div>
+</section>
+
+<section class="status-columns">
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Tasks</h2>
+      <span class="count">{{len .Tasks}}</span>
+    </div>
+    {{if .Tasks}}
+      <ul class="stack-list">
+        {{range .Tasks}}
+          <li><a href="/tasks/{{.ID}}">{{.Title}}</a><small>{{niceDateTime .ArchivedAt}}</small></li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty">No archived tasks.</p>
+    {{end}}
+  </article>
+
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Projects</h2>
+      <span class="count">{{len .Projects}}</span>
+    </div>
+    {{if .Projects}}
+      <ul class="stack-list">
+        {{range .Projects}}
+          <li><a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a><small>{{.Progress}}% complete</small></li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty">No archived projects.</p>
+    {{end}}
+  </article>
+
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Goals</h2>
+      <span class="count">{{len .Goals}}</span>
+    </div>
+    {{if .Goals}}
+      <ul class="stack-list">
+        {{range .Goals}}
+          <li><a href="/goals/{{.Goal.ID}}">{{.Goal.Title}}</a><small>{{.Progress}}% complete</small></li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty">No archived goals.</p>
+    {{end}}
+  </article>
+</section>
+{{end}}
