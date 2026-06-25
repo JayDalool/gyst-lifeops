@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -162,6 +163,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.analytics(w, r)
 	case "health":
 		h.health(w, r)
+	case "roadmap":
+		h.roadmap(w, r, segments)
 	case "archive":
 		h.archive(w, r)
 	case "settings":
@@ -865,6 +868,194 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "settings.html", SettingsData{Page: "settings"})
 }
 
+func (h *Handler) roadmap(w http.ResponseWriter, r *http.Request, segments []string) {
+	if len(segments) == 1 {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w)
+			return
+		}
+		data, err := h.Service.Roadmap()
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		h.render(w, "roadmap.html", data)
+		return
+	}
+
+	switch segments[1] {
+	case "import":
+		h.importRoadmap(w, r)
+	case "export":
+		h.exportRoadmap(w, r, segments)
+	case "weekly-review":
+		h.createRoadmapWeeklyReview(w, r)
+	case "projects":
+		h.roadmapProjects(w, r, segments)
+	case "milestones":
+		h.roadmapMilestones(w, r, segments)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func (h *Handler) importRoadmap(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		serverError(w, err)
+		return
+	}
+	source := strings.TrimSpace(r.FormValue("markdown"))
+	if source == "" {
+		http.Redirect(w, r, "/roadmap", http.StatusSeeOther)
+		return
+	}
+	if _, err := h.Service.ImportRoadmapMarkdown(source); err != nil {
+		serverError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/roadmap", http.StatusSeeOther)
+}
+
+func (h *Handler) exportRoadmap(w http.ResponseWriter, r *http.Request, segments []string) {
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+	if len(segments) != 3 || (segments[2] != "public" && segments[2] != "private") {
+		http.NotFound(w, r)
+		return
+	}
+	public := segments[2] == "public"
+	body, err := h.Service.ExportRoadmap(public)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	filename := "ai-engineer-roadmap-private.md"
+	if public {
+		filename = "ai-engineer-portfolio-summary.md"
+	}
+	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	if _, err := w.Write([]byte(body)); err != nil {
+		serverError(w, err)
+	}
+}
+
+func (h *Handler) createRoadmapWeeklyReview(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		serverError(w, err)
+		return
+	}
+	review := models.RoadmapWeeklyReview{
+		WeekStart: strings.TrimSpace(r.FormValue("week_start")),
+		Finished:  strings.TrimSpace(r.FormValue("finished")),
+		Blocked:   strings.TrimSpace(r.FormValue("blocked")),
+		NextSteps: strings.TrimSpace(r.FormValue("next_steps")),
+	}
+	if err := h.Service.CreateRoadmapWeeklyReview(review); err != nil {
+		serverError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/roadmap", http.StatusSeeOther)
+}
+
+func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segments []string) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if len(segments) < 4 {
+		http.NotFound(w, r)
+		return
+	}
+	projectID, ok := parseID(segments[2])
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	if len(segments) == 4 && segments[3] == "meta" {
+		meta, err := roadmapMetaFromRequest(r, projectID)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		if err := h.Service.Repo.SetRoadmapProjectMeta(meta); err != nil {
+			serverError(w, err)
+			return
+		}
+		http.Redirect(w, r, "/roadmap", http.StatusSeeOther)
+		return
+	}
+
+	if len(segments) != 6 || segments[3] != "items" {
+		http.NotFound(w, r)
+		return
+	}
+	itemID, ok := parseID(segments[4])
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	switch segments[5] {
+	case "complete":
+		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
+			serverError(w, err)
+			return
+		}
+	case "reopen":
+		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "pending"); err != nil {
+			serverError(w, err)
+			return
+		}
+	default:
+		http.NotFound(w, r)
+		return
+	}
+	http.Redirect(w, r, "/roadmap", http.StatusSeeOther)
+}
+
+func (h *Handler) roadmapMilestones(w http.ResponseWriter, r *http.Request, segments []string) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if len(segments) != 4 {
+		http.NotFound(w, r)
+		return
+	}
+	milestoneID, ok := parseID(segments[2])
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	switch segments[3] {
+	case "complete":
+		if err := h.Service.Repo.SetRoadmapMilestoneStatus(milestoneID, "completed"); err != nil {
+			serverError(w, err)
+			return
+		}
+	case "reopen":
+		if err := h.Service.Repo.SetRoadmapMilestoneStatus(milestoneID, "pending"); err != nil {
+			serverError(w, err)
+			return
+		}
+	default:
+		http.NotFound(w, r)
+		return
+	}
+	http.Redirect(w, r, "/roadmap", http.StatusSeeOther)
+}
+
 func (h *Handler) trackers(w http.ResponseWriter, r *http.Request, segments []string) {
 	if r.Method != http.MethodPost {
 		methodNotAllowed(w)
@@ -884,12 +1075,34 @@ func (h *Handler) trackers(w http.ResponseWriter, r *http.Request, segments []st
 		serverError(w, err)
 		return
 	}
+
 	if wantsJSON(r) {
+		// The toggle write already succeeded, so status is authoritative and the
+		// response must be 200 no matter what follows. The recomputed mission
+		// scores are best-effort extras: if DailyMission() errors we still return
+		// the new status so the client never reverts a persisted change.
+		resp := trackerToggleResponse{Status: next}
+		if mission, err := h.Service.DailyMission(); err == nil {
+			resp.Prayer = &mission.PrayerCompletion
+			resp.Athkar = &mission.AthkarCompletion
+			resp.Deen = &mission.DeenCompletion
+			resp.Gym = &mission.GymWeekCompletion
+		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		fmt.Fprintf(w, `{"status":%q}`, next)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			serverError(w, err)
+		}
 		return
 	}
 	redirectBack(w, r, "/")
+}
+
+type trackerToggleResponse struct {
+	Status string `json:"status"`
+	Prayer *int   `json:"prayer,omitempty"`
+	Athkar *int   `json:"athkar,omitempty"`
+	Deen   *int   `json:"deen,omitempty"`
+	Gym    *int   `json:"gym,omitempty"`
 }
 
 func wantsJSON(r *http.Request) bool {
@@ -973,6 +1186,22 @@ func projectItemFromRequest(r *http.Request) (models.ProjectItem, error) {
 		Priority:    cleanForm(r.FormValue("priority"), "medium"),
 		DueDate:     strings.TrimSpace(r.FormValue("due_date")),
 		SortOrder:   sortOrder,
+	}, nil
+}
+
+func roadmapMetaFromRequest(r *http.Request, projectID int64) (models.RoadmapProjectMeta, error) {
+	if err := r.ParseForm(); err != nil {
+		return models.RoadmapProjectMeta{}, err
+	}
+	localOnly := r.FormValue("local_only") == "on"
+	return models.RoadmapProjectMeta{
+		ProjectID:     projectID,
+		ProjectType:   cleanForm(r.FormValue("project_type"), "learning"),
+		TagsText:      strings.TrimSpace(r.FormValue("tags")),
+		IsPrivate:     r.FormValue("is_private") == "on" || localOnly,
+		LocalOnly:     localOnly,
+		CurrentFocus:  r.FormValue("current_focus") == "on",
+		PublicSummary: strings.TrimSpace(r.FormValue("public_summary")),
 	}, nil
 }
 

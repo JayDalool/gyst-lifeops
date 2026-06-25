@@ -1,0 +1,353 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">AI Engineer Roadmap</p>
+    <h1>{{.GoalTitle}}</h1>
+    <p class="hero-greeting">Target: {{niceDate .GoalDeadline}}</p>
+  </div>
+  <div class="header-actions">
+    <a class="button secondary" href="/roadmap/export/public">Export Public</a>
+    <a class="button secondary" href="/roadmap/export/private">Export Private</a>
+  </div>
+</section>
+
+<section class="summary-strip">
+  <article class="mini-card">
+    <span>Roadmap</span>
+    <strong>{{.OverallProgress}}%</strong>
+    <small>overall progress</small>
+  </article>
+  <article class="mini-card">
+    <span>This Week</span>
+    <strong>{{.WeeklyCompletion}}%</strong>
+    <small>{{niceDate .WeekStart}} to {{niceDate .WeekEnd}}</small>
+  </article>
+  <article class="mini-card">
+    <span>Missed</span>
+    <strong>{{len .MissedDeadlines}}</strong>
+    <small>deadlines</small>
+  </article>
+  <article class="mini-card">
+    <span>Focus</span>
+    <strong>{{len .CurrentFocus}}</strong>
+    <small>current projects</small>
+  </article>
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Daily Tasks</p>
+      <h2>Today’s AI Execution</h2>
+    </div>
+  </div>
+  <div class="roadmap-daily-grid">
+    <article class="roadmap-daily-card">
+      <span>AI Task</span>
+      {{if .Daily.AITask.Title}}
+        <strong>{{.Daily.AITask.Title}}</strong>
+        <small>{{.Daily.AITask.ProjectName}} / {{niceDate .Daily.AITask.DueDate}}</small>
+      {{else}}
+        <strong>Clear</strong>
+        <small>No pending AI task</small>
+      {{end}}
+    </article>
+    <article class="roadmap-daily-card">
+      <span>Course</span>
+      {{if .Daily.CourseTask.Title}}
+        <strong>{{.Daily.CourseTask.Title}}</strong>
+        <small>{{.Daily.CourseTask.ProjectName}} / {{niceDate .Daily.CourseTask.DueDate}}</small>
+      {{else}}
+        <strong>Clear</strong>
+        <small>No course task queued</small>
+      {{end}}
+    </article>
+    <article class="roadmap-daily-card">
+      <span>Coding</span>
+      {{if .Daily.CodingTask.Title}}
+        <strong>{{.Daily.CodingTask.Title}}</strong>
+        <small>{{.Daily.CodingTask.ProjectName}} / {{niceDate .Daily.CodingTask.DueDate}}</small>
+      {{else}}
+        <strong>Clear</strong>
+        <small>No coding task queued</small>
+      {{end}}
+    </article>
+    <article class="roadmap-daily-card">
+      <span>Portfolio</span>
+      {{if .Daily.PortfolioTask.Title}}
+        <strong>{{.Daily.PortfolioTask.Title}}</strong>
+        <small>{{.Daily.PortfolioTask.ProjectName}} / {{niceDate .Daily.PortfolioTask.DueDate}}</small>
+      {{else}}
+        <strong>Clear</strong>
+        <small>No portfolio task queued</small>
+      {{end}}
+    </article>
+  </div>
+</section>
+
+<section class="detail-layout">
+  <article class="glass-panel focus-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Import</p>
+        <h2>Create Roadmap From Markdown</h2>
+      </div>
+      {{if .LatestImport.ID}}<span class="badge">Imported {{niceDateTime .LatestImport.ImportedAt}}</span>{{end}}
+    </div>
+    <form class="form-stack" method="post" action="/roadmap/import">
+      <label class="field">
+        <span>Markdown Plan</span>
+        <textarea name="markdown" rows="12" placeholder="# Goal: Become an AI Engineer before November&#10;&#10;## Project: Real Estate AI Lead Scorer&#10;Type: Real Estate AI&#10;Deadline: 2026-08-15&#10;Tags: ai, real-estate&#10;&#10;### Tasks&#10;- Build lead scoring API Due: 2026-07-10&#10;- [ ] Add portfolio case study"></textarea>
+      </label>
+      <button class="button" type="submit">Import Roadmap</button>
+    </form>
+  </article>
+
+  <aside class="side-stack">
+    <article class="glass-panel">
+      <div class="panel-heading">
+        <h2>Current Focus</h2>
+        <span class="count">{{len .CurrentFocus}}</span>
+      </div>
+      {{if .CurrentFocus}}
+        <ul class="stack-list">
+          {{range .CurrentFocus}}
+            <li>
+              <div>
+                <strong>{{.Project.Project.Name}}</strong>
+                <small>{{.Meta.ProjectTypeLabel}} / {{.Progress}}%</small>
+              </div>
+            </li>
+          {{end}}
+        </ul>
+      {{else}}
+        <p class="empty">Import a roadmap or mark a project as focus.</p>
+      {{end}}
+    </article>
+
+    <article class="glass-panel warning-panel">
+      <div class="panel-heading">
+        <h2>Missed Deadlines</h2>
+        <span class="count">{{len .MissedDeadlines}}</span>
+      </div>
+      {{if .MissedDeadlines}}
+        <ul class="stack-list">
+          {{range .MissedDeadlines}}
+            <li>
+              <div>
+                <strong>{{.Title}}</strong>
+                <small>{{.Kind}} / {{.ProjectName}} / {{niceDate .DueDate}}</small>
+              </div>
+            </li>
+          {{end}}
+        </ul>
+      {{else}}
+        <p class="empty">No missed roadmap deadlines.</p>
+      {{end}}
+    </article>
+  </aside>
+</section>
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Projects</p>
+      <h2>Roadmap Builds</h2>
+    </div>
+    <span class="count">{{len .Projects}}</span>
+  </div>
+
+  {{if .Projects}}
+    <div class="roadmap-project-list">
+      {{range .Projects}}
+        {{$project := .}}
+        <article class="roadmap-project">
+          <div class="roadmap-project-head">
+            <div>
+              <p class="eyebrow">{{.Meta.ProjectTypeLabel}}</p>
+              <h3>{{.Project.Project.Name}}</h3>
+              <small>{{if .Project.Project.TargetDate}}Target {{niceDate .Project.Project.TargetDate}}{{else}}No target date{{end}}</small>
+            </div>
+            <div class="task-state">
+              <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>
+              {{if .Meta.CurrentFocus}}<span class="badge status-pending">focus</span>{{end}}
+              {{if .Meta.IsPrivate}}<span class="badge status-paused">private</span>{{end}}
+              {{if .Meta.LocalOnly}}<span class="badge priority-high">local only</span>{{end}}
+            </div>
+          </div>
+
+          <div class="project-progress">
+            <div>
+              <strong>{{.Progress}}%</strong>
+              <small>{{.CompletedWork}} / {{.TotalWork}} roadmap items</small>
+            </div>
+            <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+            <canvas class="micro-chart" data-chart="line" data-mini="true" data-max="100"
+              data-labels="{{join .Project.Momentum.Labels "|"}}"
+              data-values="{{joinInts .Project.Momentum.Values "|"}}"></canvas>
+          </div>
+
+          <form class="roadmap-meta-form" method="post" action="/roadmap/projects/{{.Project.Project.ID}}/meta">
+            <div class="form-row">
+              <label class="field">
+                <span>Type</span>
+                <select name="project_type">
+                  {{range $.ProjectTypeOptions}}
+                    <option value="{{.Value}}" {{if eq .Value $project.Meta.ProjectType}}selected{{end}}>{{.Label}}</option>
+                  {{end}}
+                </select>
+              </label>
+              <label class="field">
+                <span>Tags</span>
+                <input name="tags" value="{{.Meta.TagsText}}">
+              </label>
+            </div>
+            <label class="field">
+              <span>Public Summary</span>
+              <textarea name="public_summary" rows="2">{{.Meta.PublicSummary}}</textarea>
+            </label>
+            <div class="roadmap-flag-row">
+              <label><input type="checkbox" name="current_focus" {{if .Meta.CurrentFocus}}checked{{end}}> Current focus</label>
+              <label><input type="checkbox" name="is_private" {{if .Meta.IsPrivate}}checked{{end}}> Private</label>
+              <label><input type="checkbox" name="local_only" {{if .Meta.LocalOnly}}checked{{end}}> Local/private only</label>
+              <button class="button small secondary" type="submit">Save</button>
+            </div>
+          </form>
+
+          <div class="roadmap-columns">
+            <div>
+              <div class="panel-heading compact-heading">
+                <h3>Milestones</h3>
+                <span class="count">{{len .Milestones}}</span>
+              </div>
+              {{if .Milestones}}
+                <div class="checklist-list">
+                  {{range .Milestones}}
+                    <article class="checklist-item status-row-{{.Status}}">
+                      <div>
+                        <h3>{{.Title}}</h3>
+                        <small>{{niceDate .DueDate}} / {{.Status}}</small>
+                        {{if .Description}}<p>{{.Description}}</p>{{end}}
+                      </div>
+                      <div class="quick-actions">
+                        {{if eq .Status "completed"}}
+                          <form method="post" action="/roadmap/milestones/{{.ID}}/reopen">
+                            <button class="button small secondary" type="submit">Reopen</button>
+                          </form>
+                        {{else}}
+                          <form method="post" action="/roadmap/milestones/{{.ID}}/complete">
+                            <button class="button small" type="submit">Done</button>
+                          </form>
+                        {{end}}
+                      </div>
+                    </article>
+                  {{end}}
+                </div>
+              {{else}}
+                <p class="empty">No milestones parsed yet.</p>
+              {{end}}
+            </div>
+
+            <div>
+              <div class="panel-heading compact-heading">
+                <h3>Tasks</h3>
+                <span class="count">{{len .Items}}</span>
+              </div>
+              {{if .Items}}
+                <div class="checklist-list">
+                  {{range .Items}}
+                    <article class="checklist-item status-row-{{.Status}}">
+                      <div>
+                        <h3>{{.Title}}</h3>
+                        <small>{{niceDate .DueDate}} / {{.Priority}}</small>
+                        {{if .Description}}<p>{{.Description}}</p>{{end}}
+                      </div>
+                      <div class="quick-actions">
+                        {{if eq .Status "completed"}}
+                          <form method="post" action="/roadmap/projects/{{$project.Project.Project.ID}}/items/{{.ID}}/reopen">
+                            <button class="button small secondary" type="submit">Reopen</button>
+                          </form>
+                        {{else}}
+                          <form method="post" action="/roadmap/projects/{{$project.Project.Project.ID}}/items/{{.ID}}/complete">
+                            <button class="button small" type="submit">Done</button>
+                          </form>
+                        {{end}}
+                      </div>
+                    </article>
+                  {{end}}
+                </div>
+              {{else}}
+                <p class="empty">No tasks parsed yet.</p>
+              {{end}}
+            </div>
+          </div>
+
+          {{if .Resources}}
+            <div class="roadmap-resource-row">
+              {{range .Resources}}
+                {{if .URL}}
+                  <a class="badge" href="{{.URL}}" target="_blank" rel="noreferrer">{{.ResourceType}}: {{.Title}}</a>
+                {{else}}
+                  <span class="badge">{{.ResourceType}}: {{.Title}}</span>
+                {{end}}
+              {{end}}
+            </div>
+          {{end}}
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">Import your AI Engineer roadmap Markdown to create projects, milestones, tasks, resources, and privacy settings.</p>
+  {{end}}
+</section>
+
+<section class="detail-layout">
+  <article class="glass-panel focus-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Weekly Review</p>
+        <h2>Close The Loop</h2>
+      </div>
+    </div>
+    <form class="form-stack" method="post" action="/roadmap/weekly-review">
+      <label class="field">
+        <span>Week Start</span>
+        <input type="date" name="week_start" value="{{.WeekStart}}">
+      </label>
+      <label class="field">
+        <span>What did I finish?</span>
+        <textarea name="finished" rows="3"></textarea>
+      </label>
+      <label class="field">
+        <span>What is blocked?</span>
+        <textarea name="blocked" rows="3"></textarea>
+      </label>
+      <label class="field">
+        <span>What do I need to do next?</span>
+        <textarea name="next_steps" rows="3"></textarea>
+      </label>
+      <button class="button" type="submit">Save Review</button>
+    </form>
+  </article>
+
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Recent Reviews</h2>
+      <span class="count">{{len .WeeklyReviews}}</span>
+    </div>
+    {{if .WeeklyReviews}}
+      <div class="timeline roadmap-review-list">
+        {{range .WeeklyReviews}}
+          <article>
+            <time>{{niceDate .WeekStart}}</time>
+            <strong>Review</strong>
+            <p><b>Finished:</b> {{.Finished}}<br><b>Blocked:</b> {{.Blocked}}<br><b>Next:</b> {{.NextSteps}}</p>
+          </article>
+        {{end}}
+      </div>
+    {{else}}
+      <p class="empty">No weekly reviews yet.</p>
+    {{end}}
+  </article>
+</section>
+{{end}}

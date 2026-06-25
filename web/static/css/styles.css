@@ -1047,6 +1047,104 @@ button.action-card {
   gap: 12px;
 }
 
+.roadmap-daily-grid,
+.roadmap-columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.roadmap-daily-card {
+  min-width: 0;
+  min-height: 120px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.roadmap-daily-card span,
+.roadmap-project-head small {
+  color: var(--quiet);
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.roadmap-daily-card strong {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 17px;
+}
+
+.roadmap-daily-card small {
+  color: var(--muted);
+}
+
+.roadmap-project-list {
+  display: grid;
+  gap: 16px;
+}
+
+.roadmap-project {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.roadmap-project-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.roadmap-meta-form {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.roadmap-flag-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.roadmap-flag-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.roadmap-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compact-heading {
+  margin-bottom: 10px;
+}
+
+.roadmap-resource-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roadmap-review-list article {
+  grid-template-columns: 130px 72px minmax(0, 1fr);
+}
+
 .goal-card {
   grid-template-columns: auto minmax(0, 1fr);
   min-height: 220px;
@@ -1448,6 +1546,7 @@ th {
   .home-actions,
   .project-grid,
   .goal-grid,
+  .roadmap-daily-grid,
   .mission-grid,
   .project-quick-grid,
   .signal-grid,
@@ -1494,6 +1593,8 @@ th {
   .project-grid,
   .goal-grid,
   .embedded-grid,
+  .roadmap-daily-grid,
+  .roadmap-columns,
   .mission-grid,
   .mission-grid-health,
   .project-quick-grid,
@@ -1509,8 +1610,13 @@ th {
   .goal-card,
   .task-card,
   .checklist-item,
+  .roadmap-project-head,
   .timeline article {
     grid-template-columns: 1fr;
+  }
+
+  .roadmap-project-head {
+    display: grid;
   }
 
   .span-2,
@@ -1565,6 +1671,18 @@ th {
 .lifeops-toast.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+/* Subtle "saved" pulse on the toggle marker. Transform-only, no layout shift. */
+@keyframes lifeops-saved-pulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+.tracker-dot.is-saved span,
+.gym-day.is-saved::after {
+  animation: lifeops-saved-pulse 420ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

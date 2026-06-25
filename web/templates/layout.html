@@ -27,6 +27,7 @@
           <a class="{{if eq .Page "today"}}active{{end}}" href="/today">Today</a>
           <a class="{{if eq .Page "projects"}}active{{end}}" href="/projects">Projects</a>
           <a class="{{if eq .Page "goals"}}active{{end}}" href="/goals">Goals</a>
+          <a class="{{if eq .Page "roadmap"}}active{{end}}" href="/roadmap">Roadmap</a>
           <button type="button" data-more-open>More</button>
         </nav>
       {{end}}
@@ -86,6 +87,11 @@
       <svg class="drawer-icon" aria-hidden="true"><use href="#icon-chart-line"></use></svg>
       <span>Analytics</span>
       <small>Progress and streak signals</small>
+    </a>
+    <a href="/roadmap">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-target"></use></svg>
+      <span>AI Engineer Roadmap</span>
+      <small>Projects, milestones, and portfolio exports</small>
     </a>
     <a href="/health">
       <svg class="drawer-icon" aria-hidden="true"><use href="#icon-heart-pulse"></use></svg>
