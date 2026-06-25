@@ -1167,6 +1167,9 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		"niceDateTime": niceDateTime,
 		"niceNumber":   niceNumber,
 		"greeting":     greeting,
+		"nodeState":    nodeState,
+		"levelPct":     levelPct,
+		"toNextLevel":  toNextLevel,
 		"progressWidth": func(value int) template.CSS {
 			if value < 0 {
 				value = 0
@@ -1349,6 +1352,48 @@ func niceNumber(value float64) string {
 		return fmt.Sprintf("%.0f", value)
 	}
 	return fmt.Sprintf("%.1f", value)
+}
+
+// nodeState maps a project/mission status + progress into a campaign-map state
+// token used purely for visual styling: done, active, blocked, locked, pending.
+func nodeState(status string, progress int) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "completed", "done", "archived":
+		return "done"
+	case "blocked":
+		return "blocked"
+	case "locked", "upcoming":
+		return "locked"
+	case "paused":
+		return "blocked"
+	case "active", "pending", "in_progress":
+		if progress >= 100 {
+			return "done"
+		}
+		return "active"
+	default:
+		if progress >= 100 {
+			return "done"
+		}
+		return "pending"
+	}
+}
+
+// levelPct returns how far into the current level the player is (0-99),
+// where every 100 stars is one level. Used for the captain XP bar width.
+func levelPct(stars int) int {
+	if stars < 0 {
+		return 0
+	}
+	return stars % 100
+}
+
+// toNextLevel returns stars remaining until the next level threshold.
+func toNextLevel(stars int) int {
+	if stars < 0 {
+		return 100
+	}
+	return 100 - (stars % 100)
 }
 
 func greeting() string {

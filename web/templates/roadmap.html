@@ -148,16 +148,77 @@
   </aside>
 </section>
 
-<section class="glass-panel">
+<section class="glass-panel roadmap-views">
   <div class="panel-heading">
     <div>
-      <p class="eyebrow">Projects</p>
-      <h2>Campaign -> Quest -> Chapter -> Missions</h2>
+      <p class="eyebrow">Campaign</p>
+      <h2>{{.GoalTitle}}</h2>
     </div>
-    <span class="count">{{len .Projects}}</span>
+    <div class="view-toggle" role="tablist" aria-label="Roadmap view">
+      <input type="radio" id="view-map" name="roadmap-view" class="view-radio" checked>
+      <label for="view-map" class="view-tab" role="tab">Map View</label>
+      <input type="radio" id="view-list" name="roadmap-view" class="view-radio">
+      <label for="view-list" class="view-tab" role="tab">List View</label>
+    </div>
   </div>
 
   {{if .Projects}}
+    <div class="view-panel view-panel-map">
+      <p class="map-hint">Drag, scroll, or use arrow keys. Planets open their system.</p>
+      <div class="starmap" tabindex="0" aria-label="Campaign star map">
+        <div class="starmap-track">
+          <div class="campaign-star" aria-hidden="true">
+            <span class="campaign-core"></span>
+            <small>{{.OverallProgress}}%</small>
+          </div>
+          {{range .Projects}}
+            {{if eq .Project.Project.ParentProjectID 0}}
+              {{$system := .}}
+              {{$state := nodeState .Project.Project.Status .Progress}}
+              <div class="system-cluster">
+                <a class="map-node system-node node-{{$state}}"
+                   href="/projects/{{.Project.Project.ID}}"
+                   id="node-{{.Project.Project.ID}}"
+                   {{if or .Meta.CurrentFocus (eq $state "active")}}data-map-active{{end}}
+                   aria-label="{{.Project.Project.Name}} ({{$state}}, {{.Progress}}%)">
+                  <span class="planet"></span>
+                  <span class="map-node-label">{{.Project.Project.Name}}</span>
+                  <span class="map-node-meta">{{.Progress}}%</span>
+                </a>
+                <div class="orbit">
+                  {{range $.Projects}}
+                    {{if eq .Project.Project.ParentProjectID $system.Project.Project.ID}}
+                      <a class="map-node station-node node-{{nodeState .Project.Project.Status .Progress}}"
+                         href="/projects/{{.Project.Project.ID}}"
+                         aria-label="{{.Project.Project.Name}} station">
+                        <span class="station"></span>
+                        <span class="map-node-label">{{.Project.Project.Name}}</span>
+                      </a>
+                    {{end}}
+                  {{end}}
+                  {{range $system.Items}}
+                    <a class="map-node mission-dot node-{{nodeState .Status 0}}"
+                       href="/projects/{{$system.Project.Project.ID}}"
+                       aria-label="Mission: {{.Title}} ({{.Status}})">
+                      <span class="mission-spark"></span>
+                      <span class="map-node-label">{{.Title}}</span>
+                    </a>
+                  {{end}}
+                </div>
+              </div>
+            {{end}}
+          {{end}}
+        </div>
+      </div>
+      <div class="map-legend">
+        <span><i class="map-node-state node-active"></i>Active</span>
+        <span><i class="map-node-state node-done"></i>Conquered</span>
+        <span><i class="map-node-state node-locked"></i>Unexplored</span>
+        <span><i class="map-node-state node-blocked"></i>Blocked</span>
+      </div>
+    </div>
+
+    <div class="view-panel view-panel-list">
     <div class="roadmap-project-list">
       {{range .Projects}}
         {{$project := .}}
@@ -296,6 +357,7 @@
           {{end}}
         </article>
       {{end}}
+    </div>
     </div>
   {{else}}
     <p class="empty">Import your AI Engineer roadmap Markdown to create projects, milestones, tasks, resources, and privacy settings.</p>

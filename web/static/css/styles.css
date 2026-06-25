@@ -58,7 +58,7 @@ body {
   overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(101, 232, 255, 0.13), transparent 34vw),
-    radial-gradient(circle at 78% 12%, rgba(169, 140, 255, 0.12), transparent 30vw),
+    radial-gradient(circle at 78% 12%, rgba(101, 231, 160, 0.1), transparent 30vw),
     linear-gradient(135deg, var(--bg), var(--bg-2));
   color: var(--text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -148,7 +148,7 @@ button {
 .ambient-two {
   right: -170px;
   bottom: 80px;
-  background: rgba(169, 140, 255, 0.24);
+  background: rgba(101, 231, 160, 0.2);
 }
 
 .app-shell {
@@ -179,7 +179,7 @@ button {
   place-items: center;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(101, 232, 255, 0.18), rgba(169, 140, 255, 0.14));
+  background: linear-gradient(135deg, rgba(101, 232, 255, 0.18), rgba(120, 167, 255, 0.16));
   box-shadow: var(--glow-cyan);
   color: var(--cyan);
   font-size: 13px;
@@ -1736,6 +1736,443 @@ th {
   animation: lifeops-saved-pulse 420ms ease;
 }
 
+/* =====================================================================
+   Starship Mission Control
+   Global starfield, captain deck, medals, and the campaign star map.
+   Animations are intentionally slow and low-contrast: this is a
+   productivity surface, not an arcade. All motion is disabled under
+   prefers-reduced-motion by the block at the end of this file.
+   ===================================================================== */
+
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.starfield-layer {
+  position: absolute;
+  inset: -50% 0;
+  background-repeat: repeat;
+}
+
+.starfield-far {
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(166, 213, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 70% 60%, rgba(166, 213, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(101, 232, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 85% 15%, rgba(166, 213, 255, 0.35), transparent);
+  background-size: 320px 320px;
+  opacity: 0.5;
+  animation: starfield-drift 140s linear infinite;
+}
+
+.starfield-near {
+  background-image:
+    radial-gradient(1.4px 1.4px at 15% 50%, rgba(101, 232, 255, 0.6), transparent),
+    radial-gradient(1.4px 1.4px at 60% 20%, rgba(120, 167, 255, 0.5), transparent),
+    radial-gradient(1.4px 1.4px at 90% 70%, rgba(101, 231, 160, 0.45), transparent);
+  background-size: 480px 480px;
+  opacity: 0.4;
+  animation: starfield-drift 90s linear infinite reverse;
+}
+
+@keyframes starfield-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-160px, -120px, 0); }
+}
+
+:root[data-theme="light"] .starfield { opacity: 0.35; }
+
+/* ---- Captain deck ---- */
+.captain-deck {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.captain-card,
+.destination-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.captain-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.captain-badge {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: radial-gradient(circle at 30% 25%, rgba(101, 232, 255, 0.3), rgba(120, 167, 255, 0.12));
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.captain-head h2 { margin: 2px 0; font-size: 22px; }
+.captain-head small { color: var(--muted); }
+
+.xp-bar {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.xp-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  box-shadow: 0 0 12px rgba(101, 232, 255, 0.4);
+  transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.captain-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.captain-stats div {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-soft);
+  text-align: center;
+}
+
+.captain-stats strong { font-size: 18px; color: var(--cyan); }
+.captain-stats span { font-size: 11px; color: var(--muted); }
+
+.destination-card h2 { margin: 0; font-size: 20px; }
+.destination-card p { color: var(--muted); margin: 0; }
+
+.destination-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.destination-meta strong { color: var(--green); font-size: 18px; }
+
+/* ---- Medals ---- */
+.medal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.medal {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-soft);
+  text-align: center;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.medal:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--glow-cyan);
+}
+
+.medal-disc {
+  justify-self: center;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 999px;
+  color: #06080d;
+  background: conic-gradient(from 210deg, var(--cyan), var(--green), var(--blue), var(--cyan));
+  box-shadow: 0 0 14px rgba(101, 232, 255, 0.4);
+}
+
+.medal strong { font-size: 14px; }
+.medal small { color: var(--muted); font-size: 11px; }
+.medal p { color: var(--quiet); font-size: 12px; margin: 4px 0 0; }
+
+/* ---- Shared node-state pills ---- */
+.map-node-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+i.map-node-state {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.node-active { color: var(--cyan); border-color: rgba(101, 232, 255, 0.4); background: rgba(101, 232, 255, 0.1); }
+.node-done { color: var(--green); border-color: rgba(101, 231, 160, 0.4); background: rgba(101, 231, 160, 0.1); }
+.node-locked { color: var(--muted); border-color: rgba(148, 163, 184, 0.32); background: rgba(148, 163, 184, 0.08); }
+.node-blocked { color: var(--orange); border-color: rgba(255, 174, 100, 0.4); background: rgba(255, 174, 100, 0.1); }
+.node-pending { color: var(--blue); border-color: rgba(120, 167, 255, 0.36); background: rgba(120, 167, 255, 0.08); }
+
+/* ---- Roadmap view toggle ---- */
+.view-toggle {
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-soft);
+  gap: 4px;
+}
+
+.view-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.view-tab {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+#view-map:checked ~ .view-tab[for="view-map"],
+#view-list:checked ~ .view-tab[for="view-list"] {
+  background: rgba(101, 232, 255, 0.16);
+  color: var(--cyan);
+}
+
+.view-panel-list { display: none; }
+.view-panel-map { display: block; }
+.roadmap-views:has(#view-list:checked) .view-panel-list,
+.roadmap-views.show-list .view-panel-list { display: block; }
+.roadmap-views:has(#view-list:checked) .view-panel-map,
+.roadmap-views.show-list .view-panel-map { display: none; }
+
+/* ---- Star map ---- */
+.map-hint { color: var(--quiet); font-size: 12px; margin: 0 0 10px; }
+
+.starmap {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 28px 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 12% 20%, rgba(101, 232, 255, 0.08), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(101, 231, 160, 0.07), transparent 42%),
+    linear-gradient(180deg, rgba(8, 12, 20, 0.6), rgba(6, 8, 13, 0.85));
+  scroll-behavior: smooth;
+  cursor: grab;
+}
+
+.starmap:focus-visible { outline: 2px solid var(--border-strong); outline-offset: 2px; }
+.starmap.is-panning { cursor: grabbing; }
+
+.starmap-track {
+  display: flex;
+  align-items: center;
+  gap: 56px;
+  min-width: min-content;
+  padding: 20px 32px;
+}
+
+.campaign-star {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.campaign-core {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--cyan) 45%, var(--blue) 90%);
+  box-shadow: 0 0 30px rgba(101, 232, 255, 0.55), 0 0 60px rgba(120, 167, 255, 0.3);
+  animation: campaign-pulse 6s ease-in-out infinite;
+}
+
+.campaign-star small { color: var(--cyan); font-weight: 850; font-size: 12px; }
+
+@keyframes campaign-pulse {
+  0%, 100% { box-shadow: 0 0 26px rgba(101, 232, 255, 0.45), 0 0 50px rgba(120, 167, 255, 0.25); }
+  50% { box-shadow: 0 0 38px rgba(101, 232, 255, 0.7), 0 0 80px rgba(120, 167, 255, 0.4); }
+}
+
+.system-cluster {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  flex: 0 0 auto;
+  padding-left: 56px;
+}
+
+.system-cluster::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border-strong));
+  transform: translateY(-50%);
+}
+
+.map-node {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--text);
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.map-node:hover { transform: translateY(-4px); }
+.map-node:focus-visible { outline: 2px solid var(--border-strong); outline-offset: 4px; border-radius: 12px; }
+
+.map-node-label {
+  max-width: 130px;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-node-meta { font-size: 11px; color: var(--muted); }
+
+.planet {
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.5), rgba(120, 167, 255, 0.3) 40%, rgba(20, 30, 48, 0.95) 95%);
+  border: 1px solid var(--border-strong);
+}
+
+.station {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.4), rgba(101, 231, 160, 0.22) 45%, rgba(16, 24, 36, 0.95));
+  border: 1px solid var(--border);
+}
+
+.mission-spark {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--blue);
+}
+
+.orbit {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 18px;
+  max-width: 260px;
+}
+
+.station-node .map-node-label,
+.mission-dot .map-node-label { max-width: 92px; font-weight: 650; color: var(--muted); }
+
+/* node-state visuals on the map */
+.node-active .planet,
+.node-active .station,
+.node-active .mission-spark {
+  box-shadow: 0 0 0 3px rgba(101, 232, 255, 0.18), 0 0 22px rgba(101, 232, 255, 0.55);
+  animation: node-pulse 2.6s ease-in-out infinite;
+}
+
+.node-active .mission-spark { background: var(--cyan); }
+
+@keyframes node-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(101, 232, 255, 0.16), 0 0 14px rgba(101, 232, 255, 0.4); }
+  50% { box-shadow: 0 0 0 5px rgba(101, 232, 255, 0.22), 0 0 28px rgba(101, 232, 255, 0.7); }
+}
+
+.node-done .planet,
+.node-done .station { border-color: rgba(101, 231, 160, 0.6); box-shadow: 0 0 20px rgba(101, 231, 160, 0.4); }
+.node-done .mission-spark { background: var(--green); box-shadow: 0 0 12px rgba(101, 231, 160, 0.6); }
+
+.node-blocked .planet,
+.node-blocked .station { border-color: rgba(255, 174, 100, 0.6); box-shadow: 0 0 18px rgba(255, 174, 100, 0.4); }
+.node-blocked .mission-spark { background: var(--orange); }
+
+.node-locked { opacity: 0.62; }
+.node-locked .planet,
+.node-locked .station {
+  filter: grayscale(0.5);
+  animation: node-shimmer 5s ease-in-out infinite;
+}
+.node-locked .mission-spark { background: var(--quiet); }
+
+@keyframes node-shimmer {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.85; }
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.map-legend span { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ---- Mission completion flourish (click moment before reload) ---- */
+.mission-node.is-completing {
+  animation: mission-pop 420ms ease;
+  border-color: rgba(101, 231, 160, 0.6);
+}
+
+@keyframes mission-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.03); box-shadow: 0 0 26px rgba(101, 231, 160, 0.5); }
+  100% { transform: scale(1); }
+}
+
+@media (max-width: 720px) {
+  .captain-deck { grid-template-columns: 1fr; }
+  .captain-stats { grid-template-columns: repeat(2, 1fr); }
+  .starmap-track { gap: 36px; padding: 12px; }
+  .system-cluster { padding-left: 36px; }
+  .planet { width: 60px; height: 60px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1754,7 +2191,9 @@ th {
   .gym-day:hover,
   .project-quick-card:hover,
   .button:hover,
-  .drawer-grid a:hover {
+  .drawer-grid a:hover,
+  .map-node:hover,
+  .medal:hover {
     transform: none;
   }
 }

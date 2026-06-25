@@ -1,8 +1,8 @@
 {{define "content"}}
 <section class="page-hero compact">
   <div>
-    <p class="eyebrow">Quest Board</p>
-    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>Active Quests</h1>
+    <p class="eyebrow">Command Deck</p>
+    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>Star Systems</h1>
   </div>
   <a class="button" href="/projects/new">New Quest</a>
 </section>
@@ -11,7 +11,7 @@
   <section class="project-grid">
     {{range .Tree.Main}}
       {{$children := index $.Tree.Children .Project.ID}}
-      <article class="project-card">
+      <article class="project-card system-card">
         <a href="/projects/{{.Project.ID}}">
           <div class="project-card-top">
             <span class="card-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
@@ -51,7 +51,7 @@
 
 <details class="glass-panel upcoming-panel" {{if not .Tree.Main}}open{{end}}>
   <summary>
-    <span>Upcoming Locked Quests</span>
+    <span>Unexplored Systems</span>
     <strong>{{len .Tree.Upcoming}}</strong>
   </summary>
   {{if .Tree.Upcoming}}

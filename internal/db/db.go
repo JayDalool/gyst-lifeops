@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -60,9 +61,27 @@ func Migrate(database *sql.DB, migrationsDir string) error {
 	}
 	sort.Strings(files)
 
+	// Run every migration on a single dedicated connection with foreign-key
+	// enforcement disabled. This is the SQLite-recommended procedure for
+	// schema changes that rebuild a table (DROP/recreate): with enforcement on,
+	// dropping a parent table would cascade-delete child rows. The PRAGMA must
+	// be toggled outside a transaction, so it is set on the connection before
+	// each migration's transaction begins and restored when Migrate returns.
+	ctx := context.Background()
+	conn, err := database.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, "PRAGMA foreign_keys = OFF"); err != nil {
+		return err
+	}
+	defer conn.ExecContext(ctx, "PRAGMA foreign_keys = ON")
+
 	for _, file := range files {
 		var applied int
-		if err := database.QueryRow(`SELECT COUNT(1) FROM schema_migrations WHERE filename = ?`, file).Scan(&applied); err != nil {
+		if err := conn.QueryRowContext(ctx, `SELECT COUNT(1) FROM schema_migrations WHERE filename = ?`, file).Scan(&applied); err != nil {
 			return err
 		}
 		if applied > 0 {
@@ -74,7 +93,7 @@ func Migrate(database *sql.DB, migrationsDir string) error {
 			return err
 		}
 
-		tx, err := database.Begin()
+		tx, err := conn.BeginTx(ctx, nil)
 		if err != nil {
 			return err
 		}

@@ -1,33 +1,54 @@
 {{define "content"}}
-<section class="page-hero compact">
+<section class="page-hero compact mission-hero">
   <div>
     <p class="eyebrow">{{niceDate .Today}}</p>
-    <h1>Command Center</h1>
+    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>Mission Control</h1>
     <p class="hero-greeting">{{greeting}}</p>
   </div>
   <a class="button" href="/today">Open Today</a>
 </section>
 
-<section class="summary-strip" aria-label="Player card">
-  <article class="mini-card">
-    <span>Total Stars</span>
-    <strong>{{.Player.TotalStars}}</strong>
-    <small>earned from missions</small>
+<section class="captain-deck" aria-label="Captain card">
+  <article class="glass-panel captain-card">
+    <div class="captain-head">
+      <div class="captain-badge">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
+      </div>
+      <div>
+        <p class="eyebrow">Captain</p>
+        <h2>Level {{.Player.CurrentLevel}}</h2>
+        <small>{{.Player.TotalStars}} energy banked / {{toNextLevel .Player.TotalStars}} to next level</small>
+      </div>
+    </div>
+    <div class="xp-bar" role="progressbar" aria-valuenow="{{levelPct .Player.TotalStars}}" aria-valuemin="0" aria-valuemax="100">
+      <span style="width: {{progressWidth (levelPct .Player.TotalStars)}}"></span>
+    </div>
+    <div class="captain-stats">
+      <div><strong>{{.Player.TotalStars}}</strong><span>Energy / XP</span></div>
+      <div><strong>{{.Player.ActiveStreak}}</strong><span>Day streak</span></div>
+      <div><strong>{{.Player.ProofCount}}</strong><span>Proofs</span></div>
+      <div><strong>{{.Player.TaskDoneCount}}</strong><span>Missions done</span></div>
+    </div>
   </article>
-  <article class="mini-card">
-    <span>Level</span>
-    <strong>{{.Player.CurrentLevel}}</strong>
-    <small>100 stars per level</small>
-  </article>
-  <article class="mini-card">
-    <span>Streak</span>
-    <strong>{{.Player.ActiveStreak}}</strong>
-    <small>complete days</small>
-  </article>
-  <article class="mini-card">
-    <span>Proofs</span>
-    <strong>{{.Player.ProofCount}}</strong>
-    <small>submitted</small>
+
+  <article class="glass-panel destination-card">
+    <p class="eyebrow">Active Destination</p>
+    {{if .ActiveProjects}}
+      {{with index .ActiveProjects 0}}
+      <h2>{{.Project.Name}}</h2>
+      <p>{{if .NextDueItem}}Next mission: {{.NextDueItem}}{{else}}{{.Project.Notes}}{{end}}</p>
+      <div class="destination-meta">
+        <span class="map-node-state node-active">on course</span>
+        <strong>{{.Progress}}%</strong>
+      </div>
+      <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+      <a class="button small secondary" href="/projects/{{.Project.ID}}">Open system</a>
+      {{end}}
+    {{else}}
+      <h2>No destination set</h2>
+      <p>Activate a quest to plot your next course.</p>
+      <a class="button small secondary" href="/projects">Browse systems</a>
+    {{end}}
   </article>
 </section>
 
@@ -42,13 +63,17 @@
   <div class="mission-grid">
     {{range .TodayItems}}
       {{if eq .Status "pending"}}
-        <article class="mission-panel">
+        <article class="mission-panel mission-node">
           <div class="mission-panel-head">
             <span>{{.Task.Title}}</span>
             <strong>+{{.Task.StarsReward}}</strong>
           </div>
-          <small>{{if .Task.ProofRequired}}Proof: {{.Task.ProofType}}{{else}}{{.Task.Priority}}{{end}}</small>
-          <form method="post" action="/tasks/{{.Task.ID}}/complete">
+          <small>
+            {{if .Task.ProofRequired}}
+              <span class="map-node-state node-blocked">Evidence required</span>
+            {{else}}{{.Task.Priority}}{{end}}
+          </small>
+          <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
             <input type="hidden" name="occurrence_date" value="{{.Date}}">
             <button class="button small" type="submit">Complete</button>
           </form>
@@ -71,7 +96,7 @@
   {{if .ActiveProjects}}
     <div class="project-grid">
       {{range .ActiveProjects}}
-        <a class="project-card" href="/projects/{{.Project.ID}}">
+        <a class="project-card system-card" href="/projects/{{.Project.ID}}">
           <div class="project-card-top">
             <span class="badge">{{.Project.ProjectKind}}</span>
             <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
@@ -89,7 +114,7 @@
 
 <details class="glass-panel upcoming-panel">
   <summary>
-    <span>Upcoming Locked Quests</span>
+    <span>Unexplored Systems</span>
     <strong>{{len .UpcomingProjects}}</strong>
   </summary>
   {{if .UpcomingProjects}}
@@ -114,24 +139,25 @@
   <div class="panel-heading">
     <div>
       <p class="eyebrow">Rewards</p>
-      <h2>Recent Achievements</h2>
+      <h2>Recent Medals</h2>
     </div>
     <span class="count">{{len .RecentAchievements}}</span>
   </div>
   {{if .RecentAchievements}}
-    <ul class="stack-list">
+    <div class="medal-grid">
       {{range .RecentAchievements}}
-        <li>
-          <div>
-            <strong>{{.Title}}</strong>
-            <small>+{{.StarsBonus}} stars / {{niceDateTime .UnlockedAt}}</small>
-            {{if .Description}}<p>{{.Description}}</p>{{end}}
+        <article class="medal">
+          <div class="medal-disc">
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg>
           </div>
-        </li>
+          <strong>{{.Title}}</strong>
+          <small>+{{.StarsBonus}} energy / {{niceDateTime .UnlockedAt}}</small>
+          {{if .Description}}<p>{{.Description}}</p>{{end}}
+        </article>
       {{end}}
-    </ul>
+    </div>
   {{else}}
-    <p class="empty">Achievements will appear as quests finish and proof is submitted.</p>
+    <p class="empty">Medals appear as quests finish and proof is submitted.</p>
   {{end}}
 </section>
 {{end}}
