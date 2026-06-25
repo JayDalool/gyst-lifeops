@@ -1,7 +1,7 @@
 {{define "content"}}
 <section class="page-hero compact">
   <div>
-    <p class="eyebrow">AI Engineer Roadmap</p>
+    <p class="eyebrow">Campaign Map</p>
     <h1>{{.GoalTitle}}</h1>
     <p class="hero-greeting">Target: {{niceDate .GoalDeadline}}</p>
   </div>
@@ -37,7 +37,7 @@
 <section class="glass-panel">
   <div class="panel-heading">
     <div>
-      <p class="eyebrow">Daily Tasks</p>
+      <p class="eyebrow">Daily Missions</p>
       <h2>Today’s AI Execution</h2>
     </div>
   </div>
@@ -152,7 +152,7 @@
   <div class="panel-heading">
     <div>
       <p class="eyebrow">Projects</p>
-      <h2>Roadmap Builds</h2>
+      <h2>Campaign -> Quest -> Chapter -> Missions</h2>
     </div>
     <span class="count">{{len .Projects}}</span>
   </div>
@@ -164,9 +164,10 @@
         <article class="roadmap-project">
           <div class="roadmap-project-head">
             <div>
-              <p class="eyebrow">{{.Meta.ProjectTypeLabel}}</p>
+              <p class="eyebrow">{{.Project.Project.ProjectKind}} / {{.Meta.ProjectTypeLabel}}</p>
               <h3>{{.Project.Project.Name}}</h3>
               <small>{{if .Project.Project.TargetDate}}Target {{niceDate .Project.Project.TargetDate}}{{else}}No target date{{end}}</small>
+              {{if .Project.Project.UnlockNotes}}<p>{{.Project.Project.UnlockNotes}}</p>{{end}}
             </div>
             <div class="task-state">
               <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>

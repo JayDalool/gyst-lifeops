@@ -54,6 +54,32 @@
     <span>Reminder Time</span>
     <input type="time" name="reminder_time" value="{{.Task.ReminderTime}}">
   </label>
+  <label class="field">
+    <span>Stars Reward</span>
+    <input type="number" name="stars_reward" min="1" value="{{.Task.StarsReward}}">
+  </label>
+  <label class="field">
+    <span>Proof Type</span>
+    <select name="proof_type">
+      <option value="none" {{if eq .Task.ProofType "none"}}selected{{end}}>None</option>
+      <option value="photo" {{if eq .Task.ProofType "photo"}}selected{{end}}>Photo</option>
+      <option value="file" {{if eq .Task.ProofType "file"}}selected{{end}}>File</option>
+      <option value="link" {{if eq .Task.ProofType "link"}}selected{{end}}>Link</option>
+      <option value="text" {{if eq .Task.ProofType "text"}}selected{{end}}>Text</option>
+    </select>
+  </label>
+  <label class="field checkbox-field">
+    <span>Proof Required</span>
+    <label><input type="checkbox" name="proof_required" {{if .Task.ProofRequired}}checked{{end}}> Require proof for bonus</label>
+  </label>
+  <label class="field">
+    <span>Proof URL</span>
+    <input name="proof_url" value="{{.Task.ProofURL}}">
+  </label>
+  <label class="field span-2">
+    <span>Proof Path / Text</span>
+    <input name="proof_path" value="{{.Task.ProofPath}}">
+  </label>
   <div class="form-actions span-2">
     <button class="button" type="submit">Save Task</button>
   </div>

@@ -1,50 +1,78 @@
 {{define "content"}}
 <section class="page-hero compact">
   <div>
-    <p class="eyebrow">Projects</p>
-    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>Active Builds</h1>
+    <p class="eyebrow">Quest Board</p>
+    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>Active Quests</h1>
   </div>
-  <a class="button" href="/projects/new">New Project</a>
+  <a class="button" href="/projects/new">New Quest</a>
 </section>
 
-{{if .Projects}}
+{{if .Tree.Main}}
   <section class="project-grid">
-    {{range .Projects}}
-      <a class="project-card" href="/projects/{{.Project.ID}}">
-        <div class="project-card-top">
-          <span class="card-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
-          <span class="badge">{{.Project.Category}}</span>
-          <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-        </div>
-        <h2>{{.Project.Name}}</h2>
-        <p>{{if .Project.Description}}{{.Project.Description}}{{else}}{{.Project.Notes}}{{end}}</p>
-        <div class="project-progress">
-          <div>
-            <strong>{{.Progress}}%</strong>
-            <small>{{.CompletedItems}} / {{.TotalItems}} items</small>
+    {{range .Tree.Main}}
+      {{$children := index $.Tree.Children .Project.ID}}
+      <article class="project-card">
+        <a href="/projects/{{.Project.ID}}">
+          <div class="project-card-top">
+            <span class="card-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
+            <span class="badge">{{.Project.ProjectKind}}</span>
+            <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
           </div>
-          <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-          <canvas class="micro-chart" data-chart="line" data-mini="true" data-max="100"
-            data-labels="{{join .Momentum.Labels "|"}}"
-            data-values="{{joinInts .Momentum.Values "|"}}"></canvas>
-        </div>
-        <div class="card-meta">
-          {{if .NextDueItem}}
-            <span>Next: {{.NextDueItem}}</span>
-            <small>{{niceDate .NextDueDate}}</small>
-          {{else}}
-            <span>Target</span>
-            <small>{{niceDate .Project.TargetDate}}</small>
-          {{end}}
-        </div>
-      </a>
+          <h2>{{.Project.Name}}</h2>
+          <p>{{if .Project.Description}}{{.Project.Description}}{{else}}{{.Project.Notes}}{{end}}</p>
+          <div class="project-progress">
+            <div>
+              <strong>{{.Progress}}%</strong>
+              <small>{{.CompletedItems}} / {{.TotalItems}} missions</small>
+            </div>
+            <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+          </div>
+        </a>
+        {{if $children}}
+          <div class="chapter-list">
+            {{range $children}}
+              <a class="chapter-row" href="/projects/{{.Project.ID}}">
+                <span>{{.Project.Name}}</span>
+                <small>{{.Project.ProjectKind}} / {{.Progress}}%</small>
+              </a>
+            {{end}}
+          </div>
+        {{end}}
+      </article>
     {{end}}
   </section>
 {{else}}
   <section class="glass-panel empty-state">
-    <h2>No active projects yet</h2>
-    <p>Create a project, add checklist items, and LifeOps will track the completion signal.</p>
-    <a class="button" href="/projects/new">Create Project</a>
+    <h2>No active quests yet</h2>
+    <p>Create a main quest, add chapters or missions, and keep the board focused.</p>
+    <a class="button" href="/projects/new">Create Quest</a>
   </section>
 {{end}}
+
+<details class="glass-panel upcoming-panel" {{if not .Tree.Main}}open{{end}}>
+  <summary>
+    <span>Upcoming Locked Quests</span>
+    <strong>{{len .Tree.Upcoming}}</strong>
+  </summary>
+  {{if .Tree.Upcoming}}
+    <div class="project-grid">
+      {{range .Tree.Upcoming}}
+        <a class="project-card locked-card" href="/projects/{{.Project.ID}}">
+          <div class="project-card-top">
+            <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
+            <span class="badge">{{.Project.ProjectKind}}</span>
+          </div>
+          <h2>{{.Project.Name}}</h2>
+          <p>{{if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else}}{{.Project.Notes}}{{end}}</p>
+          <div class="card-meta">
+            <span>{{if .Project.DependsOnProjectID}}Depends on quest #{{.Project.DependsOnProjectID}}{{else}}Manual start{{end}}</span>
+            <small>{{if .Project.AutoUnlock}}auto unlock on{{else}}manual unlock{{end}}</small>
+          </div>
+        </a>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No locked or upcoming quests queued.</p>
+  {{end}}
+</details>
 {{end}}

@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"lifeops-tracker/internal/models"
 )
 
 const taskColumns = `id, uuid, title, description, category, priority, status,
 	COALESCE(due_date, ''), repeat_type, COALESCE(reminder_time, ''),
+	stars_reward, proof_required, proof_type, COALESCE(proof_url, ''), COALESCE(proof_path, ''), stars_awarded,
 	created_at, updated_at, COALESCE(completed_at, ''), COALESCE(archived_at, '')`
 
 func (r *Repository) ListTasks(includeArchived bool) ([]models.Task, error) {
@@ -77,10 +79,15 @@ func (r *Repository) CreateTask(task *models.Task) error {
 	task.Priority = clean(task.Priority, "medium")
 	task.Status = clean(task.Status, "pending")
 	task.RepeatType = clean(task.RepeatType, "none")
+	task.ProofType = cleanProofType(task.ProofType)
+	if task.StarsReward <= 0 {
+		task.StarsReward = 1
+	}
 
 	res, err := r.db.Exec(`INSERT INTO tasks
-		(title, description, category, priority, status, due_date, repeat_type, reminder_time)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		(title, description, category, priority, status, due_date, repeat_type, reminder_time,
+		 stars_reward, proof_required, proof_type, proof_url, proof_path)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		task.Title,
 		task.Description,
 		task.Category,
@@ -89,6 +96,11 @@ func (r *Repository) CreateTask(task *models.Task) error {
 		nullString(task.DueDate),
 		task.RepeatType,
 		nullString(task.ReminderTime),
+		task.StarsReward,
+		boolFlag(task.ProofRequired),
+		task.ProofType,
+		nullString(task.ProofURL),
+		nullString(task.ProofPath),
 	)
 	if err != nil {
 		return err
@@ -105,6 +117,10 @@ func (r *Repository) UpdateTask(task *models.Task) error {
 	task.Priority = clean(task.Priority, "medium")
 	task.Status = clean(task.Status, "pending")
 	task.RepeatType = clean(task.RepeatType, "none")
+	task.ProofType = cleanProofType(task.ProofType)
+	if task.StarsReward <= 0 {
+		task.StarsReward = 1
+	}
 
 	_, err := r.db.Exec(`UPDATE tasks SET
 		title = ?,
@@ -115,6 +131,11 @@ func (r *Repository) UpdateTask(task *models.Task) error {
 		due_date = ?,
 		repeat_type = ?,
 		reminder_time = ?,
+		stars_reward = ?,
+		proof_required = ?,
+		proof_type = ?,
+		proof_url = ?,
+		proof_path = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
 		WHERE id = ?`,
@@ -126,6 +147,11 @@ func (r *Repository) UpdateTask(task *models.Task) error {
 		nullString(task.DueDate),
 		task.RepeatType,
 		nullString(task.ReminderTime),
+		task.StarsReward,
+		boolFlag(task.ProofRequired),
+		task.ProofType,
+		nullString(task.ProofURL),
+		nullString(task.ProofPath),
 		task.ID,
 	)
 	if err != nil {
@@ -192,18 +218,104 @@ func (r *Repository) SetTaskOccurrenceStatus(taskID int64, occurrenceDate, statu
 		if status == "skipped" {
 			completedAt = "NULL"
 		}
+		award := 0
+		if status == "completed" && task.StarsAwarded == 0 {
+			award = task.StarsReward
+			if taskHasProof(task) {
+				award += proofBonus(task)
+			}
+		}
 		if _, err := tx.Exec(fmt.Sprintf(`UPDATE tasks SET
 			status = ?,
 			completed_at = %s,
+			stars_awarded = CASE WHEN ? = 'completed' AND stars_awarded = 0 THEN ? ELSE stars_awarded END,
 			updated_at = CURRENT_TIMESTAMP,
 			sync_version = sync_version + 1
-			WHERE id = ?`, completedAt), status, taskID); err != nil {
+			WHERE id = ?`, completedAt), status, status, award, taskID); err != nil {
 			tx.Rollback()
 			return err
+		}
+		if award > 0 && taskHasProof(task) {
+			if _, err := tx.Exec(`INSERT INTO achievements
+				(title, description, stars_bonus, trigger_type)
+				VALUES (?, ?, ?, 'proof_submitted')`,
+				"Proof submitted",
+				task.Title,
+				0,
+			); err != nil {
+				tx.Rollback()
+				return err
+			}
 		}
 	}
 
 	return tx.Commit()
+}
+
+func (r *Repository) PlayerStats() (models.PlayerStats, error) {
+	var stats models.PlayerStats
+	if err := r.db.QueryRow(`SELECT
+		COALESCE((SELECT SUM(stars_awarded) FROM tasks), 0) +
+		COALESCE((SELECT SUM(stars_bonus) FROM achievements), 0),
+		(SELECT COUNT(*) FROM tasks WHERE status = 'completed'),
+		(SELECT COUNT(*) FROM tasks WHERE proof_type != 'none' AND (COALESCE(proof_url, '') != '' OR COALESCE(proof_path, '') != ''))
+	`).Scan(&stats.TotalStars, &stats.TaskDoneCount, &stats.ProofCount); err != nil {
+		return models.PlayerStats{}, err
+	}
+	stats.CurrentLevel = (stats.TotalStars / 100) + 1
+	return stats, nil
+}
+
+func (r *Repository) RecentAchievements(limit int) ([]models.Achievement, error) {
+	if limit <= 0 {
+		limit = 5
+	}
+	rows, err := r.db.Query(`SELECT id, title, description, stars_bonus, unlocked_at, trigger_type, created_at
+		FROM achievements
+		ORDER BY unlocked_at DESC, id DESC
+		LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var achievements []models.Achievement
+	for rows.Next() {
+		var achievement models.Achievement
+		if err := rows.Scan(
+			&achievement.ID,
+			&achievement.Title,
+			&achievement.Description,
+			&achievement.StarsBonus,
+			&achievement.UnlockedAt,
+			&achievement.TriggerType,
+			&achievement.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		achievements = append(achievements, achievement)
+	}
+	return achievements, rows.Err()
+}
+
+func cleanProofType(value string) string {
+	switch strings.TrimSpace(strings.ToLower(value)) {
+	case "photo", "file", "link", "text":
+		return strings.TrimSpace(strings.ToLower(value))
+	default:
+		return "none"
+	}
+}
+
+func taskHasProof(task models.Task) bool {
+	return task.ProofType != "none" && (strings.TrimSpace(task.ProofURL) != "" || strings.TrimSpace(task.ProofPath) != "")
+}
+
+func proofBonus(task models.Task) int {
+	if task.ProofRequired || taskHasProof(task) {
+		return 2
+	}
+	return 0
 }
 
 func (r *Repository) TaskCompletionsBetween(startDate, endDate string) ([]models.TaskCompletion, error) {

@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"lifeops-tracker/internal/models"
 )
 
-const projectColumns = `id, uuid, name, description, category, status,
-	COALESCE(start_date, ''), COALESCE(target_date, ''), notes,
+const projectColumns = `id, uuid, COALESCE(parent_project_id, 0), name, description, category, project_kind, status,
+	COALESCE(start_date, ''), COALESCE(target_date, ''), notes, unlock_notes,
+	COALESCE(depends_on_project_id, 0), auto_unlock,
 	created_at, updated_at, COALESCE(archived_at, '')`
 
 func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithProgress, error) {
@@ -32,7 +34,8 @@ func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithPro
 		FROM projects p
 		%s
 		ORDER BY
-			CASE status WHEN 'active' THEN 0 WHEN 'paused' THEN 1 WHEN 'completed' THEN 2 ELSE 3 END,
+			CASE status WHEN 'active' THEN 0 WHEN 'upcoming' THEN 1 WHEN 'locked' THEN 2 WHEN 'done' THEN 3 ELSE 4 END,
+			CASE project_kind WHEN 'main' THEN 0 WHEN 'subproject' THEN 1 ELSE 2 END,
 			CASE WHEN target_date IS NULL THEN 1 ELSE 0 END,
 			target_date,
 			created_at DESC`, projectColumns, where))
@@ -44,16 +47,22 @@ func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithPro
 	var projects []models.ProjectWithProgress
 	for rows.Next() {
 		var item models.ProjectWithProgress
+		var autoUnlockFlag int
 		if err := rows.Scan(
 			&item.Project.ID,
 			&item.Project.UUID,
+			&item.Project.ParentProjectID,
 			&item.Project.Name,
 			&item.Project.Description,
 			&item.Project.Category,
+			&item.Project.ProjectKind,
 			&item.Project.Status,
 			&item.Project.StartDate,
 			&item.Project.TargetDate,
 			&item.Project.Notes,
+			&item.Project.UnlockNotes,
+			&item.Project.DependsOnProjectID,
+			&autoUnlockFlag,
 			&item.Project.CreatedAt,
 			&item.Project.UpdatedAt,
 			&item.Project.ArchivedAt,
@@ -64,10 +73,32 @@ func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithPro
 		); err != nil {
 			return nil, err
 		}
+		item.Project.AutoUnlock = autoUnlockFlag == 1
 		item.Progress = itemProgress(item.CompletedItems, item.TotalItems)
 		projects = append(projects, item)
 	}
 	return projects, rows.Err()
+}
+
+func (r *Repository) ProjectTree() (models.ProjectTree, error) {
+	projects, err := r.ListProjects(false)
+	if err != nil {
+		return models.ProjectTree{}, err
+	}
+	tree := models.ProjectTree{Children: map[int64][]models.ProjectWithProgress{}}
+	for _, project := range projects {
+		project.Momentum = models.ChartData{}
+		if project.Project.Status == "locked" || project.Project.Status == "upcoming" {
+			tree.Upcoming = append(tree.Upcoming, project)
+			continue
+		}
+		if project.Project.ParentProjectID != 0 {
+			tree.Children[project.Project.ParentProjectID] = append(tree.Children[project.Project.ParentProjectID], project)
+			continue
+		}
+		tree.Main = append(tree.Main, project)
+	}
+	return tree, nil
 }
 
 func (r *Repository) ProjectByID(id int64) (models.Project, error) {
@@ -110,18 +141,25 @@ func (r *Repository) ProjectWithProgress(id int64) (models.ProjectWithProgress, 
 
 func (r *Repository) CreateProject(project *models.Project) error {
 	project.Category = clean(project.Category, "other")
-	project.Status = clean(project.Status, "active")
+	project.Status = cleanProjectStatus(project.Status)
+	project.ProjectKind = cleanProjectKind(project.ProjectKind)
 
 	res, err := r.db.Exec(`INSERT INTO projects
-		(name, description, category, status, start_date, target_date, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		(parent_project_id, name, description, category, project_kind, status, start_date, target_date, notes,
+		 unlock_notes, depends_on_project_id, auto_unlock)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		nullableInt64(project.ParentProjectID),
 		project.Name,
 		project.Description,
 		project.Category,
+		project.ProjectKind,
 		project.Status,
 		nullString(project.StartDate),
 		nullString(project.TargetDate),
 		project.Notes,
+		project.UnlockNotes,
+		nullableInt64(project.DependsOnProjectID),
+		boolFlag(project.AutoUnlock),
 	)
 	if err != nil {
 		return err
@@ -132,26 +170,37 @@ func (r *Repository) CreateProject(project *models.Project) error {
 
 func (r *Repository) UpdateProject(project *models.Project) error {
 	project.Category = clean(project.Category, "other")
-	project.Status = clean(project.Status, "active")
+	project.Status = cleanProjectStatus(project.Status)
+	project.ProjectKind = cleanProjectKind(project.ProjectKind)
 
 	_, err := r.db.Exec(`UPDATE projects SET
+		parent_project_id = ?,
 		name = ?,
 		description = ?,
 		category = ?,
+		project_kind = ?,
 		status = ?,
 		start_date = ?,
 		target_date = ?,
 		notes = ?,
+		unlock_notes = ?,
+		depends_on_project_id = ?,
+		auto_unlock = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
 		WHERE id = ?`,
+		nullableInt64(project.ParentProjectID),
 		project.Name,
 		project.Description,
 		project.Category,
+		project.ProjectKind,
 		project.Status,
 		nullString(project.StartDate),
 		nullString(project.TargetDate),
 		project.Notes,
+		project.UnlockNotes,
+		nullableInt64(project.DependsOnProjectID),
+		boolFlag(project.AutoUnlock),
 		project.ID,
 	)
 	return err
@@ -164,6 +213,63 @@ func (r *Repository) ArchiveProject(id int64) error {
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
 		WHERE id = ?`, id)
+	return err
+}
+
+func (r *Repository) SetProjectStatus(id int64, status string) error {
+	status = cleanProjectStatus(status)
+	if _, err := r.db.Exec(`UPDATE projects SET
+		status = ?,
+		updated_at = CURRENT_TIMESTAMP,
+		sync_version = sync_version + 1
+		WHERE id = ?`, status, id); err != nil {
+		return err
+	}
+	if status == "done" {
+		return r.AutoUnlockDependents(id, "upcoming")
+	}
+	return nil
+}
+
+func (r *Repository) MoveProject(id, parentID int64, kind string) error {
+	_, err := r.db.Exec(`UPDATE projects SET
+		parent_project_id = ?,
+		project_kind = ?,
+		updated_at = CURRENT_TIMESTAMP,
+		sync_version = sync_version + 1
+		WHERE id = ?`,
+		nullableInt64(parentID),
+		cleanProjectKind(kind),
+		id,
+	)
+	return err
+}
+
+func (r *Repository) UpdateProjectNotes(id int64, notes, unlockNotes string) error {
+	_, err := r.db.Exec(`UPDATE projects SET
+		notes = ?,
+		unlock_notes = ?,
+		updated_at = CURRENT_TIMESTAMP,
+		sync_version = sync_version + 1
+		WHERE id = ?`, notes, unlockNotes, id)
+	return err
+}
+
+func (r *Repository) AutoUnlockDependents(doneProjectID int64, targetStatus string) error {
+	targetStatus = cleanProjectStatus(targetStatus)
+	if targetStatus == "done" || targetStatus == "archived" {
+		targetStatus = "upcoming"
+	}
+	_, err := r.db.Exec(`UPDATE projects SET
+		status = ?,
+		updated_at = CURRENT_TIMESTAMP,
+		sync_version = sync_version + 1
+		WHERE depends_on_project_id = ?
+			AND auto_unlock = 1
+			AND status = 'locked'`,
+		targetStatus,
+		doneProjectID,
+	)
 	return err
 }
 
@@ -269,13 +375,13 @@ func (r *Repository) reconcileProjectStatus(projectID int64) error {
 		projectID, projectID, projectID).Scan(&total, &completed, &status); err != nil {
 		return err
 	}
-	if status == "archived" || status == "paused" {
+	if status == "archived" || status == "upcoming" || status == "locked" {
 		return nil
 	}
 
 	nextStatus := "active"
 	if total > 0 && total == completed {
-		nextStatus = "completed"
+		nextStatus = "done"
 	}
 	if status == nextStatus {
 		return nil
@@ -286,5 +392,25 @@ func (r *Repository) reconcileProjectStatus(projectID int64) error {
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
 		WHERE id = ?`, nextStatus, projectID)
-	return err
+	if err != nil {
+		return err
+	}
+	if nextStatus == "done" {
+		if _, err := r.db.Exec(`INSERT INTO achievements
+			(title, description, stars_bonus, trigger_type)
+			VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), 10, 'project_done')`, projectID); err != nil {
+			return err
+		}
+		return r.AutoUnlockDependents(projectID, "upcoming")
+	}
+	return nil
+}
+
+func cleanProjectKind(kind string) string {
+	switch strings.TrimSpace(strings.ToLower(kind)) {
+	case "subproject", "phase":
+		return strings.TrimSpace(strings.ToLower(kind))
+	default:
+		return "main"
+	}
 }

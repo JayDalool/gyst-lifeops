@@ -22,6 +22,9 @@
       <div><dt>Repeat</dt><dd>{{.Task.RepeatType}}</dd></div>
       <div><dt>Priority</dt><dd>{{.Task.Priority}}</dd></div>
       <div><dt>Reminder</dt><dd>{{if .Task.ReminderTime}}{{.Task.ReminderTime}}{{else}}None{{end}}</dd></div>
+      <div><dt>Stars</dt><dd>{{.Task.StarsReward}} reward / {{.Task.StarsAwarded}} awarded</dd></div>
+      <div><dt>Proof</dt><dd>{{.Task.ProofType}}{{if .Task.ProofRequired}} required{{end}}</dd></div>
+      <div><dt>Proof Value</dt><dd>{{if .Task.ProofURL}}{{.Task.ProofURL}}{{else}}{{if .Task.ProofPath}}{{.Task.ProofPath}}{{else}}None{{end}}{{end}}</dd></div>
       <div><dt>Created</dt><dd>{{niceDateTime .Task.CreatedAt}}</dd></div>
     </dl>
   </article>

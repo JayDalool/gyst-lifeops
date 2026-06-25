@@ -29,6 +29,21 @@
       <div><span>Next</span><strong>{{if .Project.NextDueItem}}{{.Project.NextDueItem}}{{else}}No pending item{{end}}</strong></div>
     </div>
     <p class="body-copy">{{if .Project.Project.Notes}}{{.Project.Project.Notes}}{{else}}{{.Project.Project.Description}}{{end}}</p>
+    {{if .Project.Project.UnlockNotes}}<p class="body-copy"><strong>Unlock notes:</strong> {{.Project.Project.UnlockNotes}}</p>{{end}}
+    <div class="button-row">
+      <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+        <input type="hidden" name="status" value="active">
+        <button class="button small secondary" type="submit">Make Active</button>
+      </form>
+      <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+        <input type="hidden" name="status" value="upcoming">
+        <button class="button small secondary" type="submit">Move Upcoming</button>
+      </form>
+      <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+        <input type="hidden" name="status" value="done">
+        <button class="button small" type="submit">Mark Done</button>
+      </form>
+    </div>
   </article>
 
   <article class="glass-panel">

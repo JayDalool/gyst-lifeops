@@ -62,6 +62,7 @@ func itemProgress(completed, total int) int {
 
 func scanTask(s scanner) (models.Task, error) {
 	var task models.Task
+	var proofRequired int
 	err := s.Scan(
 		&task.ID,
 		&task.UUID,
@@ -73,30 +74,44 @@ func scanTask(s scanner) (models.Task, error) {
 		&task.DueDate,
 		&task.RepeatType,
 		&task.ReminderTime,
+		&task.StarsReward,
+		&proofRequired,
+		&task.ProofType,
+		&task.ProofURL,
+		&task.ProofPath,
+		&task.StarsAwarded,
 		&task.CreatedAt,
 		&task.UpdatedAt,
 		&task.CompletedAt,
 		&task.ArchivedAt,
 	)
+	task.ProofRequired = proofRequired == 1
 	return task, err
 }
 
 func scanProject(s scanner) (models.Project, error) {
 	var project models.Project
+	var autoUnlock int
 	err := s.Scan(
 		&project.ID,
 		&project.UUID,
+		&project.ParentProjectID,
 		&project.Name,
 		&project.Description,
 		&project.Category,
+		&project.ProjectKind,
 		&project.Status,
 		&project.StartDate,
 		&project.TargetDate,
 		&project.Notes,
+		&project.UnlockNotes,
+		&project.DependsOnProjectID,
+		&autoUnlock,
 		&project.CreatedAt,
 		&project.UpdatedAt,
 		&project.ArchivedAt,
 	)
+	project.AutoUnlock = autoUnlock == 1
 	return project, err
 }
 

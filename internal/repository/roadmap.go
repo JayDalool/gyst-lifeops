@@ -9,8 +9,9 @@ import (
 	"lifeops-tracker/internal/models"
 )
 
-const roadmapProjectColumns = `p.id, p.uuid, p.name, p.description, p.category, p.status,
-	COALESCE(p.start_date, ''), COALESCE(p.target_date, ''), p.notes,
+const roadmapProjectColumns = `p.id, p.uuid, COALESCE(p.parent_project_id, 0), p.name, p.description, p.category,
+	p.project_kind, p.status, COALESCE(p.start_date, ''), COALESCE(p.target_date, ''), p.notes, p.unlock_notes,
+	COALESCE(p.depends_on_project_id, 0), p.auto_unlock,
 	p.created_at, p.updated_at, COALESCE(p.archived_at, '')`
 
 func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, error) {
@@ -56,14 +57,22 @@ func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, er
 		return 0, err
 	}
 
+	projectIDsByName := map[string]int64{}
 	for _, project := range plan.Projects {
 		if strings.TrimSpace(project.Name) == "" {
 			continue
+		}
+		if project.ParentName != "" {
+			project.ParentProjectID = projectIDsByName[strings.ToLower(project.ParentName)]
+		}
+		if project.DependsOn != "" {
+			project.DependsOnProjectID = projectIDsByName[strings.ToLower(project.DependsOn)]
 		}
 		projectID, err := insertRoadmapProject(tx, importID, plan.ImportedDate, project)
 		if err != nil {
 			return 0, err
 		}
+		projectIDsByName[strings.ToLower(project.Name)] = projectID
 		for _, milestone := range project.Milestones {
 			if err := insertRoadmapMilestone(tx, projectID, milestone); err != nil {
 				return 0, err
@@ -95,14 +104,20 @@ func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, er
 
 func insertRoadmapProject(tx *sql.Tx, importID int64, importedDate string, project models.RoadmapProjectPlan) (int64, error) {
 	res, err := tx.Exec(`INSERT INTO projects
-		(name, description, category, status, start_date, target_date, notes)
-		VALUES (?, ?, 'coding', ?, ?, ?, ?)`,
+		(parent_project_id, name, description, category, project_kind, status, start_date, target_date, notes,
+		 unlock_notes, depends_on_project_id, auto_unlock)
+		VALUES (?, ?, ?, 'coding', ?, ?, ?, ?, ?, ?, ?, ?)`,
+		nullableInt64(project.ParentProjectID),
 		project.Name,
 		project.Description,
+		cleanProjectKind(project.ProjectKind),
 		cleanProjectStatus(project.Status),
 		nullString(importedDate),
 		nullString(project.Deadline),
-		project.Description,
+		firstNonEmpty(project.Notes, project.Description),
+		project.UnlockNotes,
+		nullableInt64(project.DependsOnProjectID),
+		boolFlag(project.AutoUnlock),
 	)
 	if err != nil {
 		return 0, err
@@ -162,7 +177,7 @@ func insertRoadmapTask(tx *sql.Tx, projectID int64, task models.RoadmapTaskPlan)
 		VALUES (?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'completed' THEN CURRENT_TIMESTAMP ELSE NULL END)`,
 		projectID,
 		task.Title,
-		task.Description,
+		taskDescriptionWithRewards(task),
 		status,
 		cleanPriority(task.Priority),
 		nullString(task.DueDate),
@@ -226,7 +241,8 @@ func (r *Repository) ListRoadmapProjects(includeArchived bool) ([]models.Roadmap
 		%s
 		ORDER BY
 			m.current_focus DESC,
-			CASE p.status WHEN 'active' THEN 0 WHEN 'paused' THEN 1 WHEN 'completed' THEN 2 ELSE 3 END,
+			CASE p.status WHEN 'active' THEN 0 WHEN 'upcoming' THEN 1 WHEN 'locked' THEN 2 WHEN 'done' THEN 3 ELSE 4 END,
+			CASE p.project_kind WHEN 'main' THEN 0 WHEN 'subproject' THEN 1 ELSE 2 END,
 			CASE WHEN p.target_date IS NULL THEN 1 ELSE 0 END,
 			p.target_date,
 			p.created_at DESC`, roadmapProjectColumns, where))
@@ -238,17 +254,22 @@ func (r *Repository) ListRoadmapProjects(includeArchived bool) ([]models.Roadmap
 	var projects []models.RoadmapProject
 	for rows.Next() {
 		var item models.RoadmapProject
-		var privateFlag, localOnlyFlag, currentFocusFlag int
+		var privateFlag, localOnlyFlag, currentFocusFlag, autoUnlockFlag int
 		if err := rows.Scan(
 			&item.Project.Project.ID,
 			&item.Project.Project.UUID,
+			&item.Project.Project.ParentProjectID,
 			&item.Project.Project.Name,
 			&item.Project.Project.Description,
 			&item.Project.Project.Category,
+			&item.Project.Project.ProjectKind,
 			&item.Project.Project.Status,
 			&item.Project.Project.StartDate,
 			&item.Project.Project.TargetDate,
 			&item.Project.Project.Notes,
+			&item.Project.Project.UnlockNotes,
+			&item.Project.Project.DependsOnProjectID,
+			&autoUnlockFlag,
 			&item.Project.Project.CreatedAt,
 			&item.Project.Project.UpdatedAt,
 			&item.Project.Project.ArchivedAt,
@@ -276,6 +297,7 @@ func (r *Repository) ListRoadmapProjects(includeArchived bool) ([]models.Roadmap
 		item.Meta.IsPrivate = privateFlag == 1
 		item.Meta.LocalOnly = localOnlyFlag == 1
 		item.Meta.CurrentFocus = currentFocusFlag == 1
+		item.Project.Project.AutoUnlock = autoUnlockFlag == 1
 		item.Project.Progress = itemProgress(item.Project.CompletedItems, item.Project.TotalItems)
 		projects = append(projects, item)
 	}
@@ -503,8 +525,12 @@ func cleanGoalStatus(status string) string {
 
 func cleanProjectStatus(status string) string {
 	switch strings.TrimSpace(strings.ToLower(status)) {
-	case "paused", "completed", "archived":
+	case "upcoming", "locked", "done", "archived":
 		return strings.TrimSpace(strings.ToLower(status))
+	case "paused":
+		return "upcoming"
+	case "completed", "complete":
+		return "done"
 	default:
 		return "active"
 	}
@@ -549,4 +575,28 @@ func uniqueStrings(values []string) []string {
 		cleaned = append(cleaned, value)
 	}
 	return cleaned
+}
+
+func taskDescriptionWithRewards(task models.RoadmapTaskPlan) string {
+	var parts []string
+	if strings.TrimSpace(task.Description) != "" {
+		parts = append(parts, strings.TrimSpace(task.Description))
+	}
+	if task.StarsReward > 0 {
+		parts = append(parts, fmt.Sprintf("Stars: %d", task.StarsReward))
+	}
+	if task.ProofType != "" && task.ProofType != "none" {
+		parts = append(parts, "Proof required: "+task.ProofType)
+	}
+	return strings.Join(parts, "\n")
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }

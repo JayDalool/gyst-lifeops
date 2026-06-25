@@ -221,6 +221,7 @@ func ParseRoadmapMarkdown(source string, today time.Time) models.RoadmapImportPl
 		ImportedDate:   formatDate(today),
 	}
 	currentProject := -1
+	currentMainProject := -1
 	section := ""
 
 	for _, raw := range strings.Split(source, "\n") {
@@ -230,7 +231,7 @@ func ParseRoadmapMarkdown(source string, today time.Time) models.RoadmapImportPl
 		}
 
 		if level, title, ok := markdownHeading(line); ok {
-			section = applyRoadmapHeading(&plan, level, title, today, &currentProject)
+			section = applyRoadmapHeading(&plan, level, title, today, &currentProject, &currentMainProject)
 			continue
 		}
 
@@ -263,8 +264,10 @@ func ParseRoadmapMarkdown(source string, today time.Time) models.RoadmapImportPl
 		plan.Projects = append(plan.Projects, models.RoadmapProjectPlan{
 			Name:        "AI Engineer Roadmap Execution",
 			ProjectType: "learning",
+			ProjectKind: "main",
 			Status:      "active",
 			Deadline:    plan.Goal.Deadline,
+			AutoUnlock:  true,
 		})
 	}
 
@@ -274,6 +277,9 @@ func ParseRoadmapMarkdown(source string, today time.Time) models.RoadmapImportPl
 		}
 		if plan.Projects[index].Status == "" {
 			plan.Projects[index].Status = "active"
+		}
+		if plan.Projects[index].ProjectKind == "" {
+			plan.Projects[index].ProjectKind = "main"
 		}
 		for itemIndex := range plan.Projects[index].Tasks {
 			if plan.Projects[index].Tasks[itemIndex].SortOrder == 0 {
@@ -290,7 +296,7 @@ func ParseRoadmapMarkdown(source string, today time.Time) models.RoadmapImportPl
 	return plan
 }
 
-func applyRoadmapHeading(plan *models.RoadmapImportPlan, level int, title string, today time.Time, currentProject *int) string {
+func applyRoadmapHeading(plan *models.RoadmapImportPlan, level int, title string, today time.Time, currentProject, currentMainProject *int) string {
 	lower := strings.ToLower(title)
 	cleanTitle := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(title, "Project:"), "project:"))
 	switch {
@@ -319,8 +325,19 @@ func applyRoadmapHeading(plan *models.RoadmapImportPlan, level int, title string
 		}
 		*currentProject = -1
 		return "goal"
-	case level <= 2 || strings.Contains(lower, "project"):
+	case level == 2 || strings.Contains(lower, "project"):
 		project := projectPlanFromTitle(cleanTitle, today)
+		project.ProjectKind = "main"
+		plan.Projects = append(plan.Projects, project)
+		*currentProject = len(plan.Projects) - 1
+		*currentMainProject = *currentProject
+		return "project"
+	case level == 3:
+		project := projectPlanFromTitle(cleanTitle, today)
+		project.ProjectKind = "phase"
+		if *currentMainProject >= 0 {
+			project.ParentName = plan.Projects[*currentMainProject].Name
+		}
 		plan.Projects = append(plan.Projects, project)
 		*currentProject = len(plan.Projects) - 1
 		return "project"
@@ -353,13 +370,24 @@ func applyRoadmapMetadata(plan *models.RoadmapImportPlan, currentProject int, ke
 	case "project", "name", "title":
 		project.Name = value
 	case "description", "notes":
-		project.Description = value
+		project.Notes = value
+		if project.Description == "" {
+			project.Description = value
+		}
 	case "type", "project type":
 		project.ProjectType = models.NormalizeRoadmapProjectType(value)
+	case "kind", "project kind":
+		project.ProjectKind = value
 	case "deadline", "due", "target", "target date":
 		project.Deadline = firstNonEmpty(parseFlexibleDate(value, today), inferDateFromText(value, today))
 	case "status":
 		project.Status = value
+	case "depends on", "depends-on", "dependency":
+		project.DependsOn = value
+	case "auto unlock", "auto-unlock":
+		project.AutoUnlock = truthy(value)
+	case "unlock notes", "unlock-notes":
+		project.UnlockNotes = value
 	case "tags":
 		project.Tags = append(project.Tags, parseTagList(value)...)
 	case "private":
@@ -389,6 +417,7 @@ func handleRoadmapBullet(plan *models.RoadmapImportPlan, currentProject *int, se
 		project.LocalOnly = entry.LocalOnly
 		project.CurrentFocus = entry.CurrentFocus
 		project.Resources = entry.Resources
+		project.AutoUnlock = true
 		plan.Projects = append(plan.Projects, project)
 		*currentProject = len(plan.Projects) - 1
 		return
@@ -430,11 +459,14 @@ func handleRoadmapBullet(plan *models.RoadmapImportPlan, currentProject *int, se
 			return
 		}
 		project.Tasks = append(project.Tasks, models.RoadmapTaskPlan{
-			Title:       entry.Title,
-			Description: entry.Description,
-			Status:      entry.Status,
-			Priority:    entry.Priority,
-			DueDate:     entry.DueDate,
+			Title:         entry.Title,
+			Description:   entry.Description,
+			Status:        entry.Status,
+			Priority:      entry.Priority,
+			DueDate:       entry.DueDate,
+			StarsReward:   entry.StarsReward,
+			ProofRequired: entry.ProofRequired,
+			ProofType:     entry.ProofType,
 		})
 		project.Resources = append(project.Resources, entry.Resources...)
 		project.Tags = append(project.Tags, entry.Tags...)
@@ -452,23 +484,28 @@ func handleRoadmapBullet(plan *models.RoadmapImportPlan, currentProject *int, se
 }
 
 type roadmapEntry struct {
-	Title        string
-	Description  string
-	Status       string
-	Priority     string
-	DueDate      string
-	Tags         []string
-	Resources    []models.RoadmapResourcePlan
-	IsPrivate    bool
-	LocalOnly    bool
-	CurrentFocus bool
-	ProjectType  string
+	Title         string
+	Description   string
+	Status        string
+	Priority      string
+	DueDate       string
+	Tags          []string
+	Resources     []models.RoadmapResourcePlan
+	IsPrivate     bool
+	LocalOnly     bool
+	CurrentFocus  bool
+	ProjectType   string
+	StarsReward   int
+	ProofRequired bool
+	ProofType     string
 }
 
 func parseRoadmapEntry(value string, today time.Time) roadmapEntry {
 	entry := roadmapEntry{
-		Status:   "pending",
-		Priority: "medium",
+		Status:      "pending",
+		Priority:    "medium",
+		StarsReward: 1,
+		ProofType:   "none",
 	}
 	value = strings.TrimSpace(value)
 	lower := strings.ToLower(value)
@@ -488,6 +525,9 @@ func parseRoadmapEntry(value string, today time.Time) roadmapEntry {
 	entry.CurrentFocus = strings.Contains(lower, "current focus") || strings.Contains(lower, "focus: true")
 	entry.Status = statusFromText(value, entry.Status)
 	entry.Priority = priorityFromText(value)
+	entry.StarsReward = starsFromText(value)
+	entry.ProofType = proofTypeFromText(value)
+	entry.ProofRequired = entry.ProofType != "none" || strings.Contains(lower, "proof required")
 
 	title := cleanRoadmapTitle(value)
 	if strings.Contains(title, " - ") {
@@ -543,6 +583,7 @@ func projectPlanFromTitle(title string, today time.Time) models.RoadmapProjectPl
 		Name:          name,
 		Description:   entry.Description,
 		ProjectType:   firstNonEmpty(entry.ProjectType, inferProjectType(name)),
+		ProjectKind:   "main",
 		Status:        entry.Status,
 		Deadline:      entry.DueDate,
 		Tags:          entry.Tags,
@@ -551,6 +592,7 @@ func projectPlanFromTitle(title string, today time.Time) models.RoadmapProjectPl
 		CurrentFocus:  entry.CurrentFocus,
 		PublicSummary: entry.Description,
 		Resources:     entry.Resources,
+		AutoUnlock:    true,
 	}
 }
 
@@ -688,11 +730,60 @@ func inferProjectType(value string) string {
 func statusFromText(value, fallback string) string {
 	lower := strings.ToLower(value)
 	switch {
+	case strings.Contains(lower, "status: locked"):
+		return "locked"
+	case strings.Contains(lower, "status: upcoming"):
+		return "upcoming"
+	case strings.Contains(lower, "status: active"):
+		return "active"
 	case strings.Contains(lower, "status: completed"), strings.Contains(lower, "status: done"), strings.Contains(lower, "done: true"):
-		return "completed"
+		if fallback == "pending" {
+			return "completed"
+		}
+		return "done"
 	default:
 		return fallback
 	}
+}
+
+func starsFromText(value string) int {
+	lower := strings.ToLower(value)
+	for _, key := range []string{"stars reward:", "stars:"} {
+		index := strings.Index(lower, key)
+		if index < 0 {
+			continue
+		}
+		raw := strings.TrimSpace(value[index+len(key):])
+		parts := strings.FieldsFunc(raw, func(r rune) bool { return r == '|' || r == ';' || r == ',' })
+		if len(parts) == 0 {
+			continue
+		}
+		var stars int
+		if _, err := fmt.Sscanf(strings.TrimSpace(parts[0]), "%d", &stars); err == nil && stars > 0 {
+			return stars
+		}
+	}
+	return 1
+}
+
+func proofTypeFromText(value string) string {
+	lower := strings.ToLower(value)
+	for _, key := range []string{"proof required:", "proof:"} {
+		index := strings.Index(lower, key)
+		if index < 0 {
+			continue
+		}
+		raw := strings.TrimSpace(value[index+len(key):])
+		parts := strings.FieldsFunc(raw, func(r rune) bool { return r == '|' || r == ';' || r == ',' })
+		if len(parts) == 0 {
+			continue
+		}
+		switch strings.TrimSpace(strings.ToLower(parts[0])) {
+		case "photo", "file", "link", "text":
+			return strings.TrimSpace(strings.ToLower(parts[0]))
+		}
+	}
+	return "none"
 }
 
 func priorityFromText(value string) string {
@@ -711,7 +802,7 @@ func cleanRoadmapTitle(value string) string {
 	title := markdownLinkRE.ReplaceAllString(value, "$1")
 	title = bareURLRE.ReplaceAllString(title, "")
 	title = hashTagRE.ReplaceAllString(title, "")
-	for _, marker := range []string{"Deadline:", "Due:", "Target:", "By:", "Status:", "Priority:", "Type:", "Tags:", "Private:", "Local-only:", "Local only:", "Focus:", "Current focus:"} {
+	for _, marker := range []string{"Deadline:", "Due:", "Target:", "By:", "Status:", "Priority:", "Type:", "Tags:", "Private:", "Local-only:", "Local only:", "Focus:", "Current focus:", "Stars:", "Stars Reward:", "Proof:", "Proof Required:", "Privacy:", "Depends On:", "Auto Unlock:", "Unlock Notes:", "Notes:"} {
 		title = stripMarkerValue(title, marker)
 		title = stripMarkerValue(title, strings.ToLower(marker))
 	}

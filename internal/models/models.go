@@ -1,20 +1,26 @@
 package models
 
 type Task struct {
-	ID           int64
-	UUID         string
-	Title        string
-	Description  string
-	Category     string
-	Priority     string
-	Status       string
-	DueDate      string
-	RepeatType   string
-	ReminderTime string
-	CreatedAt    string
-	UpdatedAt    string
-	CompletedAt  string
-	ArchivedAt   string
+	ID            int64
+	UUID          string
+	Title         string
+	Description   string
+	Category      string
+	Priority      string
+	Status        string
+	DueDate       string
+	RepeatType    string
+	ReminderTime  string
+	StarsReward   int
+	ProofRequired bool
+	ProofType     string
+	ProofURL      string
+	ProofPath     string
+	StarsAwarded  int
+	CreatedAt     string
+	UpdatedAt     string
+	CompletedAt   string
+	ArchivedAt    string
 }
 
 type TaskCompletion struct {
@@ -35,18 +41,23 @@ type TaskOccurrence struct {
 }
 
 type Project struct {
-	ID          int64
-	UUID        string
-	Name        string
-	Description string
-	Category    string
-	Status      string
-	StartDate   string
-	TargetDate  string
-	Notes       string
-	CreatedAt   string
-	UpdatedAt   string
-	ArchivedAt  string
+	ID                 int64
+	UUID               string
+	ParentProjectID    int64
+	Name               string
+	Description        string
+	Category           string
+	ProjectKind        string
+	Status             string
+	StartDate          string
+	TargetDate         string
+	Notes              string
+	UnlockNotes        string
+	DependsOnProjectID int64
+	AutoUnlock         bool
+	CreatedAt          string
+	UpdatedAt          string
+	ArchivedAt         string
 }
 
 type ProjectItem struct {
@@ -71,6 +82,30 @@ type ProjectWithProgress struct {
 	NextDueItem    string
 	NextDueDate    string
 	Momentum       ChartData
+}
+
+type ProjectTree struct {
+	Main     []ProjectWithProgress
+	Children map[int64][]ProjectWithProgress
+	Upcoming []ProjectWithProgress
+}
+
+type Achievement struct {
+	ID          int64
+	Title       string
+	Description string
+	StarsBonus  int
+	UnlockedAt  string
+	TriggerType string
+	CreatedAt   string
+}
+
+type PlayerStats struct {
+	TotalStars    int
+	CurrentLevel  int
+	ActiveStreak  int
+	ProofCount    int
+	TaskDoneCount int
 }
 
 type RoadmapProjectMeta struct {
@@ -217,19 +252,27 @@ type RoadmapGoalPlan struct {
 }
 
 type RoadmapProjectPlan struct {
-	Name          string
-	Description   string
-	ProjectType   string
-	Status        string
-	Deadline      string
-	Tags          []string
-	IsPrivate     bool
-	LocalOnly     bool
-	CurrentFocus  bool
-	PublicSummary string
-	Milestones    []RoadmapMilestonePlan
-	Tasks         []RoadmapTaskPlan
-	Resources     []RoadmapResourcePlan
+	Name               string
+	Description        string
+	ProjectType        string
+	ProjectKind        string
+	ParentProjectID    int64
+	ParentName         string
+	Status             string
+	Deadline           string
+	Notes              string
+	UnlockNotes        string
+	DependsOn          string
+	DependsOnProjectID int64
+	AutoUnlock         bool
+	Tags               []string
+	IsPrivate          bool
+	LocalOnly          bool
+	CurrentFocus       bool
+	PublicSummary      string
+	Milestones         []RoadmapMilestonePlan
+	Tasks              []RoadmapTaskPlan
+	Resources          []RoadmapResourcePlan
 }
 
 type RoadmapMilestonePlan struct {
@@ -241,12 +284,15 @@ type RoadmapMilestonePlan struct {
 }
 
 type RoadmapTaskPlan struct {
-	Title       string
-	Description string
-	Status      string
-	Priority    string
-	DueDate     string
-	SortOrder   int
+	Title         string
+	Description   string
+	Status        string
+	Priority      string
+	DueDate       string
+	SortOrder     int
+	StarsReward   int
+	ProofRequired bool
+	ProofType     string
 }
 
 type RoadmapResourcePlan struct {
@@ -369,7 +415,10 @@ type DashboardData struct {
 	TodayCompletion          int
 	MonthlyCompletionPercent int
 	CurrentStreak            int
+	Player                   PlayerStats
 	ActiveProjects           []ProjectWithProgress
+	UpcomingProjects         []ProjectWithProgress
+	RecentAchievements       []Achievement
 	YearlyGoals              []GoalWithProgress
 	RemindersToday           []ReminderView
 	OverdueReminders         []ReminderView

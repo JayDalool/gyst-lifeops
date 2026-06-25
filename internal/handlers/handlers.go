@@ -62,16 +62,17 @@ type MonthlyData struct {
 }
 
 type ProjectListData struct {
-	Page     string
-	Projects []models.ProjectWithProgress
+	Page string
+	Tree models.ProjectTree
 }
 
 type ProjectFormData struct {
-	Page    string
-	Today   string
-	Title   string
-	Action  string
-	Project models.Project
+	Page     string
+	Today    string
+	Title    string
+	Action   string
+	Project  models.Project
+	Projects []models.ProjectWithProgress
 }
 
 type ProjectDetailData struct {
@@ -318,11 +319,13 @@ func (h *Handler) newTask(w http.ResponseWriter, r *http.Request) {
 			Title:  "New Task",
 			Action: "/tasks/new",
 			Task: models.Task{
-				Category:   "personal",
-				Priority:   "medium",
-				Status:     "pending",
-				DueDate:    h.Service.TodayString(),
-				RepeatType: "none",
+				Category:    "personal",
+				Priority:    "medium",
+				Status:      "pending",
+				DueDate:     h.Service.TodayString(),
+				RepeatType:  "none",
+				StarsReward: 1,
+				ProofType:   "none",
 			},
 		})
 	case http.MethodPost:
@@ -411,15 +414,23 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 			methodNotAllowed(w)
 			return
 		}
-		projects, err := h.Service.Repo.ListProjects(false)
+		tree, err := h.Service.Repo.ProjectTree()
 		if err != nil {
 			serverError(w, err)
 			return
 		}
-		for index := range projects {
-			projects[index].Momentum = services.TrendChart(projects[index].Progress)
+		for index := range tree.Main {
+			tree.Main[index].Momentum = services.TrendChart(tree.Main[index].Progress)
 		}
-		h.render(w, "projects_list.html", ProjectListData{Page: "projects", Projects: projects})
+		for parentID := range tree.Children {
+			for index := range tree.Children[parentID] {
+				tree.Children[parentID][index].Momentum = services.TrendChart(tree.Children[parentID][index].Progress)
+			}
+		}
+		for index := range tree.Upcoming {
+			tree.Upcoming[index].Momentum = services.TrendChart(tree.Upcoming[index].Progress)
+		}
+		h.render(w, "projects_list.html", ProjectListData{Page: "projects", Tree: tree})
 		return
 	}
 
@@ -444,6 +455,8 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 		h.editProject(w, r, id)
 	case "archive":
 		h.archiveProject(w, r, id)
+	case "status":
+		h.projectStatus(w, r, id)
 	case "items":
 		h.projectItems(w, r, id, segments)
 	default:
@@ -454,16 +467,24 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 func (h *Handler) newProject(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		projects, err := h.Service.Repo.ListProjects(false)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
 		h.render(w, "project_form.html", ProjectFormData{
 			Page:   "projects",
 			Today:  h.Service.TodayString(),
 			Title:  "New Project",
 			Action: "/projects/new",
 			Project: models.Project{
-				Category:  "other",
-				Status:    "active",
-				StartDate: h.Service.TodayString(),
+				Category:    "other",
+				ProjectKind: "main",
+				Status:      "active",
+				StartDate:   h.Service.TodayString(),
+				AutoUnlock:  true,
 			},
+			Projects: projects,
 		})
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
@@ -512,12 +533,18 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 			notFoundOrError(w, err)
 			return
 		}
+		projects, err := h.Service.Repo.ListProjects(false)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
 		h.render(w, "project_form.html", ProjectFormData{
-			Page:    "projects",
-			Today:   h.Service.TodayString(),
-			Title:   "Edit Project",
-			Action:  fmt.Sprintf("/projects/%d/edit", id),
-			Project: project,
+			Page:     "projects",
+			Today:    h.Service.TodayString(),
+			Title:    "Edit Project",
+			Action:   fmt.Sprintf("/projects/%d/edit", id),
+			Project:  project,
+			Projects: projects,
 		})
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
@@ -546,6 +573,22 @@ func (h *Handler) archiveProject(w http.ResponseWriter, r *http.Request, id int6
 		return
 	}
 	http.Redirect(w, r, "/projects", http.StatusSeeOther)
+}
+
+func (h *Handler) projectStatus(w http.ResponseWriter, r *http.Request, id int64) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		serverError(w, err)
+		return
+	}
+	if err := h.Service.Repo.SetProjectStatus(id, r.FormValue("status")); err != nil {
+		serverError(w, err)
+		return
+	}
+	redirectBack(w, r, "/projects")
 }
 
 func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID int64, segments []string) {
@@ -1149,14 +1192,19 @@ func taskFromRequest(r *http.Request) (models.Task, error) {
 		return models.Task{}, err
 	}
 	return models.Task{
-		Title:        strings.TrimSpace(r.FormValue("title")),
-		Description:  strings.TrimSpace(r.FormValue("description")),
-		Category:     cleanForm(r.FormValue("category"), "personal"),
-		Priority:     cleanForm(r.FormValue("priority"), "medium"),
-		Status:       cleanForm(r.FormValue("status"), "pending"),
-		DueDate:      strings.TrimSpace(r.FormValue("due_date")),
-		RepeatType:   cleanForm(r.FormValue("repeat_type"), "none"),
-		ReminderTime: strings.TrimSpace(r.FormValue("reminder_time")),
+		Title:         strings.TrimSpace(r.FormValue("title")),
+		Description:   strings.TrimSpace(r.FormValue("description")),
+		Category:      cleanForm(r.FormValue("category"), "personal"),
+		Priority:      cleanForm(r.FormValue("priority"), "medium"),
+		Status:        cleanForm(r.FormValue("status"), "pending"),
+		DueDate:       strings.TrimSpace(r.FormValue("due_date")),
+		RepeatType:    cleanForm(r.FormValue("repeat_type"), "none"),
+		ReminderTime:  strings.TrimSpace(r.FormValue("reminder_time")),
+		StarsReward:   parseIntForm(r.FormValue("stars_reward"), 1),
+		ProofRequired: r.FormValue("proof_required") == "on",
+		ProofType:     cleanForm(r.FormValue("proof_type"), "none"),
+		ProofURL:      strings.TrimSpace(r.FormValue("proof_url")),
+		ProofPath:     strings.TrimSpace(r.FormValue("proof_path")),
 	}, nil
 }
 
@@ -1165,13 +1213,18 @@ func projectFromRequest(r *http.Request) (models.Project, error) {
 		return models.Project{}, err
 	}
 	return models.Project{
-		Name:        strings.TrimSpace(r.FormValue("name")),
-		Description: strings.TrimSpace(r.FormValue("description")),
-		Category:    cleanForm(r.FormValue("category"), "other"),
-		Status:      cleanForm(r.FormValue("status"), "active"),
-		StartDate:   strings.TrimSpace(r.FormValue("start_date")),
-		TargetDate:  strings.TrimSpace(r.FormValue("target_date")),
-		Notes:       strings.TrimSpace(r.FormValue("notes")),
+		ParentProjectID:    parseInt64Form(r.FormValue("parent_project_id")),
+		Name:               strings.TrimSpace(r.FormValue("name")),
+		Description:        strings.TrimSpace(r.FormValue("description")),
+		Category:           cleanForm(r.FormValue("category"), "other"),
+		ProjectKind:        cleanForm(r.FormValue("project_kind"), "main"),
+		Status:             cleanForm(r.FormValue("status"), "active"),
+		StartDate:          strings.TrimSpace(r.FormValue("start_date")),
+		TargetDate:         strings.TrimSpace(r.FormValue("target_date")),
+		Notes:              strings.TrimSpace(r.FormValue("notes")),
+		UnlockNotes:        strings.TrimSpace(r.FormValue("unlock_notes")),
+		DependsOnProjectID: parseInt64Form(r.FormValue("depends_on_project_id")),
+		AutoUnlock:         r.FormValue("auto_unlock") == "on",
 	}, nil
 }
 
@@ -1243,6 +1296,22 @@ func cleanForm(value, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func parseIntForm(value string, fallback int) int {
+	parsed, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func parseInt64Form(value string) int64 {
+	parsed, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+	if err != nil || parsed < 0 {
+		return 0
+	}
+	return parsed
 }
 
 func joinInts(values []int, sep string) string {

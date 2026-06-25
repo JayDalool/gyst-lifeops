@@ -29,11 +29,31 @@
     </select>
   </label>
   <label class="field">
+    <span>Kind</span>
+    <select name="project_kind">
+      <option value="main" {{if eq .Project.ProjectKind "main"}}selected{{end}}>Main Quest</option>
+      <option value="subproject" {{if eq .Project.ProjectKind "subproject"}}selected{{end}}>Subproject</option>
+      <option value="phase" {{if eq .Project.ProjectKind "phase"}}selected{{end}}>Phase / Chapter</option>
+    </select>
+  </label>
+  <label class="field">
+    <span>Parent Quest</span>
+    <select name="parent_project_id">
+      <option value="">None</option>
+      {{range .Projects}}
+        {{if ne .Project.ID $.Project.ID}}
+          <option value="{{.Project.ID}}" {{if eq .Project.ID $.Project.ParentProjectID}}selected{{end}}>{{.Project.Name}}</option>
+        {{end}}
+      {{end}}
+    </select>
+  </label>
+  <label class="field">
     <span>Status</span>
     <select name="status">
       <option value="active" {{if eq .Project.Status "active"}}selected{{end}}>Active</option>
-      <option value="paused" {{if eq .Project.Status "paused"}}selected{{end}}>Paused</option>
-      <option value="completed" {{if eq .Project.Status "completed"}}selected{{end}}>Completed</option>
+      <option value="upcoming" {{if eq .Project.Status "upcoming"}}selected{{end}}>Upcoming</option>
+      <option value="locked" {{if eq .Project.Status "locked"}}selected{{end}}>Locked</option>
+      <option value="done" {{if eq .Project.Status "done"}}selected{{end}}>Done</option>
       <option value="archived" {{if eq .Project.Status "archived"}}selected{{end}}>Archived</option>
     </select>
   </label>
@@ -48,6 +68,25 @@
   <label class="field span-2">
     <span>Notes</span>
     <textarea name="notes" rows="5">{{.Project.Notes}}</textarea>
+  </label>
+  <label class="field span-2">
+    <span>Unlock Notes / Reminder</span>
+    <textarea name="unlock_notes" rows="3">{{.Project.UnlockNotes}}</textarea>
+  </label>
+  <label class="field">
+    <span>Depends On</span>
+    <select name="depends_on_project_id">
+      <option value="">None</option>
+      {{range .Projects}}
+        {{if ne .Project.ID $.Project.ID}}
+          <option value="{{.Project.ID}}" {{if eq .Project.ID $.Project.DependsOnProjectID}}selected{{end}}>{{.Project.Name}}</option>
+        {{end}}
+      {{end}}
+    </select>
+  </label>
+  <label class="field checkbox-field">
+    <span>Auto Unlock</span>
+    <label><input type="checkbox" name="auto_unlock" {{if .Project.AutoUnlock}}checked{{end}}> Unlock when dependency is done</label>
   </label>
   <div class="form-actions span-2">
     <button class="button" type="submit">Save Project</button>

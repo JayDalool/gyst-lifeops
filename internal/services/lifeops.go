@@ -68,11 +68,15 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 		return models.DashboardData{}, err
 	}
 	activeProjects := make([]models.ProjectWithProgress, 0, len(projects))
+	upcomingProjects := make([]models.ProjectWithProgress, 0)
 	projectChart := models.ChartData{}
 	for _, project := range projects {
 		project.Momentum = trendChart(project.Progress)
 		if project.Project.Status == "active" {
 			activeProjects = append(activeProjects, project)
+		}
+		if project.Project.Status == "upcoming" || project.Project.Status == "locked" {
+			upcomingProjects = append(upcomingProjects, project)
 		}
 		if project.TotalItems > 0 {
 			projectChart.Labels = append(projectChart.Labels, project.Project.Name)
@@ -147,6 +151,15 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 		Labels: []string{"Today", "Overdue"},
 		Values: []int{len(remindersToday), len(overdueReminders)},
 	}
+	player, err := s.Repo.PlayerStats()
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+	player.ActiveStreak = streakFromStats(dailyStats)
+	achievements, err := s.Repo.RecentAchievements(5)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
 
 	return models.DashboardData{
 		Page:                     "dashboard",
@@ -155,8 +168,11 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 		OverdueTasks:             overdueTasks,
 		TodayCompletion:          CompletionPercentage(todayItems),
 		MonthlyCompletionPercent: CompletionPercentage(monthItems),
-		CurrentStreak:            streakFromStats(dailyStats),
+		CurrentStreak:            player.ActiveStreak,
+		Player:                   player,
 		ActiveProjects:           activeProjects,
+		UpcomingProjects:         upcomingProjects,
+		RecentAchievements:       achievements,
 		YearlyGoals:              yearlyGoals,
 		RemindersToday:           remindersToday,
 		OverdueReminders:         overdueReminders,
