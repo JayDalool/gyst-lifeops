@@ -108,6 +108,20 @@ func (r *Repository) SetTrackerLogByKey(key, logDate, status, note string, value
 	return err
 }
 
+// ToggleTrackerLogByKey advances a tracker to its next status for the given
+// date and upserts the log row. Duplicate logs are impossible because
+// tracker_logs has UNIQUE(tracker_item_id, log_date) (migrations/002) and
+// SetTrackerLogByKey writes with ON CONFLICT ... DO UPDATE.
+//
+// Status cycles (and the CSS class / colour each maps to):
+//
+//	Prayer / Athkar: not_done (red) <-> done (green)
+//	Gym:             rest (gray) -> done (green) -> not_done (red, shown as
+//	                 "missed") -> rest ...
+//
+// Note: there is no "missed" status in the schema; for gym, not_done IS the
+// "missed" day and renders red. "skipped" (orange) exists in the schema but is
+// not produced by this toggle.
 func (r *Repository) ToggleTrackerLogByKey(key, logDate string) (string, error) {
 	items, err := r.ListTrackerItems()
 	if err != nil {

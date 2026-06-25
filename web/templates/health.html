@@ -20,7 +20,7 @@
     <article class="mission-panel mission-panel-wide">
       <div class="mission-panel-head">
         <span>This Week</span>
-        <strong>{{.Mission.GymWeekCompletion}}%</strong>
+        <strong data-mission="gym">{{.Mission.GymWeekCompletion}}%</strong>
       </div>
       <div class="gym-strip">
         {{range .Mission.GymWeek}}
@@ -37,7 +37,7 @@
     <article class="mission-panel">
       <div class="mission-panel-head">
         <span>Movement Signal</span>
-        <strong>{{.Mission.GymWeekCompletion}}%</strong>
+        <strong data-mission="gym">{{.Mission.GymWeekCompletion}}%</strong>
       </div>
       <canvas class="mini-chart" data-chart="line" data-mini="true" data-max="100"
         data-labels="{{join .BodyRhythm.Labels "|"}}"

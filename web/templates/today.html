@@ -23,7 +23,7 @@
     <article class="mission-panel">
       <div class="mission-panel-head">
         <span>Prayer</span>
-        <strong>{{.Mission.PrayerCompletion}}%</strong>
+        <strong data-mission="prayer">{{.Mission.PrayerCompletion}}%</strong>
       </div>
       <div class="tracker-row prayer-row">
         {{range .Mission.PrayerItems}}
@@ -41,7 +41,7 @@
     <article class="mission-panel">
       <div class="mission-panel-head">
         <span>Athkar</span>
-        <strong>{{.Mission.AthkarCompletion}}%</strong>
+        <strong data-mission="athkar">{{.Mission.AthkarCompletion}}%</strong>
       </div>
       <div class="tracker-row athkar-row">
         {{range .Mission.AthkarItems}}

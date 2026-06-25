@@ -44,10 +44,24 @@
 
   function drawEmpty(ctx, width, height, colors, mini) {
     ctx.clearRect(0, 0, width, height);
+    // Soft dashed baseline so an empty card reads as "no data yet" rather than
+    // looking broken. Honest placeholder, no fabricated values.
+    var pad = mini ? 4 : 44;
+    var baseline = height - (mini ? 14 : 42);
+    ctx.save();
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 1;
+    if (ctx.setLineDash) ctx.setLineDash([4, 5]);
+    ctx.beginPath();
+    ctx.moveTo(pad, baseline);
+    ctx.lineTo(width - pad, baseline);
+    ctx.stroke();
+    ctx.restore();
+
     ctx.fillStyle = colors.muted;
     ctx.font = (mini ? "11px" : "14px") + " system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(mini ? "No data" : "No chart data yet", width / 2, height / 2);
+    ctx.fillText(mini ? "No data yet" : "No chart data yet", width / 2, (mini ? baseline - 16 : height / 2));
   }
 
   function drawAxes(ctx, left, top, right, bottom, colors) {
@@ -292,18 +306,53 @@
     }
   }
 
-  function updatePanelPercent(button) {
-    var panel = button.closest(".mission-panel");
-    if (!panel) return;
-    var head = panel.querySelector(".mission-panel-head strong");
-    if (!head) return;
-    var buttons = panel.querySelectorAll(".tracker-dot, .gym-day");
-    if (!buttons.length) return;
-    var done = panel.querySelectorAll(".tracker-dot.status-done, .gym-day.status-done").length;
-    var total = button.classList.contains("gym-day") ? 7 : buttons.length;
-    head.textContent = Math.floor((done * 100) / total) + "%";
+  function percent(done, total) {
+    if (!total) return null;
+    return Math.floor((done * 100) / total);
   }
 
+  // Recompute the mission scores straight from the current DOM. Used for the
+  // optimistic update that fires the instant a toggle is clicked (works on
+  // every page, even ones without the dashboard orb/signal cards). The server
+  // response then refines these with authoritative numbers.
+  function missionFromDom() {
+    var data = {};
+    var prayerTotal = document.querySelectorAll(".prayer-row .tracker-dot").length;
+    if (prayerTotal) {
+      data.prayer = percent(document.querySelectorAll(".prayer-row .tracker-dot.status-done").length, prayerTotal);
+    }
+    var athkarTotal = document.querySelectorAll(".athkar-row .tracker-dot").length;
+    if (athkarTotal) {
+      data.athkar = percent(document.querySelectorAll(".athkar-row .tracker-dot.status-done").length, athkarTotal);
+    }
+    var deenTotal = document.querySelectorAll(".tracker-row .tracker-dot").length;
+    if (deenTotal) {
+      data.deen = percent(document.querySelectorAll(".tracker-row .tracker-dot.status-done").length, deenTotal);
+    }
+    if (document.querySelectorAll(".gym-strip .gym-day").length) {
+      // Gym completion is always measured against a 7-day week (matches server).
+      data.gym = percent(document.querySelectorAll(".gym-strip .gym-day.status-done").length, 7);
+    }
+    return data;
+  }
+
+  function applyMissionSummary(data) {
+    if (!data) return;
+    ["prayer", "athkar", "deen", "gym"].forEach(function (field) {
+      var value = data[field];
+      if (typeof value !== "number") return;
+      document.querySelectorAll('[data-mission="' + field + '"]').forEach(function (el) {
+        el.textContent = value + "%";
+      });
+    });
+    if (typeof data.deen === "number") {
+      document.querySelectorAll(".progress-orb").forEach(function (orb) {
+        orb.style.setProperty("--value", data.deen);
+      });
+    }
+  }
+
+  // Only used for the failure path; success feedback is the in-place pulseSaved.
   function showToast(message) {
     var toast = document.querySelector(".lifeops-toast");
     if (!toast) {
@@ -321,11 +370,21 @@
     }, 2600);
   }
 
+  function pulseSaved(button) {
+    button.classList.remove("is-saved");
+    // force reflow so the animation restarts on rapid repeated toggles
+    void button.offsetWidth;
+    button.classList.add("is-saved");
+    window.setTimeout(function () {
+      button.classList.remove("is-saved");
+    }, 500);
+  }
+
   function toggleTracker(button, form) {
     if (button.dataset.busy === "1") return;
     var previous = currentTrackerStatus(button);
     setTrackerStatus(button, nextTrackerStatus(button, previous));
-    updatePanelPercent(button);
+    applyMissionSummary(missionFromDom());
     button.dataset.busy = "1";
 
     var body = new URLSearchParams();
@@ -345,15 +404,14 @@
         return response.json();
       })
       .then(function (data) {
-        if (data && data.status) {
-          setTrackerStatus(button, data.status);
-          updatePanelPercent(button);
-        }
+        if (data && data.status) setTrackerStatus(button, data.status);
+        applyMissionSummary(data);
         button.dataset.busy = "";
+        pulseSaved(button);
       })
       .catch(function () {
         setTrackerStatus(button, previous);
-        updatePanelPercent(button);
+        applyMissionSummary(missionFromDom());
         button.dataset.busy = "";
         showToast("Could not save. Reverted.");
       });
