@@ -108,6 +108,35 @@ type PlayerStats struct {
 	TaskDoneCount int
 }
 
+// ShipStats is the Captain Stats / Ship Status bar shown on the bridge and the
+// trip/galaxy pages. All values derive from existing data (no schema change).
+type ShipStats struct {
+	TotalFuel         int
+	Level             int
+	LevelProgress     int // 0-99, fuel into the current level
+	CompletedMissions int
+	ActiveTrips       int
+	Streak            int
+	MedalCount        int
+	RecentMedal       string
+}
+
+// RouteNode is one planet/station along the animated rocket route.
+type RouteNode struct {
+	Name    string
+	URL     string
+	State   string // done | active | locked | pending
+	Index   int
+	LeftPct int
+	TopPct  int
+}
+
+// RocketRoute feeds the reusable rocket_route.html partial.
+type RocketRoute struct {
+	Title string
+	Nodes []RouteNode
+}
+
 type RoadmapProjectMeta struct {
 	ID               int64
 	ProjectID        int64
@@ -213,6 +242,8 @@ type RoadmapProject struct {
 
 type RoadmapData struct {
 	Page               string
+	ShipStats          ShipStats
+	ShipRoute          RocketRoute
 	Today              string
 	WeekStart          string
 	WeekEnd            string
@@ -409,6 +440,8 @@ type ChartData struct {
 
 type DashboardData struct {
 	Page                     string
+	ShipStats                ShipStats
+	ShipRoute                RocketRoute
 	Today                    string
 	TodayItems               []TaskOccurrence
 	OverdueTasks             []Task

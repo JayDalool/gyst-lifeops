@@ -255,6 +255,18 @@ func (r *Repository) UpdateProjectNotes(id int64, notes, unlockNotes string) err
 	return err
 }
 
+// CountUnlockableDependents reports how many locked, auto-unlock projects
+// depend on the given project and would unlock if it were marked done. Used
+// only to decide whether to show the "New Destination Unlocked" cue.
+func (r *Repository) CountUnlockableDependents(projectID int64) (int, error) {
+	var count int
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM projects
+		WHERE depends_on_project_id = ?
+			AND auto_unlock = 1
+			AND status = 'locked'`, projectID).Scan(&count)
+	return count, err
+}
+
 func (r *Repository) AutoUnlockDependents(doneProjectID int64, targetStatus string) error {
 	targetStatus = cleanProjectStatus(targetStatus)
 	if targetStatus == "done" || targetStatus == "archived" {

@@ -2,37 +2,26 @@
 <section class="page-hero compact mission-hero">
   <div>
     <p class="eyebrow">{{niceDate .Today}}</p>
-    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>Mission Control</h1>
+    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>Ship Bridge</h1>
     <p class="hero-greeting">{{greeting}}</p>
   </div>
   <a class="button" href="/today">Open Today</a>
 </section>
 
-<section class="captain-deck" aria-label="Captain card">
-  <article class="glass-panel captain-card">
-    <div class="captain-head">
-      <div class="captain-badge">
-        <svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
-      </div>
-      <div>
-        <p class="eyebrow">Captain</p>
-        <h2>Level {{.Player.CurrentLevel}}</h2>
-        <small>{{.Player.TotalStars}} energy banked / {{toNextLevel .Player.TotalStars}} to next level</small>
-      </div>
-    </div>
-    <div class="xp-bar" role="progressbar" aria-valuenow="{{levelPct .Player.TotalStars}}" aria-valuemin="0" aria-valuemax="100">
-      <span style="width: {{progressWidth (levelPct .Player.TotalStars)}}"></span>
-    </div>
-    <div class="captain-stats">
-      <div><strong>{{.Player.TotalStars}}</strong><span>Energy / XP</span></div>
-      <div><strong>{{.Player.ActiveStreak}}</strong><span>Day streak</span></div>
-      <div><strong>{{.Player.ProofCount}}</strong><span>Proofs</span></div>
-      <div><strong>{{.Player.TaskDoneCount}}</strong><span>Missions done</span></div>
-    </div>
-  </article>
+<nav class="quick-actions-bar" aria-label="Quick actions">
+  <a href="/tasks/new"><svg class="ui-icon" aria-hidden="true"><use href="#icon-list-check"></use></svg><span>New Mission</span></a>
+  <a href="/projects/new"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg><span>New Trip</span></a>
+  <a href="/roadmap"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg><span>Galaxy Map</span></a>
+  <a href="/today"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg><span>Today</span></a>
+</nav>
 
+{{template "shipStats" .ShipStats}}
+
+{{template "rocketRoute" .ShipRoute}}
+
+<section class="captain-deck single" aria-label="Current trip">
   <article class="glass-panel destination-card">
-    <p class="eyebrow">Active Destination</p>
+    <p class="eyebrow">Current Trip</p>
     {{if .ActiveProjects}}
       {{with index .ActiveProjects 0}}
       <h2>{{.Project.Name}}</h2>
@@ -42,12 +31,12 @@
         <strong>{{.Progress}}%</strong>
       </div>
       <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-      <a class="button small secondary" href="/projects/{{.Project.ID}}">Open system</a>
+      <a class="button small secondary" href="/projects/{{.Project.ID}}">Open trip</a>
       {{end}}
     {{else}}
-      <h2>No destination set</h2>
-      <p>Activate a quest to plot your next course.</p>
-      <a class="button small secondary" href="/projects">Browse systems</a>
+      <h2>No trip set</h2>
+      <p>Activate a trip to plot your next course.</p>
+      <a class="button small secondary" href="/projects">Browse trips</a>
     {{end}}
   </article>
 </section>
@@ -89,7 +78,7 @@
   <div class="panel-heading">
     <div>
       <p class="eyebrow">Active</p>
-      <h2>Active Quests</h2>
+      <h2>Active Trips</h2>
     </div>
     <span class="count">{{len .ActiveProjects}}</span>
   </div>
@@ -108,13 +97,13 @@
       {{end}}
     </div>
   {{else}}
-    <p class="empty">No active quests. Promote one from Upcoming when ready.</p>
+    <p class="empty">No active trips. Promote a planned route when ready.</p>
   {{end}}
 </section>
 
 <details class="glass-panel upcoming-panel">
   <summary>
-    <span>Unexplored Systems</span>
+    <span>Upcoming Locked Trips</span>
     <strong>{{len .UpcomingProjects}}</strong>
   </summary>
   {{if .UpcomingProjects}}
@@ -131,7 +120,7 @@
       {{end}}
     </div>
   {{else}}
-    <p class="empty">No locked quests waiting.</p>
+    <p class="empty">No locked trips waiting.</p>
   {{end}}
 </details>
 
@@ -151,13 +140,13 @@
             <svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg>
           </div>
           <strong>{{.Title}}</strong>
-          <small>+{{.StarsBonus}} energy / {{niceDateTime .UnlockedAt}}</small>
+          <small>+{{.StarsBonus}} fuel / {{niceDateTime .UnlockedAt}}</small>
           {{if .Description}}<p>{{.Description}}</p>{{end}}
         </article>
       {{end}}
     </div>
   {{else}}
-    <p class="empty">Medals appear as quests finish and proof is submitted.</p>
+    <p class="empty">Medals appear as trips finish and evidence is submitted.</p>
   {{end}}
 </section>
 {{end}}

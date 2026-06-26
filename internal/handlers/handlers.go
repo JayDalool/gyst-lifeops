@@ -62,8 +62,24 @@ type MonthlyData struct {
 }
 
 type ProjectListData struct {
-	Page string
-	Tree models.ProjectTree
+	Page      string
+	ShipStats models.ShipStats
+	ShipRoute models.RocketRoute
+	Tree      models.ProjectTree
+	Unlocked  bool
+}
+
+// projectsRoute builds the rocket-route nodes (trips) from main projects.
+func projectsRoute(title string, mains []models.ProjectWithProgress) models.RocketRoute {
+	nodes := make([]models.RouteNode, 0, len(mains))
+	for _, project := range mains {
+		nodes = append(nodes, models.RouteNode{
+			Name:  project.Project.Name,
+			URL:   fmt.Sprintf("/projects/%d", project.Project.ID),
+			State: services.RouteState(project.Project.Status, project.Progress),
+		})
+	}
+	return services.BuildRocketRoute(title, nodes)
 }
 
 type ProjectFormData struct {
@@ -79,6 +95,7 @@ type ProjectDetailData struct {
 	Page    string
 	Project models.ProjectWithProgress
 	Items   []models.ProjectItem
+	Stops   []models.ProjectWithProgress
 }
 
 type GoalListData struct {
@@ -430,7 +447,18 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 		for index := range tree.Upcoming {
 			tree.Upcoming[index].Momentum = services.TrendChart(tree.Upcoming[index].Progress)
 		}
-		h.render(w, "projects_list.html", ProjectListData{Page: "projects", Tree: tree})
+		stats, err := h.Service.ShipStats()
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		h.render(w, "projects_list.html", ProjectListData{
+			Page:      "projects",
+			ShipStats: stats,
+			ShipRoute: projectsRoute("Navigation Deck", tree.Main),
+			Tree:      tree,
+			Unlocked:  r.URL.Query().Get("unlocked") == "1",
+		})
 		return
 	}
 
@@ -518,10 +546,24 @@ func (h *Handler) projectDetail(w http.ResponseWriter, r *http.Request, id int64
 		serverError(w, err)
 		return
 	}
+	// Stops = subprojects of this trip (any status), derived from the project
+	// hierarchy. No schema change: we filter the existing project list.
+	allProjects, err := h.Service.Repo.ListProjects(false)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	var stops []models.ProjectWithProgress
+	for _, candidate := range allProjects {
+		if candidate.Project.ParentProjectID == id {
+			stops = append(stops, candidate)
+		}
+	}
 	h.render(w, "project_detail.html", ProjectDetailData{
 		Page:    "projects",
 		Project: project,
 		Items:   items,
+		Stops:   stops,
 	})
 }
 
@@ -584,8 +626,19 @@ func (h *Handler) projectStatus(w http.ResponseWriter, r *http.Request, id int64
 		serverError(w, err)
 		return
 	}
-	if err := h.Service.Repo.SetProjectStatus(id, r.FormValue("status")); err != nil {
+	status := r.FormValue("status")
+	// Detect whether marking this trip done will unlock a planned route, so the
+	// Navigation Deck can play the "New Destination Unlocked" cue once.
+	willUnlock := 0
+	if cleanForm(status, "") == "done" {
+		willUnlock, _ = h.Service.Repo.CountUnlockableDependents(id)
+	}
+	if err := h.Service.Repo.SetProjectStatus(id, status); err != nil {
 		serverError(w, err)
+		return
+	}
+	if willUnlock > 0 {
+		http.Redirect(w, r, "/projects?unlocked=1", http.StatusSeeOther)
 		return
 	}
 	redirectBack(w, r, "/projects")
@@ -1158,6 +1211,7 @@ func wantsJSON(r *http.Request) bool {
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	files := []string{
 		filepath.Join(h.TemplateDir, "layout.html"),
+		filepath.Join(h.TemplateDir, "rocket_route.html"),
 		filepath.Join(h.TemplateDir, page),
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{

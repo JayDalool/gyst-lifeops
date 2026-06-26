@@ -1,0 +1,40 @@
+{{define "rocketRoute"}}
+{{if .Nodes}}
+<section class="rocket-route" aria-label="{{.Title}} rocket route">
+  <div class="route-track">
+    <svg class="route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M 2 50 C 22 14, 34 14, 50 48 S 80 84, 98 46" />
+    </svg>
+    {{range .Nodes}}
+      <a class="route-node {{.State}}" href="{{.URL}}" data-url="{{.URL}}" data-index="{{.Index}}"
+         style="left:{{.LeftPct}}%;top:{{.TopPct}}%" aria-label="{{.Name}} ({{.State}})">
+        <span class="node-planet"></span>
+        <span class="node-label">{{.Name}}</span>
+      </a>
+    {{end}}
+    <div class="rocket" aria-hidden="true">
+      <span class="rocket-body">
+        <svg class="rocket-icon" viewBox="0 0 24 24"><use href="#icon-rocket"></use></svg>
+        <span class="rocket-flame"></span>
+      </span>
+    </div>
+  </div>
+</section>
+{{end}}
+{{end}}
+
+{{define "shipStats"}}
+<section class="ship-stats" aria-label="Captain stats">
+  <div class="ship-stat fuel-counter">
+    <span class="stat-label">Fuel</span>
+    <strong>{{.TotalFuel}}</strong>
+    <div class="level-meter"><span style="width:{{.LevelProgress}}%"></span></div>
+    <small>Level {{.Level}} &middot; {{.LevelProgress}}/100</small>
+  </div>
+  <div class="ship-stat"><span class="stat-label">Missions</span><strong>{{.CompletedMissions}}</strong></div>
+  <div class="ship-stat"><span class="stat-label">Active Trips</span><strong>{{.ActiveTrips}}</strong></div>
+  <div class="ship-stat"><span class="stat-label">Streak</span><strong>{{.Streak}}</strong></div>
+  <div class="ship-stat"><span class="stat-label">Medals</span><strong>{{.MedalCount}}</strong></div>
+  {{if .RecentMedal}}<div class="ship-stat recent-medal"><span class="stat-label">Latest Medal</span><strong>{{.RecentMedal}}</strong></div>{{end}}
+</section>
+{{end}}

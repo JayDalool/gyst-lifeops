@@ -1,7 +1,7 @@
 {{define "content"}}
 <section class="page-hero compact">
   <div>
-    <p class="eyebrow">Campaign Map</p>
+    <p class="eyebrow">Galaxy Map</p>
     <h1>{{.GoalTitle}}</h1>
     <p class="hero-greeting">Target: {{niceDate .GoalDeadline}}</p>
   </div>
@@ -10,6 +10,10 @@
     <a class="button secondary" href="/roadmap/export/private">Export Private</a>
   </div>
 </section>
+
+{{template "shipStats" .ShipStats}}
+
+{{template "rocketRoute" .ShipRoute}}
 
 <section class="summary-strip">
   <article class="mini-card">
@@ -87,20 +91,23 @@
 
 <section class="detail-layout">
   <article class="glass-panel focus-panel">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Import</p>
-        <h2>Create Roadmap From Markdown</h2>
-      </div>
-      {{if .LatestImport.ID}}<span class="badge">Imported {{niceDateTime .LatestImport.ImportedAt}}</span>{{end}}
-    </div>
-    <form class="form-stack" method="post" action="/roadmap/import">
-      <label class="field">
-        <span>Markdown Plan</span>
-        <textarea name="markdown" rows="12" placeholder="# Goal: Become an AI Engineer before November&#10;&#10;## Project: Real Estate AI Lead Scorer&#10;Type: Real Estate AI&#10;Deadline: 2026-08-15&#10;Tags: ai, real-estate&#10;&#10;### Tasks&#10;- Build lead scoring API Due: 2026-07-10&#10;- [ ] Add portfolio case study"></textarea>
-      </label>
-      <button class="button" type="submit">Import Roadmap</button>
-    </form>
+    <details class="md-import">
+      <summary>
+        <span>
+          <p class="eyebrow">Import / Edit Plan</p>
+          <strong>Markdown Plan</strong>
+        </span>
+        {{if .LatestImport.ID}}<span class="badge">Imported {{niceDateTime .LatestImport.ImportedAt}}</span>{{end}}
+      </summary>
+      <p class="hint-copy">Raw Markdown is only used to import or edit the plan. Normal views stay clean.</p>
+      <form class="form-stack" method="post" action="/roadmap/import">
+        <label class="field">
+          <span>Markdown Plan</span>
+          <textarea name="markdown" rows="12" placeholder="# Goal: Become an AI Engineer before November&#10;&#10;## Project: Real Estate AI Lead Scorer&#10;Type: Real Estate AI&#10;Deadline: 2026-08-15&#10;Tags: ai, real-estate&#10;&#10;### Tasks&#10;- Build lead scoring API Due: 2026-07-10&#10;- [ ] Add portfolio case study"></textarea>
+        </label>
+        <button class="button" type="submit">Import Roadmap</button>
+      </form>
+    </details>
   </article>
 
   <aside class="side-stack">

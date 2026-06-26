@@ -2129,7 +2129,7 @@ i.map-node-state {
 .node-blocked .station { border-color: rgba(255, 174, 100, 0.6); box-shadow: 0 0 18px rgba(255, 174, 100, 0.4); }
 .node-blocked .mission-spark { background: var(--orange); }
 
-.node-locked { opacity: 0.62; }
+.map-node.node-locked { opacity: 0.62; }
 .node-locked .planet,
 .node-locked .station {
   filter: grayscale(0.5);
@@ -2173,6 +2173,524 @@ i.map-node-state {
   .planet { width: 60px; height: 60px; }
 }
 
+/* =====================================================================
+   Navigation Deck, Ship Bridge extras, and mission/trip detail
+   ===================================================================== */
+
+/* Quick actions on the bridge */
+.quick-actions-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.quick-actions-bar a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  color: var(--text);
+  font-weight: 750;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.quick-actions-bar a:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+  box-shadow: var(--glow-cyan);
+}
+
+.quick-actions-bar svg { color: var(--cyan); }
+
+/* "New Destination Unlocked" banner */
+.unlock-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 18px;
+  border: 1px solid rgba(101, 231, 160, 0.45);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(101, 231, 160, 0.16), rgba(101, 232, 255, 0.08));
+  color: var(--text);
+  box-shadow: 0 0 24px rgba(101, 231, 160, 0.25);
+  animation: unlock-rise 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.unlock-banner svg { color: var(--green); }
+.unlock-banner strong { color: var(--green); }
+.unlock-banner span { color: var(--muted); font-size: 13px; }
+
+@keyframes unlock-rise {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Navigation console header */
+.nav-console {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 22px;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 30%, rgba(101, 232, 255, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 70%, rgba(101, 231, 160, 0.1), transparent 45%),
+    linear-gradient(180deg, rgba(12, 18, 28, 0.7), rgba(8, 11, 18, 0.85));
+}
+
+.console-ship {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  flex: 0 0 auto;
+}
+
+.ship-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(101, 232, 255, 0.4), transparent 70%);
+  animation: ship-idle 5s ease-in-out infinite;
+}
+
+.ship-mark {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 10px rgba(101, 232, 255, 0.5));
+}
+
+@keyframes ship-idle {
+  0%, 100% { opacity: 0.5; transform: scale(0.96); }
+  50% { opacity: 0.85; transform: scale(1.04); }
+}
+
+.console-copy { flex: 1; }
+.console-copy h1 { margin: 2px 0; }
+
+/* Deck filters (Current / Planned / Completed / All) */
+.deck-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.deck-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.deck-tab {
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+#filter-current:checked ~ .deck-tab[for="filter-current"],
+#filter-planned:checked ~ .deck-tab[for="filter-planned"],
+#filter-completed:checked ~ .deck-tab[for="filter-completed"],
+#filter-all:checked ~ .deck-tab[for="filter-all"] {
+  background: rgba(101, 232, 255, 0.16);
+  color: var(--cyan);
+  border-color: var(--border-strong);
+}
+
+.deck-sections {
+  flex-basis: 100%;
+  margin-top: 18px;
+}
+
+.deck-section { display: none; }
+.deck-section + .deck-section { margin-top: 8px; }
+
+#filter-all:checked ~ .deck-sections .deck-section { display: block; }
+#filter-all:checked ~ .deck-sections .deck-section + .deck-section { margin-top: 26px; }
+#filter-current:checked ~ .deck-sections [data-section="current"],
+#filter-planned:checked ~ .deck-sections [data-section="planned"],
+#filter-completed:checked ~ .deck-sections [data-section="completed"] { display: block; }
+
+/* Trip cards and stops */
+.trip-card .stop-list {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+}
+
+.stop-label {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--quiet);
+}
+
+.stop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-soft);
+  color: var(--text);
+  transition: transform 150ms ease, border-color 150ms ease;
+}
+
+.stop-row:hover { transform: translateX(3px); border-color: var(--border-strong); }
+.stop-row span { flex: 1; font-size: 13px; }
+.stop-row small { color: var(--muted); }
+
+.stop-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--blue);
+  flex: 0 0 auto;
+}
+
+.stop-row.node-active .stop-dot { background: var(--cyan); box-shadow: 0 0 8px rgba(101, 232, 255, 0.6); }
+.stop-row.node-done .stop-dot { background: var(--green); box-shadow: 0 0 8px rgba(101, 231, 160, 0.6); }
+.stop-row.node-locked .stop-dot { background: var(--quiet); }
+.stop-row.node-blocked .stop-dot { background: var(--orange); }
+
+.route-panel { margin-top: 4px; }
+
+/* Mission / trip detail extras */
+.fuel-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid rgba(101, 232, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(101, 232, 255, 0.1);
+  color: var(--cyan);
+  font-weight: 850;
+  font-size: 13px;
+}
+
+.hint-copy { color: var(--quiet); font-size: 12px; }
+.unlock-note { color: var(--muted); }
+.related-link { margin: 10px 0 0; }
+.related-link a { color: var(--cyan); font-weight: 750; }
+
+.fuel-progress span {
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  box-shadow: 0 0 10px rgba(101, 232, 255, 0.4);
+}
+
+/* Markdown import is collapsed by default */
+.md-import summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.md-import summary::-webkit-details-marker { display: none; }
+.md-import summary strong { font-size: 16px; }
+.md-import[open] summary { margin-bottom: 12px; }
+
+@media (max-width: 720px) {
+  .quick-actions-bar { grid-template-columns: repeat(2, 1fr); }
+  .nav-console { flex-wrap: wrap; }
+  .console-ship { width: 64px; height: 64px; }
+}
+
+/* =====================================================================
+   Rocket Route + Ship Stats
+   The rocket flies along the route on node click (JS), then navigates.
+   <a href> is the no-JS fallback; motion is disabled under
+   prefers-reduced-motion (block at the end of this file + a JS guard).
+   ===================================================================== */
+
+.ship-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.ship-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 104px;
+  flex: 1 1 104px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+}
+
+.ship-stat .stat-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--quiet);
+}
+
+.ship-stat strong { font-size: 20px; color: var(--text); }
+.fuel-counter strong { color: var(--cyan); }
+.ship-stat.recent-medal { flex: 2 1 180px; }
+.ship-stat.recent-medal strong { font-size: 14px; color: var(--green); }
+
+.level-meter {
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.level-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  box-shadow: 0 0 10px rgba(101, 232, 255, 0.4);
+  transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.fuel-counter small { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+/* Rocket route */
+.rocket-route {
+  position: relative;
+  margin-bottom: 22px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 25%, rgba(101, 232, 255, 0.1), transparent 42%),
+    radial-gradient(circle at 85% 75%, rgba(101, 231, 160, 0.08), transparent 45%),
+    linear-gradient(180deg, rgba(12, 18, 28, 0.72), rgba(7, 10, 17, 0.9));
+}
+
+.route-track {
+  position: relative;
+  height: 180px;
+}
+
+.route-line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.route-line path {
+  fill: none;
+  stroke: rgba(101, 232, 255, 0.4);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+  animation: route-dash 24s linear infinite;
+}
+
+@keyframes route-dash {
+  to { stroke-dashoffset: -120; }
+}
+
+.route-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: 96px;
+  text-align: center;
+  color: var(--text);
+  z-index: 2;
+}
+
+.node-planet {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.55), rgba(120, 167, 255, 0.4) 45%, rgba(18, 28, 44, 0.95) 95%);
+  border: 1px solid var(--border-strong);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.route-node:hover .node-planet { transform: scale(1.12); }
+
+.node-label {
+  max-width: 96px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-node.active .node-planet {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(101, 232, 255, 0.16), 0 0 18px rgba(101, 232, 255, 0.6);
+  animation: node-pulse 2.6s ease-in-out infinite;
+}
+
+.route-node.done .node-planet {
+  border-color: rgba(101, 231, 160, 0.7);
+  box-shadow: 0 0 16px rgba(101, 231, 160, 0.55);
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.6), rgba(101, 231, 160, 0.4) 45%, rgba(16, 30, 24, 0.95));
+}
+
+.route-node.locked { opacity: 0.55; }
+.route-node.locked .node-planet { filter: grayscale(0.5); }
+.route-node.locked .node-label { color: var(--muted); }
+
+.route-node.blocked .node-planet { border-color: rgba(255, 174, 100, 0.7); box-shadow: 0 0 14px rgba(255, 174, 100, 0.5); }
+
+/* Rocket */
+.rocket {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  /* Fly transform lives here (transitioned). Idle bob lives on .rocket-body so
+     removing the bob never interferes with the fly transition. */
+  transform: translate(-50%, -50%);
+  transition: transform 750ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  pointer-events: none;
+}
+
+.rocket-body {
+  display: grid;
+  place-items: center;
+  animation: rocket-idle 3.6s ease-in-out infinite;
+}
+
+.rocket.launching .rocket-body { animation: none; }
+
+.rocket-icon {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(101, 232, 255, 0.6));
+  transform: rotate(45deg);
+}
+
+.rocket-flame {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 8px;
+  height: 0;
+  border-radius: 0 0 50% 50%;
+  background: linear-gradient(180deg, var(--orange), transparent);
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: height 150ms ease, opacity 150ms ease;
+}
+
+@keyframes rocket-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14%); }
+}
+
+.rocket.launching .rocket-flame {
+  height: 18px;
+  opacity: 1;
+  animation: flame-flicker 120ms ease-in-out infinite;
+}
+
+@keyframes flame-flicker {
+  0%, 100% { height: 16px; }
+  50% { height: 22px; }
+}
+
+/* Compact route-progress strip on project detail */
+.route-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.route-strip-cap { font-size: 12px; font-weight: 800; color: var(--muted); flex: 0 0 auto; }
+
+.route-strip-track {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.route-strip-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  box-shadow: 0 0 10px rgba(101, 232, 255, 0.4);
+}
+
+.route-strip-rocket {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+}
+
+.route-strip-rocket .rocket-icon {
+  width: 20px;
+  height: 20px;
+  transform: rotate(45deg);
+}
+
+@media (max-width: 720px) {
+  .route-track { height: 150px; }
+  .route-node { width: 76px; }
+  .node-label { max-width: 76px; font-size: 11px; }
+  .ship-stat { min-width: 88px; flex-basis: 88px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2193,7 +2711,9 @@ i.map-node-state {
   .button:hover,
   .drawer-grid a:hover,
   .map-node:hover,
-  .medal:hover {
+  .medal:hover,
+  .quick-actions-bar a:hover,
+  .stop-row:hover {
     transform: none;
   }
 }

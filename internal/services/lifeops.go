@@ -160,9 +160,31 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 	if err != nil {
 		return models.DashboardData{}, err
 	}
+	shipStats, err := s.ShipStats()
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+
+	routeNodes := make([]models.RouteNode, 0, len(activeProjects)+len(upcomingProjects))
+	for _, project := range activeProjects {
+		routeNodes = append(routeNodes, models.RouteNode{
+			Name:  project.Project.Name,
+			URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
+			State: RouteState(project.Project.Status, project.Progress),
+		})
+	}
+	for _, project := range upcomingProjects {
+		routeNodes = append(routeNodes, models.RouteNode{
+			Name:  project.Project.Name,
+			URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
+			State: RouteState(project.Project.Status, project.Progress),
+		})
+	}
 
 	return models.DashboardData{
 		Page:                     "dashboard",
+		ShipStats:                shipStats,
+		ShipRoute:                BuildRocketRoute("Ship Bridge", routeNodes),
 		Today:                    formatDate(today),
 		TodayItems:               todayItems,
 		OverdueTasks:             overdueTasks,

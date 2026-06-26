@@ -2,11 +2,12 @@
 <section class="page-hero compact">
   <div>
     <p class="eyebrow">{{niceDate .Today}}</p>
-    <h1>Today</h1>
+    <h1>Today's Missions</h1>
   </div>
   <div class="hero-meter">
     <strong>{{.Progress}}%</strong>
-    <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+    <div class="progress fuel-progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+    <small>fuel charged today</small>
   </div>
 </section>
 
@@ -62,8 +63,8 @@
   <article class="glass-panel board-main">
     <div class="panel-heading">
       <div>
-        <p class="eyebrow">Checklist</p>
-        <h2>Pending Signal</h2>
+        <p class="eyebrow">Missions</p>
+        <h2>Pending Missions</h2>
       </div>
       <span class="count">{{len .Pending}}</span>
     </div>
@@ -71,13 +72,13 @@
     {{if .Pending}}
       <div class="task-card-list">
         {{range .Pending}}
-          <article class="task-card">
+          <article class="task-card mission-node">
             <div class="task-card-copy">
               <a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a>
               <small>{{.Task.Category}} / {{.Task.RepeatType}} / {{.Task.Priority}}</small>
             </div>
             <div class="quick-actions">
-              <form method="post" action="/tasks/{{.Task.ID}}/complete">
+              <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
                 <input type="hidden" name="occurrence_date" value="{{.Date}}">
                 <button class="button small" type="submit">Complete</button>
               </form>

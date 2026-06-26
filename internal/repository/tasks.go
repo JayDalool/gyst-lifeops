@@ -266,6 +266,12 @@ func (r *Repository) PlayerStats() (models.PlayerStats, error) {
 	return stats, nil
 }
 
+func (r *Repository) CountAchievements() (int, error) {
+	var count int
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM achievements`).Scan(&count)
+	return count, err
+}
+
 func (r *Repository) RecentAchievements(limit int) ([]models.Achievement, error) {
 	if limit <= 0 {
 		limit = 5

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -92,8 +93,42 @@ func (s *Service) Roadmap() (models.RoadmapData, error) {
 		goalDeadline = time.Date(today.Year(), time.November, 1, 0, 0, 0, 0, today.Location()).Format("2006-01-02")
 	}
 
+	shipStats, err := s.ShipStats()
+	if err != nil {
+		return models.RoadmapData{}, err
+	}
+	routeNodes := make([]models.RouteNode, 0, len(projects))
+	for _, project := range projects {
+		if project.Project.Project.ParentProjectID != 0 {
+			continue // only main trips on the route; stops show on the map below
+		}
+		routeNodes = append(routeNodes, models.RouteNode{
+			Name:  project.Project.Project.Name,
+			URL:   "/projects/" + strconv.FormatInt(project.Project.Project.ID, 10),
+			State: RouteState(project.Project.Project.Status, project.Progress),
+		})
+	}
+	// Fall back to the main project trips when no roadmap has been imported yet,
+	// so the Galaxy Map still shows a route on a fresh install.
+	if len(routeNodes) == 0 {
+		if mains, err := s.Repo.ListProjects(false); err == nil {
+			for _, project := range mains {
+				if project.Project.ParentProjectID != 0 {
+					continue
+				}
+				routeNodes = append(routeNodes, models.RouteNode{
+					Name:  project.Project.Name,
+					URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
+					State: RouteState(project.Project.Status, project.Progress),
+				})
+			}
+		}
+	}
+
 	return models.RoadmapData{
 		Page:               "roadmap",
+		ShipStats:          shipStats,
+		ShipRoute:          BuildRocketRoute("Galaxy Map", routeNodes),
 		Today:              formatDate(today),
 		WeekStart:          formatDate(weekStart),
 		WeekEnd:            formatDate(weekEnd),
