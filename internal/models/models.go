@@ -156,12 +156,36 @@ type RouteNode struct {
 	Index   int
 	LeftPct int
 	TopPct  int
+	// PathPct is the node's position along the SVG route path (0-100). The
+	// browser places nodes precisely with getPointAtLength; LeftPct/TopPct stay
+	// as the no-JS fallback.
+	PathPct float64
+	// Current marks the ship's resting destination (first active node).
+	Current bool
 }
 
-// RocketRoute feeds the reusable rocket_route.html partial.
+// RocketRoute feeds the reusable rocket_route.html partial. Mode selects the
+// visual treatment: "galaxy" (roadmap overview), "solar" (one project's system),
+// or "compact" (small strip on detail pages). ID is unique per page so multiple
+// routes can each own their <path id>.
 type RocketRoute struct {
+	ID    string
 	Title string
+	Mode  string
 	Nodes []RouteNode
+}
+
+// SolarSystem is one project rendered as its own system: the project at the
+// centre, its child projects (planets/stations) orbiting, and its work items
+// (missions). Missions are project_items, the only project-scoped work in the
+// data model (standalone Tasks do not carry a project link).
+type SolarSystem struct {
+	Center     ProjectWithProgress
+	Roadmap    Roadmap
+	HasRoadmap bool
+	Children   []ProjectWithProgress
+	Missions   []ProjectItem
+	Route      RocketRoute
 }
 
 type RoadmapProjectMeta struct {

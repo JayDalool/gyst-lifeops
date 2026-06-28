@@ -1,12 +1,21 @@
 {{define "rocketRoute"}}
 {{if .Nodes}}
-<section class="rocket-route" aria-label="{{.Title}} rocket route">
+{{$pathID := printf "route-path-%s" .ID}}
+<section class="rocket-route route-mode-{{.Mode}}" data-mode="{{.Mode}}" aria-label="{{.Title}} route">
   <div class="route-track">
-    <svg class="route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M 2 50 C 22 14, 34 14, 50 48 S 80 84, 98 46" />
+    {{/* viewBox aspect matches .route-track (1000:300) with preserveAspectRatio
+         meet, so the path scales uniformly: node %-positions and the ship's
+         tangent angle stay correct. The browser places nodes precisely along
+         this path with getPointAtLength; LeftPct/TopPct are the no-JS fallback. */}}
+    <svg class="route-line" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <path id="{{$pathID}}" class="route-base"
+        d="M 50 220 C 170 90, 300 70, 430 150 C 540 218, 600 250, 700 175 C 800 100, 870 90, 960 160" />
+      <path class="route-flow"
+        d="M 50 220 C 170 90, 300 70, 430 150 C 540 218, 600 250, 700 175 C 800 100, 870 90, 960 160" />
     </svg>
     {{range .Nodes}}
-      <a class="route-node {{.State}}" href="{{.URL}}" data-url="{{.URL}}" data-index="{{.Index}}"
+      <a class="route-node {{.State}}{{if .Current}} is-current{{end}}" href="{{.URL}}"
+         data-url="{{.URL}}" data-index="{{.Index}}" data-path-pct="{{.PathPct}}"
          style="left:{{.LeftPct}}%;top:{{.TopPct}}%" aria-label="{{.Name}} ({{.State}})">
         <span class="node-planet"></span>
         <span class="node-label">{{.Name}}</span>

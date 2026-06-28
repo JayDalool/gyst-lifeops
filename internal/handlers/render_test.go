@@ -39,7 +39,7 @@ func TestRenderDashboard(t *testing.T) {
 			{ID: 2, Name: "Sim Rig Build", Priority: 7, Privacy: "public", Status: "active"},
 		},
 		Activity: models.ActivitySummary{Reminders: 2, Overdue: 1, CompletedToday: 5, Skipped: 0},
-		ShipRoute: services.BuildRocketRoute("AI Engineer Roadmap", []models.RouteNode{
+		ShipRoute: services.BuildRocketRoute("galaxy", "AI Engineer Roadmap", "galaxy", []models.RouteNode{
 			{Name: "Real Estate AI", URL: "/projects/1", State: "active"},
 			{Name: "Healthcare AI", URL: "/projects/2", State: "locked"},
 			{Name: "Portfolio", URL: "/projects/3", State: "done"},
@@ -84,7 +84,7 @@ func TestRenderRoadmap(t *testing.T) {
 	data := models.RoadmapData{
 		Page:               "roadmap",
 		ShipStats:          models.ShipStats{TotalFuel: 300, Level: 4, LevelProgress: 0, ActiveTrips: 2, MedalCount: 3, RecentMedal: "Server Deployed"},
-		ShipRoute:          services.BuildRocketRoute("Galaxy Map", []models.RouteNode{{Name: "Real Estate AI System", URL: "/projects/1", State: "active"}}),
+		ShipRoute:          services.BuildRocketRoute("galaxy", "Galaxy Map", "galaxy", []models.RouteNode{{Name: "Real Estate AI System", URL: "/projects/1", State: "active"}}),
 		Roadmaps:           []models.Roadmap{{ID: 1, Name: "AI Engineer Roadmap", Priority: 10, Featured: true, Privacy: "private", Status: "active"}},
 		SelectedRoadmap:    models.Roadmap{ID: 1, Name: "AI Engineer Roadmap", Description: "Become an AI engineer", Priority: 10, Featured: true, Privacy: "private", Status: "active"},
 		HasSelectedRoadmap: true,
@@ -139,7 +139,7 @@ func TestRenderProjectsList(t *testing.T) {
 		Roadmaps:     roadmaps,
 		RoadmapNames: names,
 		StatusFilter: "current",
-		ShipRoute: services.BuildRocketRoute("Navigation Deck", []models.RouteNode{
+		ShipRoute: services.BuildRocketRoute("deck", "Navigation Deck", "galaxy", []models.RouteNode{
 			{Name: "Real Estate AI", URL: "/projects/1", State: "active"},
 		}),
 	})

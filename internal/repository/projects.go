@@ -27,6 +27,24 @@ func (r *Repository) ListProjectsByRoadmap(roadmapID int64) ([]models.ProjectWit
 	return r.listProjectsWhere("WHERE p.roadmap_id = ? AND p.archived_at IS NULL AND p.status != 'archived'", roadmapID)
 }
 
+// TopLevelProjectsByRoadmap returns only the roadmap's top-level destinations
+// (parent_project_id IS NULL). Subprojects never appear on the galaxy route;
+// they live inside their parent's solar system. All non-archived statuses are
+// included so done destinations still glow and locked ones still show dimmed.
+func (r *Repository) TopLevelProjectsByRoadmap(roadmapID int64) ([]models.ProjectWithProgress, error) {
+	return r.listProjectsWhere(
+		"WHERE p.roadmap_id = ? AND p.parent_project_id IS NULL AND p.archived_at IS NULL AND p.status != 'archived'",
+		roadmapID)
+}
+
+// SubProjects returns the child projects (planets/stations) of one parent, any
+// non-archived status so locked/upcoming children still render dimmed.
+func (r *Repository) SubProjects(parentID int64) ([]models.ProjectWithProgress, error) {
+	return r.listProjectsWhere(
+		"WHERE p.parent_project_id = ? AND p.archived_at IS NULL AND p.status != 'archived'",
+		parentID)
+}
+
 func (r *Repository) listProjectsWhere(where string, args ...any) ([]models.ProjectWithProgress, error) {
 	rows, err := r.db.Query(fmt.Sprintf(`SELECT %s,
 		(SELECT COUNT(*) FROM project_items i WHERE i.project_id = p.id) AS total_items,
@@ -111,12 +129,15 @@ func buildProjectTree(projects []models.ProjectWithProgress) models.ProjectTree 
 	tree := models.ProjectTree{Children: map[int64][]models.ProjectWithProgress{}}
 	for _, project := range projects {
 		project.Momentum = models.ChartData{}
-		if project.Project.Status == "locked" || project.Project.Status == "upcoming" {
-			tree.Upcoming = append(tree.Upcoming, project)
-			continue
-		}
+		// Parentage is decided before status: a subproject (any status, incl.
+		// locked/upcoming) always nests under its parent and never appears as a
+		// top-level destination. Only top-level planned trips reach Upcoming.
 		if project.Project.ParentProjectID != 0 {
 			tree.Children[project.Project.ParentProjectID] = append(tree.Children[project.Project.ParentProjectID], project)
+			continue
+		}
+		if project.Project.Status == "locked" || project.Project.Status == "upcoming" {
+			tree.Upcoming = append(tree.Upcoming, project)
 			continue
 		}
 		tree.Main = append(tree.Main, project)

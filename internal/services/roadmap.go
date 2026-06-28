@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -122,10 +121,14 @@ func (s *Service) Roadmap(selectedRoadmapID int64) (models.RoadmapData, error) {
 		}
 	}
 
-	// Rocket route + list view are scoped to the selected roadmap's trips.
+	// Rocket route + list view are scoped to the selected roadmap's trips. The
+	// galaxy route shows top-level destinations only; subprojects stay inside
+	// their parent's solar system.
 	var scopedTree models.ProjectTree
-	routeNodes := make([]models.RouteNode, 0)
+	var shipRoute models.RocketRoute
+	routeTitle := "Galaxy Map"
 	if hasSelected {
+		routeTitle = selectedRoadmap.Name
 		scopedTree, err = s.Repo.ProjectTreeByRoadmap(selectedRoadmap.ID)
 		if err != nil {
 			return models.RoadmapData{}, err
@@ -133,30 +136,18 @@ func (s *Service) Roadmap(selectedRoadmapID int64) (models.RoadmapData, error) {
 		for index := range scopedTree.Main {
 			scopedTree.Main[index].Momentum = trendChart(scopedTree.Main[index].Progress)
 		}
-		for _, project := range scopedTree.Main {
-			routeNodes = append(routeNodes, models.RouteNode{
-				Name:  project.Project.Name,
-				URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
-				State: RouteState(project.Project.Status, project.Progress),
-			})
+		shipRoute, err = s.RocketRouteForRoadmap(selectedRoadmap.ID, routeTitle)
+		if err != nil {
+			return models.RoadmapData{}, err
 		}
-		for _, project := range scopedTree.Upcoming {
-			routeNodes = append(routeNodes, models.RouteNode{
-				Name:  project.Project.Name,
-				URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
-				State: RouteState(project.Project.Status, project.Progress),
-			})
-		}
-	}
-	routeTitle := "Galaxy Map"
-	if hasSelected {
-		routeTitle = selectedRoadmap.Name
+	} else {
+		shipRoute = BuildRocketRoute("galaxy", routeTitle, "galaxy", nil)
 	}
 
 	return models.RoadmapData{
 		Page:               "roadmap",
 		ShipStats:          shipStats,
-		ShipRoute:          BuildRocketRoute(routeTitle, routeNodes),
+		ShipRoute:          shipRoute,
 		Roadmaps:           roadmaps,
 		SelectedRoadmap:    selectedRoadmap,
 		HasSelectedRoadmap: hasSelected,

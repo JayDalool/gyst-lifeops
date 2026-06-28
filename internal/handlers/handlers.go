@@ -84,7 +84,7 @@ func projectsRoute(title string, mains []models.ProjectWithProgress) models.Rock
 			State: services.RouteState(project.Project.Status, project.Progress),
 		})
 	}
-	return services.BuildRocketRoute(title, nodes)
+	return services.BuildRocketRoute("deck", title, "galaxy", nodes)
 }
 
 type ProjectFormData struct {
@@ -102,6 +102,7 @@ type ProjectDetailData struct {
 	Project          models.ProjectWithProgress
 	Items            []models.ProjectItem
 	Stops            []models.ProjectWithProgress
+	Route            models.RocketRoute
 	Roadmap          models.Roadmap
 	HasRoadmap       bool
 	Parent           models.Project
@@ -635,11 +636,17 @@ func (h *Handler) projectDetail(w http.ResponseWriter, r *http.Request, id int64
 			hasRoadmap = true
 		}
 	}
+	route, err := h.Service.RocketRouteForProject(id)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
 	h.render(w, "project_detail.html", ProjectDetailData{
 		Page:             "projects",
 		Project:          project,
 		Items:            items,
 		Stops:            stops,
+		Route:            route,
 		Roadmap:          roadmap,
 		HasRoadmap:       hasRoadmap,
 		Parent:           parent,

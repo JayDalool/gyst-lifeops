@@ -217,31 +217,32 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 		Skipped:        skippedToday,
 	}
 
-	routeNodes := make([]models.RouteNode, 0, len(heroActive)+len(heroUpcoming))
-	for _, project := range heroActive {
-		routeNodes = append(routeNodes, models.RouteNode{
-			Name:  project.Project.Name,
-			URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
-			State: RouteState(project.Project.Status, project.Progress),
-		})
-	}
-	for _, project := range heroUpcoming {
-		routeNodes = append(routeNodes, models.RouteNode{
-			Name:  project.Project.Name,
-			URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
-			State: RouteState(project.Project.Status, project.Progress),
-		})
-	}
-
+	// Galaxy route: top-level destinations only (parent_project_id IS NULL).
+	// Subprojects live inside their parent's solar system, never on this route.
 	routeTitle := "Ship Bridge"
 	if hasRoadmap {
 		routeTitle = dashboardRoadmap.Name
+	}
+	var shipRoute models.RocketRoute
+	if hasRoadmap {
+		shipRoute, err = s.RocketRouteForRoadmap(dashboardRoadmap.ID, routeTitle)
+		if err != nil {
+			return models.DashboardData{}, err
+		}
+	} else {
+		nodes := make([]models.RouteNode, 0, len(heroActive))
+		for _, project := range heroActive {
+			if project.Project.ParentProjectID == 0 {
+				nodes = append(nodes, projectNode(project))
+			}
+		}
+		shipRoute = BuildRocketRoute("galaxy", routeTitle, "galaxy", nodes)
 	}
 
 	return models.DashboardData{
 		Page:                     "dashboard",
 		ShipStats:                shipStats,
-		ShipRoute:                BuildRocketRoute(routeTitle, routeNodes),
+		ShipRoute:                shipRoute,
 		DashboardRoadmap:         dashboardRoadmap,
 		HasRoadmap:               hasRoadmap,
 		Roadmaps:                 roadmaps,

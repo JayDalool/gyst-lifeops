@@ -2500,7 +2500,10 @@ i.map-node-state {
 
 .route-track {
   position: relative;
-  height: 180px;
+  width: 100%;
+  /* Match the SVG viewBox (1000:300) so preserveAspectRatio="meet" fills the box
+     exactly — node %-positions then land on the path with no letterboxing. */
+  aspect-ratio: 1000 / 300;
 }
 
 .route-line {
@@ -2510,18 +2513,29 @@ i.map-node-state {
   height: 100%;
 }
 
-.route-line path {
+.route-base {
   fill: none;
   stroke: rgba(101, 232, 255, 0.4);
-  stroke-width: 1.4;
+  stroke-width: 2;
   stroke-linecap: round;
-  stroke-dasharray: 3 4;
   vector-effect: non-scaling-stroke;
-  animation: route-dash 24s linear infinite;
+  filter: drop-shadow(0 0 5px rgba(101, 232, 255, 0.35));
 }
 
-@keyframes route-dash {
-  to { stroke-dashoffset: -120; }
+/* A light pulse travelling the route — the "active segment" energy flow. */
+.route-flow {
+  fill: none;
+  stroke: rgba(150, 244, 255, 0.95);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 54 1400;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 7px rgba(120, 232, 255, 0.8));
+  animation: route-flow 3.4s linear infinite;
+}
+
+@keyframes route-flow {
+  to { stroke-dashoffset: -1454; }
 }
 
 .route-node {
@@ -2585,12 +2599,17 @@ i.map-node-state {
   place-items: center;
   width: 40px;
   height: 40px;
-  /* Fly transform lives here (transitioned). Idle bob lives on .rocket-body so
-     removing the bob never interferes with the fly transition. */
-  transform: translate(-50%, -50%);
-  transition: transform 750ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  /* JS positions left/top each frame along the path; rotate(var(--angle)) aims
+     the nose down the tangent. No left/top transition — it would lag the rAF
+     flight. The idle bob lives on .rocket-body so it never fights positioning. */
+  transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 240ms ease;
 }
+
+.rocket.ready,
+.rocket.flying { opacity: 1; }
 
 .rocket-body {
   display: grid;
@@ -2598,7 +2617,7 @@ i.map-node-state {
   animation: rocket-idle 3.6s ease-in-out infinite;
 }
 
-.rocket.launching .rocket-body { animation: none; }
+.rocket.flying .rocket-body { animation: none; }
 
 .rocket-icon {
   width: 30px;
@@ -2630,10 +2649,28 @@ i.map-node-state {
   50% { transform: translateY(-14%); }
 }
 
-.rocket.launching .rocket-flame {
+.rocket.flying .rocket-flame {
   height: 18px;
   opacity: 1;
   animation: flame-flicker 120ms ease-in-out infinite;
+}
+
+/* Fading ion trail dropped while the ship flies. */
+.rocket-trail {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(120, 240, 255, 0.85), transparent 70%);
+  pointer-events: none;
+  z-index: 2;
+  animation: rocket-trail-fade 700ms ease forwards;
+}
+
+@keyframes rocket-trail-fade {
+  from { opacity: 0.75; }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.35); }
 }
 
 @keyframes flame-flicker {
@@ -2685,8 +2722,8 @@ i.map-node-state {
 }
 
 @media (max-width: 720px) {
-  .route-track { height: 150px; }
   .route-node { width: 76px; }
+  .node-planet { width: 24px; height: 24px; }
   .node-label { max-width: 76px; font-size: 11px; }
   .ship-stat { min-width: 88px; flex-basis: 88px; }
 }
@@ -2864,7 +2901,7 @@ i.map-node-state {
 .activity-link a { color: var(--cyan); font-weight: 700; font-size: 13px; }
 
 /* Premium rocket-route polish: layered planets + refined route line */
-.route-line path { stroke: rgba(101, 232, 255, 0.5); stroke-width: 1.1; }
+.route-base { stroke: rgba(101, 232, 255, 0.5); }
 
 .node-planet {
   background:
@@ -3060,4 +3097,106 @@ i.map-node-state {
   .stop-row:hover {
     transform: none;
   }
+}
+
+/* =====================================================================
+   Cosmic route modes + Solar System (project detail) view
+   ===================================================================== */
+
+/* Mode tints for the shared rocketRoute component. */
+.route-mode-solar {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 200, 120, 0.1), transparent 45%),
+    linear-gradient(180deg, rgba(12, 18, 28, 0.72), rgba(7, 10, 17, 0.9));
+}
+.route-mode-compact .route-track { aspect-ratio: 1000 / 170; }
+.route-mode-compact .node-label { font-size: 11px; }
+
+/* Never let a cosmic route push horizontal overflow on small screens. */
+.rocket-route { max-width: 100%; }
+
+/* Breadcrumb: Galaxy > Roadmap > Project */
+.cosmic-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.cosmic-breadcrumb a { color: var(--cyan); text-decoration: none; }
+.cosmic-breadcrumb a:hover { text-decoration: underline; }
+.cosmic-breadcrumb .sep { opacity: 0.5; }
+.cosmic-breadcrumb .current { color: var(--text); }
+
+/* Central system core: the project rendered as its system's star. */
+.system-core {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 20px;
+  padding: 22px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(101, 232, 255, 0.12), transparent 50%),
+    linear-gradient(180deg, rgba(14, 20, 30, 0.85), rgba(8, 12, 19, 0.95));
+}
+.system-star {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.9), rgba(101, 232, 255, 0.5) 45%, rgba(16, 30, 44, 1));
+  box-shadow: 0 0 0 4px rgba(101, 232, 255, 0.12), 0 0 32px rgba(101, 232, 255, 0.55);
+}
+.system-star.is-done {
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.9), rgba(101, 231, 160, 0.5) 45%, rgba(16, 30, 24, 1));
+  box-shadow: 0 0 0 4px rgba(101, 231, 160, 0.14), 0 0 32px rgba(101, 231, 160, 0.55);
+}
+.system-star.is-locked {
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.4), rgba(80, 92, 110, 0.5) 45%, rgba(14, 18, 26, 1));
+  box-shadow: none;
+}
+.system-star strong { font-size: 20px; }
+.system-core-copy h1 { margin: 0 0 6px; }
+.system-core-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+/* Missions (project_items) as orbiting waypoints. */
+.mission-orbit {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.mission-node {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-soft);
+}
+.mission-node .m-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(101, 232, 255, 0.6);
+}
+.mission-node.is-done { opacity: 0.75; }
+.mission-node.is-done .m-dot { background: var(--green); box-shadow: 0 0 8px rgba(101, 231, 160, 0.6); }
+.mission-node .m-title { font-weight: 700; }
+.mission-node.is-done .m-title { text-decoration: line-through; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .system-core { grid-template-columns: 1fr; text-align: center; justify-items: center; }
 }

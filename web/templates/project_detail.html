@@ -1,35 +1,48 @@
 {{define "content"}}
-<section class="page-hero compact">
-  <div>
-    <p class="eyebrow">Trip / {{.Project.Project.Category}}</p>
-    <h1>{{.Project.Project.Name}}</h1>
-    <p class="hero-greeting">
-      <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>
-      {{if .HasRoadmap}}<span class="badge rm-badge">{{.Roadmap.Name}}</span>{{if ne .Roadmap.Privacy "public"}}<span class="badge">{{.Roadmap.Privacy}}</span>{{end}}{{end}}
-    </p>
-  </div>
-  <div class="header-actions">
-    <a class="button secondary" href="/projects/{{.Project.Project.ID}}/edit">Edit Trip</a>
-    <a class="button secondary" href="/projects">Back to Deck</a>
-  </div>
-</section>
-
-<nav class="trip-breadcrumb" aria-label="Trip location">
-  {{if .HasRoadmap}}<a href="/roadmap?roadmap={{.Roadmap.ID}}">{{.Roadmap.Name}}</a>{{else}}<span>Unassigned roadmap</span>{{end}}
-  {{if .HasParent}}<span class="bc-sep">&rsaquo;</span><a href="/projects/{{.Parent.ID}}">{{.Parent.Name}}</a>{{end}}
-  <span class="bc-sep">&rsaquo;</span><strong>{{.Project.Project.Name}}</strong>
+<nav class="cosmic-breadcrumb" aria-label="Location">
+  <a href="/roadmap{{if .HasRoadmap}}?roadmap={{.Roadmap.ID}}{{end}}">Galaxy</a>
+  {{if .HasRoadmap}}<span class="sep">&rsaquo;</span><a href="/roadmap?roadmap={{.Roadmap.ID}}">{{.Roadmap.Name}}</a>{{end}}
+  {{if .HasParent}}<span class="sep">&rsaquo;</span><a href="/projects/{{.Parent.ID}}">{{.Parent.Name}}</a>{{end}}
+  <span class="sep">&rsaquo;</span><span class="current">{{.Project.Project.Name}}</span>
 </nav>
 
-<section class="route-strip" aria-label="Trip progress">
-  <span class="route-strip-cap">Launch</span>
-  <div class="route-strip-track">
-    <span class="route-strip-fill" style="width:{{progressWidth .Project.Progress}}"></span>
-    <span class="route-strip-rocket" style="left:{{progressWidth .Project.Progress}}">
-      <svg class="rocket-icon" viewBox="0 0 24 24"><use href="#icon-rocket"></use></svg>
-    </span>
+<section class="system-core">
+  <div class="system-star{{if or (eq .Project.Project.Status "done") (eq .Project.Project.Status "completed")}} is-done{{else if eq .Project.Project.Status "locked"}} is-locked{{end}}">
+    <strong>{{.Project.Progress}}%</strong>
   </div>
-  <span class="route-strip-cap">{{.Project.Progress}}%</span>
+  <div class="system-core-copy">
+    <p class="eyebrow">Solar System / {{.Project.Project.Category}}</p>
+    <h1>{{.Project.Project.Name}}</h1>
+    {{if .Project.Project.Description}}<p class="body-copy">{{.Project.Project.Description}}</p>{{end}}
+    <div class="system-core-meta">
+      <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>
+      <span class="badge">{{.Project.CompletedItems}} / {{.Project.TotalItems}} missions</span>
+      {{if .HasRoadmap}}<span class="badge rm-badge">{{.Roadmap.Name}}</span>{{end}}
+      {{if .Project.Project.TargetDate}}<span class="badge">Target {{niceDate .Project.Project.TargetDate}}</span>{{end}}
+      {{if .HasParent}}<span class="badge">Station of {{.Parent.Name}}</span>{{end}}
+    </div>
+    <div class="header-actions">
+      <a class="button secondary" href="/projects/{{.Project.Project.ID}}/edit">Edit Trip</a>
+      <a class="button secondary" href="/projects">Back to Deck</a>
+    </div>
+  </div>
 </section>
+
+{{if .Route.Nodes}}
+  {{/* Solar route: child stations (or this trip's missions when it has none). */}}
+  {{template "rocketRoute" .Route}}
+{{else}}
+  <section class="route-strip" aria-label="Trip progress">
+    <span class="route-strip-cap">Launch</span>
+    <div class="route-strip-track">
+      <span class="route-strip-fill" style="width:{{progressWidth .Project.Progress}}"></span>
+      <span class="route-strip-rocket" style="left:{{progressWidth .Project.Progress}}">
+        <svg class="rocket-icon" viewBox="0 0 24 24"><use href="#icon-rocket"></use></svg>
+      </span>
+    </div>
+    <span class="route-strip-cap">{{.Project.Progress}}%</span>
+  </section>
+{{end}}
 
 <section class="detail-layout">
   <article class="glass-panel focus-panel">
@@ -114,8 +127,8 @@
 <section class="glass-panel">
   <div class="panel-heading">
     <div>
-      <p class="eyebrow">Stops</p>
-      <h2>Stations &amp; Phases</h2>
+      <p class="eyebrow">Orbiting</p>
+      <h2>Planets &amp; Stations</h2>
     </div>
     <span class="count">{{len .Stops}}</span>
   </div>
@@ -147,7 +160,7 @@
   {{if .Items}}
     <div class="checklist-list">
       {{range .Items}}
-        <article class="checklist-item status-row-{{.Status}}">
+        <article id="mission-{{.ID}}" class="checklist-item status-row-{{.Status}}">
           <div>
             <h3>{{.Title}}</h3>
             <small>{{if .DueDate}}{{niceDate .DueDate}}{{else}}No due date{{end}} / {{.Priority}}</small>
