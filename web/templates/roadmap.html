@@ -20,6 +20,11 @@
     {{end}}
     {{if .HasSelectedRoadmap}}<a class="button secondary" href="/roadmaps/{{.SelectedRoadmap.ID}}/edit">Edit Roadmap</a>{{end}}
     <a class="button secondary" href="/roadmap/export/public">Export</a>
+    {{if and .HasSelectedRoadmap (not .SelectedRoadmap.Featured)}}
+      <form method="post" action="/roadmaps/{{.SelectedRoadmap.ID}}/archive" onsubmit="return confirm('Archive &quot;{{.SelectedRoadmap.Name}}&quot;? Its trips stay, but the roadmap leaves the active list.');">
+        <button class="button danger" type="submit">Archive</button>
+      </form>
+    {{end}}
   </div>
 </section>
 
