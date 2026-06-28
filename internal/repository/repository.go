@@ -110,6 +110,7 @@ func scanProject(s scanner) (models.Project, error) {
 		&project.CreatedAt,
 		&project.UpdatedAt,
 		&project.ArchivedAt,
+		&project.RoadmapID,
 	)
 	project.AutoUnlock = autoUnlock == 1
 	return project, err

@@ -37,7 +37,16 @@
     </select>
   </label>
   <label class="field">
-    <span>Parent Quest</span>
+    <span>Roadmap</span>
+    <select name="roadmap_id">
+      <option value="">Unassigned</option>
+      {{range .Roadmaps}}
+        <option value="{{.ID}}" {{if eq .ID $.Project.RoadmapID}}selected{{end}}>{{.Name}}</option>
+      {{end}}
+    </select>
+  </label>
+  <label class="field">
+    <span>Parent Trip</span>
     <select name="parent_project_id">
       <option value="">None</option>
       {{range .Projects}}

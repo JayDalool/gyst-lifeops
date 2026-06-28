@@ -2,18 +2,91 @@
 <section class="page-hero compact">
   <div>
     <p class="eyebrow">Galaxy Map</p>
-    <h1>{{.GoalTitle}}</h1>
-    <p class="hero-greeting">Target: {{niceDate .GoalDeadline}}</p>
+    <h1>{{if .HasSelectedRoadmap}}{{.SelectedRoadmap.Name}}{{else}}{{.GoalTitle}}{{end}}</h1>
+    <p class="hero-greeting">
+      {{if .HasSelectedRoadmap}}
+        <span class="badge status-{{.SelectedRoadmap.Status}}">{{.SelectedRoadmap.Status}}</span>
+        <span class="badge">Priority {{.SelectedRoadmap.Priority}}</span>
+        {{if ne .SelectedRoadmap.Privacy "public"}}<span class="badge">{{.SelectedRoadmap.Privacy}}</span>{{end}}
+        {{if .SelectedRoadmap.Featured}}<span class="badge status-active">Featured</span>{{end}}
+      {{else}}Target: {{niceDate .GoalDeadline}}{{end}}
+    </p>
   </div>
   <div class="header-actions">
-    <a class="button secondary" href="/roadmap/export/public">Export Public</a>
-    <a class="button secondary" href="/roadmap/export/private">Export Private</a>
+    {{if and .HasSelectedRoadmap (not .SelectedRoadmap.Featured)}}
+      <form method="post" action="/roadmaps/{{.SelectedRoadmap.ID}}/feature">
+        <button class="button" type="submit">Set as Dashboard</button>
+      </form>
+    {{end}}
+    {{if .HasSelectedRoadmap}}<a class="button secondary" href="/roadmaps/{{.SelectedRoadmap.ID}}/edit">Edit Roadmap</a>{{end}}
+    <a class="button secondary" href="/roadmap/export/public">Export</a>
   </div>
+</section>
+
+{{if .SelectedRoadmap.Description}}<p class="body-copy roadmap-desc">{{.SelectedRoadmap.Description}}</p>{{end}}
+
+<section class="roadmap-filter" aria-label="Choose roadmap">
+  <span class="rf-label">Roadmap</span>
+  {{range .Roadmaps}}
+    <a class="rf-pill {{if eq .ID $.SelectedRoadmap.ID}}is-active{{end}}" href="/roadmap?roadmap={{.ID}}">
+      <svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
+      <span>{{.Name}}</span>
+      {{if .Featured}}<em class="rf-star" title="Featured">&#9733;</em>{{end}}
+    </a>
+  {{end}}
+  <a class="rf-pill rf-add" href="/roadmaps/new">+ New</a>
 </section>
 
 {{template "shipStats" .ShipStats}}
 
 {{template "rocketRoute" .ShipRoute}}
+
+{{if .HasSelectedRoadmap}}
+<section class="glass-panel">
+  <div class="panel-heading">
+    <div><p class="eyebrow">List View</p><h2>Trips &amp; Stops</h2></div>
+    <span class="count">{{len .ScopedTree.Main}}</span>
+  </div>
+  {{if .ScopedTree.Main}}
+    <div class="roadmap-tree">
+      {{range .ScopedTree.Main}}
+        {{$children := index $.ScopedTree.Children .Project.ID}}
+        <article class="tree-trip">
+          <a class="tree-trip-head node-{{nodeState .Project.Status .Progress}}" href="/projects/{{.Project.ID}}">
+            <span class="tree-dot"></span>
+            <strong>{{.Project.Name}}</strong>
+            <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
+            <small>{{.Progress}}%</small>
+          </a>
+          {{if $children}}
+            <div class="tree-stops">
+              {{range $children}}
+                <a class="tree-stop node-{{nodeState .Project.Status .Progress}}" href="/projects/{{.Project.ID}}">
+                  <span class="tree-dot"></span>
+                  <span>{{.Project.Name}}</span>
+                  <small>{{.Project.ProjectKind}} &middot; {{.Progress}}%</small>
+                </a>
+              {{end}}
+            </div>
+          {{end}}
+        </article>
+      {{end}}
+      {{if .ScopedTree.Upcoming}}
+        <p class="eyebrow tree-section-label">Planned Routes</p>
+        {{range .ScopedTree.Upcoming}}
+          <a class="tree-stop node-locked" href="/projects/{{.Project.ID}}">
+            <span class="tree-dot"></span>
+            <span>{{.Project.Name}}</span>
+            <small>{{.Project.Status}}</small>
+          </a>
+        {{end}}
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No trips on this roadmap yet. <a href="/projects/new">Add a trip</a>.</p>
+  {{end}}
+</section>
+{{end}}
 
 <section class="summary-strip">
   <article class="mini-card">

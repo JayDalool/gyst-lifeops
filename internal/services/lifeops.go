@@ -1,6 +1,8 @@
 package services
 
 import (
+	"database/sql"
+	"errors"
 	"sort"
 	"strconv"
 	"time"
@@ -165,15 +167,65 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 		return models.DashboardData{}, err
 	}
 
-	routeNodes := make([]models.RouteNode, 0, len(activeProjects)+len(upcomingProjects))
-	for _, project := range activeProjects {
+	// Scope the bridge hero / Active Trips / Planned Routes to the featured
+	// roadmap. Charts above stay global; only the journey view is scoped.
+	heroActive := activeProjects
+	heroUpcoming := upcomingProjects
+	dashboardRoadmap, drErr := s.Repo.GetDashboardRoadmap()
+	hasRoadmap := drErr == nil
+	if drErr != nil && !errors.Is(drErr, sql.ErrNoRows) {
+		return models.DashboardData{}, drErr
+	}
+	if hasRoadmap {
+		// Self-heal: adopt any projects not yet bound to a roadmap (seed rows,
+		// projects created via the form) into the featured roadmap so the bridge
+		// hero is populated.
+		if err := s.Repo.AdoptOrphanProjects(dashboardRoadmap.ID); err != nil {
+			return models.DashboardData{}, err
+		}
+		tree, err := s.Repo.ProjectTreeByRoadmap(dashboardRoadmap.ID)
+		if err != nil {
+			return models.DashboardData{}, err
+		}
+		heroActive = make([]models.ProjectWithProgress, 0, len(tree.Main))
+		for _, project := range tree.Main {
+			if project.Project.Status == "active" {
+				project.Momentum = trendChart(project.Progress)
+				heroActive = append(heroActive, project)
+			}
+		}
+		heroUpcoming = tree.Upcoming
+	}
+	roadmaps, err := s.Repo.ListRoadmaps(false)
+	if err != nil {
+		return models.DashboardData{}, err
+	}
+
+	completedToday, skippedToday := 0, 0
+	for _, occ := range todayItems {
+		switch occ.Status {
+		case "completed":
+			completedToday++
+		case "skipped":
+			skippedToday++
+		}
+	}
+	activity := models.ActivitySummary{
+		Reminders:      len(remindersToday),
+		Overdue:        len(overdueTasks),
+		CompletedToday: completedToday,
+		Skipped:        skippedToday,
+	}
+
+	routeNodes := make([]models.RouteNode, 0, len(heroActive)+len(heroUpcoming))
+	for _, project := range heroActive {
 		routeNodes = append(routeNodes, models.RouteNode{
 			Name:  project.Project.Name,
 			URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
 			State: RouteState(project.Project.Status, project.Progress),
 		})
 	}
-	for _, project := range upcomingProjects {
+	for _, project := range heroUpcoming {
 		routeNodes = append(routeNodes, models.RouteNode{
 			Name:  project.Project.Name,
 			URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
@@ -181,10 +233,19 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 		})
 	}
 
+	routeTitle := "Ship Bridge"
+	if hasRoadmap {
+		routeTitle = dashboardRoadmap.Name
+	}
+
 	return models.DashboardData{
 		Page:                     "dashboard",
 		ShipStats:                shipStats,
-		ShipRoute:                BuildRocketRoute("Ship Bridge", routeNodes),
+		ShipRoute:                BuildRocketRoute(routeTitle, routeNodes),
+		DashboardRoadmap:         dashboardRoadmap,
+		HasRoadmap:               hasRoadmap,
+		Roadmaps:                 roadmaps,
+		Activity:                 activity,
 		Today:                    formatDate(today),
 		TodayItems:               todayItems,
 		OverdueTasks:             overdueTasks,
@@ -192,8 +253,8 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 		MonthlyCompletionPercent: CompletionPercentage(monthItems),
 		CurrentStreak:            player.ActiveStreak,
 		Player:                   player,
-		ActiveProjects:           activeProjects,
-		UpcomingProjects:         upcomingProjects,
+		ActiveProjects:           heroActive,
+		UpcomingProjects:         heroUpcoming,
 		RecentAchievements:       achievements,
 		YearlyGoals:              yearlyGoals,
 		RemindersToday:           remindersToday,

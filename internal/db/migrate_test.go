@@ -136,3 +136,74 @@ func TestMigration005RebuildIsDataSafe(t *testing.T) {
 		t.Fatalf("ON DELETE CASCADE not re-established: %d orphan items", remaining)
 	}
 }
+
+// Verifies migration 006 adds the roadmaps table additively, creates the default
+// roadmap, and adopts every pre-existing project into it without FK damage.
+func TestMigration006MultipleRoadmaps(t *testing.T) {
+	src := "../../migrations"
+	migDir := filepath.Join(t.TempDir(), "migrations")
+	if err := os.MkdirAll(migDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	copyFile := func(name string) {
+		b, err := os.ReadFile(filepath.Join(src, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(migDir, name), b, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	early := []string{"001_init.sql", "002_trackers.sql", "003_ai_roadmap.sql", "004_quest_system.sql", "005_fix_project_status_check.sql"}
+	for _, m := range early {
+		copyFile(m)
+	}
+
+	database, err := Open(filepath.Join(filepath.Dir(migDir), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	if err := Migrate(database, migDir); err != nil {
+		t.Fatalf("apply 001-005: %v", err)
+	}
+
+	// Two pre-existing projects with no roadmap concept yet.
+	if _, err := database.Exec(`INSERT INTO projects (id, name) VALUES (1, 'Legacy A'), (2, 'Legacy B')`); err != nil {
+		t.Fatalf("insert legacy projects: %v", err)
+	}
+
+	copyFile("006_multiple_roadmaps.sql")
+	if err := Migrate(database, migDir); err != nil {
+		t.Fatalf("apply 006: %v", err)
+	}
+
+	// Default roadmap created, featured.
+	var name string
+	var featured int
+	if err := database.QueryRow(`SELECT name, featured FROM roadmaps WHERE name = 'LifeOps Roadmap'`).Scan(&name, &featured); err != nil {
+		t.Fatalf("default roadmap missing: %v", err)
+	}
+	if featured != 1 {
+		t.Fatalf("default roadmap should be featured")
+	}
+
+	// Both legacy projects adopted into the default roadmap (none left NULL).
+	var unassigned int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM projects WHERE roadmap_id IS NULL`).Scan(&unassigned); err != nil {
+		t.Fatal(err)
+	}
+	if unassigned != 0 {
+		t.Fatalf("expected all projects assigned a roadmap, %d still NULL", unassigned)
+	}
+
+	// FK integrity intact.
+	rows, err := database.Query(`PRAGMA foreign_key_check`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	if rows.Next() {
+		t.Fatal("foreign_key_check reported violations after 006")
+	}
+}

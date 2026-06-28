@@ -44,6 +44,7 @@ type Project struct {
 	ID                 int64
 	UUID               string
 	ParentProjectID    int64
+	RoadmapID          int64
 	Name               string
 	Description        string
 	Category           string
@@ -106,6 +107,32 @@ type PlayerStats struct {
 	ActiveStreak  int
 	ProofCount    int
 	TaskDoneCount int
+}
+
+// Roadmap is a top-level journey that groups projects (trips). It is distinct
+// from the markdown-import RoadmapData feature.
+type Roadmap struct {
+	ID          int64
+	UUID        string
+	Name        string
+	Description string
+	Priority    int
+	Status      string
+	Privacy     string
+	Featured    bool
+	Icon        string
+	Color       string
+	CreatedAt   string
+	UpdatedAt   string
+	ArchivedAt  string
+}
+
+// RoadmapWithProgress augments a Roadmap with rollup counts for the sidebar.
+type RoadmapWithProgress struct {
+	Roadmap      Roadmap
+	ProjectCount int
+	ActiveCount  int
+	Progress     int
 }
 
 // ShipStats is the Captain Stats / Ship Status bar shown on the bridge and the
@@ -244,6 +271,10 @@ type RoadmapData struct {
 	Page               string
 	ShipStats          ShipStats
 	ShipRoute          RocketRoute
+	Roadmaps           []Roadmap
+	SelectedRoadmap    Roadmap
+	HasSelectedRoadmap bool
+	ScopedTree         ProjectTree
 	Today              string
 	WeekStart          string
 	WeekEnd            string
@@ -438,10 +469,23 @@ type ChartData struct {
 	Values []int
 }
 
+// ActivitySummary is the compact dashboard widget that replaces the old big
+// reminders/overdue/skipped blocks.
+type ActivitySummary struct {
+	Reminders      int
+	Overdue        int
+	CompletedToday int
+	Skipped        int
+}
+
 type DashboardData struct {
 	Page                     string
 	ShipStats                ShipStats
 	ShipRoute                RocketRoute
+	DashboardRoadmap         Roadmap
+	HasRoadmap               bool
+	Roadmaps                 []Roadmap
+	Activity                 ActivitySummary
 	Today                    string
 	TodayItems               []TaskOccurrence
 	OverdueTasks             []Task

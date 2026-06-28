@@ -3,13 +3,22 @@
   <div>
     <p class="eyebrow">Trip / {{.Project.Project.Category}}</p>
     <h1>{{.Project.Project.Name}}</h1>
-    <p class="hero-greeting"><span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span></p>
+    <p class="hero-greeting">
+      <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>
+      {{if .HasRoadmap}}<span class="badge rm-badge">{{.Roadmap.Name}}</span>{{if ne .Roadmap.Privacy "public"}}<span class="badge">{{.Roadmap.Privacy}}</span>{{end}}{{end}}
+    </p>
   </div>
   <div class="header-actions">
-    <a class="button secondary" href="/projects/{{.Project.Project.ID}}/edit">Edit Plan</a>
+    <a class="button secondary" href="/projects/{{.Project.Project.ID}}/edit">Edit Trip</a>
     <a class="button secondary" href="/projects">Back to Deck</a>
   </div>
 </section>
+
+<nav class="trip-breadcrumb" aria-label="Trip location">
+  {{if .HasRoadmap}}<a href="/roadmap?roadmap={{.Roadmap.ID}}">{{.Roadmap.Name}}</a>{{else}}<span>Unassigned roadmap</span>{{end}}
+  {{if .HasParent}}<span class="bc-sep">&rsaquo;</span><a href="/projects/{{.Parent.ID}}">{{.Parent.Name}}</a>{{end}}
+  <span class="bc-sep">&rsaquo;</span><strong>{{.Project.Project.Name}}</strong>
+</nav>
 
 <section class="route-strip" aria-label="Trip progress">
   <span class="route-strip-cap">Launch</span>
@@ -58,7 +67,15 @@
         <button class="button small" type="submit">Complete Expedition</button>
       </form>
     </div>
-    <p class="related-link"><a href="/roadmap">View on Galaxy Map &rarr;</a></p>
+    <div class="trip-actions">
+      <a class="button small secondary" href="/projects/new">Add Stop</a>
+      <a class="button small secondary" href="/roadmap{{if .HasRoadmap}}?roadmap={{.Roadmap.ID}}{{end}}">View on Galaxy Map</a>
+      {{if and .HasRoadmap (not .Roadmap.Featured)}}
+        <form method="post" action="/roadmaps/{{.Roadmap.ID}}/feature">
+          <button class="button small" type="submit">Set Roadmap as Dashboard</button>
+        </form>
+      {{end}}
+    </div>
   </article>
 
   <article class="glass-panel">
@@ -157,6 +174,33 @@
     <p class="empty">No missions yet.</p>
   {{end}}
 </section>
+
+{{if or .NextDestinations (eq .Project.Project.Status "locked")}}
+<section class="glass-panel">
+  <div class="panel-heading">
+    <div><p class="eyebrow">Route Links</p><h2>Unlock &amp; Dependencies</h2></div>
+  </div>
+  {{if eq .Project.Project.Status "locked"}}
+    <p class="body-copy">
+      This destination is locked.{{if .Project.Project.DependsOnProjectID}} Depends on trip #{{.Project.Project.DependsOnProjectID}}.{{end}}
+      Auto-unlock is {{if .Project.Project.AutoUnlock}}on{{else}}off{{end}}.
+    </p>
+    {{if .Project.Project.UnlockNotes}}<p class="body-copy unlock-note"><strong>Unlock:</strong> {{.Project.Project.UnlockNotes}}</p>{{end}}
+  {{end}}
+  {{if .NextDestinations}}
+    <p class="eyebrow">Next Destination</p>
+    <div class="project-grid">
+      {{range .NextDestinations}}
+        <a class="project-card" href="/projects/{{.ID}}">
+          <div class="project-card-top"><span class="badge status-{{.Status}}">{{.Status}}</span></div>
+          <h2>{{.Name}}</h2>
+          <p>Unlocks when this trip completes.</p>
+        </a>
+      {{end}}
+    </div>
+  {{end}}
+</section>
+{{end}}
 
 <section class="danger-zone">
   <form method="post" action="/projects/{{.Project.Project.ID}}/archive">

@@ -1,0 +1,72 @@
+{{define "content"}}
+<section class="page-hero compact">
+  <div>
+    <p class="eyebrow">Roadmap</p>
+    <h1>{{.Title}}</h1>
+  </div>
+  <a class="button secondary" href="/roadmap">Back to Galaxy Map</a>
+</section>
+
+<section class="glass-panel form-panel">
+  <form class="form-stack" method="post" action="{{.Action}}">
+    <label class="field">
+      <span>Name</span>
+      <input name="name" value="{{.Roadmap.Name}}" required>
+    </label>
+    <label class="field">
+      <span>Description</span>
+      <textarea name="description" rows="3">{{.Roadmap.Description}}</textarea>
+    </label>
+    <div class="form-row">
+      <label class="field">
+        <span>Priority</span>
+        <input type="number" name="priority" value="{{.Roadmap.Priority}}">
+      </label>
+      <label class="field">
+        <span>Status</span>
+        <select name="status">
+          {{$s := .Roadmap.Status}}
+          <option value="active" {{if eq $s "active"}}selected{{end}}>Active</option>
+          <option value="upcoming" {{if eq $s "upcoming"}}selected{{end}}>Upcoming</option>
+          <option value="locked" {{if eq $s "locked"}}selected{{end}}>Locked</option>
+          <option value="done" {{if eq $s "done"}}selected{{end}}>Done</option>
+        </select>
+      </label>
+    </div>
+    <div class="form-row">
+      <label class="field">
+        <span>Privacy</span>
+        <select name="privacy">
+          {{$p := .Roadmap.Privacy}}
+          <option value="private" {{if eq $p "private"}}selected{{end}}>Private</option>
+          <option value="public" {{if eq $p "public"}}selected{{end}}>Public</option>
+          <option value="local_only" {{if eq $p "local_only"}}selected{{end}}>Local only</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Color</span>
+        <select name="color">
+          {{$c := .Roadmap.Color}}
+          <option value="cyan" {{if eq $c "cyan"}}selected{{end}}>Cyan</option>
+          <option value="blue" {{if eq $c "blue"}}selected{{end}}>Blue</option>
+          <option value="green" {{if eq $c "green"}}selected{{end}}>Green</option>
+          <option value="amber" {{if eq $c "amber"}}selected{{end}}>Amber</option>
+        </select>
+      </label>
+    </div>
+    <label class="field">
+      <span>Icon</span>
+      <input name="icon" value="{{.Roadmap.Icon}}" placeholder="rocket">
+    </label>
+    <label class="rm-feature"><input type="checkbox" name="featured" {{if .Roadmap.Featured}}checked{{end}}> Set as dashboard roadmap</label>
+    <div class="button-row">
+      <button class="button" type="submit">{{if .IsEdit}}Save Roadmap{{else}}Create Roadmap{{end}}</button>
+    </div>
+  </form>
+  {{if .IsEdit}}
+    <form class="archive-form" method="post" action="/roadmaps/{{.Roadmap.ID}}/archive" onsubmit="return confirm('Archive this roadmap?')">
+      <button class="button danger" type="submit">Archive Roadmap</button>
+    </form>
+  {{end}}
+</section>
+{{end}}

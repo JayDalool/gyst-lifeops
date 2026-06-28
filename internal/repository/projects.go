@@ -12,14 +12,22 @@ import (
 const projectColumns = `id, uuid, COALESCE(parent_project_id, 0), name, description, category, project_kind, status,
 	COALESCE(start_date, ''), COALESCE(target_date, ''), notes, unlock_notes,
 	COALESCE(depends_on_project_id, 0), auto_unlock,
-	created_at, updated_at, COALESCE(archived_at, '')`
+	created_at, updated_at, COALESCE(archived_at, ''), COALESCE(roadmap_id, 0)`
 
 func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithProgress, error) {
-	where := "WHERE archived_at IS NULL AND status != 'archived'"
+	where := "WHERE p.archived_at IS NULL AND p.status != 'archived'"
 	if includeArchived {
 		where = ""
 	}
+	return r.listProjectsWhere(where)
+}
 
+// ListProjectsByRoadmap returns the projects (trips) that belong to one roadmap.
+func (r *Repository) ListProjectsByRoadmap(roadmapID int64) ([]models.ProjectWithProgress, error) {
+	return r.listProjectsWhere("WHERE p.roadmap_id = ? AND p.archived_at IS NULL AND p.status != 'archived'", roadmapID)
+}
+
+func (r *Repository) listProjectsWhere(where string, args ...any) ([]models.ProjectWithProgress, error) {
 	rows, err := r.db.Query(fmt.Sprintf(`SELECT %s,
 		(SELECT COUNT(*) FROM project_items i WHERE i.project_id = p.id) AS total_items,
 		(SELECT COUNT(*) FROM project_items i WHERE i.project_id = p.id AND i.status = 'completed') AS completed_items,
@@ -38,7 +46,7 @@ func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithPro
 			CASE project_kind WHEN 'main' THEN 0 WHEN 'subproject' THEN 1 ELSE 2 END,
 			CASE WHEN target_date IS NULL THEN 1 ELSE 0 END,
 			target_date,
-			created_at DESC`, projectColumns, where))
+			created_at DESC`, projectColumns, where), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +74,7 @@ func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithPro
 			&item.Project.CreatedAt,
 			&item.Project.UpdatedAt,
 			&item.Project.ArchivedAt,
+			&item.Project.RoadmapID,
 			&item.TotalItems,
 			&item.CompletedItems,
 			&item.NextDueItem,
@@ -85,6 +94,20 @@ func (r *Repository) ProjectTree() (models.ProjectTree, error) {
 	if err != nil {
 		return models.ProjectTree{}, err
 	}
+	return buildProjectTree(projects), nil
+}
+
+// ProjectTreeByRoadmap builds the trip tree scoped to a single roadmap, used by
+// the roadmap-scoped dashboard hero and the Navigation Deck filter.
+func (r *Repository) ProjectTreeByRoadmap(roadmapID int64) (models.ProjectTree, error) {
+	projects, err := r.ListProjectsByRoadmap(roadmapID)
+	if err != nil {
+		return models.ProjectTree{}, err
+	}
+	return buildProjectTree(projects), nil
+}
+
+func buildProjectTree(projects []models.ProjectWithProgress) models.ProjectTree {
 	tree := models.ProjectTree{Children: map[int64][]models.ProjectWithProgress{}}
 	for _, project := range projects {
 		project.Momentum = models.ChartData{}
@@ -98,7 +121,7 @@ func (r *Repository) ProjectTree() (models.ProjectTree, error) {
 		}
 		tree.Main = append(tree.Main, project)
 	}
-	return tree, nil
+	return tree
 }
 
 func (r *Repository) ProjectByID(id int64) (models.Project, error) {
@@ -146,8 +169,8 @@ func (r *Repository) CreateProject(project *models.Project) error {
 
 	res, err := r.db.Exec(`INSERT INTO projects
 		(parent_project_id, name, description, category, project_kind, status, start_date, target_date, notes,
-		 unlock_notes, depends_on_project_id, auto_unlock)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		 unlock_notes, depends_on_project_id, auto_unlock, roadmap_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		nullableInt64(project.ParentProjectID),
 		project.Name,
 		project.Description,
@@ -160,6 +183,7 @@ func (r *Repository) CreateProject(project *models.Project) error {
 		project.UnlockNotes,
 		nullableInt64(project.DependsOnProjectID),
 		boolFlag(project.AutoUnlock),
+		nullableInt64(project.RoadmapID),
 	)
 	if err != nil {
 		return err
@@ -186,6 +210,7 @@ func (r *Repository) UpdateProject(project *models.Project) error {
 		unlock_notes = ?,
 		depends_on_project_id = ?,
 		auto_unlock = ?,
+		roadmap_id = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
 		WHERE id = ?`,
@@ -201,6 +226,7 @@ func (r *Repository) UpdateProject(project *models.Project) error {
 		project.UnlockNotes,
 		nullableInt64(project.DependsOnProjectID),
 		boolFlag(project.AutoUnlock),
+		nullableInt64(project.RoadmapID),
 		project.ID,
 	)
 	return err

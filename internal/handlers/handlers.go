@@ -62,11 +62,16 @@ type MonthlyData struct {
 }
 
 type ProjectListData struct {
-	Page      string
-	ShipStats models.ShipStats
-	ShipRoute models.RocketRoute
-	Tree      models.ProjectTree
-	Unlocked  bool
+	Page              string
+	ShipStats         models.ShipStats
+	ShipRoute         models.RocketRoute
+	Tree              models.ProjectTree
+	Unlocked          bool
+	Roadmaps          []models.Roadmap
+	SelectedRoadmapID int64
+	SelectedRoadmap   models.Roadmap
+	RoadmapNames      map[int64]string
+	StatusFilter      string
 }
 
 // projectsRoute builds the rocket-route nodes (trips) from main projects.
@@ -89,13 +94,19 @@ type ProjectFormData struct {
 	Action   string
 	Project  models.Project
 	Projects []models.ProjectWithProgress
+	Roadmaps []models.Roadmap
 }
 
 type ProjectDetailData struct {
-	Page    string
-	Project models.ProjectWithProgress
-	Items   []models.ProjectItem
-	Stops   []models.ProjectWithProgress
+	Page             string
+	Project          models.ProjectWithProgress
+	Items            []models.ProjectItem
+	Stops            []models.ProjectWithProgress
+	Roadmap          models.Roadmap
+	HasRoadmap       bool
+	Parent           models.Project
+	HasParent        bool
+	NextDestinations []models.Project
 }
 
 type GoalListData struct {
@@ -152,6 +163,14 @@ type SettingsData struct {
 	Page string
 }
 
+type RoadmapFormData struct {
+	Page    string
+	Title   string
+	Action  string
+	Roadmap models.Roadmap
+	IsEdit  bool
+}
+
 func New(service *services.Service, templateDir string) *Handler {
 	return &Handler{Service: service, TemplateDir: templateDir}
 }
@@ -183,6 +202,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.health(w, r)
 	case "roadmap":
 		h.roadmap(w, r, segments)
+	case "roadmaps":
+		h.roadmaps(w, r, segments)
 	case "archive":
 		h.archive(w, r)
 	case "settings":
@@ -431,7 +452,28 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 			methodNotAllowed(w)
 			return
 		}
-		tree, err := h.Service.Repo.ProjectTree()
+		roadmaps, err := h.Service.Repo.ListRoadmaps(false)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		roadmapNames := make(map[int64]string, len(roadmaps))
+		for _, roadmap := range roadmaps {
+			roadmapNames[roadmap.ID] = roadmap.Name
+		}
+
+		// roadmap filter: "" / "all" = every roadmap; a numeric id scopes to one.
+		roadmapParam := r.URL.Query().Get("roadmap")
+		var selectedRoadmapID int64
+		var selectedRoadmap models.Roadmap
+		var tree models.ProjectTree
+		if id, ok := parseID(roadmapParam); ok {
+			selectedRoadmapID = id
+			selectedRoadmap, _ = h.Service.Repo.GetRoadmap(id)
+			tree, err = h.Service.Repo.ProjectTreeByRoadmap(id)
+		} else {
+			tree, err = h.Service.Repo.ProjectTree()
+		}
 		if err != nil {
 			serverError(w, err)
 			return
@@ -452,12 +494,18 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 			serverError(w, err)
 			return
 		}
+		statusFilter := cleanForm(r.URL.Query().Get("status"), "current")
 		h.render(w, "projects_list.html", ProjectListData{
-			Page:      "projects",
-			ShipStats: stats,
-			ShipRoute: projectsRoute("Navigation Deck", tree.Main),
-			Tree:      tree,
-			Unlocked:  r.URL.Query().Get("unlocked") == "1",
+			Page:              "projects",
+			ShipStats:         stats,
+			ShipRoute:         projectsRoute("Navigation Deck", tree.Main),
+			Tree:              tree,
+			Unlocked:          r.URL.Query().Get("unlocked") == "1",
+			Roadmaps:          roadmaps,
+			SelectedRoadmapID: selectedRoadmapID,
+			SelectedRoadmap:   selectedRoadmap,
+			RoadmapNames:      roadmapNames,
+			StatusFilter:      statusFilter,
 		})
 		return
 	}
@@ -500,19 +548,29 @@ func (h *Handler) newProject(w http.ResponseWriter, r *http.Request) {
 			serverError(w, err)
 			return
 		}
+		roadmaps, err := h.Service.Repo.ListRoadmaps(false)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		newProject := models.Project{
+			Category:    "other",
+			ProjectKind: "main",
+			Status:      "active",
+			StartDate:   h.Service.TodayString(),
+			AutoUnlock:  true,
+		}
+		if id, ok := parseID(r.URL.Query().Get("roadmap")); ok {
+			newProject.RoadmapID = id
+		}
 		h.render(w, "project_form.html", ProjectFormData{
-			Page:   "projects",
-			Today:  h.Service.TodayString(),
-			Title:  "New Project",
-			Action: "/projects/new",
-			Project: models.Project{
-				Category:    "other",
-				ProjectKind: "main",
-				Status:      "active",
-				StartDate:   h.Service.TodayString(),
-				AutoUnlock:  true,
-			},
+			Page:     "projects",
+			Today:    h.Service.TodayString(),
+			Title:    "New Project",
+			Action:   "/projects/new",
+			Project:  newProject,
 			Projects: projects,
+			Roadmaps: roadmaps,
 		})
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
@@ -554,16 +612,39 @@ func (h *Handler) projectDetail(w http.ResponseWriter, r *http.Request, id int64
 		return
 	}
 	var stops []models.ProjectWithProgress
+	var parent models.Project
+	hasParent := false
+	var nextDestinations []models.Project
 	for _, candidate := range allProjects {
 		if candidate.Project.ParentProjectID == id {
 			stops = append(stops, candidate)
 		}
+		if project.Project.ParentProjectID != 0 && candidate.Project.ID == project.Project.ParentProjectID {
+			parent = candidate.Project
+			hasParent = true
+		}
+		if candidate.Project.DependsOnProjectID == id {
+			nextDestinations = append(nextDestinations, candidate.Project)
+		}
+	}
+	var roadmap models.Roadmap
+	hasRoadmap := false
+	if project.Project.RoadmapID != 0 {
+		if found, rmErr := h.Service.Repo.GetRoadmap(project.Project.RoadmapID); rmErr == nil {
+			roadmap = found
+			hasRoadmap = true
+		}
 	}
 	h.render(w, "project_detail.html", ProjectDetailData{
-		Page:    "projects",
-		Project: project,
-		Items:   items,
-		Stops:   stops,
+		Page:             "projects",
+		Project:          project,
+		Items:            items,
+		Stops:            stops,
+		Roadmap:          roadmap,
+		HasRoadmap:       hasRoadmap,
+		Parent:           parent,
+		HasParent:        hasParent,
+		NextDestinations: nextDestinations,
 	})
 }
 
@@ -580,6 +661,11 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 			serverError(w, err)
 			return
 		}
+		roadmaps, err := h.Service.Repo.ListRoadmaps(false)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
 		h.render(w, "project_form.html", ProjectFormData{
 			Page:     "projects",
 			Today:    h.Service.TodayString(),
@@ -587,6 +673,7 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 			Action:   fmt.Sprintf("/projects/%d/edit", id),
 			Project:  project,
 			Projects: projects,
+			Roadmaps: roadmaps,
 		})
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
@@ -964,13 +1051,141 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "settings.html", SettingsData{Page: "settings"})
 }
 
+// roadmaps handles the multiple-roadmaps entity: create, edit, set-as-dashboard.
+func (h *Handler) roadmaps(w http.ResponseWriter, r *http.Request, segments []string) {
+	if len(segments) == 2 && segments[1] == "new" {
+		h.newRoadmap(w, r)
+		return
+	}
+
+	id, ok := parseID(segmentAt(segments, 1))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	if len(segments) == 3 {
+		switch segments[2] {
+		case "edit":
+			h.editRoadmap(w, r, id)
+			return
+		case "feature":
+			if r.Method != http.MethodPost {
+				methodNotAllowed(w)
+				return
+			}
+			if err := h.Service.Repo.SetFeaturedRoadmap(id); err != nil {
+				serverError(w, err)
+				return
+			}
+			redirectBack(w, r, "/")
+			return
+		case "archive":
+			if r.Method != http.MethodPost {
+				methodNotAllowed(w)
+				return
+			}
+			if err := h.Service.Repo.ArchiveRoadmap(id); err != nil {
+				serverError(w, err)
+				return
+			}
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+	}
+	http.NotFound(w, r)
+}
+
+func roadmapFromRequest(r *http.Request) (models.Roadmap, error) {
+	if err := r.ParseForm(); err != nil {
+		return models.Roadmap{}, err
+	}
+	return models.Roadmap{
+		Name:        strings.TrimSpace(r.FormValue("name")),
+		Description: strings.TrimSpace(r.FormValue("description")),
+		Priority:    parseIntForm(r.FormValue("priority"), 0),
+		Status:      cleanForm(r.FormValue("status"), "active"),
+		Privacy:     cleanForm(r.FormValue("privacy"), "private"),
+		Icon:        cleanForm(r.FormValue("icon"), "rocket"),
+		Color:       cleanForm(r.FormValue("color"), "cyan"),
+		Featured:    r.FormValue("featured") == "on",
+	}, nil
+}
+
+func (h *Handler) newRoadmap(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		h.render(w, "roadmap_form.html", RoadmapFormData{
+			Page:    "roadmap",
+			Title:   "New Roadmap",
+			Action:  "/roadmaps/new",
+			Roadmap: models.Roadmap{Status: "active", Privacy: "private", Icon: "rocket", Color: "cyan", Priority: 5},
+		})
+	case http.MethodPost:
+		roadmap, err := roadmapFromRequest(r)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		if roadmap.Name == "" {
+			http.Redirect(w, r, "/roadmaps/new", http.StatusSeeOther)
+			return
+		}
+		if err := h.Service.Repo.CreateRoadmap(&roadmap); err != nil {
+			serverError(w, err)
+			return
+		}
+		http.Redirect(w, r, "/roadmap?roadmap="+strconv.FormatInt(roadmap.ID, 10), http.StatusSeeOther)
+	default:
+		methodNotAllowed(w)
+	}
+}
+
+func (h *Handler) editRoadmap(w http.ResponseWriter, r *http.Request, id int64) {
+	switch r.Method {
+	case http.MethodGet:
+		roadmap, err := h.Service.Repo.GetRoadmap(id)
+		if err != nil {
+			notFoundOrError(w, err)
+			return
+		}
+		h.render(w, "roadmap_form.html", RoadmapFormData{
+			Page:    "roadmap",
+			Title:   "Edit Roadmap",
+			Action:  fmt.Sprintf("/roadmaps/%d/edit", id),
+			Roadmap: roadmap,
+			IsEdit:  true,
+		})
+	case http.MethodPost:
+		roadmap, err := roadmapFromRequest(r)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		roadmap.ID = id
+		if err := h.Service.Repo.UpdateRoadmap(&roadmap); err != nil {
+			serverError(w, err)
+			return
+		}
+		if roadmap.Featured {
+			if err := h.Service.Repo.SetFeaturedRoadmap(id); err != nil {
+				serverError(w, err)
+				return
+			}
+		}
+		http.Redirect(w, r, "/roadmap?roadmap="+strconv.FormatInt(id, 10), http.StatusSeeOther)
+	default:
+		methodNotAllowed(w)
+	}
+}
+
 func (h *Handler) roadmap(w http.ResponseWriter, r *http.Request, segments []string) {
 	if len(segments) == 1 {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
-		data, err := h.Service.Roadmap()
+		selectedRoadmapID, _ := parseID(r.URL.Query().Get("roadmap"))
+		data, err := h.Service.Roadmap(selectedRoadmapID)
 		if err != nil {
 			serverError(w, err)
 			return
@@ -1282,6 +1497,7 @@ func projectFromRequest(r *http.Request) (models.Project, error) {
 		UnlockNotes:        strings.TrimSpace(r.FormValue("unlock_notes")),
 		DependsOnProjectID: parseInt64Form(r.FormValue("depends_on_project_id")),
 		AutoUnlock:         r.FormValue("auto_unlock") == "on",
+		RoadmapID:          parseInt64Form(r.FormValue("roadmap_id")),
 	}, nil
 }
 

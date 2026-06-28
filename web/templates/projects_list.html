@@ -14,8 +14,8 @@
   </div>
   <div class="console-copy">
     <p class="eyebrow">Navigation Deck</p>
-    <h1>Plot Your Trips</h1>
-    <p class="hero-greeting">Active routes, planned destinations, and completed expeditions.</p>
+    <h1>{{if .SelectedRoadmapID}}{{.SelectedRoadmap.Name}}{{else}}Plot Your Trips{{end}}</h1>
+    <p class="hero-greeting">{{if .SelectedRoadmapID}}Trips on this roadmap.{{else}}Active routes, planned destinations, and completed expeditions.{{end}}</p>
   </div>
   <a class="button" href="/projects/new">New Trip</a>
 </section>
@@ -24,15 +24,27 @@
 
 {{template "rocketRoute" .ShipRoute}}
 
+<section class="roadmap-filter" aria-label="Filter by roadmap">
+  <span class="rf-label">Roadmap</span>
+  <a class="rf-pill {{if eq .SelectedRoadmapID 0}}is-active{{end}}" href="/projects">All Roadmaps</a>
+  {{range .Roadmaps}}
+    <a class="rf-pill {{if eq .ID $.SelectedRoadmapID}}is-active{{end}}" href="/projects?roadmap={{.ID}}">
+      <svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
+      <span>{{.Name}}</span>
+      {{if .Featured}}<em class="rf-star" title="Featured">&#9733;</em>{{end}}
+    </a>
+  {{end}}
+</section>
+
 <section class="glass-panel deck-panel">
   <div class="deck-filters" role="tablist" aria-label="Filter trips">
-    <input type="radio" id="filter-current" name="deck-filter" class="deck-radio" checked>
+    <input type="radio" id="filter-current" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "current"}}checked{{end}}>
     <label for="filter-current" class="deck-tab" role="tab">Current</label>
-    <input type="radio" id="filter-planned" name="deck-filter" class="deck-radio">
+    <input type="radio" id="filter-planned" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "planned"}}checked{{end}}>
     <label for="filter-planned" class="deck-tab" role="tab">Planned</label>
-    <input type="radio" id="filter-completed" name="deck-filter" class="deck-radio">
+    <input type="radio" id="filter-completed" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "completed"}}checked{{end}}>
     <label for="filter-completed" class="deck-tab" role="tab">Completed</label>
-    <input type="radio" id="filter-all" name="deck-filter" class="deck-radio">
+    <input type="radio" id="filter-all" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "all"}}checked{{end}}>
     <label for="filter-all" class="deck-tab" role="tab">All</label>
 
     <div class="deck-sections">
@@ -51,6 +63,7 @@
                   <div class="project-card-top">
                     <span class="card-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
                     <span class="badge">Trip</span>
+                    {{if and (eq $.SelectedRoadmapID 0) (index $.RoadmapNames .Project.RoadmapID)}}<span class="badge rm-badge">{{index $.RoadmapNames .Project.RoadmapID}}</span>{{end}}
                     <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
                   </div>
                   <h2>{{.Project.Name}}</h2>
@@ -123,6 +136,7 @@
               <a class="project-card trip-card node-done" href="/projects/{{.Project.ID}}">
                 <div class="project-card-top">
                   <span class="badge">Expedition</span>
+                  {{if and (eq $.SelectedRoadmapID 0) (index $.RoadmapNames .Project.RoadmapID)}}<span class="badge rm-badge">{{index $.RoadmapNames .Project.RoadmapID}}</span>{{end}}
                   <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
                 </div>
                 <h2>{{.Project.Name}}</h2>

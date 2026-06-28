@@ -1,11 +1,79 @@
 {{define "content"}}
 <section class="page-hero compact mission-hero">
   <div>
-    <p class="eyebrow">{{niceDate .Today}}</p>
-    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>Ship Bridge</h1>
+    <p class="eyebrow">{{niceDate .Today}} &middot; LifeOps Command</p>
+    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>GYST Mission Control</h1>
     <p class="hero-greeting">{{greeting}}</p>
   </div>
   <a class="button" href="/today">Open Today</a>
+</section>
+
+{{template "shipStats" .ShipStats}}
+
+<section class="bridge-layout">
+  <aside class="glass-panel roadmap-rail" aria-label="Roadmaps">
+    <div class="rail-head">
+      <h2>Roadmaps</h2>
+      <a class="rail-add" href="#new-roadmap" aria-label="Create roadmap">+</a>
+    </div>
+    {{if .Roadmaps}}
+      <ul class="roadmap-list">
+        {{range .Roadmaps}}
+          <li class="roadmap-item {{if eq .ID $.DashboardRoadmap.ID}}is-active{{end}}">
+            <span class="rm-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
+            <span class="rm-copy">
+              <strong>{{.Name}}</strong>
+              <small>P{{.Priority}}{{if .Featured}} &middot; Featured{{end}}{{if ne .Privacy "public"}} &middot; {{.Privacy}}{{end}}</small>
+            </span>
+            {{if ne .Privacy "public"}}<span class="rm-lock" title="{{.Privacy}}">&#128274;</span>{{end}}
+            {{if not .Featured}}
+              <form method="post" action="/roadmaps/{{.ID}}/feature">
+                <button class="rm-set" type="submit" title="Set as dashboard">Set</button>
+              </form>
+            {{end}}
+          </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty">No roadmaps yet.</p>
+    {{end}}
+    <details class="rm-new" id="new-roadmap">
+      <summary>+ New Roadmap</summary>
+      <form method="post" action="/roadmaps/new" class="form-stack">
+        <input name="name" placeholder="Roadmap name" required>
+        <div class="form-row">
+          <input type="number" name="priority" placeholder="Priority" value="5">
+          <select name="privacy">
+            <option value="private">Private</option>
+            <option value="public">Public</option>
+            <option value="local_only">Local only</option>
+          </select>
+        </div>
+        <label class="rm-feature"><input type="checkbox" name="featured"> Set as dashboard</label>
+        <button class="button small" type="submit">Create Roadmap</button>
+      </form>
+    </details>
+  </aside>
+
+  <section class="glass-panel bridge-hero">
+    <div class="hero-head">
+      <div>
+        <p class="eyebrow">Current Destination</p>
+        <h2>{{if .HasRoadmap}}{{.DashboardRoadmap.Name}}{{else}}No roadmap selected{{end}}</h2>
+      </div>
+      <a class="button small secondary" href="/roadmap">View Full Route</a>
+    </div>
+    {{if .HasRoadmap}}
+      {{if .ShipRoute.Nodes}}
+        {{template "rocketRoute" .ShipRoute}}
+      {{else}}
+        <p class="empty">No destinations on this roadmap yet. Add a trip to plot the route.</p>
+      {{end}}
+    {{else}}
+      <p class="empty">Create a roadmap to plot your first journey.</p>
+      <a class="button small" href="#new-roadmap">Create Roadmap</a>
+    {{end}}
+  </section>
 </section>
 
 <nav class="quick-actions-bar" aria-label="Quick actions">
@@ -15,138 +83,112 @@
   <a href="/today"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg><span>Today</span></a>
 </nav>
 
-{{template "shipStats" .ShipStats}}
-
-{{template "rocketRoute" .ShipRoute}}
-
-<section class="captain-deck single" aria-label="Current trip">
-  <article class="glass-panel destination-card">
-    <p class="eyebrow">Current Trip</p>
+<div class="bridge-cards">
+  <section class="glass-panel">
+    <div class="panel-heading">
+      <div><p class="eyebrow">In Flight</p><h2>Active Trips</h2></div>
+      <span class="count">{{len .ActiveProjects}}</span>
+    </div>
     {{if .ActiveProjects}}
-      {{with index .ActiveProjects 0}}
-      <h2>{{.Project.Name}}</h2>
-      <p>{{if .NextDueItem}}Next mission: {{.NextDueItem}}{{else}}{{.Project.Notes}}{{end}}</p>
-      <div class="destination-meta">
-        <span class="map-node-state node-active">on course</span>
-        <strong>{{.Progress}}%</strong>
+      <div class="project-grid embedded-grid">
+        {{range .ActiveProjects}}
+          <a class="project-card system-card" href="/projects/{{.Project.ID}}">
+            <div class="project-card-top">
+              <span class="badge">Trip</span>
+              <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
+            </div>
+            <h2>{{.Project.Name}}</h2>
+            <p>{{if .NextDueItem}}Next mission: {{.NextDueItem}}{{else}}{{.Project.Notes}}{{end}}</p>
+            <div class="project-progress">
+              <div><strong>{{.Progress}}%</strong><small>{{.CompletedItems}} / {{.TotalItems}} missions</small></div>
+              <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+            </div>
+          </a>
+        {{end}}
       </div>
-      <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-      <a class="button small secondary" href="/projects/{{.Project.ID}}">Open trip</a>
-      {{end}}
     {{else}}
-      <h2>No trip set</h2>
-      <p>Activate a trip to plot your next course.</p>
-      <a class="button small secondary" href="/projects">Browse trips</a>
+      <p class="empty">No active trips in this roadmap.</p>
     {{end}}
-  </article>
-</section>
+  </section>
 
-<section class="mission-control" aria-label="Today's Missions">
-  <div class="section-heading">
-    <div>
-      <p class="eyebrow">Today</p>
-      <h2>Today's Missions</h2>
+  <section class="glass-panel">
+    <div class="panel-heading">
+      <div><p class="eyebrow">Planned</p><h2>Planned Routes</h2></div>
+      <span class="count">{{len .UpcomingProjects}}</span>
     </div>
-    <strong>{{.TodayCompletion}}%</strong>
-  </div>
-  <div class="mission-grid">
-    {{range .TodayItems}}
-      {{if eq .Status "pending"}}
-        <article class="mission-panel mission-node">
-          <div class="mission-panel-head">
-            <span>{{.Task.Title}}</span>
-            <strong>+{{.Task.StarsReward}}</strong>
-          </div>
-          <small>
-            {{if .Task.ProofRequired}}
-              <span class="map-node-state node-blocked">Evidence required</span>
-            {{else}}{{.Task.Priority}}{{end}}
-          </small>
-          <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
-            <input type="hidden" name="occurrence_date" value="{{.Date}}">
-            <button class="button small" type="submit">Complete</button>
-          </form>
-        </article>
-      {{end}}
+    {{if .UpcomingProjects}}
+      <div class="project-grid embedded-grid">
+        {{range .UpcomingProjects}}
+          <a class="project-card locked-card" href="/projects/{{.Project.ID}}">
+            <div class="project-card-top">
+              <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
+              <span class="badge">{{if .Project.AutoUnlock}}auto unlock{{else}}manual{{end}}</span>
+            </div>
+            <h2>{{.Project.Name}}</h2>
+            <p>{{if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else}}{{.Project.Notes}}{{end}}</p>
+          </a>
+        {{end}}
+      </div>
     {{else}}
-      <p class="empty">No missions scheduled today.</p>
+      <p class="empty">No planned routes queued.</p>
     {{end}}
-  </div>
-</section>
+  </section>
+</div>
 
-<section class="glass-panel">
-  <div class="panel-heading">
-    <div>
-      <p class="eyebrow">Active</p>
-      <h2>Active Trips</h2>
+<div class="bridge-cards">
+  <section class="glass-panel rewards-center">
+    <div class="panel-heading">
+      <div><p class="eyebrow">Rewards</p><h2>Command Center</h2></div>
     </div>
-    <span class="count">{{len .ActiveProjects}}</span>
-  </div>
-  {{if .ActiveProjects}}
-    <div class="project-grid">
-      {{range .ActiveProjects}}
-        <a class="project-card system-card" href="/projects/{{.Project.ID}}">
-          <div class="project-card-top">
-            <span class="badge">{{.Project.ProjectKind}}</span>
-            <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-          </div>
-          <h2>{{.Project.Name}}</h2>
-          <p>{{if .NextDueItem}}Next mission: {{.NextDueItem}}{{else}}{{.Project.Notes}}{{end}}</p>
-          <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-        </a>
-      {{end}}
+    <div class="rewards-grid">
+      <div class="reward-stat streak">
+        <span>Current Streak</span>
+        <strong>{{.ShipStats.Streak}} <small>days</small></strong>
+      </div>
+      <div class="reward-stat fuel">
+        <span>Fuel Reserve</span>
+        <strong>{{.ShipStats.TotalFuel}} <small>XP</small></strong>
+        <div class="level-meter"><span style="width:{{.ShipStats.LevelProgress}}%"></span></div>
+        <small>Level {{.ShipStats.Level}} &middot; {{.ShipStats.LevelProgress}}/100 to next</small>
+      </div>
+      <div class="reward-stat medals">
+        <span>Medals</span>
+        <strong>{{.ShipStats.MedalCount}}</strong>
+      </div>
     </div>
-  {{else}}
-    <p class="empty">No active trips. Promote a planned route when ready.</p>
-  {{end}}
-</section>
-
-<details class="glass-panel upcoming-panel">
-  <summary>
-    <span>Upcoming Locked Trips</span>
-    <strong>{{len .UpcomingProjects}}</strong>
-  </summary>
-  {{if .UpcomingProjects}}
-    <div class="project-grid">
-      {{range .UpcomingProjects}}
-        <a class="project-card locked-card" href="/projects/{{.Project.ID}}">
-          <div class="project-card-top">
-            <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-            <span class="badge">{{if .Project.AutoUnlock}}auto unlock{{else}}manual{{end}}</span>
-          </div>
-          <h2>{{.Project.Name}}</h2>
-          <p>{{if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else}}{{.Project.Notes}}{{end}}</p>
-        </a>
-      {{end}}
-    </div>
-  {{else}}
-    <p class="empty">No locked trips waiting.</p>
-  {{end}}
-</details>
-
-<section class="glass-panel">
-  <div class="panel-heading">
-    <div>
-      <p class="eyebrow">Rewards</p>
-      <h2>Recent Medals</h2>
-    </div>
-    <span class="count">{{len .RecentAchievements}}</span>
-  </div>
-  {{if .RecentAchievements}}
-    <div class="medal-grid">
-      {{range .RecentAchievements}}
-        <article class="medal">
-          <div class="medal-disc">
-            <svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg>
-          </div>
+    {{if .RecentAchievements}}
+      <div class="recent-unlocks">
+        <p class="eyebrow">Recent Unlocks</p>
+        <div class="medal-row">
+          {{range .RecentAchievements}}
+            <span class="medal-chip" title="{{.Title}}"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg></span>
+          {{end}}
+        </div>
+      </div>
+      {{with index .RecentAchievements 0}}
+        <div class="mission-achieved">
+          <span>Mission Achieved</span>
           <strong>{{.Title}}</strong>
-          <small>+{{.StarsBonus}} fuel / {{niceDateTime .UnlockedAt}}</small>
-          {{if .Description}}<p>{{.Description}}</p>{{end}}
-        </article>
+          <em>+{{.StarsBonus}} XP</em>
+        </div>
       {{end}}
+    {{else}}
+      <p class="empty">Earn medals by completing missions and submitting evidence.</p>
+    {{end}}
+  </section>
+
+  <section class="glass-panel activity-summary">
+    <div class="panel-heading">
+      <div><p class="eyebrow">Today</p><h2>Activity Summary</h2></div>
+      <a class="button small secondary" href="/today">Details</a>
     </div>
-  {{else}}
-    <p class="empty">Medals appear as trips finish and evidence is submitted.</p>
-  {{end}}
-</section>
+    <ul class="activity-list">
+      <li><span>Reminders</span><strong>{{.Activity.Reminders}}</strong></li>
+      <li><span>Overdue</span><strong class="{{if .Activity.Overdue}}warn{{end}}">{{.Activity.Overdue}}</strong></li>
+      <li><span>Completed</span><strong class="good">{{.Activity.CompletedToday}}</strong></li>
+      <li><span>Skipped</span><strong>{{.Activity.Skipped}}</strong></li>
+    </ul>
+    <p class="activity-link"><a href="/tasks">Open Tasks &rarr;</a></p>
+  </section>
+</div>
 {{end}}

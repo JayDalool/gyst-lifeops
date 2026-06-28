@@ -1,6 +1,8 @@
 package services
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"regexp"
 	"sort"
@@ -19,7 +21,7 @@ var (
 	metaLineRE     = regexp.MustCompile(`^([A-Za-z][A-Za-z /_-]*):\s*(.+)$`)
 )
 
-func (s *Service) Roadmap() (models.RoadmapData, error) {
+func (s *Service) Roadmap(selectedRoadmapID int64) (models.RoadmapData, error) {
 	today := s.Today()
 	weekStart, weekEnd := weekBounds(today)
 
@@ -97,38 +99,68 @@ func (s *Service) Roadmap() (models.RoadmapData, error) {
 	if err != nil {
 		return models.RoadmapData{}, err
 	}
-	routeNodes := make([]models.RouteNode, 0, len(projects))
-	for _, project := range projects {
-		if project.Project.Project.ParentProjectID != 0 {
-			continue // only main trips on the route; stops show on the map below
-		}
-		routeNodes = append(routeNodes, models.RouteNode{
-			Name:  project.Project.Project.Name,
-			URL:   "/projects/" + strconv.FormatInt(project.Project.Project.ID, 10),
-			State: RouteState(project.Project.Project.Status, project.Progress),
-		})
+
+	// Roadmap-entity selection: explicit ?roadmap=ID, else the dashboard roadmap.
+	roadmaps, err := s.Repo.ListRoadmaps(false)
+	if err != nil {
+		return models.RoadmapData{}, err
 	}
-	// Fall back to the main project trips when no roadmap has been imported yet,
-	// so the Galaxy Map still shows a route on a fresh install.
-	if len(routeNodes) == 0 {
-		if mains, err := s.Repo.ListProjects(false); err == nil {
-			for _, project := range mains {
-				if project.Project.ParentProjectID != 0 {
-					continue
-				}
-				routeNodes = append(routeNodes, models.RouteNode{
-					Name:  project.Project.Name,
-					URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
-					State: RouteState(project.Project.Status, project.Progress),
-				})
-			}
+	var selectedRoadmap models.Roadmap
+	hasSelected := false
+	if selectedRoadmapID > 0 {
+		if found, gErr := s.Repo.GetRoadmap(selectedRoadmapID); gErr == nil {
+			selectedRoadmap = found
+			hasSelected = true
 		}
+	}
+	if !hasSelected {
+		if found, gErr := s.Repo.GetDashboardRoadmap(); gErr == nil {
+			selectedRoadmap = found
+			hasSelected = true
+		} else if !errors.Is(gErr, sql.ErrNoRows) {
+			return models.RoadmapData{}, gErr
+		}
+	}
+
+	// Rocket route + list view are scoped to the selected roadmap's trips.
+	var scopedTree models.ProjectTree
+	routeNodes := make([]models.RouteNode, 0)
+	if hasSelected {
+		scopedTree, err = s.Repo.ProjectTreeByRoadmap(selectedRoadmap.ID)
+		if err != nil {
+			return models.RoadmapData{}, err
+		}
+		for index := range scopedTree.Main {
+			scopedTree.Main[index].Momentum = trendChart(scopedTree.Main[index].Progress)
+		}
+		for _, project := range scopedTree.Main {
+			routeNodes = append(routeNodes, models.RouteNode{
+				Name:  project.Project.Name,
+				URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
+				State: RouteState(project.Project.Status, project.Progress),
+			})
+		}
+		for _, project := range scopedTree.Upcoming {
+			routeNodes = append(routeNodes, models.RouteNode{
+				Name:  project.Project.Name,
+				URL:   "/projects/" + strconv.FormatInt(project.Project.ID, 10),
+				State: RouteState(project.Project.Status, project.Progress),
+			})
+		}
+	}
+	routeTitle := "Galaxy Map"
+	if hasSelected {
+		routeTitle = selectedRoadmap.Name
 	}
 
 	return models.RoadmapData{
 		Page:               "roadmap",
 		ShipStats:          shipStats,
-		ShipRoute:          BuildRocketRoute("Galaxy Map", routeNodes),
+		ShipRoute:          BuildRocketRoute(routeTitle, routeNodes),
+		Roadmaps:           roadmaps,
+		SelectedRoadmap:    selectedRoadmap,
+		HasSelectedRoadmap: hasSelected,
+		ScopedTree:         scopedTree,
 		Today:              formatDate(today),
 		WeekStart:          formatDate(weekStart),
 		WeekEnd:            formatDate(weekEnd),
@@ -161,7 +193,7 @@ func (s *Service) CreateRoadmapWeeklyReview(review models.RoadmapWeeklyReview) e
 }
 
 func (s *Service) ExportRoadmap(public bool) (string, error) {
-	data, err := s.Roadmap()
+	data, err := s.Roadmap(0)
 	if err != nil {
 		return "", err
 	}

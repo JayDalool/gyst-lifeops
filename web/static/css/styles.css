@@ -2691,6 +2691,350 @@ i.map-node-state {
   .ship-stat { min-width: 88px; flex-basis: 88px; }
 }
 
+/* =====================================================================
+   Mission Control bridge: roadmap rail, hero, rewards, activity summary
+   ===================================================================== */
+
+.bridge-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.roadmap-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rail-head h2 { margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+
+.rail-add {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--cyan);
+  font-weight: 850;
+  font-size: 16px;
+}
+
+.rail-add:hover { background: rgba(101, 232, 255, 0.12); }
+
+.roadmap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+
+.roadmap-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-soft);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.roadmap-item.is-active {
+  border-color: var(--border-strong);
+  background: linear-gradient(90deg, rgba(101, 232, 255, 0.12), transparent);
+  box-shadow: inset 2px 0 0 var(--cyan);
+}
+
+.rm-icon { display: grid; place-items: center; color: var(--cyan); flex: 0 0 auto; }
+.rm-copy { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.rm-copy strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rm-copy small { font-size: 11px; color: var(--quiet); }
+.rm-lock { font-size: 11px; opacity: 0.7; flex: 0 0 auto; }
+
+.rm-set {
+  flex: 0 0 auto;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rm-set:hover { border-color: var(--border-strong); background: rgba(101, 232, 255, 0.1); }
+
+.rm-new { margin-top: 4px; border-top: 1px solid var(--border); padding-top: 10px; }
+.rm-new summary { cursor: pointer; font-weight: 800; color: var(--cyan); font-size: 13px; }
+.rm-new .form-stack { margin-top: 10px; gap: 8px; }
+.rm-new input, .rm-new select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+.rm-feature { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+
+.bridge-hero { display: flex; flex-direction: column; gap: 8px; }
+.hero-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hero-head h2 { margin: 2px 0 0; font-size: 22px; }
+.bridge-hero .rocket-route { margin-bottom: 0; flex: 1; }
+
+.bridge-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+/* Rewards Command Center */
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.reward-stat {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+}
+
+.reward-stat span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--quiet); }
+.reward-stat strong { display: block; margin-top: 4px; font-size: 22px; color: var(--text); }
+.reward-stat strong small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.reward-stat.streak strong { color: var(--orange); }
+.reward-stat.fuel strong { color: var(--cyan); }
+.reward-stat .level-meter { margin-top: 8px; }
+.reward-stat.fuel small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; text-transform: none; letter-spacing: 0; }
+
+.recent-unlocks { margin-bottom: 12px; }
+.medal-row { display: flex; gap: 10px; margin-top: 6px; }
+
+.medal-chip {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: #06080d;
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  background: linear-gradient(135deg, var(--cyan), var(--green));
+  box-shadow: 0 0 12px rgba(101, 232, 255, 0.35);
+}
+
+.mission-achieved {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid rgba(101, 231, 160, 0.4);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(101, 231, 160, 0.16), transparent);
+}
+
+.mission-achieved span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--green); }
+.mission-achieved strong { flex: 1; font-size: 14px; }
+.mission-achieved em { color: var(--green); font-style: normal; font-weight: 850; }
+
+/* Activity Summary */
+.activity-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; }
+.activity-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-soft);
+}
+.activity-list span { color: var(--muted); font-size: 13px; }
+.activity-list strong { font-size: 18px; }
+.activity-list strong.warn { color: var(--orange); }
+.activity-list strong.good { color: var(--green); }
+.activity-link a { color: var(--cyan); font-weight: 700; font-size: 13px; }
+
+/* Premium rocket-route polish: layered planets + refined route line */
+.route-line path { stroke: rgba(101, 232, 255, 0.5); stroke-width: 1.1; }
+
+.node-planet {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.7), transparent 45%),
+    radial-gradient(circle at 70% 80%, rgba(120, 167, 255, 0.5), transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(40, 60, 95, 0.95), rgba(12, 20, 34, 1));
+  border: 1px solid rgba(166, 213, 255, 0.35);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.15);
+}
+
+.route-node.active .node-planet {
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.85), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(101, 232, 255, 0.55), rgba(14, 30, 44, 1));
+  box-shadow: 0 0 0 4px rgba(101, 232, 255, 0.12), 0 0 22px rgba(101, 232, 255, 0.65);
+}
+
+.route-node.done .node-planet {
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.8), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(101, 231, 160, 0.5), rgba(12, 30, 24, 1));
+}
+
+.route-node.locked .node-planet {
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.3), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(80, 92, 110, 0.5), rgba(14, 18, 26, 1));
+}
+
+@media (max-width: 900px) {
+  .bridge-layout { grid-template-columns: 1fr; }
+  .bridge-cards { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .rewards-grid { grid-template-columns: 1fr; }
+}
+
+/* =====================================================================
+   Roadmap filter pills, trip breadcrumb, roadmap tree, roadmap form
+   ===================================================================== */
+
+.roadmap-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.rf-label {
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--quiet);
+  margin-right: 4px;
+}
+
+.rf-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.rf-pill .ui-icon { width: 15px; height: 15px; }
+.rf-pill:hover { border-color: var(--border-strong); color: var(--text); }
+.rf-pill.is-active { border-color: var(--border-strong); background: rgba(101, 232, 255, 0.14); color: var(--cyan); }
+.rf-star { color: var(--orange); font-style: normal; }
+.rf-add { border-style: dashed; color: var(--cyan); }
+
+.rm-badge {
+  border-color: rgba(120, 167, 255, 0.4);
+  color: var(--blue);
+  background: rgba(120, 167, 255, 0.1);
+  text-transform: none;
+}
+
+/* Trip detail breadcrumb + actions */
+.trip-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.trip-breadcrumb a { color: var(--cyan); }
+.trip-breadcrumb strong { color: var(--text); }
+.bc-sep { color: var(--quiet); }
+
+.trip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.roadmap-desc { color: var(--muted); margin: -6px 0 16px; max-width: 70ch; }
+
+/* Roadmap list-view tree */
+.roadmap-tree { display: grid; gap: 10px; }
+
+.tree-trip {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--panel-soft);
+}
+
+.tree-trip-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+}
+
+.tree-trip-head strong { flex: 1; }
+.tree-trip-head small { color: var(--muted); }
+
+.tree-stops {
+  margin-top: 8px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+}
+
+.tree-stop {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.tree-stop:hover { background: rgba(255, 255, 255, 0.04); }
+.tree-stop span:not(.tree-dot) { flex: 1; }
+.tree-stop small { color: var(--muted); }
+
+.tree-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--blue);
+  flex: 0 0 auto;
+}
+
+.node-active > .tree-dot, .tree-trip-head.node-active .tree-dot { background: var(--cyan); box-shadow: 0 0 7px rgba(101, 232, 255, 0.6); }
+.node-done > .tree-dot, .tree-trip-head.node-done .tree-dot { background: var(--green); }
+.node-locked > .tree-dot, .tree-trip-head.node-locked .tree-dot { background: var(--quiet); }
+.node-blocked > .tree-dot, .tree-trip-head.node-blocked .tree-dot { background: var(--orange); }
+
+.tree-section-label { margin: 14px 0 4px; }
+
+.form-panel { max-width: 640px; }
+.archive-form { margin-top: 14px; }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

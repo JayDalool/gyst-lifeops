@@ -28,11 +28,18 @@ func renderOK(t *testing.T, page string, data any) {
 
 func TestRenderDashboard(t *testing.T) {
 	data := models.DashboardData{
-		Page:            "dashboard",
-		Today:           "2026-06-25",
-		TodayCompletion: 40,
-		ShipStats:       models.ShipStats{TotalFuel: 240, Level: 3, LevelProgress: 40, CompletedMissions: 18, ActiveTrips: 2, Streak: 5, MedalCount: 4, RecentMedal: "First Launch"},
-		ShipRoute: services.BuildRocketRoute("Ship Bridge", []models.RouteNode{
+		Page:             "dashboard",
+		Today:            "2026-06-25",
+		TodayCompletion:  40,
+		ShipStats:        models.ShipStats{TotalFuel: 240, Level: 3, LevelProgress: 40, CompletedMissions: 18, ActiveTrips: 2, Streak: 5, MedalCount: 4, RecentMedal: "First Launch"},
+		HasRoadmap:       true,
+		DashboardRoadmap: models.Roadmap{ID: 1, Name: "AI Engineer Roadmap", Priority: 10, Featured: true, Privacy: "private", Status: "active"},
+		Roadmaps: []models.Roadmap{
+			{ID: 1, Name: "AI Engineer Roadmap", Priority: 10, Featured: true, Privacy: "private", Status: "active"},
+			{ID: 2, Name: "Sim Rig Build", Priority: 7, Privacy: "public", Status: "active"},
+		},
+		Activity: models.ActivitySummary{Reminders: 2, Overdue: 1, CompletedToday: 5, Skipped: 0},
+		ShipRoute: services.BuildRocketRoute("AI Engineer Roadmap", []models.RouteNode{
 			{Name: "Real Estate AI", URL: "/projects/1", State: "active"},
 			{Name: "Healthcare AI", URL: "/projects/2", State: "locked"},
 			{Name: "Portfolio", URL: "/projects/3", State: "done"},
@@ -78,6 +85,14 @@ func TestRenderRoadmap(t *testing.T) {
 		Page:               "roadmap",
 		ShipStats:          models.ShipStats{TotalFuel: 300, Level: 4, LevelProgress: 0, ActiveTrips: 2, MedalCount: 3, RecentMedal: "Server Deployed"},
 		ShipRoute:          services.BuildRocketRoute("Galaxy Map", []models.RouteNode{{Name: "Real Estate AI System", URL: "/projects/1", State: "active"}}),
+		Roadmaps:           []models.Roadmap{{ID: 1, Name: "AI Engineer Roadmap", Priority: 10, Featured: true, Privacy: "private", Status: "active"}},
+		SelectedRoadmap:    models.Roadmap{ID: 1, Name: "AI Engineer Roadmap", Description: "Become an AI engineer", Priority: 10, Featured: true, Privacy: "private", Status: "active"},
+		HasSelectedRoadmap: true,
+		ScopedTree: models.ProjectTree{
+			Main:     []models.ProjectWithProgress{{Project: models.Project{ID: 1, Name: "Real Estate AI", Status: "active"}, Progress: 50}},
+			Children: map[int64][]models.ProjectWithProgress{1: {{Project: models.Project{ID: 2, Name: "Phase 1", Status: "active", ProjectKind: "subproject"}, Progress: 20}}},
+			Upcoming: []models.ProjectWithProgress{{Project: models.Project{ID: 3, Name: "Healthcare AI", Status: "locked"}}},
+		},
 		Today:              "2026-06-25",
 		WeekStart:          "2026-06-22",
 		WeekEnd:            "2026-06-28",
@@ -109,16 +124,36 @@ func TestRenderProjectsList(t *testing.T) {
 			{Project: models.Project{ID: 9, Name: "Healthcare AI", Status: "locked", AutoUnlock: true, UnlockNotes: "later"}},
 		},
 	}
+	roadmaps := []models.Roadmap{
+		{ID: 1, Name: "AI Engineer Roadmap", Priority: 10, Featured: true, Privacy: "private", Status: "active"},
+		{ID: 2, Name: "Sim Rig Build", Priority: 7, Privacy: "public", Status: "active"},
+	}
+	names := map[int64]string{1: "AI Engineer Roadmap", 2: "Sim Rig Build"}
+	tree.Main[0].Project.RoadmapID = 1
+	// All Roadmaps view (badges shown).
 	renderOK(t, "projects_list.html", ProjectListData{
-		Page:      "projects",
-		Tree:      tree,
-		Unlocked:  true,
-		ShipStats: models.ShipStats{TotalFuel: 120, Level: 2, LevelProgress: 20, ActiveTrips: 1, MedalCount: 1},
+		Page:         "projects",
+		Tree:         tree,
+		Unlocked:     true,
+		ShipStats:    models.ShipStats{TotalFuel: 120, Level: 2, LevelProgress: 20, ActiveTrips: 1, MedalCount: 1},
+		Roadmaps:     roadmaps,
+		RoadmapNames: names,
+		StatusFilter: "current",
 		ShipRoute: services.BuildRocketRoute("Navigation Deck", []models.RouteNode{
 			{Name: "Real Estate AI", URL: "/projects/1", State: "active"},
 		}),
 	})
-	renderOK(t, "projects_list.html", ProjectListData{Page: "projects", Tree: models.ProjectTree{Children: map[int64][]models.ProjectWithProgress{}}})
+	// Filtered to one roadmap (badges hidden, header shows name).
+	renderOK(t, "projects_list.html", ProjectListData{
+		Page:              "projects",
+		Tree:              tree,
+		Roadmaps:          roadmaps,
+		RoadmapNames:      names,
+		SelectedRoadmapID: 1,
+		SelectedRoadmap:   roadmaps[0],
+		StatusFilter:      "all",
+	})
+	renderOK(t, "projects_list.html", ProjectListData{Page: "projects", Tree: models.ProjectTree{Children: map[int64][]models.ProjectWithProgress{}}, RoadmapNames: map[int64]string{}})
 }
 
 func TestRenderProjectDetail(t *testing.T) {
@@ -136,6 +171,11 @@ func TestRenderProjectDetail(t *testing.T) {
 			{Project: models.Project{ID: 2, Name: "Phase 1", Status: "active", ProjectKind: "subproject"}, Progress: 30},
 			{Project: models.Project{ID: 3, Name: "Phase 2", Status: "locked", ProjectKind: "subproject", UnlockNotes: "after phase 1"}},
 		},
+		HasRoadmap:       true,
+		Roadmap:          models.Roadmap{ID: 1, Name: "AI Engineer Roadmap", Privacy: "private", Featured: false, Status: "active"},
+		HasParent:        true,
+		Parent:           models.Project{ID: 9, Name: "Parent Trip"},
+		NextDestinations: []models.Project{{ID: 7, Name: "Healthcare AI", Status: "locked"}},
 	}
 	renderOK(t, "project_detail.html", data)
 
@@ -170,4 +210,88 @@ func TestRenderToday(t *testing.T) {
 	}
 	renderOK(t, "today.html", data)
 	renderOK(t, "today.html", TodayData{Page: "today", Today: "2026-06-25"})
+}
+
+func TestRenderProjectForm(t *testing.T) {
+	renderOK(t, "project_form.html", ProjectFormData{
+		Page:    "projects",
+		Today:   "2026-06-26",
+		Title:   "New Project",
+		Action:  "/projects/new",
+		Project: models.Project{Category: "other", ProjectKind: "main", Status: "active", AutoUnlock: true, RoadmapID: 1},
+		Projects: []models.ProjectWithProgress{
+			{Project: models.Project{ID: 2, Name: "Existing Trip"}},
+		},
+		Roadmaps: []models.Roadmap{
+			{ID: 1, Name: "AI Engineer Roadmap"},
+			{ID: 2, Name: "Sim Rig Build"},
+		},
+	})
+}
+
+func TestRenderRoadmapForm(t *testing.T) {
+	renderOK(t, "roadmap_form.html", RoadmapFormData{
+		Page:    "roadmap",
+		Title:   "New Roadmap",
+		Action:  "/roadmaps/new",
+		Roadmap: models.Roadmap{Status: "active", Privacy: "private", Icon: "rocket", Color: "cyan", Priority: 5},
+	})
+	renderOK(t, "roadmap_form.html", RoadmapFormData{
+		Page:    "roadmap",
+		Title:   "Edit Roadmap",
+		Action:  "/roadmaps/1/edit",
+		Roadmap: models.Roadmap{ID: 1, Name: "AI Engineer", Status: "active", Privacy: "private", Icon: "rocket", Color: "cyan", Priority: 10, Featured: true},
+		IsEdit:  true,
+	})
+}
+
+// renderBody renders a page and returns its HTML for content assertions.
+func renderBody(t *testing.T, page string, data any) string {
+	t.Helper()
+	h := &Handler{TemplateDir: "../../web/templates"}
+	rec := httptest.NewRecorder()
+	h.render(rec, page, data)
+	if rec.Code != 200 {
+		t.Fatalf("%s status %d: %s", page, rec.Code, rec.Body.String())
+	}
+	return rec.Body.String()
+}
+
+// Project detail (a normal view) must never expose a raw markdown editor.
+func TestProjectDetailHasNoRawMarkdown(t *testing.T) {
+	body := renderBody(t, "project_detail.html", ProjectDetailData{
+		Page:    "projects",
+		Project: models.ProjectWithProgress{Project: models.Project{ID: 1, Name: "Trip", Status: "active", Notes: "## not parsed"}},
+	})
+	if strings.Contains(body, `name="markdown"`) {
+		t.Fatal("project detail leaked a raw markdown textarea")
+	}
+}
+
+// On the roadmap page the markdown editor must stay inside a collapsed <details>
+// (not open by default).
+func TestRoadmapMarkdownStaysCollapsed(t *testing.T) {
+	body := renderBody(t, "roadmap.html", models.RoadmapData{
+		Page:               "roadmap",
+		GoalTitle:          "Goal",
+		ProjectTypeOptions: models.RoadmapProjectTypeOptions(),
+	})
+	idx := strings.Index(body, `name="markdown"`)
+	if idx < 0 {
+		return // no markdown editor at all is fine
+	}
+	before := body[:idx]
+	openDetails := strings.LastIndex(before, "<details")
+	closeDetails := strings.LastIndex(before, "</details>")
+	if openDetails < 0 || openDetails < closeDetails {
+		t.Fatal("markdown textarea is not inside an enclosing <details>")
+	}
+	// the enclosing <details> tag must not be open-by-default
+	tag := before[openDetails:]
+	if i := strings.Index(tag, ">"); i >= 0 {
+		tag = tag[:i]
+	}
+	if strings.Contains(tag, " open") {
+		t.Fatal("markdown <details> is open by default")
+	}
 }
