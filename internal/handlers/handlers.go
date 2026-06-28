@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -72,6 +73,37 @@ type ProjectListData struct {
 	SelectedRoadmap   models.Roadmap
 	RoadmapNames      map[int64]string
 	StatusFilter      string
+	// All-roadmaps view: projects grouped into a section per roadmap.
+	Grouped       bool
+	Groups        []RoadmapGroup
+	AnyProjects   bool
+	OpenAllGroups bool
+}
+
+// RoadmapGroup is one roadmap's section on the all-roadmaps Projects view: its
+// metadata plus its own (top-level-only, subprojects-nested) project tree.
+type RoadmapGroup struct {
+	Roadmap models.Roadmap
+	Tree    models.ProjectTree
+	Count   int // top-level trips (Main + Upcoming)
+}
+
+// sortRoadmapGroups orders sections: featured first, then priority DESC, then
+// most-recently-updated, then name ASC.
+func sortRoadmapGroups(groups []RoadmapGroup) {
+	sort.SliceStable(groups, func(i, j int) bool {
+		a, b := groups[i].Roadmap, groups[j].Roadmap
+		if a.Featured != b.Featured {
+			return a.Featured
+		}
+		if a.Priority != b.Priority {
+			return a.Priority > b.Priority
+		}
+		if a.UpdatedAt != b.UpdatedAt {
+			return a.UpdatedAt > b.UpdatedAt
+		}
+		return a.Name < b.Name
+	})
 }
 
 // projectsRoute builds the rocket-route nodes (trips) from main projects.
@@ -462,51 +494,97 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 		for _, roadmap := range roadmaps {
 			roadmapNames[roadmap.ID] = roadmap.Name
 		}
-
-		// roadmap filter: "" / "all" = every roadmap; a numeric id scopes to one.
-		roadmapParam := r.URL.Query().Get("roadmap")
-		var selectedRoadmapID int64
-		var selectedRoadmap models.Roadmap
-		var tree models.ProjectTree
-		if id, ok := parseID(roadmapParam); ok {
-			selectedRoadmapID = id
-			selectedRoadmap, _ = h.Service.Repo.GetRoadmap(id)
-			tree, err = h.Service.Repo.ProjectTreeByRoadmap(id)
-		} else {
-			tree, err = h.Service.Repo.ProjectTree()
-		}
-		if err != nil {
-			serverError(w, err)
-			return
-		}
-		for index := range tree.Main {
-			tree.Main[index].Momentum = services.TrendChart(tree.Main[index].Progress)
-		}
-		for parentID := range tree.Children {
-			for index := range tree.Children[parentID] {
-				tree.Children[parentID][index].Momentum = services.TrendChart(tree.Children[parentID][index].Progress)
-			}
-		}
-		for index := range tree.Upcoming {
-			tree.Upcoming[index].Momentum = services.TrendChart(tree.Upcoming[index].Progress)
-		}
 		stats, err := h.Service.ShipStats()
 		if err != nil {
 			serverError(w, err)
 			return
 		}
 		statusFilter := cleanForm(r.URL.Query().Get("status"), "current")
+		unlocked := r.URL.Query().Get("unlocked") == "1"
+
+		// A specific roadmap is selected → single filtered deck (radio tabs).
+		if id, ok := parseID(r.URL.Query().Get("roadmap")); ok {
+			selectedRoadmap, _ := h.Service.Repo.GetRoadmap(id)
+			tree, err := h.Service.Repo.ProjectTreeByRoadmap(id)
+			if err != nil {
+				serverError(w, err)
+				return
+			}
+			h.render(w, "projects_list.html", ProjectListData{
+				Page:              "projects",
+				ShipStats:         stats,
+				ShipRoute:         projectsRoute(selectedRoadmap.Name, tree.Main),
+				Tree:              tree,
+				Unlocked:          unlocked,
+				Roadmaps:          roadmaps,
+				SelectedRoadmapID: id,
+				SelectedRoadmap:   selectedRoadmap,
+				RoadmapNames:      roadmapNames,
+				StatusFilter:      statusFilter,
+			})
+			return
+		}
+
+		// All roadmaps. The overview route shows every top-level destination.
+		allTree, err := h.Service.Repo.ProjectTree()
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+
+		// With no roadmaps at all (e.g. all archived), fall back to one ungrouped
+		// deck so orphan trips still appear.
+		if len(roadmaps) == 0 {
+			h.render(w, "projects_list.html", ProjectListData{
+				Page:         "projects",
+				ShipStats:    stats,
+				ShipRoute:    projectsRoute("Navigation Deck", allTree.Main),
+				Tree:         allTree,
+				Unlocked:     unlocked,
+				Roadmaps:     roadmaps,
+				RoadmapNames: roadmapNames,
+				StatusFilter: statusFilter,
+			})
+			return
+		}
+
+		// Self-heal: adopt orphan trips into the dashboard roadmap so every trip
+		// lands in a group (mirrors the dashboard's adoption).
+		if dashboard, drErr := h.Service.Repo.GetDashboardRoadmap(); drErr == nil {
+			if err := h.Service.Repo.AdoptOrphanProjects(dashboard.ID); err != nil {
+				serverError(w, err)
+				return
+			}
+		}
+
+		groups := make([]RoadmapGroup, 0, len(roadmaps))
+		anyProjects := false
+		for _, roadmap := range roadmaps {
+			tree, err := h.Service.Repo.ProjectTreeByRoadmap(roadmap.ID)
+			if err != nil {
+				serverError(w, err)
+				return
+			}
+			count := len(tree.Main) + len(tree.Upcoming)
+			if count > 0 {
+				anyProjects = true
+			}
+			groups = append(groups, RoadmapGroup{Roadmap: roadmap, Tree: tree, Count: count})
+		}
+		sortRoadmapGroups(groups)
+
 		h.render(w, "projects_list.html", ProjectListData{
-			Page:              "projects",
-			ShipStats:         stats,
-			ShipRoute:         projectsRoute("Navigation Deck", tree.Main),
-			Tree:              tree,
-			Unlocked:          r.URL.Query().Get("unlocked") == "1",
-			Roadmaps:          roadmaps,
-			SelectedRoadmapID: selectedRoadmapID,
-			SelectedRoadmap:   selectedRoadmap,
-			RoadmapNames:      roadmapNames,
-			StatusFilter:      statusFilter,
+			Page:          "projects",
+			ShipStats:     stats,
+			ShipRoute:     projectsRoute("Navigation Deck", allTree.Main),
+			Unlocked:      unlocked,
+			Roadmaps:      roadmaps,
+			RoadmapNames:  roadmapNames,
+			StatusFilter:  statusFilter,
+			Grouped:       true,
+			Groups:        groups,
+			AnyProjects:   anyProjects,
+			OpenAllGroups: len(groups) <= 2,
 		})
 		return
 	}

@@ -36,119 +36,162 @@
   {{end}}
 </section>
 
-<section class="glass-panel deck-panel">
-  <div class="deck-filters" role="tablist" aria-label="Filter trips">
-    <input type="radio" id="filter-current" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "current"}}checked{{end}}>
-    <label for="filter-current" class="deck-tab" role="tab">Current</label>
-    <input type="radio" id="filter-planned" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "planned"}}checked{{end}}>
-    <label for="filter-planned" class="deck-tab" role="tab">Planned</label>
-    <input type="radio" id="filter-completed" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "completed"}}checked{{end}}>
-    <label for="filter-completed" class="deck-tab" role="tab">Completed</label>
-    <input type="radio" id="filter-all" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "all"}}checked{{end}}>
-    <label for="filter-all" class="deck-tab" role="tab">All</label>
-
-    <div class="deck-sections">
-      <div class="deck-section" data-section="current">
-        <div class="section-heading">
-          <div><p class="eyebrow">Current Trips</p><h2>In Flight</h2></div>
-        </div>
-        {{$hasCurrent := false}}
-        <div class="project-grid">
-          {{range .Tree.Main}}
-            {{if and (ne .Project.Status "done") (ne .Project.Status "completed")}}
-              {{$hasCurrent = true}}
-              {{$children := index $.Tree.Children .Project.ID}}
-              <article class="project-card system-card trip-card">
-                <a href="/projects/{{.Project.ID}}">
-                  <div class="project-card-top">
-                    <span class="card-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
-                    <span class="badge">Trip</span>
-                    {{if and (eq $.SelectedRoadmapID 0) (index $.RoadmapNames .Project.RoadmapID)}}<span class="badge rm-badge">{{index $.RoadmapNames .Project.RoadmapID}}</span>{{end}}
-                    <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-                  </div>
-                  <h2>{{.Project.Name}}</h2>
-                  <p>{{if .Project.Description}}{{.Project.Description}}{{else}}{{.Project.Notes}}{{end}}</p>
-                  <div class="project-progress">
-                    <div><strong>{{.Progress}}%</strong><small>{{.CompletedItems}} / {{.TotalItems}} missions</small></div>
-                    <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-                  </div>
-                </a>
-                {{if $children}}
-                  <div class="stop-list">
-                    <p class="stop-label">Stops</p>
-                    {{range $children}}
-                      <a class="stop-row node-{{nodeState .Project.Status .Progress}}" href="/projects/{{.Project.ID}}">
-                        <span class="stop-dot"></span>
-                        <span>{{.Project.Name}}</span>
-                        <small>{{.Progress}}%</small>
-                      </a>
-                    {{end}}
-                  </div>
-                {{end}}
-              </article>
-            {{end}}
-          {{end}}
-        </div>
-        {{if not $hasCurrent}}<p class="empty">No current trips. Start one or open a planned route.</p>{{end}}
-      </div>
-
-      <div class="deck-section" data-section="planned">
-        <div class="section-heading">
-          <div><p class="eyebrow">Planned Routes</p><h2>Locked &amp; Upcoming</h2></div>
-        </div>
-        <details class="glass-panel upcoming-panel route-panel" open>
-          <summary>
-            <span>Planned Routes</span>
-            <strong>{{len .Tree.Upcoming}}</strong>
+{{if .Grouped}}
+  {{if .AnyProjects}}
+    <div class="roadmap-groups">
+      {{range $i, $g := .Groups}}
+        <details class="glass-panel roadmap-section" {{if or (eq $i 0) $.OpenAllGroups}}open{{end}}>
+          <summary class="roadmap-section-head">
+            <span class="rs-caret" aria-hidden="true">&rsaquo;</span>
+            <span class="rs-title">
+              <svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
+              <strong>{{$g.Roadmap.Name}}</strong>
+            </span>
+            <span class="rs-meta">
+              <span class="badge">P{{$g.Roadmap.Priority}}</span>
+              {{if $g.Roadmap.Featured}}<span class="badge status-active">Dashboard</span>{{end}}
+              {{if ne $g.Roadmap.Privacy "public"}}<span class="badge">{{$g.Roadmap.Privacy}}</span>{{end}}
+              <span class="rs-count">{{$g.Count}} {{if eq $g.Count 1}}trip{{else}}trips{{end}}</span>
+            </span>
           </summary>
-          {{if .Tree.Upcoming}}
-            <div class="project-grid">
-              {{range .Tree.Upcoming}}
-                <a class="project-card locked-card" href="/projects/{{.Project.ID}}">
-                  <div class="project-card-top">
-                    <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-                    <span class="badge">{{if .Project.AutoUnlock}}auto unlock{{else}}manual{{end}}</span>
-                  </div>
-                  <h2>{{.Project.Name}}</h2>
-                  <p>{{if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else}}{{.Project.Notes}}{{end}}</p>
-                  <div class="card-meta">
-                    <span>{{if .Project.DependsOnProjectID}}Depends on trip #{{.Project.DependsOnProjectID}}{{else}}Manual start{{end}}</span>
-                    <small>{{if .Project.AutoUnlock}}auto unlock on{{else}}manual unlock{{end}}</small>
-                  </div>
-                </a>
-              {{end}}
+          {{if $g.Count}}
+            <div class="roadmap-section-body">
+              {{template "deckCurrent" $g.Tree}}
+              {{template "deckPlanned" $g.Tree}}
+              {{template "deckCompleted" $g.Tree}}
             </div>
           {{else}}
-            <p class="empty">No planned routes queued.</p>
+            <p class="empty quiet">No trips on this roadmap yet. <a href="/projects/new">Add one</a>.</p>
           {{end}}
         </details>
-      </div>
+      {{end}}
+    </div>
+  {{else}}
+    <section class="glass-panel">
+      <p class="empty">No trips yet. <a href="/projects/new">Plot your first trip</a>.</p>
+    </section>
+  {{end}}
+{{else}}
+  <section class="glass-panel deck-panel">
+    <div class="deck-filters" role="tablist" aria-label="Filter trips">
+      <input type="radio" id="filter-current" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "current"}}checked{{end}}>
+      <label for="filter-current" class="deck-tab" role="tab">Current</label>
+      <input type="radio" id="filter-planned" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "planned"}}checked{{end}}>
+      <label for="filter-planned" class="deck-tab" role="tab">Planned</label>
+      <input type="radio" id="filter-completed" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "completed"}}checked{{end}}>
+      <label for="filter-completed" class="deck-tab" role="tab">Completed</label>
+      <input type="radio" id="filter-all" name="deck-filter" class="deck-radio" {{if eq .StatusFilter "all"}}checked{{end}}>
+      <label for="filter-all" class="deck-tab" role="tab">All</label>
 
-      <div class="deck-section" data-section="completed">
-        <div class="section-heading">
-          <div><p class="eyebrow">Completed Expeditions</p><h2>Logged</h2></div>
-        </div>
-        {{$hasDone := false}}
-        <div class="project-grid">
-          {{range .Tree.Main}}
-            {{if or (eq .Project.Status "done") (eq .Project.Status "completed")}}
-              {{$hasDone = true}}
-              <a class="project-card trip-card node-done" href="/projects/{{.Project.ID}}">
-                <div class="project-card-top">
-                  <span class="badge">Expedition</span>
-                  {{if and (eq $.SelectedRoadmapID 0) (index $.RoadmapNames .Project.RoadmapID)}}<span class="badge rm-badge">{{index $.RoadmapNames .Project.RoadmapID}}</span>{{end}}
-                  <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-                </div>
-                <h2>{{.Project.Name}}</h2>
-                <p>{{if .Project.Description}}{{.Project.Description}}{{else}}{{.Project.Notes}}{{end}}</p>
-                <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-              </a>
-            {{end}}
-          {{end}}
-        </div>
-        {{if not $hasDone}}<p class="empty">No completed expeditions yet.</p>{{end}}
+      <div class="deck-sections">
+        <div class="deck-section" data-section="current">{{template "deckCurrent" .Tree}}</div>
+        <div class="deck-section" data-section="planned">{{template "deckPlanned" .Tree}}</div>
+        <div class="deck-section" data-section="completed">{{template "deckCompleted" .Tree}}</div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+{{end}}
+{{end}}
+
+{{/* Reusable trip sub-sections. Context (.) is a models.ProjectTree. Roadmap
+     context is implied (a selected roadmap or the enclosing group section), so
+     these intentionally carry no per-card roadmap badge. */}}
+{{define "deckCurrent"}}
+{{$tree := .}}
+<div class="section-heading">
+  <div><p class="eyebrow">Current Trips</p><h2>In Flight</h2></div>
+</div>
+{{$hasCurrent := false}}
+<div class="project-grid">
+  {{range .Main}}
+    {{if and (ne .Project.Status "done") (ne .Project.Status "completed")}}
+      {{$hasCurrent = true}}
+      {{$children := index $tree.Children .Project.ID}}
+      <article class="project-card system-card trip-card">
+        <a href="/projects/{{.Project.ID}}">
+          <div class="project-card-top">
+            <span class="card-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
+            <span class="badge">Trip</span>
+            <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
+          </div>
+          <h2>{{.Project.Name}}</h2>
+          <p>{{if .Project.Description}}{{.Project.Description}}{{else}}{{.Project.Notes}}{{end}}</p>
+          <div class="project-progress">
+            <div><strong>{{.Progress}}%</strong><small>{{.CompletedItems}} / {{.TotalItems}} missions</small></div>
+            <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+          </div>
+        </a>
+        {{if $children}}
+          <div class="stop-list">
+            <p class="stop-label">Stops</p>
+            {{range $children}}
+              <a class="stop-row node-{{nodeState .Project.Status .Progress}}" href="/projects/{{.Project.ID}}">
+                <span class="stop-dot"></span>
+                <span>{{.Project.Name}}</span>
+                <small>{{.Progress}}%</small>
+              </a>
+            {{end}}
+          </div>
+        {{end}}
+      </article>
+    {{end}}
+  {{end}}
+</div>
+{{if not $hasCurrent}}<p class="empty">No current trips. Start one or open a planned route.</p>{{end}}
+{{end}}
+
+{{define "deckPlanned"}}
+<div class="section-heading">
+  <div><p class="eyebrow">Planned Routes</p><h2>Locked &amp; Upcoming</h2></div>
+</div>
+<details class="glass-panel upcoming-panel route-panel" open>
+  <summary>
+    <span>Planned Routes</span>
+    <strong>{{len .Upcoming}}</strong>
+  </summary>
+  {{if .Upcoming}}
+    <div class="project-grid">
+      {{range .Upcoming}}
+        <a class="project-card locked-card" href="/projects/{{.Project.ID}}">
+          <div class="project-card-top">
+            <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
+            <span class="badge">{{if .Project.AutoUnlock}}auto unlock{{else}}manual{{end}}</span>
+          </div>
+          <h2>{{.Project.Name}}</h2>
+          <p>{{if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else}}{{.Project.Notes}}{{end}}</p>
+          <div class="card-meta">
+            <span>{{if .Project.DependsOnProjectID}}Depends on trip #{{.Project.DependsOnProjectID}}{{else}}Manual start{{end}}</span>
+            <small>{{if .Project.AutoUnlock}}auto unlock on{{else}}manual unlock{{end}}</small>
+          </div>
+        </a>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No planned routes queued.</p>
+  {{end}}
+</details>
+{{end}}
+
+{{define "deckCompleted"}}
+<div class="section-heading">
+  <div><p class="eyebrow">Completed Expeditions</p><h2>Logged</h2></div>
+</div>
+{{$hasDone := false}}
+<div class="project-grid">
+  {{range .Main}}
+    {{if or (eq .Project.Status "done") (eq .Project.Status "completed")}}
+      {{$hasDone = true}}
+      <a class="project-card trip-card node-done" href="/projects/{{.Project.ID}}">
+        <div class="project-card-top">
+          <span class="badge">Expedition</span>
+          <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
+        </div>
+        <h2>{{.Project.Name}}</h2>
+        <p>{{if .Project.Description}}{{.Project.Description}}{{else}}{{.Project.Notes}}{{end}}</p>
+        <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+      </a>
+    {{end}}
+  {{end}}
+</div>
+{{if not $hasDone}}<p class="empty">No completed expeditions yet.</p>{{end}}
 {{end}}
