@@ -7,6 +7,10 @@
   var VB_W = 1000;
   var VB_H = 300;
 
+  // One controller per .rocket-route instance. State (flight, timers) lives here
+  // so it can be reset per-instance — never globally and never permanently.
+  var controllers = [];
+
   function reducedMotion() {
     return (
       window.matchMedia &&
@@ -73,8 +77,47 @@
       if (node.classList.contains("is-current")) restLen = len;
     });
 
-    placeRocket(rocket, path, restLen, total);
-    rocket.classList.add("ready");
+    var rafId = null;
+    var navTimer = null;
+    var launchedAt = 0;
+
+    // reset clears any in-flight/stuck state so a click always works again. It
+    // is idempotent and never disables links or strips href attributes.
+    function reset() {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      if (navTimer !== null) {
+        window.clearTimeout(navTimer);
+        navTimer = null;
+      }
+      launchedAt = 0;
+      route.dataset.launching = "";
+      rocket.classList.remove("flying");
+      rocket.classList.add("ready");
+      Array.prototype.forEach.call(nodes, function (n) {
+        n.classList.remove("targeted");
+        n.style.pointerEvents = ""; // defensive: ensure clicks are never blocked
+      });
+      try {
+        placeRocket(rocket, path, restLen, total);
+      } catch (e) {
+        /* layout only; ignore */
+      }
+    }
+
+    // resetIfStuck clears a flight that has run far longer than any flight could
+    // legitimately take (e.g. a frozen tab) without cancelling a live flight.
+    function resetIfStuck() {
+      if (route.dataset.launching === "1" && launchedAt && Date.now() - launchedAt > 2500) {
+        reset();
+      }
+    }
+
+    function navigate(url) {
+      window.location.href = url;
+    }
 
     function flyTo(targetLen, url) {
       var start = restLen;
@@ -84,45 +127,101 @@
       var lastTrail = 0;
 
       function frame(ts) {
-        if (startTime === null) startTime = ts;
-        var t = Math.min(1, (ts - startTime) / duration);
-        var len = start + (targetLen - start) * easeInOut(t);
-        placeRocket(rocket, path, len, total);
-        if (ts - lastTrail > 55) {
-          spawnTrail(track, rocket);
-          lastTrail = ts;
-        }
-        if (t < 1) {
-          window.requestAnimationFrame(frame);
-        } else {
-          window.location.href = url;
+        try {
+          if (startTime === null) startTime = ts;
+          var t = Math.min(1, (ts - startTime) / duration);
+          var len = start + (targetLen - start) * easeInOut(t);
+          placeRocket(rocket, path, len, total);
+          if (ts - lastTrail > 55) {
+            spawnTrail(track, rocket);
+            lastTrail = ts;
+          }
+          if (t < 1) {
+            rafId = window.requestAnimationFrame(frame);
+          } else {
+            rafId = null;
+            navigate(url);
+          }
+        } catch (err) {
+          // Defensive: if the animation throws, still honour the click.
+          rafId = null;
+          navigate(url);
         }
       }
+
+      launchedAt = Date.now();
       rocket.classList.remove("ready");
       rocket.classList.add("flying");
-      window.requestAnimationFrame(frame);
+      rafId = window.requestAnimationFrame(frame);
+      // Safety net: if rAF stalls (backgrounded/throttled tab) the click must
+      // still navigate rather than dead-end. Cleared by reset() on bfcache.
+      navTimer = window.setTimeout(function () {
+        navTimer = null;
+        navigate(url);
+      }, duration + 600);
     }
 
     Array.prototype.forEach.call(nodes, function (node, i) {
       node.addEventListener("click", function (e) {
         var url = node.dataset.url || node.getAttribute("href");
         if (!url) return;
-        // No-JS fallback is the <a href>; reduced-motion users also navigate
-        // straight away without the flight.
+        // No-JS fallback is the <a href>; reduced-motion users navigate straight
+        // away without the flight.
         if (reducedMotion()) return;
         e.preventDefault();
-        if (route.dataset.launching === "1") return; // already flying
+        if (route.dataset.launching === "1") return; // a flight is already running
         route.dataset.launching = "1";
         node.classList.add("targeted");
         flyTo(lengths[i], url);
       });
     });
+
+    reset(); // start from a known-clean state
+    controllers.push({ reset: reset, resetIfStuck: resetIfStuck });
+  }
+
+  function resetRocketRoutes() {
+    for (var i = 0; i < controllers.length; i++) {
+      try {
+        controllers[i].reset();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+  }
+
+  function resetStuckRocketRoutes() {
+    for (var i = 0; i < controllers.length; i++) {
+      try {
+        controllers[i].resetIfStuck();
+      } catch (e) {
+        /* ignore */
+      }
+    }
   }
 
   function init() {
+    controllers = [];
     var routes = document.querySelectorAll(".rocket-route");
     Array.prototype.forEach.call(routes, wireRoute);
   }
+
+  // pageshow fires on normal load AND on back/forward bfcache restore (where
+  // DOMContentLoaded does not). Resetting here clears the stale "launching"
+  // guard and .flying class that would otherwise dead-end the next click after
+  // pressing Back. Reset on every pageshow is safe (event.persisted just tells
+  // us it was a bfcache restore).
+  window.addEventListener("pageshow", function () {
+    resetRocketRoutes();
+  });
+
+  // When a tab is restored to visibility, clear any genuinely stuck flight
+  // (without cancelling a live one).
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+      resetStuckRocketRoutes();
+    }
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
