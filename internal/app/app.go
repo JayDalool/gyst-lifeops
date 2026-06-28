@@ -3,6 +3,7 @@ package app
 import (
 	"database/sql"
 	"net/http"
+	"path/filepath"
 
 	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/handlers"
@@ -48,6 +49,14 @@ func New(config Config) (*App, error) {
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(config.StaticDir))))
+	// Browsers auto-request /favicon.ico at the root; serve the themed SVG mark
+	// there so it resolves (and isn't swallowed by the "/" web handler as a 404).
+	faviconPath := filepath.Join(config.StaticDir, "favicon.svg")
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		http.ServeFile(w, r, faviconPath)
+	})
 	mux.Handle("/", webHandler)
 
 	return &App{DB: database, Handler: mux}, nil
