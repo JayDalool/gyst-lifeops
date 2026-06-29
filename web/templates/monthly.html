@@ -25,8 +25,9 @@
         <h2>Monthly Signal</h2>
       </div>
     </div>
-    <canvas class="chart" data-chart="bar" data-labels="{{join .Chart.Labels "|"}}"
-      data-values="{{joinInts .Chart.Values "|"}}"></canvas>
+    <canvas class="chart" data-chart="line" data-labels="{{join .Chart.Labels "|"}}"
+      data-values="{{joinInts .Chart.Values "|"}}"
+      data-empty="Complete missions to build your trajectory."></canvas>
   </article>
 </section>
 

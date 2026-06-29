@@ -8,8 +8,11 @@
   --border: rgba(166, 213, 255, 0.16);
   --border-strong: rgba(108, 234, 255, 0.32);
   --text: #eef7ff;
-  --muted: #92a4b7;
-  --quiet: #66778b;
+  /* Secondary/tertiary text. Brightened for legibility: the old --quiet
+     (#66778b) sat near 3.3:1 on the panels — below AA for the metadata and
+     labels it carries. Hierarchy stays clear via size/weight, not faintness. */
+  --muted: #aebece;
+  --quiet: #8a9cb1;
   --cyan: #65e8ff;
   --blue: #78a7ff;
   --purple: #a98cff;
@@ -397,6 +400,29 @@ button.action-card {
 .card-meta small,
 .timeline p {
   color: var(--muted);
+}
+
+/* Descriptions and notes: readable measure and comfortable rhythm so longer
+   copy doesn't read as faint filler. */
+.body-copy,
+.project-card p,
+.goal-card p,
+.task-card-copy small {
+  line-height: 1.55;
+}
+
+.body-copy {
+  font-size: 14.5px;
+}
+
+/* Lift the smallest metadata off the floor — 11px low-contrast text was the
+   worst offender. Keep labels uppercase-small but legible. */
+.task-card small,
+.stack-list small,
+.card-meta small,
+.project-card small,
+.goal-card small {
+  font-size: 12.5px;
 }
 
 .action-icon {
@@ -895,6 +921,40 @@ button.action-card {
   grid-column: span 2;
 }
 
+/* Logged Today — compact, collapsible replacement for the two large
+   Completed/Skipped panels. */
+.logged-panel { margin-top: 18px; }
+
+.logged-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.logged-summary::-webkit-details-marker { display: none; }
+
+.logged-summary .eyebrow { margin: 0; }
+
+.logged-tally { font-size: 13px; color: var(--muted); }
+.logged-tally strong { font-size: 15px; color: var(--text); }
+.logged-tally strong.good { color: var(--green); }
+
+.logged-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .logged-cols { grid-template-columns: 1fr; }
+}
+
 .task-card-list,
 .checklist-list,
 .stack-list,
@@ -925,6 +985,28 @@ button.action-card {
 .project-card h2,
 .goal-card h2 {
   font-weight: 850;
+}
+
+/* Anchored returns after completing a mission/task: keep the item clear of the
+   viewport edge and briefly highlight it so the user sees where they landed.
+   Pure CSS — works with the no-JS POST-redirect-#fragment flow. */
+[id^="mission-"],
+[id^="task-"] {
+  scroll-margin-top: 84px;
+}
+
+:target.task-card,
+:target.checklist-item,
+.stack-list :target,
+:target.mission-node {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 1px var(--border-strong), 0 0 18px rgba(101, 232, 255, 0.22);
+  animation: anchor-flash 1.4s ease-out 1;
+}
+
+@keyframes anchor-flash {
+  0% { background: rgba(101, 232, 255, 0.16); }
+  100% { background: rgba(255, 255, 255, 0.045); }
 }
 
 .task-state {
@@ -1051,6 +1133,10 @@ button.action-card {
   min-height: 250px;
   padding: 18px;
   transition: transform 140ms ease;
+  /* Layout containment isolates each card's reflow from its siblings on the
+     long Projects deck. Only transform is transitioned (compositor-friendly);
+     no paint containment so hover glow isn't clipped. */
+  contain: layout;
 }
 
 .project-card:hover,
@@ -2111,20 +2197,41 @@ i.map-node-state {
 .station-node .map-node-label,
 .mission-dot .map-node-label { max-width: 92px; font-weight: 650; color: var(--muted); }
 
-/* node-state visuals on the map */
+/* node-state visuals on the map. The active pulse is an expanding ring drawn on
+   a ::after pseudo-element animating transform+opacity only — compositor-
+   friendly, unlike animating box-shadow (which repaints every frame on every
+   active node and was the main source of Projects-page jank). */
 .node-active .planet,
 .node-active .station,
 .node-active .mission-spark {
-  box-shadow: 0 0 0 3px rgba(101, 232, 255, 0.18), 0 0 22px rgba(101, 232, 255, 0.55);
-  animation: node-pulse 2.6s ease-in-out infinite;
+  position: relative;
+  box-shadow: 0 0 16px rgba(101, 232, 255, 0.5);
+}
+
+.node-active .planet::after,
+.node-active .station::after,
+.node-active .mission-spark::after,
+.route-node.active .node-planet::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid rgba(101, 232, 255, 0.55);
+  pointer-events: none;
+  animation: node-pulse-ring 2.6s ease-out infinite;
 }
 
 .node-active .mission-spark { background: var(--cyan); }
 
-@keyframes node-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(101, 232, 255, 0.16), 0 0 14px rgba(101, 232, 255, 0.4); }
-  50% { box-shadow: 0 0 0 5px rgba(101, 232, 255, 0.22), 0 0 28px rgba(101, 232, 255, 0.7); }
+@keyframes node-pulse-ring {
+  0% { transform: scale(1); opacity: 0.7; }
+  70%, 100% { transform: scale(1.55); opacity: 0; }
 }
+
+/* Pause the route pulse + flow when the route scrolls out of view (toggled by
+   the IntersectionObserver in rocketroute.js) so nothing repaints offscreen. */
+.route-paused .route-flow,
+.route-paused .node-planet::after { animation-play-state: paused; }
 
 .node-done .planet,
 .node-done .station { border-color: rgba(101, 231, 160, 0.6); box-shadow: 0 0 20px rgba(101, 231, 160, 0.4); }
@@ -2448,27 +2555,147 @@ i.map-node-state {
 .ship-stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 104px;
-  flex: 1 1 104px;
-  padding: 12px 14px;
+  gap: 6px;
+  min-width: 124px;
+  flex: 1 1 124px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel-soft);
+  border-radius: 14px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    var(--panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.ship-stat .stat-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ship-stat .stat-icon {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.92;
 }
 
 .ship-stat .stat-label {
   font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.ship-stat strong {
+  font-size: 26px;
   font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ship-stat .stat-unit {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--quiet);
+  letter-spacing: 0.02em;
+}
+
+.fuel-counter { flex: 1.5 1 200px; }
+.fuel-counter strong { color: var(--cyan); }
+.fuel-counter .stat-icon { stroke: var(--cyan); }
+.ship-stat.recent-medal { flex: 2 1 180px; }
+.ship-stat.recent-medal strong { font-size: 15px; color: var(--green); }
+.ship-stat.recent-medal .stat-icon { stroke: var(--green); }
+
+/* ---- Compact stats strip (secondary pages) ---- */
+.ship-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-bottom: 18px;
+  padding: 11px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    var(--panel);
+}
+
+.strip-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.strip-stat + .strip-stat {
+  padding-left: 18px;
+  border-left: 1px solid var(--border);
+}
+
+.strip-stat .stat-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.strip-stat.fuel .stat-icon { stroke: var(--cyan); }
+
+.strip-copy {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.strip-copy strong {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.strip-stat.fuel .strip-copy strong { color: var(--cyan); }
+
+.strip-copy small {
+  font-size: 11px;
+  font-weight: 750;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--quiet);
 }
 
-.ship-stat strong { font-size: 20px; color: var(--text); }
-.fuel-counter strong { color: var(--cyan); }
-.ship-stat.recent-medal { flex: 2 1 180px; }
-.ship-stat.recent-medal strong { font-size: 14px; color: var(--green); }
+.strip-meter {
+  width: 46px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.strip-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+}
+
+@media (max-width: 620px) {
+  .strip-stat + .strip-stat { padding-left: 0; border-left: none; }
+  .ship-strip { gap: 10px 14px; }
+}
 
 .level-meter {
   height: 6px;
@@ -2518,25 +2745,50 @@ i.map-node-state {
   height: 100%;
 }
 
+/* Abstract dotted trajectory rather than one thick solid line. The bright comet
+   (.route-flow) supplies the energy; the base is a faint dotted guide. */
 .route-base {
   fill: none;
-  stroke: rgba(101, 232, 255, 0.4);
-  stroke-width: 2;
+  stroke: rgba(150, 200, 255, 0.42);
+  stroke-width: 2.4;
   stroke-linecap: round;
+  stroke-dasharray: 0.1 11;
   vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 5px rgba(101, 232, 255, 0.35));
 }
+
+/* Parallel orbital echoes — very faint, no glow, purely for depth. */
+.route-echo {
+  fill: none;
+  stroke: rgba(166, 213, 255, 0.12);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  transform-box: view-box;
+  transform-origin: center;
+}
+
+.route-echo-up { transform: translateY(-13px) scaleY(0.94); }
+.route-echo-down { transform: translateY(13px) scaleY(1.05); }
 
 /* A light pulse travelling the route — the "active segment" energy flow. */
 .route-flow {
   fill: none;
   stroke: rgba(150, 244, 255, 0.95);
-  stroke-width: 2.2;
+  stroke-width: 2.4;
   stroke-linecap: round;
   stroke-dasharray: 54 1400;
   vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 7px rgba(120, 232, 255, 0.8));
+  filter: drop-shadow(0 0 5px rgba(120, 232, 255, 0.7));
   animation: route-flow 3.4s linear infinite;
+}
+
+/* Per-mode palette: galaxy routes (dashboard/roadmap) stay cyan; a project's
+   solar-system route shifts green so the two read differently without changing
+   the path geometry. */
+.route-mode-solar .route-base { stroke: rgba(130, 235, 180, 0.46); }
+.route-mode-solar .route-echo { stroke: rgba(150, 235, 190, 0.12); }
+.route-mode-solar .route-flow {
+  stroke: rgba(160, 255, 205, 0.95);
+  filter: drop-shadow(0 0 5px rgba(120, 240, 180, 0.7));
 }
 
 @keyframes route-flow {
@@ -2577,9 +2829,10 @@ i.map-node-state {
 }
 
 .route-node.active .node-planet {
+  position: relative;
   border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(101, 232, 255, 0.16), 0 0 18px rgba(101, 232, 255, 0.6);
-  animation: node-pulse 2.6s ease-in-out infinite;
+  box-shadow: 0 0 16px rgba(101, 232, 255, 0.55);
+  /* pulse ring is the shared ::after defined with the map nodes above */
 }
 
 .route-node.done .node-planet {
@@ -2625,15 +2878,21 @@ i.map-node-state {
 .rocket.flying .rocket-body { animation: none; }
 
 .rocket-icon {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   fill: none;
   stroke: var(--cyan);
-  stroke-width: 1.6;
+  stroke-width: 1.4;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 8px rgba(101, 232, 255, 0.6));
+  /* Subtler glow — sleeker silhouette, less neon halo. */
+  filter: drop-shadow(0 0 4px rgba(101, 232, 255, 0.5));
   transform: rotate(45deg);
+}
+
+.route-mode-solar .rocket-icon {
+  stroke: var(--green);
+  filter: drop-shadow(0 0 4px rgba(101, 231, 160, 0.5));
 }
 
 .rocket-flame {
@@ -2660,17 +2919,18 @@ i.map-node-state {
   animation: flame-flicker 120ms ease-in-out infinite;
 }
 
-/* Fading ion trail dropped while the ship flies. */
+/* Fading ion trail dropped while the ship flies. Smaller + softer for a
+   smoother wake. */
 .rocket-trail {
   position: absolute;
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(120, 240, 255, 0.85), transparent 70%);
+  background: radial-gradient(circle, rgba(120, 240, 255, 0.7), transparent 70%);
   pointer-events: none;
   z-index: 2;
-  animation: rocket-trail-fade 700ms ease forwards;
+  animation: rocket-trail-fade 650ms ease forwards;
 }
 
 @keyframes rocket-trail-fade {
@@ -2860,6 +3120,63 @@ i.map-node-state {
 .reward-stat .level-meter { margin-top: 8px; }
 .reward-stat.fuel small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; text-transform: none; letter-spacing: 0; }
 
+/* Progression hero — the single rewarding visual the rewards panel keeps now
+   that streak/fuel/medals counts live only in the stats bar. */
+.level-hero {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(101, 232, 255, 0.14), transparent 55%),
+    var(--panel-soft);
+}
+
+.level-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: rgba(101, 232, 255, 0.1);
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+}
+
+.level-badge .stat-icon {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.level-hero-top strong {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+}
+
+.level-hero-top strong small { font-size: 12px; color: var(--muted); font-weight: 700; }
+
+.level-hero > small { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+
+.level-meter.big { height: 9px; margin-top: 2px; }
+
 .recent-unlocks { margin-bottom: 12px; }
 .medal-row { display: flex; gap: 10px; margin-top: 6px; }
 
@@ -2906,7 +3223,7 @@ i.map-node-state {
 .activity-link a { color: var(--cyan); font-weight: 700; font-size: 13px; }
 
 /* Premium rocket-route polish: layered planets + refined route line */
-.route-base { stroke: rgba(101, 232, 255, 0.5); }
+.route-base { stroke: rgba(150, 200, 255, 0.42); }
 
 .node-planet {
   background:

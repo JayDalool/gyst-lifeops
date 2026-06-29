@@ -27,6 +27,7 @@ type TodayData struct {
 	Page           string
 	Today          string
 	Progress       int
+	ShipStats      models.ShipStats
 	Mission        models.DailyMissionData
 	Pending        []models.TaskOccurrence
 	Completed      []models.TaskOccurrence
@@ -50,8 +51,9 @@ type TaskFormData struct {
 }
 
 type TaskDetailData struct {
-	Page string
-	Task models.Task
+	Page      string
+	Task      models.Task
+	ShipStats models.ShipStats
 }
 
 type MonthlyData struct {
@@ -287,10 +289,16 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pending, completed, skipped := services.SplitOccurrences(items)
+	stats, err := h.Service.ShipStats()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
 	h.render(w, "today.html", TodayData{
 		Page:           "today",
 		Today:          h.Service.TodayString(),
 		Progress:       services.CompletionPercentage(items),
+		ShipStats:      stats,
 		Mission:        mission,
 		Pending:        pending,
 		Completed:      completed,
@@ -363,7 +371,12 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 			notFoundOrError(w, err)
 			return
 		}
-		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task})
+		stats, err := h.Service.ShipStats()
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, ShipStats: stats})
 		return
 	}
 
@@ -464,7 +477,7 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 		serverError(w, err)
 		return
 	}
-	redirectBack(w, r, "/today")
+	redirectAfter(w, r, fmt.Sprintf("/today#task-%d", id))
 }
 
 func (h *Handler) archiveTask(w http.ResponseWriter, r *http.Request, id int64) {
@@ -866,7 +879,9 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 		http.NotFound(w, r)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/projects/%d", projectID), http.StatusSeeOther)
+	// Stay on the project detail at the acted-on mission instead of jumping to
+	// the top of a generic list.
+	redirectAfter(w, r, fmt.Sprintf("/projects/%d#mission-%d", projectID, itemID))
 }
 
 func (h *Handler) goals(w http.ResponseWriter, r *http.Request, segments []string) {
@@ -1417,7 +1432,7 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 		http.NotFound(w, r)
 		return
 	}
-	http.Redirect(w, r, "/roadmap", http.StatusSeeOther)
+	redirectAfter(w, r, "/roadmap")
 }
 
 func (h *Handler) roadmapMilestones(w http.ResponseWriter, r *http.Request, segments []string) {
@@ -1449,7 +1464,7 @@ func (h *Handler) roadmapMilestones(w http.ResponseWriter, r *http.Request, segm
 		http.NotFound(w, r)
 		return
 	}
-	http.Redirect(w, r, "/roadmap", http.StatusSeeOther)
+	redirectAfter(w, r, "/roadmap")
 }
 
 func (h *Handler) trackers(w http.ResponseWriter, r *http.Request, segments []string) {
@@ -1769,6 +1784,29 @@ func redirectBack(w http.ResponseWriter, r *http.Request, fallback string) {
 		back = fallback
 	}
 	http.Redirect(w, r, back, http.StatusSeeOther)
+}
+
+// safeReturnTo returns the form's return_to value only when it is a same-origin
+// path (starts with a single "/"), preventing open-redirects via protocol-
+// relative ("//host") or absolute URLs. Returns "" when absent or unsafe.
+func safeReturnTo(r *http.Request) string {
+	rt := r.FormValue("return_to")
+	if rt == "" || !strings.HasPrefix(rt, "/") || strings.HasPrefix(rt, "//") {
+		return ""
+	}
+	return rt
+}
+
+// redirectAfter sends the user back to the exact page+section they acted from.
+// It prefers an explicit return_to (carries a #fragment so the browser lands on
+// the item), then the Referer, then the fallback — so the no-JS POST never
+// dead-ends at the top of a generic list.
+func redirectAfter(w http.ResponseWriter, r *http.Request, fallback string) {
+	if rt := safeReturnTo(r); rt != "" {
+		http.Redirect(w, r, rt, http.StatusSeeOther)
+		return
+	}
+	redirectBack(w, r, fallback)
 }
 
 func methodNotAllowed(w http.ResponseWriter) {

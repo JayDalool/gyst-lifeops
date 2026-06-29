@@ -140,21 +140,16 @@
     <div class="panel-heading">
       <div><p class="eyebrow">Rewards</p><h2>Command Center</h2></div>
     </div>
-    <div class="rewards-grid">
-      <div class="reward-stat streak">
-        <span>Current Streak</span>
-        <strong>{{.ShipStats.Streak}} <small>days</small></strong>
-      </div>
-      <div class="reward-stat fuel">
-        <span>Fuel Reserve</span>
+    {{/* Streak / Fuel / Medals already live in the stats bar above — the
+         rewards panel keeps only the progression hero (the rewarding bit) plus
+         unlocks, instead of repeating those numbers. */}}
+    <div class="level-hero">
+      <div class="level-hero-top">
+        <span class="level-badge"><svg class="stat-icon" aria-hidden="true"><use href="#icon-bolt"></use></svg>Level {{.ShipStats.Level}}</span>
         <strong>{{.ShipStats.TotalFuel}} <small>XP</small></strong>
-        <div class="level-meter"><span style="width:{{.ShipStats.LevelProgress}}%"></span></div>
-        <small>Level {{.ShipStats.Level}} &middot; {{.ShipStats.LevelProgress}}/100 to next</small>
       </div>
-      <div class="reward-stat medals">
-        <span>Medals</span>
-        <strong>{{.ShipStats.MedalCount}}</strong>
-      </div>
+      <div class="level-meter big"><span style="width:{{.ShipStats.LevelProgress}}%"></span></div>
+      <small>{{.ShipStats.LevelProgress}}/100 fuel to next level</small>
     </div>
     {{if .RecentAchievements}}
       <div class="recent-unlocks">

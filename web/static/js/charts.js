@@ -42,7 +42,7 @@
     };
   }
 
-  function drawEmpty(ctx, width, height, colors, mini) {
+  function drawEmpty(ctx, width, height, colors, mini, text) {
     ctx.clearRect(0, 0, width, height);
     // Soft dashed baseline so an empty card reads as "no data yet" rather than
     // looking broken. Honest placeholder, no fabricated values.
@@ -61,7 +61,8 @@
     ctx.fillStyle = colors.muted;
     ctx.font = (mini ? "11px" : "14px") + " system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(mini ? "No data yet" : "No chart data yet", width / 2, (mini ? baseline - 16 : height / 2));
+    var message = text || (mini ? "No data yet" : "No chart data yet");
+    ctx.fillText(message, width / 2, (mini ? baseline - 16 : height / 2));
   }
 
   function drawAxes(ctx, left, top, right, bottom, colors) {
@@ -101,7 +102,7 @@
     var colors = palette();
     ctx.clearRect(0, 0, width, height);
     if (!values.length) {
-      drawEmpty(ctx, width, height, colors, mini);
+      drawEmpty(ctx, width, height, colors, mini, canvas.dataset.empty);
       return;
     }
 
@@ -121,11 +122,27 @@
     else drawAxes(ctx, left, top, right, bottom, colors);
 
     ctx.fillStyle = gradient;
+    var radius = Math.min(6, barWidth / 2);
     values.forEach(function (value, index) {
       var barHeight = ((bottom - top) * value) / max;
       var x = left + index * slot + gap / 2;
       var y = bottom - barHeight;
-      ctx.fillRect(x, y, barWidth, barHeight);
+      // Rounded tops read as premium pills rather than flat blocks. Guard tiny
+      // bars so the radius never exceeds the height.
+      var r = Math.min(radius, barHeight);
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(x, y, barWidth, barHeight, [r, r, 0, 0]);
+      } else {
+        ctx.moveTo(x, bottom);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.lineTo(x + barWidth - r, y);
+        ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + r);
+        ctx.lineTo(x + barWidth, bottom);
+        ctx.closePath();
+      }
+      ctx.fill();
     });
 
     if (!mini) {
@@ -154,7 +171,7 @@
     var colors = palette();
     ctx.clearRect(0, 0, width, height);
     if (!values.length) {
-      drawEmpty(ctx, width, height, colors, mini);
+      drawEmpty(ctx, width, height, colors, mini, canvas.dataset.empty);
       return;
     }
 
@@ -183,39 +200,82 @@
       });
     }
 
-    var gradient = ctx.createLinearGradient(left, 0, right, 0);
-    gradient.addColorStop(0, colors.cyan);
-    gradient.addColorStop(1, colors.blue);
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = mini ? 2.4 : 3;
-    ctx.beginPath();
     var points = [];
     values.forEach(function (value, index) {
       var x = values.length === 1 ? (left + right) / 2 : left + index * slot;
       var y = bottom - ((bottom - top) * (value - min)) / range;
       points.push({ x: x, y: y });
     });
-    points.forEach(function (point, index) {
-      if (index === 0) {
-        ctx.moveTo(point.x, point.y);
-        return;
-      }
-      if (!mini) {
-        ctx.lineTo(point.x, point.y);
-        return;
-      }
-      var prev = points[index - 1];
-      var midX = (prev.x + point.x) / 2;
-      ctx.quadraticCurveTo(prev.x, prev.y, midX, (prev.y + point.y) / 2);
-      ctx.quadraticCurveTo(point.x, point.y, point.x, point.y);
-    });
+
+    // Trace the route once so both the area fill and the stroke follow the same
+    // smoothed path. skipMove omits the leading moveTo so the fill can keep its
+    // baseline anchor (otherwise moveTo starts a new subpath and the fill closes
+    // diagonally instead of dropping straight down to the baseline).
+    function tracePath(skipMove) {
+      points.forEach(function (point, index) {
+        if (index === 0) {
+          if (!skipMove) ctx.moveTo(point.x, point.y);
+          return;
+        }
+        var prev = points[index - 1];
+        var midX = (prev.x + point.x) / 2;
+        ctx.quadraticCurveTo(prev.x, prev.y, midX, (prev.y + point.y) / 2);
+        ctx.quadraticCurveTo(point.x, point.y, point.x, point.y);
+      });
+    }
+
+    // Soft area fill under the route reads as accumulated progress — premium,
+    // no heavy blur. Skipped when there's a single point (nothing to fill).
+    if (points.length > 1) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, bottom);
+      ctx.lineTo(points[0].x, points[0].y);
+      tracePath(true);
+      ctx.lineTo(points[points.length - 1].x, bottom);
+      ctx.closePath();
+      var fill = ctx.createLinearGradient(0, top, 0, bottom);
+      fill.addColorStop(0, "rgba(101, 232, 255, 0.26)");
+      fill.addColorStop(1, "rgba(101, 232, 255, 0)");
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    var gradient = ctx.createLinearGradient(left, 0, right, 0);
+    gradient.addColorStop(0, colors.cyan);
+    gradient.addColorStop(1, colors.blue);
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = mini ? 2.4 : 3;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    tracePath();
     ctx.stroke();
 
+    // Current point: the last value, highlighted with a soft halo so the eye
+    // lands on "where you are now" along the trajectory.
+    var last = points[points.length - 1];
+    ctx.save();
+    ctx.fillStyle = "rgba(101, 232, 255, 0.18)";
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, mini ? 5 : 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = colors.cyan;
+    ctx.shadowColor = colors.cyan;
+    ctx.shadowBlur = mini ? 4 : 8;
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, mini ? 2.6 : 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     if (!mini) {
-      ctx.fillStyle = colors.cyan;
-      points.forEach(function (point) {
+      // Milestone nodes for the earlier points (the current one is already the
+      // glowing marker above).
+      ctx.fillStyle = colors.blue;
+      points.slice(0, -1).forEach(function (point) {
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
         ctx.fill();
       });
 
@@ -449,10 +509,38 @@
     });
   }
 
+  // Scroll memory: a no-JS POST already returns to the acted-on item via a
+  // #fragment (see return_to). This is the belt-and-suspenders fallback for the
+  // forms that redirect back WITHOUT an anchor (status changes, deletes): keep
+  // the user's place instead of snapping to the top. It defers entirely to the
+  // anchor when one is present so the two never fight.
+  function initScrollMemory() {
+    var key = "lifeops-scroll:" + window.location.pathname;
+    document.addEventListener("submit", function (event) {
+      var form = event.target;
+      if (!form || (form.method || "").toLowerCase() !== "post") return;
+      try {
+        sessionStorage.setItem(key, String(window.scrollY));
+      } catch (err) {
+        /* storage unavailable; ignore */
+      }
+    });
+    try {
+      var saved = sessionStorage.getItem(key);
+      sessionStorage.removeItem(key);
+      if (saved !== null && !window.location.hash) {
+        window.scrollTo(0, parseInt(saved, 10) || 0);
+      }
+    } catch (err) {
+      /* storage unavailable; ignore */
+    }
+  }
+
   window.addEventListener("load", function () {
     initTheme();
     initDrawer();
     initTrackers();
+    initScrollMemory();
     scheduleDrawCharts(0);
   });
 

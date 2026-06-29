@@ -241,10 +241,29 @@
     controller.handleClick(node, e);
   }
 
+  // Pause the route's continuous CSS animations (flow pulse + node rings) while
+  // it is scrolled off-screen, so nothing repaints when the user can't see it.
+  // Cheap, transform/opacity-only animations resume the instant it returns.
+  function observeVisibility(routes) {
+    if (typeof IntersectionObserver !== "function") return;
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          entry.target.classList.toggle("route-paused", !entry.isIntersecting);
+        });
+      },
+      { rootMargin: "120px" }
+    );
+    Array.prototype.forEach.call(routes, function (route) {
+      io.observe(route);
+    });
+  }
+
   function init() {
     controllers = [];
     var routes = document.querySelectorAll(".rocket-route");
     Array.prototype.forEach.call(routes, buildController);
+    observeVisibility(routes);
   }
 
   // --- Top-level listeners (registered immediately, never inside

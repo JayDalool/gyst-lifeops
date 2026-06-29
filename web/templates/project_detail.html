@@ -56,7 +56,8 @@
     <div class="progress large"><span style="width: {{progressWidth .Project.Progress}}"></span></div>
     <canvas class="project-pulse-chart" data-chart="line" data-max="100"
       data-labels="{{join .Project.Momentum.Labels "|"}}"
-      data-values="{{joinInts .Project.Momentum.Values "|"}}"></canvas>
+      data-values="{{joinInts .Project.Momentum.Values "|"}}"
+      data-empty="Complete missions to build your trajectory."></canvas>
     <div class="stat-grid compact-stats">
       <div><span>Missions</span><strong>{{.Project.CompletedItems}} / {{.Project.TotalItems}}</strong></div>
       <div><span>Target</span><strong>{{niceDate .Project.Project.TargetDate}}</strong></div>
@@ -169,10 +170,12 @@
           <div class="quick-actions">
             {{if eq .Status "completed"}}
               <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/reopen">
+                <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
                 <button class="button small secondary" type="submit">Reopen</button>
               </form>
             {{else}}
               <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/complete">
+                <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
                 <button class="button small" type="submit">Done</button>
               </form>
             {{end}}
