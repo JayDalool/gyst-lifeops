@@ -1,11 +1,16 @@
 package services
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"strings"
 	"time"
 
 	"lifeops-tracker/internal/models"
 )
+
+// calendarTokenKey is the app_settings key holding the private feed secret.
+const calendarTokenKey = "calendar_token"
 
 // CalendarEvent is one exportable dated item, source-agnostic so courses,
 // projects, and tasks all flow through the same ICS writer.
@@ -205,7 +210,80 @@ func (s *Service) projectTaskEvents() ([]CalendarEvent, error) {
 			Date:        t.DueDate,
 		})
 	}
+
+	// Project mission items with a due date.
+	items, err := s.Repo.ProjectItemDeadlines()
+	if err != nil {
+		return nil, err
+	}
+	for _, it := range items {
+		events = append(events, CalendarEvent{
+			UID:         "item-" + it.UUID + "@gyst",
+			Summary:     it.Title,
+			Description: "Mission · " + it.ProjectName,
+			URL:         "/projects/" + itoa(it.ProjectID),
+			Date:        it.DueDate,
+		})
+	}
+
+	// Roadmap milestones with a due date.
+	milestones, err := s.Repo.MilestoneDeadlines()
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range milestones {
+		events = append(events, CalendarEvent{
+			UID:         "milestone-" + m.UUID + "@gyst",
+			Summary:     m.Title,
+			Description: "Milestone · " + m.ProjectName,
+			URL:         "/projects/" + itoa(m.ProjectID),
+			Date:        m.DueDate,
+		})
+	}
+
+	// Standalone reminders (task-derived reminders are skipped — they duplicate
+	// the source task already emitted above).
+	reminders, err := s.Repo.ReminderDeadlines()
+	if err != nil {
+		return nil, err
+	}
+	for _, rm := range reminders {
+		events = append(events, CalendarEvent{
+			UID:         "reminder-" + rm.UUID + "@gyst",
+			Summary:     rm.Title,
+			Description: "Reminder",
+			URL:         "/reminders",
+			Date:        rm.DueDate,
+			StartTime:   rm.Time,
+		})
+	}
 	return events, nil
+}
+
+// --- private feed token ----------------------------------------------------
+
+// CalendarToken returns the configured feed token, or "" when none is set.
+func (s *Service) CalendarToken() (string, error) {
+	return s.Repo.GetSetting(calendarTokenKey)
+}
+
+// GenerateCalendarToken creates (or rotates) a long random feed token and
+// persists it. Returns the new token.
+func (s *Service) GenerateCalendarToken() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	token := hex.EncodeToString(buf)
+	if err := s.Repo.SetSetting(calendarTokenKey, token); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// RevokeCalendarToken removes the feed token, disabling all tokenized feed URLs.
+func (s *Service) RevokeCalendarToken() error {
+	return s.Repo.DeleteSetting(calendarTokenKey)
 }
 
 // ProjectsICS exports project target dates and task deadlines.

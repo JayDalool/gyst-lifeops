@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/subtle"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -345,6 +346,86 @@ func (h *Handler) projectsCalendarICS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.writeICS(w, ics, "gyst-projects.ics")
+}
+
+// calendarFeed serves the tokenized, subscription-safe feeds:
+//
+//	/calendar/feed/{token}.ics           unified
+//	/calendar/feed/{token}/courses.ics   courses only
+//	/calendar/feed/{token}/projects.ics  projects + tasks
+//
+// A wrong or absent token 404s (never reveals whether a token exists). These
+// bypass app auth on purpose so an external calendar fetcher can reach them; the
+// unguessable token is the only gate.
+func (h *Handler) calendarFeed(w http.ResponseWriter, r *http.Request, segments []string) {
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+	if len(segments) < 3 || segments[1] != "feed" {
+		http.NotFound(w, r)
+		return
+	}
+
+	var token, scope string
+	switch len(segments) {
+	case 3: // {token}.ics  -> unified
+		if !strings.HasSuffix(segments[2], ".ics") {
+			http.NotFound(w, r)
+			return
+		}
+		token = strings.TrimSuffix(segments[2], ".ics")
+		scope = "all"
+	case 4: // {token}/{scope}.ics
+		token = segments[2]
+		switch segments[3] {
+		case "courses.ics":
+			scope = "courses"
+		case "projects.ics":
+			scope = "projects"
+		default:
+			http.NotFound(w, r)
+			return
+		}
+	default:
+		http.NotFound(w, r)
+		return
+	}
+
+	if !h.validCalendarToken(token) {
+		http.NotFound(w, r)
+		return
+	}
+
+	base := requestBaseURL(r)
+	var ics string
+	var err error
+	switch scope {
+	case "courses":
+		ics, err = h.Service.CoursesICS(0, base)
+	case "projects":
+		ics, err = h.Service.ProjectsICS(base)
+	default:
+		ics, err = h.Service.AllICS(base)
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	h.writeICS(w, ics, "gyst.ics")
+}
+
+// validCalendarToken compares the supplied token against the stored one in
+// constant time. Empty/unset tokens never validate.
+func (h *Handler) validCalendarToken(token string) bool {
+	if token == "" {
+		return false
+	}
+	stored, err := h.Service.CalendarToken()
+	if err != nil || stored == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(stored), []byte(token)) == 1
 }
 
 // --- form parsing + helpers ------------------------------------------------

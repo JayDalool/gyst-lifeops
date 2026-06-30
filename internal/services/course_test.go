@@ -218,7 +218,17 @@ func TestUnifiedICSIncludesAllSources(t *testing.T) {
 	if !strings.Contains(ics, "block-"+blocks[0].UUID+"@gyst") {
 		t.Fatal("course block UID missing from unified feed")
 	}
-	for _, want := range []string{"Final project", "Target: Real Estate AI", "Ship API"} {
+	// A dated project mission item must also appear (item-<uuid>).
+	if err := svc.Repo.CreateProjectItem(&models.ProjectItem{ProjectID: project.ID, Title: "Mission deadline", DueDate: "2026-07-12"}); err != nil {
+		t.Fatalf("item: %v", err)
+	}
+	ics, err = svc.AllICS("https://gyst.example")
+	if err != nil {
+		t.Fatalf("AllICS2: %v", err)
+	}
+	parseICS(t, ics)
+
+	for _, want := range []string{"Final project", "Target: Real Estate AI", "Ship API", "Mission deadline", "item-"} {
 		if !strings.Contains(ics, want) {
 			t.Fatalf("unified feed missing %q", want)
 		}

@@ -262,3 +262,65 @@ func collectBlocks(rows *sql.Rows) ([]models.LearningBlock, error) {
 	}
 	return blocks, rows.Err()
 }
+
+// ProjectItemDeadlines returns pending project mission items that carry a due
+// date, with their project name, for the calendar feed.
+func (r *Repository) ProjectItemDeadlines() ([]models.DeadlineRow, error) {
+	return scanDeadlineRows(r.db.Query(`SELECT i.uuid, i.title, COALESCE(i.due_date, ''), i.project_id, p.name
+		FROM project_items i JOIN projects p ON p.id = i.project_id
+		WHERE i.due_date IS NOT NULL AND i.due_date != '' AND i.status = 'pending'
+			AND p.archived_at IS NULL
+		ORDER BY i.due_date`))
+}
+
+// MilestoneDeadlines returns pending roadmap milestones that carry a due date,
+// with their project name, for the calendar feed.
+func (r *Repository) MilestoneDeadlines() ([]models.DeadlineRow, error) {
+	return scanDeadlineRows(r.db.Query(`SELECT m.uuid, m.title, COALESCE(m.due_date, ''), m.project_id, p.name
+		FROM roadmap_milestones m JOIN projects p ON p.id = m.project_id
+		WHERE m.due_date IS NOT NULL AND m.due_date != '' AND m.status = 'pending'
+			AND p.archived_at IS NULL
+		ORDER BY m.due_date`))
+}
+
+// ReminderDeadlines returns active standalone (non-task) reminders that carry a
+// date, for the calendar feed. Task-derived reminders are excluded: they mirror
+// their source task's due date, which is already emitted as a task event, so
+// emitting them too would duplicate the item.
+func (r *Repository) ReminderDeadlines() ([]models.DeadlineRow, error) {
+	rows, err := r.db.Query(`SELECT uuid, title, COALESCE(reminder_date, ''), COALESCE(reminder_time, '')
+		FROM reminders
+		WHERE status = 'active'
+			AND (source_type != 'task' OR source_id IS NULL)
+			AND reminder_date IS NOT NULL AND reminder_date != ''
+		ORDER BY reminder_date, reminder_time`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []models.DeadlineRow
+	for rows.Next() {
+		var d models.DeadlineRow
+		if err := rows.Scan(&d.UUID, &d.Title, &d.DueDate, &d.Time); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+func scanDeadlineRows(rows *sql.Rows, err error) ([]models.DeadlineRow, error) {
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []models.DeadlineRow
+	for rows.Next() {
+		var d models.DeadlineRow
+		if err := rows.Scan(&d.UUID, &d.Title, &d.DueDate, &d.ProjectID, &d.ProjectName); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}

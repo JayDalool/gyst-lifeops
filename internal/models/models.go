@@ -154,6 +154,20 @@ type TodayLearning struct {
 	SuggestCourse Course          // the course to suggest a study block for
 }
 
+// DeadlineRow is a dated row (project mission item, roadmap milestone, or
+// standalone reminder) used only to build calendar events. It carries the row
+// uuid for a stable ICS UID since the view models don't expose it. Time is set
+// only for reminders (which always have a clock time); ProjectID/ProjectName are
+// set only for items/milestones.
+type DeadlineRow struct {
+	UUID        string
+	Title       string
+	DueDate     string
+	Time        string
+	ProjectID   int64
+	ProjectName string
+}
+
 type Achievement struct {
 	ID          int64
 	Title       string

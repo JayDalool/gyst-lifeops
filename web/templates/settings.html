@@ -32,5 +32,48 @@
     </div>
     <p class="body-copy">LifeOps keeps Version 1 data in the local SQLite database configured for this Go app. No cloud sync or push notification service is active yet.</p>
   </article>
+
+  <article class="glass-panel feed-panel span-2">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Calendar</p>
+        <h2>Private Feed URL</h2>
+      </div>
+    </div>
+    {{if .CalendarToken}}
+      <p class="body-copy">Subscribe in Apple or Google Calendar using these private links. They include a secret token, so they keep working even when the app is behind Cloudflare Access.</p>
+      <div class="feed-urls">
+        <label class="field">
+          <span>Everything</span>
+          <input type="text" readonly value="{{.BaseURL}}/calendar/feed/{{.CalendarToken}}.ics" onclick="this.select()">
+        </label>
+        <label class="field">
+          <span>Courses only</span>
+          <input type="text" readonly value="{{.BaseURL}}/calendar/feed/{{.CalendarToken}}/courses.ics" onclick="this.select()">
+        </label>
+        <label class="field">
+          <span>Projects &amp; tasks</span>
+          <input type="text" readonly value="{{.BaseURL}}/calendar/feed/{{.CalendarToken}}/projects.ics" onclick="this.select()">
+        </label>
+      </div>
+      <p class="feed-warning"><strong>&#9888; Anyone with these URLs can read your calendar.</strong> Don't share them. If a link leaks, regenerate to invalidate the old one.</p>
+      <div class="button-row">
+        <form method="post" action="/settings/calendar-token">
+          <input type="hidden" name="action" value="generate">
+          <button class="button small secondary" type="submit">Regenerate</button>
+        </form>
+        <form method="post" action="/settings/calendar-token">
+          <input type="hidden" name="action" value="revoke">
+          <button class="button small danger" type="submit">Revoke</button>
+        </form>
+      </div>
+    {{else}}
+      <p class="body-copy">Generate a private, tokenized URL so Apple/Google Calendar can subscribe to your deadlines without exposing a public feed. The plain <code>/calendar.ics</code> route stays available for local use.</p>
+      <form method="post" action="/settings/calendar-token">
+        <input type="hidden" name="action" value="generate">
+        <button class="button" type="submit">Generate Feed URL</button>
+      </form>
+    {{end}}
+  </article>
 </section>
 {{end}}

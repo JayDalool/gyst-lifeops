@@ -196,7 +196,9 @@ type ArchiveData struct {
 }
 
 type SettingsData struct {
-	Page string
+	Page          string
+	CalendarToken string
+	BaseURL       string
 }
 
 type RoadmapFormData struct {
@@ -244,10 +246,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.courses(w, r, segments)
 	case "calendar.ics":
 		h.allCalendarICS(w, r)
+	case "calendar":
+		h.calendarFeed(w, r, segments)
 	case "archive":
 		h.archive(w, r)
 	case "settings":
-		h.settings(w, r)
+		h.settings(w, r, segments)
 	case "trackers":
 		h.trackers(w, r, segments)
 	default:
@@ -1161,12 +1165,40 @@ func (h *Handler) archive(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "archive.html", ArchiveData{Page: "archive", Tasks: tasks, Projects: projects, Goals: goals})
 }
 
-func (h *Handler) settings(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []string) {
+	// POST /settings/calendar-token — generate/rotate or revoke the feed token.
+	if len(segments) == 2 && segments[1] == "calendar-token" {
+		if r.Method != http.MethodPost {
+			methodNotAllowed(w)
+			return
+		}
+		if r.FormValue("action") == "revoke" {
+			if err := h.Service.RevokeCalendarToken(); err != nil {
+				serverError(w, err)
+				return
+			}
+		} else if _, err := h.Service.GenerateCalendarToken(); err != nil {
+			serverError(w, err)
+			return
+		}
+		http.Redirect(w, r, "/settings", http.StatusSeeOther)
+		return
+	}
+
+	if len(segments) != 1 {
+		http.NotFound(w, r)
+		return
+	}
 	if r.Method != http.MethodGet {
 		methodNotAllowed(w)
 		return
 	}
-	h.render(w, "settings.html", SettingsData{Page: "settings"})
+	token, err := h.Service.CalendarToken()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	h.render(w, "settings.html", SettingsData{Page: "settings", CalendarToken: token, BaseURL: requestBaseURL(r)})
 }
 
 // roadmaps handles the multiple-roadmaps entity: create, edit, set-as-dashboard.

@@ -118,6 +118,114 @@ func TestRenderTodayWithLearning(t *testing.T) {
 	})
 }
 
+// Tokenized feeds: a valid token returns the ICS; a wrong/absent token 404s and
+// never reveals whether a token exists.
+func TestTokenizedCalendarFeed(t *testing.T) {
+	h := testHandler(t)
+	course := models.Course{Name: "SQL", Status: "active"}
+	h.Service.Repo.CreateCourse(&course)
+	h.Service.Repo.CreateLearningBlock(&models.LearningBlock{CourseID: course.ID, Title: "Deadline", BlockType: "assignment", DueDate: "2026-07-05"})
+
+	get := func(path string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		return rec
+	}
+
+	// No token configured yet -> any feed URL 404s.
+	if rec := get("/calendar/feed/anything.ics"); rec.Code != 404 {
+		t.Fatalf("feed before token = %d, want 404", rec.Code)
+	}
+
+	token, err := h.Service.GenerateCalendarToken()
+	if err != nil || len(token) < 32 {
+		t.Fatalf("generate token: %q err %v", token, err)
+	}
+
+	for _, p := range []string{
+		"/calendar/feed/" + token + ".ics",
+		"/calendar/feed/" + token + "/courses.ics",
+		"/calendar/feed/" + token + "/projects.ics",
+	} {
+		rec := get(p)
+		if rec.Code != 200 {
+			t.Fatalf("%s = %d, want 200", p, rec.Code)
+		}
+		if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/calendar") {
+			t.Fatalf("%s content-type %q", p, ct)
+		}
+		if !strings.HasPrefix(rec.Body.String(), "BEGIN:VCALENDAR") {
+			t.Fatalf("%s not an ICS body", p)
+		}
+	}
+
+	// Wrong token -> 404.
+	if rec := get("/calendar/feed/deadbeef.ics"); rec.Code != 404 {
+		t.Fatalf("wrong token = %d, want 404", rec.Code)
+	}
+	// Unknown scope -> 404.
+	if rec := get("/calendar/feed/" + token + "/secrets.ics"); rec.Code != 404 {
+		t.Fatalf("bad scope = %d, want 404", rec.Code)
+	}
+
+	// Plain /calendar.ics still works without a token (local/dev).
+	if rec := get("/calendar.ics"); rec.Code != 200 {
+		t.Fatalf("plain calendar.ics = %d, want 200", rec.Code)
+	}
+
+	// Revoke disables the feed again.
+	if err := h.Service.RevokeCalendarToken(); err != nil {
+		t.Fatalf("revoke: %v", err)
+	}
+	if rec := get("/calendar/feed/" + token + ".ics"); rec.Code != 404 {
+		t.Fatalf("feed after revoke = %d, want 404", rec.Code)
+	}
+}
+
+// Settings POST generates then revokes the token.
+func TestSettingsCalendarTokenManagement(t *testing.T) {
+	h := testHandler(t)
+
+	post := func(action string) {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/settings/calendar-token", strings.NewReader("action="+action))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		h.ServeHTTP(rec, req)
+		if rec.Code != 303 {
+			t.Fatalf("settings token %s = %d, want 303", action, rec.Code)
+		}
+	}
+
+	post("generate")
+	tok, _ := h.Service.CalendarToken()
+	if len(tok) < 32 {
+		t.Fatalf("token not generated: %q", tok)
+	}
+	post("revoke")
+	if tok, _ := h.Service.CalendarToken(); tok != "" {
+		t.Fatalf("token not revoked: %q", tok)
+	}
+}
+
+func TestRenderSettingsFeed(t *testing.T) {
+	// With a token: feed URLs + warning render.
+	body := renderBody(t, "settings.html", SettingsData{Page: "settings", BaseURL: "https://gyst.example", CalendarToken: "abc123token"})
+	if !strings.Contains(body, "https://gyst.example/calendar/feed/abc123token.ics") {
+		t.Fatal("feed URL not rendered")
+	}
+	if !strings.Contains(body, "Anyone with these URLs") {
+		t.Fatal("missing leak warning")
+	}
+	// Without a token: generate button, no feed URL.
+	body = renderBody(t, "settings.html", SettingsData{Page: "settings", BaseURL: "https://gyst.example"})
+	if strings.Contains(body, "/calendar/feed/") {
+		t.Fatal("feed URL shown without a token")
+	}
+	if !strings.Contains(body, "Generate Feed URL") {
+		t.Fatal("missing generate button")
+	}
+}
+
 // Guard: this feature must not pull in Google OAuth / API client dependencies.
 func TestNoOAuthDependencies(t *testing.T) {
 	body, err := os.ReadFile(filepath.Join("..", "..", "go.mod"))
