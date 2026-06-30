@@ -34,6 +34,7 @@ type TodayData struct {
 	Skipped        []models.TaskOccurrence
 	OverdueTasks   []models.Task
 	RemindersToday []models.ReminderView
+	Learning       models.TodayLearning
 }
 
 type TaskListData struct {
@@ -239,6 +240,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.roadmap(w, r, segments)
 	case "roadmaps":
 		h.roadmaps(w, r, segments)
+	case "courses":
+		h.courses(w, r, segments)
+	case "calendar.ics":
+		h.allCalendarICS(w, r)
 	case "archive":
 		h.archive(w, r)
 	case "settings":
@@ -294,6 +299,11 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	learning, err := h.Service.TodayLearning()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
 	h.render(w, "today.html", TodayData{
 		Page:           "today",
 		Today:          h.Service.TodayString(),
@@ -305,6 +315,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		Skipped:        skipped,
 		OverdueTasks:   overdueTasks,
 		RemindersToday: remindersToday,
+		Learning:       learning,
 	})
 }
 
@@ -604,6 +615,13 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 
 	if len(segments) == 2 && segments[1] == "new" {
 		h.newProject(w, r)
+		return
+	}
+
+	// /projects/calendar.ics must be matched before the segment is parsed as an
+	// ID (otherwise "calendar.ics" fails parseID and 404s).
+	if len(segments) == 2 && segments[1] == "calendar.ics" {
+		h.projectsCalendarICS(w, r)
 		return
 	}
 
@@ -1539,6 +1557,7 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		"nodeState":    nodeState,
 		"levelPct":     levelPct,
 		"toNextLevel":  toNextLevel,
+		"blockLabel":   services.BlockTypeLabel,
 		"progressWidth": func(value int) template.CSS {
 			if value < 0 {
 				value = 0

@@ -991,12 +991,14 @@ button.action-card {
    viewport edge and briefly highlight it so the user sees where they landed.
    Pure CSS — works with the no-JS POST-redirect-#fragment flow. */
 [id^="mission-"],
-[id^="task-"] {
+[id^="task-"],
+[id^="block-"] {
   scroll-margin-top: 84px;
 }
 
 :target.task-card,
 :target.checklist-item,
+:target.block-row,
 .stack-list :target,
 :target.mission-node {
   border-color: var(--border-strong);
@@ -3556,3 +3558,84 @@ i.map-node-state {
 @media (max-width: 720px) {
   .rs-meta { margin-left: 0; width: 100%; }
 }
+
+/* =====================================================================
+   Courses / Learning Deck
+   ===================================================================== */
+.calendar-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 11px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-soft);
+}
+
+.calendar-bar .cal-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.calendar-bar .cal-label .ui-icon { width: 16px; height: 16px; color: var(--cyan); }
+.calendar-bar .cal-hint { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+.course-card { min-height: 0; }
+.course-card-title { display: block; color: inherit; }
+.course-card-title h2 { margin: 0; }
+.course-card-title small { color: var(--muted); }
+
+.course-next {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+}
+
+.course-next li { display: grid; gap: 2px; }
+.course-next .cn-label {
+  font-size: 10.5px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--quiet);
+}
+.course-next .cn-value { font-size: 13px; color: var(--text); line-height: 1.4; }
+.course-next .quiet { color: var(--quiet); font-style: normal; }
+
+.course-card-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 4px; }
+
+/* Block rows on course detail + Today learning rows */
+.block-row h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.block-row h3 a { color: var(--cyan); }
+
+.badge.tiny {
+  font-size: 10px;
+  padding: 2px 7px;
+  letter-spacing: 0.03em;
+}
+
+.block-type-assignment,
+.block-type-exam { border-color: rgba(255, 174, 100, 0.5); color: var(--orange); background: rgba(255, 174, 100, 0.1); }
+.block-type-live_session { border-color: rgba(169, 140, 255, 0.5); color: var(--purple); background: rgba(169, 140, 255, 0.1); }
+
+.is-catchup { border-color: rgba(255, 174, 100, 0.4); }
+.catchup-panel { border-color: rgba(255, 174, 100, 0.3); }
+
+.learning-missions { margin-top: 18px; }
+.learning-list { display: grid; gap: 10px; }
+.learning-row .task-card-copy a { font-weight: 800; }
+.learning-row small { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+.form-hint { font-size: 12px; margin: 6px 0 0; }
+.form-stack .field small { color: var(--quiet); font-weight: 600; text-transform: none; letter-spacing: 0; }

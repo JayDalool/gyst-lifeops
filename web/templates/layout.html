@@ -7,10 +7,10 @@
   <title>LifeOps</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <link rel="stylesheet" href="/static/css/styles.css?v=polish-3">
-  <script defer src="/static/js/charts.js?v=polish-3"></script>
+  <link rel="stylesheet" href="/static/css/styles.css?v=polish-4">
+  <script defer src="/static/js/charts.js?v=polish-4"></script>
   <script defer src="/static/js/starmap.js"></script>
-  <script defer src="/static/js/rocketroute.js?v=polish-3"></script>
+  <script defer src="/static/js/rocketroute.js?v=polish-4"></script>
 </head>
 <body>
   {{template "iconSprite" .}}
@@ -36,6 +36,7 @@
           <a class="{{if eq .Page "projects"}}active{{end}}" href="/projects">Projects</a>
           <a class="{{if eq .Page "goals"}}active{{end}}" href="/goals">Goals</a>
           <a class="{{if eq .Page "roadmap"}}active{{end}}" href="/roadmap">Roadmap</a>
+          <a class="{{if eq .Page "courses"}}active{{end}}" href="/courses">Courses</a>
           <button type="button" data-more-open>More</button>
         </nav>
       {{end}}
@@ -100,6 +101,11 @@
       <svg class="drawer-icon" aria-hidden="true"><use href="#icon-target"></use></svg>
       <span>Roadmaps</span>
       <small>Projects, milestones, and portfolio exports</small>
+    </a>
+    <a href="/courses">
+      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-list-check"></use></svg>
+      <span>Courses</span>
+      <small>Self-paced learning and study blocks</small>
     </a>
     <a href="/health">
       <svg class="drawer-icon" aria-hidden="true"><use href="#icon-heart-pulse"></use></svg>

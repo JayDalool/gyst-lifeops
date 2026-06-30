@@ -1,0 +1,60 @@
+{{define "content"}}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Learning Deck</p>
+    <h1>{{.Title}}</h1>
+  </div>
+  <a class="button secondary" href="/courses">Back</a>
+</section>
+
+<form class="panel form-grid" method="post" action="{{.Action}}">
+  <label class="field span-2">
+    <span>Course name</span>
+    <input name="name" required value="{{.Course.Name}}" placeholder="e.g. The Complete SQL Bootcamp">
+  </label>
+  <label class="field">
+    <span>Provider</span>
+    <input name="provider" value="{{.Course.Provider}}" placeholder="Udemy, Proda Academy, YouTube, Custom…" list="provider-list">
+    <datalist id="provider-list">
+      <option value="Udemy"></option>
+      <option value="Proda Academy"></option>
+      <option value="Coursera"></option>
+      <option value="YouTube"></option>
+      <option value="Bootcamp"></option>
+      <option value="Custom"></option>
+    </datalist>
+  </label>
+  <label class="field">
+    <span>Instructor</span>
+    <input name="instructor" value="{{.Course.Instructor}}" placeholder="optional">
+  </label>
+  <label class="field span-2">
+    <span>Course URL</span>
+    <input type="url" name="url" value="{{.Course.URL}}" placeholder="https://…">
+  </label>
+  <label class="field">
+    <span>Status</span>
+    <select name="status">
+      <option value="active" {{if eq .Course.Status "active"}}selected{{end}}>Active</option>
+      <option value="paused" {{if eq .Course.Status "paused"}}selected{{end}}>Paused</option>
+      <option value="completed" {{if eq .Course.Status "completed"}}selected{{end}}>Completed</option>
+      <option value="archived" {{if eq .Course.Status "archived"}}selected{{end}}>Archived</option>
+    </select>
+  </label>
+  <label class="field">
+    <span>Progress %</span>
+    <input type="number" name="progress_percent" min="0" max="100" value="{{.Course.ProgressPercent}}">
+  </label>
+  <label class="field">
+    <span>Target completion</span>
+    <input type="date" name="target_date" value="{{.Course.TargetDate}}">
+  </label>
+  <label class="field span-2">
+    <span>Notes</span>
+    <textarea name="notes" rows="4" placeholder="What are you learning, why, key topics…">{{.Course.Notes}}</textarea>
+  </label>
+  <div class="form-actions span-2">
+    <button class="button" type="submit">Save Course</button>
+  </div>
+</form>
+{{end}}

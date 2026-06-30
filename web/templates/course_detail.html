@@ -1,0 +1,195 @@
+{{define "content"}}
+{{$cid := .Course.ID}}
+<nav class="cosmic-breadcrumb" aria-label="Location">
+  <a href="/courses">Learning Deck</a>
+  <span class="sep">&rsaquo;</span><span class="current">{{.Course.Name}}</span>
+</nav>
+
+<section class="system-core">
+  <div class="system-star{{if eq .Course.Status "completed"}} is-done{{else if eq .Course.Status "paused"}} is-locked{{end}}">
+    <strong>{{.Course.ProgressPercent}}%</strong>
+  </div>
+  <div class="system-core-copy">
+    <p class="eyebrow">{{if .Course.Provider}}{{.Course.Provider}}{{else}}Course{{end}}{{if .Course.Instructor}} &middot; {{.Course.Instructor}}{{end}}</p>
+    <h1>{{.Course.Name}}</h1>
+    {{if .Course.Notes}}<p class="body-copy">{{.Course.Notes}}</p>{{end}}
+    <div class="system-core-meta">
+      <span class="badge status-{{.Course.Status}}">{{.Course.Status}}</span>
+      {{if .Course.TargetDate}}<span class="badge">Target {{niceDate .Course.TargetDate}}</span>{{end}}
+    </div>
+    <div class="header-actions">
+      {{if .Course.URL}}<a class="button secondary" href="{{.Course.URL}}" target="_blank" rel="noopener">Open Course &#8599;</a>{{end}}
+      <a class="button secondary" href="/courses/{{$cid}}/edit">Edit</a>
+      <a class="button secondary" href="/courses/{{$cid}}/calendar.ics">Course .ics</a>
+    </div>
+  </div>
+</section>
+
+<section class="detail-layout">
+  <article class="glass-panel focus-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Progress</p>
+        <h2>{{.Course.ProgressPercent}}% complete</h2>
+      </div>
+    </div>
+    <div class="progress large"><span style="width: {{progressWidth .Course.ProgressPercent}}"></span></div>
+    <div class="button-row">
+      <form method="post" action="/courses/{{$cid}}/status">
+        <input type="hidden" name="status" value="active">
+        <input type="hidden" name="return_to" value="/courses/{{$cid}}">
+        <button class="button small secondary" type="submit">Resume</button>
+      </form>
+      <form method="post" action="/courses/{{$cid}}/status">
+        <input type="hidden" name="status" value="paused">
+        <input type="hidden" name="return_to" value="/courses/{{$cid}}">
+        <button class="button small secondary" type="submit">Pause</button>
+      </form>
+      <form method="post" action="/courses/{{$cid}}/status">
+        <input type="hidden" name="status" value="completed">
+        <input type="hidden" name="return_to" value="/courses/{{$cid}}">
+        <button class="button small" type="submit">Mark Complete</button>
+      </form>
+    </div>
+  </article>
+
+  <article class="glass-panel">
+    <div class="panel-heading">
+      <h2>Add Learning Block</h2>
+    </div>
+    <form class="form-stack" method="post" action="/courses/{{$cid}}/blocks">
+      <input type="hidden" name="return_to" value="/courses/{{$cid}}">
+      <label class="field">
+        <span>Title</span>
+        <input name="title" required placeholder="e.g. Section 4: Joins, or Final project">
+      </label>
+      <label class="field">
+        <span>Type</span>
+        <select name="block_type">
+          {{range .BlockTypeOptions}}
+            <option value="{{.Value}}">{{.Label}}</option>
+          {{end}}
+        </select>
+      </label>
+      <div class="form-row">
+        <label class="field">
+          <span>Due date <small>(optional)</small></span>
+          <input type="date" name="due_date">
+        </label>
+        <label class="field">
+          <span>Repeat</span>
+          <select name="repeat_type">
+            <option value="none">No repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="field">
+          <span>Start time <small>(optional)</small></span>
+          <input type="time" name="start_time">
+        </label>
+        <label class="field">
+          <span>End time <small>(optional)</small></span>
+          <input type="time" name="end_time">
+        </label>
+      </div>
+      <label class="field">
+        <span>Lesson URL <small>(optional)</small></span>
+        <input type="url" name="url" placeholder="https://…">
+      </label>
+      <label class="field">
+        <span>Notes</span>
+        <textarea name="notes" rows="2"></textarea>
+      </label>
+      <button class="button" type="submit">Add Block</button>
+      <p class="form-hint quiet">Self-paced? Leave date and times blank — only blocks with a date appear on the calendar or in Today.</p>
+    </form>
+  </article>
+</section>
+
+{{if .Catchups}}
+<section class="glass-panel catchup-panel">
+  <div class="panel-heading">
+    <div><p class="eyebrow">Rescheduled</p><h2>Catch-up Missions</h2></div>
+    <span class="count">{{len .Catchups}}</span>
+  </div>
+  <div class="checklist-list">
+    {{range .Catchups}}
+      <article id="block-{{.ID}}" class="checklist-item block-row is-catchup">
+        <div>
+          <h3>{{.Title}} <span class="badge tiny">Catch-up</span></h3>
+          <small>{{blockLabel .BlockType}}{{if .DueDate}} &middot; due {{niceDate .DueDate}}{{end}}</small>
+        </div>
+        <div class="quick-actions">
+          <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/complete">
+            <input type="hidden" name="return_to" value="/courses/{{$cid}}#block-{{.ID}}">
+            <button class="button small" type="submit">Done</button>
+          </form>
+        </div>
+      </article>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+<section class="glass-panel">
+  <div class="panel-heading">
+    <div><p class="eyebrow">Curriculum</p><h2>Learning Blocks</h2></div>
+    <span class="count">{{len .Blocks}}</span>
+  </div>
+
+  {{if .Blocks}}
+    <div class="checklist-list">
+      {{range .Blocks}}
+        <article id="block-{{.ID}}" class="checklist-item block-row status-row-{{.Status}}">
+          <div>
+            <h3>
+              {{if .URL}}<a href="{{.URL}}" target="_blank" rel="noopener">{{.Title}} &#8599;</a>{{else}}{{.Title}}{{end}}
+              <span class="badge tiny block-type-{{.BlockType}}">{{blockLabel .BlockType}}</span>
+              {{if .IsCatchup}}<span class="badge tiny">Catch-up</span>{{end}}
+            </h3>
+            <small>
+              {{if .DueDate}}due {{niceDate .DueDate}}{{else}}self-paced{{end}}
+              {{if .StartTime}} &middot; {{.StartTime}}{{if .EndTime}}&ndash;{{.EndTime}}{{end}}{{end}}
+              {{if ne .RepeatType "none"}} &middot; {{.RepeatType}}{{end}}
+              {{if eq .Status "postponed"}} &middot; <span class="quiet">postponed</span>{{end}}
+            </small>
+            {{if .Notes}}<p>{{.Notes}}</p>{{end}}
+          </div>
+          <div class="quick-actions">
+            {{if eq .Status "completed"}}
+              <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/reopen">
+                <input type="hidden" name="return_to" value="/courses/{{$cid}}#block-{{.ID}}">
+                <button class="button small secondary" type="submit">Reopen</button>
+              </form>
+            {{else if eq .Status "pending"}}
+              <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/complete">
+                <input type="hidden" name="return_to" value="/courses/{{$cid}}#block-{{.ID}}">
+                <button class="button small" type="submit">Done</button>
+              </form>
+              <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/postpone">
+                <input type="hidden" name="return_to" value="/courses/{{$cid}}#block-{{.ID}}">
+                <button class="button small secondary" type="submit" title="Reschedule and create a catch-up">Postpone</button>
+              </form>
+            {{end}}
+            <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/delete">
+              <button class="button small danger" type="submit">Delete</button>
+            </form>
+          </div>
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">No learning blocks yet. Add lessons, study blocks, or deadlines above.</p>
+  {{end}}
+</section>
+
+<section class="danger-zone">
+  <form method="post" action="/courses/{{$cid}}/archive">
+    <button class="button danger" type="submit">Archive Course</button>
+  </form>
+</section>
+{{end}}

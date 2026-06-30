@@ -140,6 +140,48 @@
   </aside>
 </section>
 
+{{/* Learning Missions: course blocks due today / overdue + catch-ups. Compact —
+     only renders when there is something to learn or a study block to suggest. */}}
+{{if or .Learning.Blocks .Learning.SuggestStudy}}
+<section class="glass-panel learning-missions">
+  <div class="panel-heading">
+    <div><p class="eyebrow">Learning</p><h2>Learning Missions</h2></div>
+    {{if .Learning.Blocks}}<span class="count">{{len .Learning.Blocks}}</span>{{end}}
+  </div>
+  {{if .Learning.Blocks}}
+    <div class="learning-list">
+      {{range .Learning.Blocks}}
+        <article id="block-{{.ID}}" class="task-card learning-row">
+          <div class="task-card-copy">
+            <a href="/courses/{{.CourseID}}#block-{{.ID}}">{{.Title}}</a>
+            <small>
+              <span class="badge tiny">{{.CourseName}}</span>
+              {{blockLabel .BlockType}}
+              {{if .IsCatchup}} &middot; <span class="quiet">catch-up</span>{{end}}
+              {{if .DueDate}} &middot; due {{niceDate .DueDate}}{{end}}
+              {{if .StartTime}} &middot; {{.StartTime}}{{end}}
+            </small>
+          </div>
+          <div class="quick-actions">
+            <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/complete">
+              <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
+              <button class="button small" type="submit">Done</button>
+            </form>
+            <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/postpone">
+              <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
+              <button class="button small secondary" type="submit">Postpone</button>
+            </form>
+          </div>
+        </article>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty">Nothing scheduled from <strong>{{.Learning.SuggestCourse.Name}}</strong> today.
+      <a href="/courses/{{.Learning.SuggestCourse.ID}}">Add a study block &rarr;</a></p>
+  {{end}}
+</section>
+{{end}}
+
 {{/* Logged today: completed + skipped folded into one compact panel instead of
      two large blocks. Stays open when it has items so the post-completion
      #task-{id} anchor lands on the moved item. */}}

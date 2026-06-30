@@ -91,6 +91,69 @@ type ProjectTree struct {
 	Upcoming []ProjectWithProgress
 }
 
+// Course is a self-paced learning container (Udemy, bootcamp, YouTube series,
+// API/SQL/AI course, etc.). ProgressPercent is entered manually.
+type Course struct {
+	ID              int64
+	UUID            string
+	Name            string
+	Provider        string
+	Instructor      string
+	URL             string
+	Status          string
+	ProgressPercent int
+	TargetDate      string
+	Notes           string
+	CreatedAt       string
+	UpdatedAt       string
+	ArchivedAt      string
+}
+
+// LearningBlock is any unit of a course: a lesson/module, study/review block,
+// assignment/exam deadline, or optional live session. DueDate/StartTime/EndTime
+// are all optional so self-paced lessons need no schedule.
+type LearningBlock struct {
+	ID          int64
+	UUID        string
+	CourseID    int64
+	Title       string
+	BlockType   string
+	Status      string
+	StartTime   string
+	EndTime     string
+	DueDate     string
+	URL         string
+	RepeatType  string
+	Notes       string
+	SortOrder   int
+	IsCatchup   bool
+	CreatedAt   string
+	UpdatedAt   string
+	CompletedAt string
+	ArchivedAt  string
+	// CourseName is populated for cross-course views (Today, unified calendar).
+	CourseName string
+}
+
+// CourseWithProgress decorates a course with block counts and the next block /
+// next deadline for the Learning Deck.
+type CourseWithProgress struct {
+	Course          Course
+	BlockCount      int
+	CompletedBlocks int
+	NextBlock       LearningBlock
+	HasNextBlock    bool
+	NextDeadline    LearningBlock
+	HasNextDeadline bool
+}
+
+// TodayLearning is the compact "Learning Missions" payload for the Today page.
+type TodayLearning struct {
+	Blocks        []LearningBlock // scheduled/due today + overdue catch-ups
+	SuggestStudy  bool            // active course exists but nothing is due today
+	SuggestCourse Course          // the course to suggest a study block for
+}
+
 type Achievement struct {
 	ID          int64
 	Title       string
