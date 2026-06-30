@@ -10,9 +10,14 @@
 
 <section class="calendar-bar" aria-label="Calendar export">
   <span class="cal-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg> Calendar export</span>
-  <a class="button small secondary" href="/courses/calendar.ics">Courses .ics</a>
-  <a class="button small secondary" href="/calendar.ics">Everything .ics</a>
-  <small class="cal-hint">Download or subscribe in Apple/Google Calendar.</small>
+  {{if .AllowPublicFeeds}}
+    <a class="button small secondary" href="/courses/calendar.ics">Courses .ics</a>
+    <a class="button small secondary" href="/calendar.ics">Everything .ics</a>
+    <small class="cal-hint">Download or subscribe in Apple/Google Calendar.</small>
+  {{else}}
+    <a class="button small secondary" href="/settings">Get Feed URL</a>
+    <small class="cal-hint">Generate a private subscription link in Settings.</small>
+  {{end}}
 </section>
 
 {{if .Courses}}

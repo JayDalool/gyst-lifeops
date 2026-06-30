@@ -24,6 +24,7 @@ func testHandler(t *testing.T) *Handler {
 	}
 	t.Cleanup(func() { database.Close() })
 	h := New(services.New(repository.New(database)), "../../web/templates")
+	h.AllowPublicFeeds = true // dev-like default; gating is covered explicitly
 	return h
 }
 

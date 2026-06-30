@@ -14,9 +14,10 @@ import (
 )
 
 type CourseListData struct {
-	Page    string
-	Courses []models.CourseWithProgress
-	BaseURL string
+	Page             string
+	Courses          []models.CourseWithProgress
+	BaseURL          string
+	AllowPublicFeeds bool
 }
 
 type CourseDetailData struct {
@@ -27,6 +28,7 @@ type CourseDetailData struct {
 	BlockTypeOptions []services.BlockTypeOption
 	Today            string
 	BaseURL          string
+	AllowPublicFeeds bool
 }
 
 type CourseFormData struct {
@@ -93,9 +95,10 @@ func (h *Handler) courseList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.render(w, "courses_list.html", CourseListData{
-		Page:    "courses",
-		Courses: deck,
-		BaseURL: requestBaseURL(r),
+		Page:             "courses",
+		Courses:          deck,
+		BaseURL:          requestBaseURL(r),
+		AllowPublicFeeds: h.AllowPublicFeeds,
 	})
 }
 
@@ -127,6 +130,7 @@ func (h *Handler) courseDetail(w http.ResponseWriter, r *http.Request, id int64)
 		BlockTypeOptions: services.BlockTypeOptions(),
 		Today:            h.Service.TodayString(),
 		BaseURL:          requestBaseURL(r),
+		AllowPublicFeeds: h.AllowPublicFeeds,
 	})
 }
 
@@ -296,9 +300,22 @@ func (h *Handler) writeICS(w http.ResponseWriter, content, filename string) {
 	_, _ = w.Write([]byte(content))
 }
 
+// publicFeedsBlocked 404s when the plain (unauthenticated) feeds are disabled.
+// Returns true when the caller should stop. The tokenized feeds never call this.
+func (h *Handler) publicFeedsBlocked(w http.ResponseWriter, r *http.Request) bool {
+	if h.AllowPublicFeeds {
+		return false
+	}
+	http.NotFound(w, r)
+	return true
+}
+
 func (h *Handler) allCalendarICS(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		methodNotAllowed(w)
+		return
+	}
+	if h.publicFeedsBlocked(w, r) {
 		return
 	}
 	ics, err := h.Service.AllICS(requestBaseURL(r))
@@ -314,6 +331,9 @@ func (h *Handler) coursesCalendarICS(w http.ResponseWriter, r *http.Request) {
 		methodNotAllowed(w)
 		return
 	}
+	if h.publicFeedsBlocked(w, r) {
+		return
+	}
 	ics, err := h.Service.CoursesICS(0, requestBaseURL(r))
 	if err != nil {
 		serverError(w, err)
@@ -327,6 +347,9 @@ func (h *Handler) courseCalendarICS(w http.ResponseWriter, r *http.Request, id i
 		methodNotAllowed(w)
 		return
 	}
+	if h.publicFeedsBlocked(w, r) {
+		return
+	}
 	ics, err := h.Service.CoursesICS(id, requestBaseURL(r))
 	if err != nil {
 		serverError(w, err)
@@ -338,6 +361,9 @@ func (h *Handler) courseCalendarICS(w http.ResponseWriter, r *http.Request, id i
 func (h *Handler) projectsCalendarICS(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		methodNotAllowed(w)
+		return
+	}
+	if h.publicFeedsBlocked(w, r) {
 		return
 	}
 	ics, err := h.Service.ProjectsICS(requestBaseURL(r))

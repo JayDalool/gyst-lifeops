@@ -20,7 +20,7 @@
     <div class="header-actions">
       {{if .Course.URL}}<a class="button secondary" href="{{.Course.URL}}" target="_blank" rel="noopener">Open Course &#8599;</a>{{end}}
       <a class="button secondary" href="/courses/{{$cid}}/edit">Edit</a>
-      <a class="button secondary" href="/courses/{{$cid}}/calendar.ics">Course .ics</a>
+      {{if .AllowPublicFeeds}}<a class="button secondary" href="/courses/{{$cid}}/calendar.ics">Course .ics</a>{{end}}
     </div>
   </div>
 </section>

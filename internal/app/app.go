@@ -18,6 +18,9 @@ type Config struct {
 	TemplateDir   string
 	StaticDir     string
 	LoadSeed      bool
+	// AllowPublicFeeds enables the unauthenticated plain .ics routes. Default
+	// false (production-safe); tokenized feeds are always available.
+	AllowPublicFeeds bool
 }
 
 type App struct {
@@ -46,6 +49,7 @@ func New(config Config) (*App, error) {
 	repo := repository.New(database)
 	service := services.New(repo)
 	webHandler := handlers.New(service, config.TemplateDir)
+	webHandler.AllowPublicFeeds = config.AllowPublicFeeds
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(config.StaticDir))))

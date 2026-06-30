@@ -182,6 +182,63 @@ func TestTokenizedCalendarFeed(t *testing.T) {
 	}
 }
 
+// With public feeds disabled (production default), the plain .ics routes 404
+// while the tokenized feeds keep working.
+func TestPublicFeedsGated(t *testing.T) {
+	h := testHandler(t)
+	h.AllowPublicFeeds = false // production default
+
+	course := models.Course{Name: "SQL", Status: "active"}
+	h.Service.Repo.CreateCourse(&course)
+	h.Service.Repo.CreateLearningBlock(&models.LearningBlock{CourseID: course.ID, Title: "Deadline", BlockType: "assignment", DueDate: "2026-07-05"})
+
+	get := func(path string) int {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		return rec.Code
+	}
+
+	for _, p := range []string{"/calendar.ics", "/courses/calendar.ics", "/projects/calendar.ics", "/courses/1/calendar.ics"} {
+		if code := get(p); code != 404 {
+			t.Fatalf("%s with public feeds off = %d, want 404", p, code)
+		}
+	}
+
+	// Tokenized feeds remain available.
+	token, _ := h.Service.GenerateCalendarToken()
+	for _, p := range []string{
+		"/calendar/feed/" + token + ".ics",
+		"/calendar/feed/" + token + "/courses.ics",
+		"/calendar/feed/" + token + "/projects.ics",
+	} {
+		if code := get(p); code != 200 {
+			t.Fatalf("tokenized %s = %d, want 200", p, code)
+		}
+	}
+
+	// Flipping the flag on re-enables the plain feeds.
+	h.AllowPublicFeeds = true
+	if code := get("/calendar.ics"); code != 200 {
+		t.Fatalf("/calendar.ics with public feeds on = %d, want 200", code)
+	}
+}
+
+// The courses page hides the plain .ics buttons when public feeds are off and
+// points to Settings instead.
+func TestCoursesListHidesPlainFeedWhenGated(t *testing.T) {
+	off := renderBody(t, "courses_list.html", CourseListData{Page: "courses", AllowPublicFeeds: false})
+	if strings.Contains(off, "/calendar.ics") || strings.Contains(off, "/courses/calendar.ics") {
+		t.Fatal("plain feed link shown while gated")
+	}
+	if !strings.Contains(off, "Get Feed URL") {
+		t.Fatal("missing Settings pointer when gated")
+	}
+	on := renderBody(t, "courses_list.html", CourseListData{Page: "courses", AllowPublicFeeds: true})
+	if !strings.Contains(on, "/calendar.ics") {
+		t.Fatal("plain feed link missing when allowed")
+	}
+}
+
 // Settings POST generates then revokes the token.
 func TestSettingsCalendarTokenManagement(t *testing.T) {
 	h := testHandler(t)

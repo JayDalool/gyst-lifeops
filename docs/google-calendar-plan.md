@@ -72,9 +72,22 @@ stays gated.
   leaked link.
 - To use behind Cloudflare Access: add a **Bypass / Service Auth** policy for the
   path `"/calendar/feed/*"` so only that route skips the login wall.
-- The plain `/calendar.ics`, `/courses/calendar.ics`, `/projects/calendar.ics`
-  remain for local/dev use; **do not expose them publicly** — prefer the
-  tokenized routes for any external subscription.
+
+### Plain feeds are off by default
+
+The unauthenticated `/calendar.ics`, `/courses/calendar.ics`,
+`/courses/{id}/calendar.ics`, and `/projects/calendar.ics` routes are **disabled
+by default** and return `404`. They only serve content when the app is started
+with:
+
+```
+ALLOW_PUBLIC_CALENDAR_FEEDS=true
+```
+
+Leave this unset (or `false`) in production: an external calendar should use a
+tokenized `/calendar/feed/{token}` URL, not a plain route. Enable it only for
+local/dev convenience. When the flag is off, the Courses page hides the plain
+`.ics` buttons and points to **Settings** for a private feed URL instead.
 
 A future alternative is **Google OAuth** (below) so GYST pushes events out
 instead of a calendar pulling them in — no public feed needed.
