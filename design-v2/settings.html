@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings — LifeOps</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">LifeOps <span>Mission Control</span></a>
+    <nav aria-label="Primary">
+      <a href="index.html">Dashboard</a>
+      <a href="today.html">Today</a>
+      <a href="projects.html">Projects</a>
+      <a href="roadmap.html">Roadmaps</a>
+      <a href="courses.html">Courses</a>
+      <a href="settings.html" aria-current="page">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="max-width:760px">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Settings</h1>
+      <p class="page-sub">Calendar feed, appearance, and motion.</p>
+    </div>
+  </div>
+
+  <!-- Calendar feed -->
+  <section class="card" style="margin-top:28px">
+    <h2 class="section-title">Calendar feed</h2>
+    <p class="meta" style="margin-top:4px;max-width:60ch">
+      Subscribe from Google Calendar, Apple Calendar, or Outlook to see missions,
+      deadlines, and study blocks. The feed is read-only.
+    </p>
+
+    <label class="field" style="margin-top:20px">
+      <span>Private feed URL</span>
+      <div class="token">
+        <span id="feed-url">https://gyst.local/calendar/feed/tok_9f2ac81e4b7d3c5a.ics</span>
+        <button class="btn sm ghost" data-copy="#feed-url">Copy</button>
+      </div>
+    </label>
+    <p class="warn-note">
+      Treat this URL like a password — anyone who has it can read every event in the feed.
+    </p>
+    <p class="meta" style="margin-top:6px">Created Jun 30 · last fetched 2 hours ago by Google Calendar.</p>
+
+    <div class="setting" style="margin-top:12px">
+      <div>
+        <b>Regenerate token</b>
+        <p>Issues a new URL immediately. Calendars using the old one stop updating until you re-subscribe.</p>
+      </div>
+      <button class="btn sm ghost">Regenerate</button>
+    </div>
+    <div class="setting">
+      <div>
+        <b>Include private roadmaps</b>
+        <p>Off by default. When off, events from private roadmaps never appear in the feed.</p>
+      </div>
+      <label class="switch"><input type="checkbox" aria-label="Include private roadmaps in feed"><i></i></label>
+    </div>
+    <div class="setting">
+      <div>
+        <b>Revoke feed</b>
+        <p>Disables the feed entirely. All subscribed calendars lose access. This can't be undone.</p>
+      </div>
+      <button class="btn sm danger">Revoke</button>
+    </div>
+  </section>
+
+  <!-- Appearance -->
+  <section class="card" style="margin-top:16px">
+    <h2 class="section-title">Appearance</h2>
+    <div class="setting" style="margin-top:8px">
+      <div>
+        <b>Theme</b>
+        <p>Dark is the default.</p>
+      </div>
+      <select style="width:auto" aria-label="Theme">
+        <option>Dark</option>
+        <option>Light</option>
+        <option>System</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Motion -->
+  <section class="card" style="margin-top:16px">
+    <h2 class="section-title">Motion</h2>
+    <div class="setting" style="margin-top:8px">
+      <div>
+        <b>Reduce motion</b>
+        <p>Turns off the map marker animation and the current-node pulse.
+        Your system preference is honored automatically.</p>
+      </div>
+      <label class="switch"><input type="checkbox" data-motion-toggle aria-label="Reduce motion"><i></i></label>
+    </div>
+  </section>
+
+  <!-- Data -->
+  <section class="card" style="margin-top:16px">
+    <h2 class="section-title">Data</h2>
+    <div class="setting" style="margin-top:8px">
+      <div>
+        <b>Export everything</b>
+        <p>Full JSON export of roadmaps, projects, missions, courses, and rewards.</p>
+      </div>
+      <button class="btn sm ghost">Export</button>
+    </div>
+    <div class="setting">
+      <div>
+        <b>Local database</b>
+        <p>SQLite · 4.2 MB · last backup July 1.</p>
+      </div>
+      <button class="btn sm ghost">Back up now</button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Prototype v2</span>
+    <a href="design-system.html">Design system</a>
+  </footer>
+
+</main>
+</body>
+</html>

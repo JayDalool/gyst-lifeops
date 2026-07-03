@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — LifeOps</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">LifeOps <span>Mission Control</span></a>
+    <nav aria-label="Primary">
+      <a href="index.html" aria-current="page">Dashboard</a>
+      <a href="today.html">Today</a>
+      <a href="projects.html">Projects</a>
+      <a href="roadmap.html">Roadmaps</a>
+      <a href="courses.html">Courses</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div>
+      <p class="kicker">Thursday, July 3</p>
+      <h1 class="page-title">Good evening, Jay</h1>
+      <p class="page-sub">Current focus: <a href="project.html" style="color:var(--accent-text)">SQL &amp; Data Systems</a> — 62%, on pace for July 18.</p>
+    </div>
+    <a class="btn" href="today.html">Open today</a>
+  </div>
+
+  <div class="stats">
+    <div><b class="num">Level 12</b> <span>2,840 XP</span></div>
+    <div><b class="num">17 days</b> <span>streak</span></div>
+    <div><b class="num">12</b> <span>missions this week</span></div>
+    <div><b class="num">3</b> <span>active projects</span></div>
+  </div>
+
+  <!-- Roadmap hero -->
+  <section class="section-head">
+    <h2 class="section-title">AI Engineer Roadmap</h2>
+    <a href="roadmap.html">View roadmap →</a>
+  </section>
+  <div class="card map-card">
+    <div class="map" aria-label="Route map: 5 destinations, currently at SQL and Data Systems">
+      <button class="node done" data-x="90" data-y="235" data-title="Orientation" data-status="Completed Jun 2" data-href="project.html" aria-label="Orientation, completed"><i></i></button>
+      <button class="node done" data-x="300" data-y="140" data-title="Python" data-status="Completed Jun 12" data-href="project.html" aria-label="Python, completed"><i></i></button>
+      <button class="node current" data-x="520" data-y="205" data-title="SQL &amp; Data Systems" data-status="In progress" data-next="Window functions lab" data-due="Jul 18" data-progress="62" data-href="project.html" aria-label="SQL and Data Systems, in progress, 62 percent">
+        <i></i><span class="lbl">SQL &amp; Data Systems</span>
+      </button>
+      <button class="node" data-x="740" data-y="120" data-title="ML Core" data-status="Starts Aug 1" data-href="project.html" aria-label="ML Core, starts August 1"><i></i></button>
+      <button class="node locked" data-x="920" data-y="200" data-title="Capstone" data-status="Locked · needs Level 15" aria-label="Capstone, locked"><i></i></button>
+    </div>
+    <div class="map-foot">
+      <span class="status current"><span class="dot"></span>2 of 5 destinations complete</span>
+      <span>Next: ML Core · starts Aug 1</span>
+    </div>
+  </div>
+
+  <!-- Today -->
+  <section class="section-head">
+    <h2 class="section-title">Today</h2>
+    <a href="today.html">View all →</a>
+  </section>
+  <div class="card tight">
+    <ul class="tasks">
+      <li class="task">
+        <input type="checkbox" aria-label="Complete: Window functions lab">
+        <div class="task-body">
+          <div class="task-title">Window functions lab</div>
+          <div class="task-meta">SQL &amp; Data Systems · 45 min</div>
+        </div>
+        <span class="task-when soon">7:30 pm</span>
+      </li>
+      <li class="task">
+        <input type="checkbox" aria-label="Complete: Review PR feedback on ETL script">
+        <div class="task-body">
+          <div class="task-title">Review PR feedback on ETL script</div>
+          <div class="task-meta">SQL &amp; Data Systems · 20 min</div>
+        </div>
+        <span class="task-when">anytime</span>
+      </li>
+      <li class="task">
+        <input type="checkbox" aria-label="Complete: Order wheel base bolts">
+        <div class="task-body">
+          <div class="task-title">Order wheel base mounting bolts</div>
+          <div class="task-meta">Sim Rig Build · 10 min</div>
+        </div>
+        <span class="task-when">anytime</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="cols" style="margin-top:16px">
+    <!-- Deadlines -->
+    <section class="card">
+      <h2 class="section-title" style="margin-bottom:8px">Upcoming deadlines</h2>
+      <ul class="list">
+        <li><span class="status soon"><span class="dot"></span></span><span class="grow">SQL lab report<small>SQL &amp; Data Systems</small></span><span class="meta num">tomorrow</span></li>
+        <li><span class="status current"><span class="dot"></span></span><span class="grow">Lab 3 · Prompt evaluation<small>AI Engineering Path</small></span><span class="meta num">Tue Jul 8</span></li>
+        <li><span class="status current"><span class="dot"></span></span><span class="grow">Pedal deck mounted<small>Sim Rig Build</small></span><span class="meta num">Sat Jul 12</span></li>
+        <li><span class="status late"><span class="dot"></span></span><span class="grow">Insurance renewal form<small>overdue since Jul 1</small></span><span class="meta num">Jul 1</span></li>
+      </ul>
+    </section>
+
+    <!-- Learning -->
+    <section class="card">
+      <h2 class="section-title" style="margin-bottom:12px">Learning</h2>
+      <div class="next-block">
+        <div style="flex:1">
+          Module 7 · Joins deep-dive
+          <small>Advanced SQL Bootcamp · 38 min · tonight 8:30</small>
+        </div>
+        <a class="btn sm ghost" href="courses.html">Resume</a>
+      </div>
+      <div class="next-block" style="margin-top:8px">
+        <div style="flex:1">
+          Lab 3 · Prompt evaluation
+          <small>AI Engineering Path · due Tuesday</small>
+        </div>
+        <a class="btn sm quiet" href="courses.html">Open</a>
+      </div>
+      <p class="meta" style="margin-top:12px">1 study block missed this week — <a href="courses.html" style="color:var(--amber-text)">plan a catch-up</a></p>
+    </section>
+  </div>
+
+  <!-- Progress summary -->
+  <section class="card tight" style="margin-top:16px">
+    <div class="progress-row">
+      <span class="meta" style="white-space:nowrap">Level 12 → 13</span>
+      <div class="progress"><span style="width:64%"></span></div>
+      <span class="meta num">160 XP to go</span>
+    </div>
+    <p class="meta" style="margin-top:8px">9 medals · latest: Two-Week Burn, +150 XP</p>
+  </section>
+
+  <footer class="foot">
+    <span>Prototype v2</span>
+    <a href="design-system.html">Design system</a>
+  </footer>
+
+</main>
+</body>
+</html>

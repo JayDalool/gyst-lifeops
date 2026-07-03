@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projects — LifeOps</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">LifeOps <span>Mission Control</span></a>
+    <nav aria-label="Primary">
+      <a href="index.html">Dashboard</a>
+      <a href="today.html">Today</a>
+      <a href="projects.html" aria-current="page">Projects</a>
+      <a href="roadmap.html">Roadmaps</a>
+      <a href="courses.html">Courses</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div>
+      <p class="kicker">Navigation deck</p>
+      <h1 class="page-title">Projects</h1>
+      <p class="page-sub">3 in progress, 2 queued, 1 locked.</p>
+    </div>
+    <button class="btn ghost">New project</button>
+  </div>
+
+  <!-- Small route preview -->
+  <div class="card map-card" style="margin-top:24px">
+    <div class="map" style="min-height:150px" aria-label="Route preview for the featured roadmap">
+      <button class="node done" data-x="90" data-y="235" data-title="Orientation" data-status="Completed Jun 2" data-href="project.html" aria-label="Orientation, completed"><i></i></button>
+      <button class="node done" data-x="300" data-y="140" data-title="Python" data-status="Completed Jun 12" data-href="project.html" aria-label="Python, completed"><i></i></button>
+      <button class="node current" data-x="520" data-y="205" data-title="SQL &amp; Data Systems" data-status="In progress" data-progress="62" data-href="project.html" aria-label="SQL and Data Systems, in progress"><i></i><span class="lbl">SQL &amp; Data Systems</span></button>
+      <button class="node" data-x="740" data-y="120" data-title="ML Core" data-status="Starts Aug 1" data-href="project.html" aria-label="ML Core, starts August 1"><i></i></button>
+      <button class="node locked" data-x="920" data-y="200" data-title="Capstone" data-status="Locked · needs Level 15" aria-label="Capstone, locked"><i></i></button>
+    </div>
+    <div class="map-foot">
+      <span>AI Engineer Roadmap</span>
+      <a href="roadmap.html" style="color:var(--muted)">All roadmaps →</a>
+    </div>
+  </div>
+
+  <p class="group-label" style="margin-top:32px">AI Engineer Roadmap</p>
+  <ul class="project-list">
+    <li>
+      <a class="project-row" href="project.html">
+        <span class="status current"><span class="dot"></span></span>
+        <span class="grow">
+          <h3>SQL &amp; Data Systems</h3>
+          <p class="meta">Next: Window functions lab · due Jul 18</p>
+        </span>
+        <div class="progress"><span style="width:62%"></span></div>
+        <span class="meta num">62%</span>
+      </a>
+      <ul class="subprojects">
+        <li><span class="status done"><span class="dot"></span></span> Foundations</li>
+        <li><span class="status done"><span class="dot"></span></span> Query mastery</li>
+        <li><span class="status current"><span class="dot"></span></span> Window functions &amp; analytics</li>
+        <li><span class="status"><span class="dot" style="opacity:.4"></span></span> Pipelines &amp; ETL</li>
+        <li><span class="status locked"><span class="dot"></span></span> Performance &amp; indexing</li>
+      </ul>
+    </li>
+    <li>
+      <a class="project-row" href="project.html">
+        <span class="status"><span class="dot" style="opacity:.4"></span></span>
+        <span class="grow">
+          <h3>ML Core</h3>
+          <p class="meta">Starts Aug 1 · unlocks automatically</p>
+        </span>
+        <div class="progress"><span style="width:0%"></span></div>
+        <span class="meta num">0%</span>
+      </a>
+    </li>
+    <li>
+      <div class="project-row" style="opacity:.7">
+        <span class="status locked"><span class="dot"></span></span>
+        <span class="grow">
+          <h3 style="color:var(--muted)">Capstone</h3>
+          <p class="meta">Locked — needs Level 15 · you're Level 12</p>
+        </span>
+      </div>
+    </li>
+  </ul>
+
+  <p class="group-label">Sim Rig Build</p>
+  <ul class="project-list">
+    <li>
+      <a class="project-row" href="project.html">
+        <span class="status current"><span class="dot"></span></span>
+        <span class="grow">
+          <h3>Chassis assembly</h3>
+          <p class="meta">Next: Mount pedal deck · Jul 12</p>
+        </span>
+        <div class="progress"><span style="width:78%"></span></div>
+        <span class="meta num">78%</span>
+      </a>
+    </li>
+    <li>
+      <a class="project-row" href="project.html">
+        <span class="status"><span class="dot" style="opacity:.4"></span></span>
+        <span class="grow">
+          <h3>Electronics &amp; wiring</h3>
+          <p class="meta">Queued after chassis</p>
+        </span>
+        <div class="progress"><span style="width:0%"></span></div>
+        <span class="meta num">0%</span>
+      </a>
+    </li>
+  </ul>
+
+  <p class="group-label">HealthLens AI <span style="font-weight:400">· private</span></p>
+  <ul class="project-list">
+    <li>
+      <a class="project-row" href="project.html">
+        <span class="status current"><span class="dot"></span></span>
+        <span class="grow">
+          <h3>Data model</h3>
+          <p class="meta">Next: Define metrics schema</p>
+        </span>
+        <div class="progress"><span style="width:12%"></span></div>
+        <span class="meta num">12%</span>
+      </a>
+    </li>
+  </ul>
+
+  <p class="group-label">Completed</p>
+  <ul class="project-list">
+    <li>
+      <a class="project-row" href="project.html">
+        <span class="status done"><span class="dot"></span></span>
+        <span class="grow">
+          <h3>Python</h3>
+          <p class="meta">Completed Jun 12 · +120 XP</p>
+        </span>
+        <div class="progress done"><span style="width:100%"></span></div>
+        <span class="meta num">100%</span>
+      </a>
+    </li>
+  </ul>
+
+  <footer class="foot">
+    <span>Prototype v2</span>
+    <a href="design-system.html">Design system</a>
+  </footer>
+
+</main>
+</body>
+</html>

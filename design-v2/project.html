@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL &amp; Data Systems — LifeOps</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">LifeOps <span>Mission Control</span></a>
+    <nav aria-label="Primary">
+      <a href="index.html">Dashboard</a>
+      <a href="today.html">Today</a>
+      <a href="projects.html" aria-current="page">Projects</a>
+      <a href="roadmap.html">Roadmaps</a>
+      <a href="courses.html">Courses</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div>
+      <p class="kicker"><a href="roadmap.html" style="color:var(--faint)">AI Engineer Roadmap</a> / current destination</p>
+      <h1 class="page-title">SQL &amp; Data Systems</h1>
+      <p class="page-sub">18 of 29 missions done · estimated finish July 18 · +200 XP on completion.</p>
+    </div>
+    <a class="btn ghost" href="roadmap.html">View on map</a>
+  </div>
+
+  <!-- Overall progress + phase strip -->
+  <div class="card tight" style="margin-top:24px">
+    <div class="progress-row">
+      <div class="progress"><span style="width:62%"></span></div>
+      <span class="num meta">62%</span>
+    </div>
+    <div class="phase-strip" style="margin-top:14px" aria-label="Phases: 2 of 5 complete, phase 3 in progress">
+      <i class="done"></i><i class="done"></i><i class="current"></i><i></i><i></i>
+    </div>
+    <p class="meta" style="margin-top:8px">Phase 3 of 5 — Window functions &amp; analytics</p>
+  </div>
+
+  <div class="cols-wide" style="margin-top:16px">
+    <div>
+      <!-- Next actions -->
+      <section class="card tight">
+        <h2 class="section-title" style="margin-bottom:4px">Next actions</h2>
+        <ul class="tasks">
+          <li class="task">
+            <input type="checkbox" aria-label="Complete: Lab, ranking and frames">
+            <div class="task-body">
+              <div class="task-title">Lab: ranking &amp; frames</div>
+              <div class="task-meta">Phase 3 · 45 min</div>
+            </div>
+            <span class="task-when soon">due Jul 8</span>
+          </li>
+          <li class="task">
+            <input type="checkbox" aria-label="Complete: Review PR feedback on ETL script">
+            <div class="task-body">
+              <div class="task-title">Review PR feedback on ETL script</div>
+              <div class="task-meta">Phase 3 · 20 min</div>
+            </div>
+            <span class="task-when">anytime</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Missions by phase -->
+      <section class="section-head"><h2 class="section-title">All missions</h2></section>
+
+      <details class="card tight" style="margin-bottom:10px">
+        <summary style="cursor:pointer;font-weight:550;font-size:14.5px">
+          <span class="status done" style="margin-right:8px"><span class="dot"></span></span>
+          Phase 1 · Foundations <span class="meta">— 3 of 3 done</span>
+        </summary>
+        <ul class="tasks" style="margin-top:8px">
+          <li class="task"><input type="checkbox" checked aria-label="done"><div class="task-body"><div class="task-title">Relational model &amp; normal forms</div></div></li>
+          <li class="task"><input type="checkbox" checked aria-label="done"><div class="task-body"><div class="task-title">Schema design exercise</div></div></li>
+          <li class="task"><input type="checkbox" checked aria-label="done"><div class="task-body"><div class="task-title">Constraints &amp; integrity quiz</div></div></li>
+        </ul>
+      </details>
+
+      <details class="card tight" style="margin-bottom:10px">
+        <summary style="cursor:pointer;font-weight:550;font-size:14.5px">
+          <span class="status done" style="margin-right:8px"><span class="dot"></span></span>
+          Phase 2 · Query mastery <span class="meta">— 3 of 3 done</span>
+        </summary>
+        <ul class="tasks" style="margin-top:8px">
+          <li class="task"><input type="checkbox" checked aria-label="done"><div class="task-body"><div class="task-title">Joins gauntlet — 12 exercises</div></div></li>
+          <li class="task"><input type="checkbox" checked aria-label="done"><div class="task-body"><div class="task-title">Subqueries &amp; CTE refactors</div></div></li>
+          <li class="task"><input type="checkbox" checked aria-label="done"><div class="task-body"><div class="task-title">Set operations mini-project</div></div></li>
+        </ul>
+      </details>
+
+      <details class="card tight" open style="margin-bottom:10px">
+        <summary style="cursor:pointer;font-weight:550;font-size:14.5px">
+          <span class="status current" style="margin-right:8px"><span class="dot"></span></span>
+          Phase 3 · Window functions &amp; analytics <span class="meta">— 2 of 5 done</span>
+        </summary>
+        <ul class="tasks" style="margin-top:8px">
+          <li class="task"><input type="checkbox" checked aria-label="done"><div class="task-body"><div class="task-title">Window function fundamentals</div></div></li>
+          <li class="task"><input type="checkbox" checked aria-label="done"><div class="task-body"><div class="task-title">Ranking &amp; frame clauses</div></div></li>
+          <li class="task"><input type="checkbox" aria-label="Complete: Lab, ranking and frames"><div class="task-body"><div class="task-title">Lab: ranking &amp; frames</div></div><span class="task-when soon">Jul 8</span></li>
+          <li class="task"><input type="checkbox" aria-label="Complete: Rollup and cube drills"><div class="task-body"><div class="task-title">Rollup / cube aggregation drills</div></div></li>
+          <li class="task"><input type="checkbox" aria-label="Complete: Analytics capstone query"><div class="task-body"><div class="task-title">Analytics patterns capstone query</div></div><span class="task-when">Jul 15</span></li>
+        </ul>
+      </details>
+
+      <details class="card tight" style="margin-bottom:10px">
+        <summary style="cursor:pointer;font-weight:550;font-size:14.5px">
+          <span class="status" style="margin-right:8px"><span class="dot" style="opacity:.4"></span></span>
+          Phase 4 · Pipelines &amp; ETL <span class="meta">— 0 of 3</span>
+        </summary>
+        <ul class="tasks" style="margin-top:8px">
+          <li class="task"><input type="checkbox" aria-label="Complete: Design a batch ETL"><div class="task-body"><div class="task-title">Design a batch ETL for mission logs</div></div></li>
+          <li class="task"><input type="checkbox" aria-label="Complete: Orchestration with cron"><div class="task-body"><div class="task-title">Orchestration with cron + retries</div></div></li>
+          <li class="task"><input type="checkbox" aria-label="Complete: Data quality gates"><div class="task-body"><div class="task-title">Data quality gates &amp; alerts</div></div><span class="task-when">Jul 17</span></li>
+        </ul>
+      </details>
+
+      <details class="card tight">
+        <summary style="cursor:pointer;font-weight:550;font-size:14.5px;color:var(--muted)">
+          <span class="status locked" style="margin-right:8px"><span class="dot"></span></span>
+          Phase 5 · Performance &amp; indexing <span class="meta">— locked until phase 4 is done</span>
+        </summary>
+        <p class="meta" style="padding:10px 4px 4px">Index strategy, query plans, load testing. Unlocks automatically.</p>
+      </details>
+
+      <!-- Notes -->
+      <section class="card" style="margin-top:24px">
+        <h2 class="section-title" style="margin-bottom:8px">Notes</h2>
+        <p style="color:var(--muted);font-size:14.5px">
+          Postgres 16 locally, DuckDB for the analytics drills. The capstone query should
+          reuse the mission-log dataset from Phase 1 so the numbers are comparable.
+        </p>
+      </section>
+    </div>
+
+    <aside>
+      <section class="card tight">
+        <h2 class="section-title" style="margin-bottom:8px">About this trip</h2>
+        <ul class="list">
+          <li><span class="grow meta">Status</span><span class="status current"><span class="dot"></span>In progress</span></li>
+          <li><span class="grow meta">Started</span><span class="num" style="font-size:14px">Jun 2</span></li>
+          <li><span class="grow meta">Est. finish</span><span class="num" style="font-size:14px">Jul 18</span></li>
+          <li><span class="grow meta">Reward</span><span class="num" style="font-size:14px">+200 XP</span></li>
+          <li><span class="grow meta">XP earned so far</span><span class="num" style="font-size:14px">+340</span></li>
+        </ul>
+      </section>
+
+      <section class="card tight" style="margin-top:16px">
+        <h2 class="section-title" style="margin-bottom:10px">Position on route</h2>
+        <div class="phase-strip" aria-hidden="true">
+          <i class="done"></i><i class="done"></i><i class="current"></i><i></i><i></i>
+        </div>
+        <p class="meta" style="margin-top:10px">Destination 3 of 5 on the AI Engineer Roadmap.</p>
+        <a class="btn sm ghost" style="margin-top:8px" href="roadmap.html">Open map</a>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    <span>Prototype v2</span>
+    <a href="design-system.html">Design system</a>
+  </footer>
+
+</main>
+</body>
+</html>

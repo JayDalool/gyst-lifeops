@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Today — LifeOps</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">LifeOps <span>Mission Control</span></a>
+    <nav aria-label="Primary">
+      <a href="index.html">Dashboard</a>
+      <a href="today.html" aria-current="page">Today</a>
+      <a href="projects.html">Projects</a>
+      <a href="roadmap.html">Roadmaps</a>
+      <a href="courses.html">Courses</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div>
+      <p class="kicker">Thursday, July 3</p>
+      <h1 class="page-title">Today</h1>
+      <p class="page-sub">3 missions and 2 study blocks left · about 2 h 20 m.</p>
+    </div>
+    <button class="btn ghost">Add mission</button>
+  </div>
+
+  <div class="cols-wide" style="margin-top:28px">
+    <div>
+      <!-- Morning -->
+      <div class="day-group">
+        <p class="group-label">Morning</p>
+        <ul class="tasks">
+          <li class="task">
+            <span class="slot-time">8:00</span>
+            <input type="checkbox" checked aria-label="Completed: Morning review">
+            <div class="task-body">
+              <div class="task-title">Morning review</div>
+              <div class="task-meta">Daily · 15 min</div>
+            </div>
+            <span class="task-when num">done 8:12</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Afternoon -->
+      <div class="day-group">
+        <p class="group-label">Afternoon</p>
+        <ul class="tasks">
+          <li class="task">
+            <span class="slot-time">12:30</span>
+            <input type="checkbox" checked aria-label="Completed: SQL module 6 quiz">
+            <div class="task-body">
+              <div class="task-title">SQL module 6 · indexing quiz</div>
+              <div class="task-meta">Advanced SQL Bootcamp · 20 min</div>
+            </div>
+            <span class="task-when num">done 12:40</span>
+          </li>
+          <li class="task">
+            <span class="slot-time">—</span>
+            <input type="checkbox" aria-label="Complete: Review PR feedback on ETL script">
+            <div class="task-body">
+              <div class="task-title">Review PR feedback on ETL script</div>
+              <div class="task-meta">SQL &amp; Data Systems · 20 min</div>
+            </div>
+            <button class="btn quiet sm">Later</button>
+          </li>
+          <li class="task">
+            <span class="slot-time">—</span>
+            <input type="checkbox" aria-label="Complete: Order wheel base bolts">
+            <div class="task-body">
+              <div class="task-title">Order wheel base mounting bolts</div>
+              <div class="task-meta">Sim Rig Build · 10 min</div>
+            </div>
+            <button class="btn quiet sm">Later</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Evening -->
+      <div class="day-group">
+        <p class="group-label">Evening</p>
+        <ul class="tasks">
+          <li class="task">
+            <span class="slot-time">19:30</span>
+            <input type="checkbox" aria-label="Complete: Window functions lab">
+            <div class="task-body">
+              <div class="task-title">Window functions lab</div>
+              <div class="task-meta">SQL &amp; Data Systems · 45 min deep work</div>
+            </div>
+            <button class="btn quiet sm">Later</button>
+          </li>
+          <li class="task">
+            <span class="slot-time">20:30</span>
+            <input type="checkbox" aria-label="Complete: Module 7 study block">
+            <div class="task-body">
+              <div class="task-title">Study block · Module 7, Joins deep-dive</div>
+              <div class="task-meta">Advanced SQL Bootcamp · 38 min</div>
+            </div>
+            <button class="btn quiet sm">Later</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <aside>
+      <section class="card">
+        <h2 class="section-title" style="margin-bottom:8px">Deadlines</h2>
+        <ul class="list">
+          <li><span class="status soon"><span class="dot"></span></span><span class="grow">SQL lab report</span><span class="meta num">tomorrow</span></li>
+          <li><span class="status current"><span class="dot"></span></span><span class="grow">Lab 3 · Prompt evaluation</span><span class="meta num">Jul 8</span></li>
+          <li><span class="status current"><span class="dot"></span></span><span class="grow">Pedal deck mounted</span><span class="meta num">Jul 12</span></li>
+          <li><span class="status late"><span class="dot"></span></span><span class="grow">Insurance renewal</span><span class="meta num">overdue</span></li>
+        </ul>
+      </section>
+
+      <section class="card tight" style="margin-top:16px">
+        <p class="meta">Done today: <b class="num" style="color:var(--text)">2</b> · XP earned: <b class="num" style="color:var(--text)">+25</b></p>
+        <p class="meta" style="margin-top:4px">Streak: 17 days</p>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    <span>Prototype v2</span>
+    <a href="design-system.html">Design system</a>
+  </footer>
+
+</main>
+</body>
+</html>

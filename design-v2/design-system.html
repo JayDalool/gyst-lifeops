@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design system — LifeOps</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">LifeOps <span>Mission Control</span></a>
+    <nav aria-label="Primary">
+      <a href="index.html">Dashboard</a>
+      <a href="today.html">Today</a>
+      <a href="projects.html">Projects</a>
+      <a href="roadmap.html">Roadmaps</a>
+      <a href="courses.html">Courses</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Design system</h1>
+      <p class="page-sub">v2 — calm, flat, one accent. Full rationale and port plan in <span class="inline-code">README.md</span>.</p>
+    </div>
+  </div>
+
+  <!-- Color -->
+  <section class="section-head"><h2 class="section-title">Color</h2></section>
+  <div class="swatches">
+    <div class="sw"><i style="background:#0f1216"></i><div>bg · #0f1216</div></div>
+    <div class="sw"><i style="background:#161b22"></i><div>surface · #161b22</div></div>
+    <div class="sw"><i style="background:#1c232c"></i><div>surface-2 · hover</div></div>
+    <div class="sw"><i style="background:#53c6e4"></i><div>accent · #53c6e4</div></div>
+    <div class="sw"><i style="background:#57c98b"></i><div>green · done</div></div>
+    <div class="sw"><i style="background:#d9a054"></i><div>amber · due soon</div></div>
+    <div class="sw"><i style="background:#e26377"></i><div>red · overdue only</div></div>
+    <div class="sw"><i style="background:#e9eef4"></i><div>text · 14.9:1</div></div>
+    <div class="sw"><i style="background:#a6b0bb"></i><div>muted · 6.9:1</div></div>
+    <div class="sw"><i style="background:#8b96a2"></i><div>faint · 4.9:1, 13px+</div></div>
+  </div>
+  <p class="meta" style="margin-top:12px">
+    One accent per page — no per-section color themes. Status always pairs a colored dot
+    with a text label. Red appears only for overdue/blocked.
+  </p>
+
+  <!-- Type -->
+  <section class="section-head"><h2 class="section-title">Typography</h2></section>
+  <div class="card">
+    <p class="kicker">Kicker · 13px faint, sentence case — no uppercase tracking</p>
+    <p style="font-size:26px;font-weight:650;letter-spacing:-0.015em">Page title · 26px / 650</p>
+    <p style="font-size:16px;font-weight:600;margin-top:10px">Section title · 16px / 600</p>
+    <p style="margin-top:10px">Body · 15px / 1.55 — the default reading size.</p>
+    <p class="meta" style="margin-top:10px">Meta · 13px faint. Smallest size in the app. Numbers are <span class="num">tabular: 2,840 / 62%</span>.</p>
+  </div>
+
+  <!-- Spacing -->
+  <section class="section-head"><h2 class="section-title">Spacing &amp; surfaces</h2></section>
+  <div class="card">
+    <table class="spec">
+      <tr><th>Page width</th><td><code>max 960px</code> (roadmap map page: 1080px) — narrower than v1 on purpose</td></tr>
+      <tr><th>Section rhythm</th><td><code>40px</code> between sections, <code>16px</code> between sibling cards</td></tr>
+      <tr><th>Card</th><td>flat <code>--surface</code>, 1px hairline border, radius 10, padding 20 (tight: 14×16)</td></tr>
+      <tr><th>Shadow</th><td>one static soft shadow on floating elements (tooltip) only — cards have none</td></tr>
+      <tr><th>Effects budget</th><td>no backdrop-filter, no gradients, no glows, no decorative icons</td></tr>
+    </table>
+  </div>
+
+  <!-- Components -->
+  <div class="cols" style="margin-top:40px">
+    <section class="card">
+      <h2 class="section-title" style="margin-bottom:14px">Buttons &amp; forms</h2>
+      <p style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn">Primary</button>
+        <button class="btn ghost">Secondary</button>
+        <button class="btn quiet">Quiet</button>
+        <button class="btn danger sm">Destructive</button>
+      </p>
+      <label class="field" style="margin-top:18px">
+        <span>Text field</span>
+        <input type="text" placeholder="Mission name">
+      </label>
+      <p class="meta">Hover changes color/opacity only. Press nudges 1px. Focus ring is a 2px accent outline.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title" style="margin-bottom:14px">Status</h2>
+      <p style="display:flex;flex-direction:column;gap:8px">
+        <span class="status done"><span class="dot"></span>Completed</span>
+        <span class="status current"><span class="dot"></span>In progress</span>
+        <span class="status soon"><span class="dot"></span>Due soon</span>
+        <span class="status late"><span class="dot"></span>Overdue</span>
+        <span class="status locked"><span class="dot"></span>Locked</span>
+      </p>
+      <div class="progress-row" style="margin-top:16px">
+        <div class="progress"><span style="width:62%"></span></div>
+        <span class="meta num">62%</span>
+      </div>
+      <div class="phase-strip" style="margin-top:12px">
+        <i class="done"></i><i class="done"></i><i class="current"></i><i></i><i></i>
+      </div>
+      <p class="meta" style="margin-top:8px">Phase strip — the quiet replacement for v1's orbit view.</p>
+    </section>
+  </div>
+
+  <!-- Map -->
+  <section class="section-head"><h2 class="section-title">Map language</h2></section>
+  <div class="card">
+    <div class="demo-nodes">
+      <figure><span class="node done"><i></i></span><figcaption>done</figcaption></figure>
+      <figure><span class="node current" style="width:44px;height:44px"><i></i></span><figcaption>current</figcaption></figure>
+      <figure><span class="node"><i></i></span><figcaption>upcoming</figcaption></figure>
+      <figure><span class="node locked"><i></i></span><figcaption>locked</figcaption></figure>
+      <figure>
+        <div class="tip demo-tip">
+          <b>SQL &amp; Data Systems</b>
+          <div class="row"><span>In progress</span></div>
+          <div class="row"><span>Next</span><span>Window functions lab</span></div>
+          <div class="row"><span>Due</span><span>Jul 18</span></div>
+          <div class="row"><span>Progress</span><span>62%</span></div>
+          <div class="progress"><span style="width:62%"></span></div>
+        </div>
+        <figcaption>tooltip (hover / focus)</figcaption>
+      </figure>
+    </div>
+    <table class="spec">
+      <tr><th>Route</th><td>one thin 1.5px line; the traveled part in accent, the rest at 13% white</td></tr>
+      <tr><th>Nodes</th><td>12px dots (16px current), ≤6 per map; only the current node is labeled</td></tr>
+      <tr><th>Detail</th><td>tooltip on hover/focus — never printed on the canvas</td></tr>
+      <tr><th>Marker</th><td>small ship glyph; moves only when a node is clicked (450–900ms, then stops)</td></tr>
+      <tr><th>Ambient</th><td>the current node may pulse (3s ring) — paused offscreen, off under reduced motion</td></tr>
+    </table>
+  </div>
+
+  <!-- Motion -->
+  <section class="section-head"><h2 class="section-title">Motion</h2></section>
+  <div class="card">
+    <table class="spec">
+      <thead><tr><th>What</th><th>When</th><th>Duration</th><th>Reduced motion</th></tr></thead>
+      <tbody>
+        <tr><td>Marker flight</td><td>node click only</td><td>450–900ms</td><td>instant jump</td></tr>
+        <tr><td>Current-node pulse</td><td>while map is onscreen</td><td>3s loop</td><td>off (static ring)</td></tr>
+        <tr><td>Hover states</td><td>interaction</td><td>120ms, color/transform only</td><td>instant</td></tr>
+        <tr><td>Tooltip</td><td>hover/focus</td><td>120ms fade</td><td>instant</td></tr>
+        <tr><td>Checkbox</td><td>click</td><td>120ms fill</td><td>instant</td></tr>
+      </tbody>
+    </table>
+    <p class="meta" style="margin-top:12px">
+      That's the entire animation inventory. No starfield, no shimmer, no drifting ship,
+      no rotating orbits, no chart pulses.
+    </p>
+  </div>
+
+  <footer class="foot">
+    <span>Prototype v2</span>
+    <a href="index.html">Back to dashboard</a>
+  </footer>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roadmaps — LifeOps</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">LifeOps <span>Mission Control</span></a>
+    <nav aria-label="Primary">
+      <a href="index.html">Dashboard</a>
+      <a href="today.html">Today</a>
+      <a href="projects.html">Projects</a>
+      <a href="roadmap.html" aria-current="page">Roadmaps</a>
+      <a href="courses.html">Courses</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap wide">
+
+  <div class="page-head">
+    <div>
+      <p class="kicker">Galaxy map</p>
+      <h1 class="page-title">Roadmaps</h1>
+      <p class="page-sub">Long-term routes. Pick one on the left to see it on the map.</p>
+    </div>
+    <button class="btn ghost">New roadmap</button>
+  </div>
+
+  <div class="cols-wide" style="grid-template-columns: 240px 1fr; margin-top:28px" data-roadmap-host>
+    <aside>
+      <ul class="rm-list">
+        <li>
+          <button data-roadmap-idx class="active" aria-current="true">
+            <b>AI Engineer Roadmap</b>
+            <small>2 of 5 complete · featured</small>
+            <div class="progress"><span style="width:34%"></span></div>
+          </button>
+        </li>
+        <li>
+          <button data-roadmap-idx aria-current="false">
+            <b>Sim Rig Build</b>
+            <small>1 of 4 complete</small>
+            <div class="progress"><span style="width:58%"></span></div>
+          </button>
+        </li>
+        <li>
+          <button data-roadmap-idx aria-current="false">
+            <b>HealthLens AI</b>
+            <small>1 of 5 complete · private</small>
+            <div class="progress"><span style="width:12%"></span></div>
+          </button>
+        </li>
+        <li>
+          <button data-roadmap-idx aria-current="false">
+            <b>Learning</b>
+            <small>1 of 4 courses complete</small>
+            <div class="progress"><span style="width:41%"></span></div>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <section class="card map-card">
+      <div class="map-head">
+        <div>
+          <h2 class="section-title" data-roadmap-name>AI Engineer Roadmap</h2>
+          <p class="meta" data-roadmap-sub>2 of 5 complete · on pace for July 18</p>
+        </div>
+      </div>
+      <div class="map tall" data-vbh="420" aria-label="Route map for the selected roadmap"></div>
+      <div class="map-foot">
+        <span class="status current"><span class="dot"></span><span data-roadmap-next>Next: ML Core · starts Aug 1</span></span>
+        <span>Click a destination to open it · hover for details</span>
+      </div>
+    </section>
+  </div>
+
+  <script type="application/json" data-roadmaps>
+  [
+    {
+      "name": "AI Engineer Roadmap",
+      "sub": "2 of 5 complete · on pace for July 18",
+      "next": "Next: ML Core · starts Aug 1",
+      "nodes": [
+        { "x": 100, "y": 320, "state": "done",    "title": "Orientation", "status": "Completed Jun 2", "href": "project.html" },
+        { "x": 310, "y": 175, "state": "done",    "title": "Python", "status": "Completed Jun 12", "href": "project.html" },
+        { "x": 520, "y": 265, "state": "current", "title": "SQL & Data Systems", "status": "In progress", "next": "Window functions lab", "due": "Jul 18", "progress": 62, "href": "project.html" },
+        { "x": 730, "y": 150, "state": "",        "title": "ML Core", "status": "Starts Aug 1", "href": "project.html" },
+        { "x": 910, "y": 260, "state": "locked",  "title": "Capstone", "status": "Locked · needs Level 15" }
+      ]
+    },
+    {
+      "name": "Sim Rig Build",
+      "sub": "1 of 4 complete · next milestone July 12",
+      "next": "Next: Pedal deck · Jul 12",
+      "nodes": [
+        { "x": 110, "y": 200, "state": "done",    "title": "Frame & chassis", "status": "Completed Jun 20", "href": "project.html" },
+        { "x": 380, "y": 310, "state": "current", "title": "Wheel base", "status": "In progress", "next": "Mount pedal deck", "due": "Jul 12", "progress": 78, "href": "project.html" },
+        { "x": 650, "y": 180, "state": "",        "title": "Pedal deck", "status": "Queued", "href": "project.html" },
+        { "x": 890, "y": 280, "state": "locked",  "title": "Triple screens", "status": "Locked until wiring passes" }
+      ]
+    },
+    {
+      "name": "HealthLens AI",
+      "sub": "1 of 5 complete · private",
+      "next": "Next: Define metrics schema",
+      "nodes": [
+        { "x": 110, "y": 290, "state": "done",    "title": "Research & ethics", "status": "Completed May 28", "href": "project.html" },
+        { "x": 360, "y": 170, "state": "current", "title": "Data model", "status": "In progress", "next": "Define metrics schema", "progress": 12, "href": "project.html" },
+        { "x": 620, "y": 290, "state": "locked",  "title": "Ingestion pipeline", "status": "Locked until data model is done" },
+        { "x": 830, "y": 180, "state": "locked",  "title": "Insights engine", "status": "Locked" },
+        { "x": 940, "y": 300, "state": "locked",  "title": "Private beta", "status": "Locked" }
+      ]
+    },
+    {
+      "name": "Learning",
+      "sub": "1 of 4 courses complete",
+      "next": "Next: Module 7 · Joins deep-dive, tonight",
+      "nodes": [
+        { "x": 110, "y": 220, "state": "done",    "title": "SQL for Analytics", "status": "Completed May 30", "href": "courses.html" },
+        { "x": 380, "y": 320, "state": "current", "title": "Advanced SQL Bootcamp", "status": "In progress", "next": "Module 7 · Joins deep-dive", "due": "Jul 25", "progress": 68, "href": "courses.html" },
+        { "x": 650, "y": 190, "state": "",        "title": "AI Engineering Path", "status": "Lab 3 due Jul 8", "progress": 15, "href": "courses.html" },
+        { "x": 890, "y": 290, "state": "",        "title": "API Design", "status": "Queued after SQL", "href": "courses.html" }
+      ]
+    }
+  ]
+  </script>
+
+  <footer class="foot">
+    <span>Prototype v2</span>
+    <a href="design-system.html">Design system</a>
+  </footer>
+
+</main>
+</body>
+</html>

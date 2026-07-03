@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Courses — LifeOps</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">LifeOps <span>Mission Control</span></a>
+    <nav aria-label="Primary">
+      <a href="index.html">Dashboard</a>
+      <a href="today.html">Today</a>
+      <a href="projects.html">Projects</a>
+      <a href="roadmap.html">Roadmaps</a>
+      <a href="courses.html" aria-current="page">Courses</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div>
+      <p class="kicker">Learning deck</p>
+      <h1 class="page-title">Courses</h1>
+      <p class="page-sub">3 in progress · next block tonight at 8:30.</p>
+    </div>
+    <button class="btn ghost">Add course</button>
+  </div>
+
+  <div class="notice" style="margin-top:24px" role="status">
+    <span>1 study block missed this week. Reschedule to keep the July 25 finish date.</span>
+    <button class="btn sm ghost">Plan catch-up</button>
+  </div>
+
+  <div class="course-grid" style="margin-top:16px">
+
+    <section class="card course">
+      <div>
+        <p class="kicker">Udemy · self-paced</p>
+        <h3>Advanced SQL Bootcamp</h3>
+      </div>
+      <div class="progress-row">
+        <div class="progress"><span style="width:68%"></span></div>
+        <span class="meta num">68%</span>
+      </div>
+      <div class="next-block">
+        <div style="flex:1">Module 7 · Joins deep-dive<small>38 min · tonight 8:30</small></div>
+        <button class="btn sm">Resume</button>
+      </div>
+      <p class="meta">8 of 12 modules · finish by Jul 25 · <button class="btn quiet sm" style="padding:0;color:var(--accent-text)">add to calendar</button></p>
+    </section>
+
+    <section class="card course">
+      <div>
+        <p class="kicker">Proda Academy · weekly labs</p>
+        <h3>AI Engineering Path</h3>
+      </div>
+      <div class="progress-row">
+        <div class="progress"><span style="width:15%"></span></div>
+        <span class="meta num">15%</span>
+      </div>
+      <div class="next-block">
+        <div style="flex:1">Lab 3 · Prompt evaluation<small>90 min · due Tue Jul 8</small></div>
+        <button class="btn sm ghost">Open lab</button>
+      </div>
+      <p class="meta">Lab 3 of 10 · weekly deadlines</p>
+    </section>
+
+    <section class="card course">
+      <div>
+        <p class="kicker">Queued</p>
+        <h3>API Design</h3>
+      </div>
+      <div class="progress-row">
+        <div class="progress"><span style="width:0%"></span></div>
+        <span class="meta num">0%</span>
+      </div>
+      <div class="next-block" style="opacity:.75">
+        <div style="flex:1">Starts after the SQL bootcamp<small>est. Jul 28 · 6-week plan</small></div>
+        <button class="btn sm quiet">Start early</button>
+      </div>
+      <p class="meta">REST and gRPC patterns</p>
+    </section>
+
+    <section class="card course">
+      <div>
+        <p class="kicker">Completed May 30</p>
+        <h3 style="color:var(--muted)">SQL for Analytics</h3>
+      </div>
+      <div class="progress-row">
+        <div class="progress done"><span style="width:100%"></span></div>
+        <span class="meta num">100%</span>
+      </div>
+      <p class="meta">Finished in 4 weeks · +120 XP</p>
+      <p><button class="btn sm quiet" style="padding-left:0">Review notes</button></p>
+    </section>
+
+  </div>
+
+  <section class="section-head">
+    <h2 class="section-title">This week's study blocks</h2>
+    <a href="settings.html">Calendar feed →</a>
+  </section>
+  <div class="card tight">
+    <ul class="tasks">
+      <li class="task">
+        <span class="slot-time">Mon</span>
+        <input type="checkbox" checked aria-label="done">
+        <div class="task-body"><div class="task-title">SQL module 6 · indexing</div><div class="task-meta">30 min</div></div>
+      </li>
+      <li class="task">
+        <span class="slot-time">Wed</span>
+        <input type="checkbox" checked aria-label="done">
+        <div class="task-body"><div class="task-title">SQL module 6 · quiz</div><div class="task-meta">20 min</div></div>
+      </li>
+      <li class="task">
+        <span class="slot-time">Thu</span>
+        <input type="checkbox" aria-label="Complete: Module 7 block">
+        <div class="task-body"><div class="task-title">Module 7 · Joins deep-dive</div><div class="task-meta">38 min · tonight 8:30</div></div>
+        <button class="btn quiet sm">Later</button>
+      </li>
+      <li class="task">
+        <span class="slot-time">Sat</span>
+        <input type="checkbox" aria-label="Complete: Proda lab 3">
+        <div class="task-body"><div class="task-title">Proda Lab 3 · Prompt evaluation</div><div class="task-meta">90 min · due Jul 8</div></div>
+        <button class="btn quiet sm">Later</button>
+      </li>
+    </ul>
+  </div>
+
+  <footer class="foot">
+    <span>Prototype v2</span>
+    <a href="design-system.html">Design system</a>
+  </footer>
+
+</main>
+</body>
+</html>
