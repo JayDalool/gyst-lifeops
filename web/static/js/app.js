@@ -168,8 +168,41 @@
     return { rebuild: build };
   }
 
+  /* ---------------- small stuff (copy buttons, reduced-motion toggle) ------ */
+  function initMisc() {
+    document.querySelectorAll("[data-copy]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var el = document.querySelector(btn.dataset.copy);
+        var done = function () {
+          var t = btn.textContent;
+          btn.textContent = "Copied";
+          setTimeout(function () { btn.textContent = t; }, 1500);
+        };
+        if (navigator.clipboard && el) navigator.clipboard.writeText(el.textContent.trim()).then(done);
+        else done();
+      });
+    });
+
+    var motion = document.querySelector("[data-motion-toggle]");
+    if (motion) {
+      motion.checked = document.documentElement.dataset.motion === "reduced";
+      motion.addEventListener("change", function () {
+        if (motion.checked) document.documentElement.dataset.motion = "reduced";
+        else delete document.documentElement.dataset.motion;
+        try { localStorage.setItem("lifeops-motion", motion.checked ? "reduced" : ""); } catch (e) {}
+      });
+    }
+  }
+
+  try {
+    if (localStorage.getItem("lifeops-motion") === "reduced") {
+      document.documentElement.dataset.motion = "reduced";
+    }
+  } catch (e) {}
+
   function init() {
     document.querySelectorAll("[data-map-v2]").forEach(function (m) { initMap(m); });
+    initMisc();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

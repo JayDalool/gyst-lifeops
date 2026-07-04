@@ -1,79 +1,105 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">More / Settings</p>
-    <h1>Preferences</h1>
+    <h1 class="page-title">Settings</h1>
+    <p class="page-sub">Calendar feed, appearance, and motion.</p>
+  </div>
+</div>
+
+<section class="card mt-24 settings-card">
+  <h2 class="section-title">Calendar feed</h2>
+  <p class="meta measure mt-8">
+    Subscribe from Google Calendar, Apple Calendar, or Outlook to see missions,
+    deadlines, and study blocks. The feed is read-only.
+  </p>
+
+  {{if .CalendarToken}}
+    <label class="field mt-16">
+      <span>Everything</span>
+      <div class="token">
+        <span id="feed-all">{{.BaseURL}}/calendar/feed/{{.CalendarToken}}.ics</span>
+        <button class="btn sm ghost" type="button" data-copy="#feed-all">Copy</button>
+      </div>
+    </label>
+    <label class="field">
+      <span>Courses only</span>
+      <div class="token">
+        <span id="feed-courses">{{.BaseURL}}/calendar/feed/{{.CalendarToken}}/courses.ics</span>
+        <button class="btn sm ghost" type="button" data-copy="#feed-courses">Copy</button>
+      </div>
+    </label>
+    <label class="field">
+      <span>Projects &amp; tasks</span>
+      <div class="token">
+        <span id="feed-projects">{{.BaseURL}}/calendar/feed/{{.CalendarToken}}/projects.ics</span>
+        <button class="btn sm ghost" type="button" data-copy="#feed-projects">Copy</button>
+      </div>
+    </label>
+    <p class="warn-note">
+      Treat these URLs like passwords &mdash; anyone who has one can read every event in the feed.
+    </p>
+
+    <div class="setting mt-8">
+      <div>
+        <b>Regenerate token</b>
+        <p>Issues new URLs immediately. Calendars using the old ones stop updating until you re-subscribe.</p>
+      </div>
+      <form method="post" action="/settings/calendar-token">
+        <input type="hidden" name="action" value="generate">
+        <button class="btn sm ghost" type="submit">Regenerate</button>
+      </form>
+    </div>
+    <div class="setting">
+      <div>
+        <b>Revoke feed</b>
+        <p>Disables the tokenized feed entirely. All subscribed calendars lose access.</p>
+      </div>
+      <form method="post" action="/settings/calendar-token">
+        <input type="hidden" name="action" value="revoke">
+        <button class="btn sm danger" type="submit">Revoke</button>
+      </form>
+    </div>
+  {{else}}
+    <p class="meta measure mt-8">
+      Generate a private, tokenized URL so your calendar can subscribe without exposing
+      a public feed.
+    </p>
+    <form class="mt-16" method="post" action="/settings/calendar-token">
+      <input type="hidden" name="action" value="generate">
+      <button class="btn" type="submit">Generate feed URL</button>
+    </form>
+  {{end}}
+</section>
+
+<section class="card mt-16 settings-card">
+  <h2 class="section-title">Appearance</h2>
+  <div class="setting mt-8">
+    <div>
+      <b>Light mode</b>
+      <p>Dark is the default. Stored locally in this browser.</p>
+    </div>
+    <label class="switch"><input type="checkbox" data-theme-toggle aria-label="Light mode"><i></i></label>
   </div>
 </section>
 
-<section class="settings-grid">
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Theme</p>
-        <h2>Interface Mode</h2>
-      </div>
+<section class="card mt-16 settings-card">
+  <h2 class="section-title">Motion</h2>
+  <div class="setting mt-8">
+    <div>
+      <b>Reduce motion</b>
+      <p>Turns off the map marker animation and the current-node pulse. Your system preference is honored automatically.</p>
     </div>
-    <label class="toggle-row">
-      <span>
-        <strong>Light mode</strong>
-        <small>Stored locally in this browser.</small>
-      </span>
-      <input type="checkbox" data-theme-toggle>
-    </label>
-  </article>
+    <label class="switch"><input type="checkbox" data-motion-toggle aria-label="Reduce motion"><i></i></label>
+  </div>
+</section>
 
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Local-first</p>
-        <h2>Data Storage</h2>
-      </div>
+<section class="card mt-16 settings-card">
+  <h2 class="section-title">Data</h2>
+  <div class="setting mt-8">
+    <div>
+      <b>Local-first storage</b>
+      <p>LifeOps keeps your data in the local SQLite database configured for this app. No cloud sync or push notifications.</p>
     </div>
-    <p class="body-copy">LifeOps keeps Version 1 data in the local SQLite database configured for this Go app. No cloud sync or push notification service is active yet.</p>
-  </article>
-
-  <article class="glass-panel feed-panel span-2">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Calendar</p>
-        <h2>Private Feed URL</h2>
-      </div>
-    </div>
-    {{if .CalendarToken}}
-      <p class="body-copy">Subscribe in Apple or Google Calendar using these private links. They include a secret token, so they keep working even when the app is behind Cloudflare Access.</p>
-      <div class="feed-urls">
-        <label class="field">
-          <span>Everything</span>
-          <input type="text" readonly value="{{.BaseURL}}/calendar/feed/{{.CalendarToken}}.ics" onclick="this.select()">
-        </label>
-        <label class="field">
-          <span>Courses only</span>
-          <input type="text" readonly value="{{.BaseURL}}/calendar/feed/{{.CalendarToken}}/courses.ics" onclick="this.select()">
-        </label>
-        <label class="field">
-          <span>Projects &amp; tasks</span>
-          <input type="text" readonly value="{{.BaseURL}}/calendar/feed/{{.CalendarToken}}/projects.ics" onclick="this.select()">
-        </label>
-      </div>
-      <p class="feed-warning"><strong>&#9888; Anyone with these URLs can read your calendar.</strong> Don't share them. If a link leaks, regenerate to invalidate the old one.</p>
-      <div class="button-row">
-        <form method="post" action="/settings/calendar-token">
-          <input type="hidden" name="action" value="generate">
-          <button class="button small secondary" type="submit">Regenerate</button>
-        </form>
-        <form method="post" action="/settings/calendar-token">
-          <input type="hidden" name="action" value="revoke">
-          <button class="button small danger" type="submit">Revoke</button>
-        </form>
-      </div>
-    {{else}}
-      <p class="body-copy">Generate a private, tokenized URL so Apple/Google Calendar can subscribe to your deadlines without exposing a public feed. The plain <code>/calendar.ics</code> route stays available for local use.</p>
-      <form method="post" action="/settings/calendar-token">
-        <input type="hidden" name="action" value="generate">
-        <button class="button" type="submit">Generate Feed URL</button>
-      </form>
-    {{end}}
-  </article>
+  </div>
 </section>
 {{end}}

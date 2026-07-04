@@ -230,7 +230,7 @@ func TestCoursesListHidesPlainFeedWhenGated(t *testing.T) {
 	if strings.Contains(off, "/calendar.ics") || strings.Contains(off, "/courses/calendar.ics") {
 		t.Fatal("plain feed link shown while gated")
 	}
-	if !strings.Contains(off, "Get Feed URL") {
+	if !strings.Contains(off, `href="/settings"`) {
 		t.Fatal("missing Settings pointer when gated")
 	}
 	on := renderBody(t, "courses_list.html", CourseListData{Page: "courses", AllowPublicFeeds: true})
@@ -270,7 +270,7 @@ func TestRenderSettingsFeed(t *testing.T) {
 	if !strings.Contains(body, "https://gyst.example/calendar/feed/abc123token.ics") {
 		t.Fatal("feed URL not rendered")
 	}
-	if !strings.Contains(body, "Anyone with these URLs") {
+	if !strings.Contains(body, "like passwords") {
 		t.Fatal("missing leak warning")
 	}
 	// Without a token: generate button, no feed URL.
@@ -278,7 +278,7 @@ func TestRenderSettingsFeed(t *testing.T) {
 	if strings.Contains(body, "/calendar/feed/") {
 		t.Fatal("feed URL shown without a token")
 	}
-	if !strings.Contains(body, "Generate Feed URL") {
+	if !strings.Contains(body, "Generate feed URL") {
 		t.Fatal("missing generate button")
 	}
 }

@@ -1,64 +1,50 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">Learning Deck</p>
-    <h1>Courses</h1>
-    <p class="hero-greeting">Self-paced courses, bootcamps, and modules — tracked your way.</p>
+    <p class="kicker">Learning deck</p>
+    <h1 class="page-title">Courses</h1>
+    <p class="page-sub">Self-paced courses, bootcamps, and modules &mdash; tracked your way.</p>
   </div>
-  <a class="button" href="/courses/new">New Course</a>
-</section>
+  <a class="btn ghost" href="/courses/new">Add course</a>
+</div>
 
-<section class="calendar-bar" aria-label="Calendar export">
-  <span class="cal-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg> Calendar export</span>
+<p class="meta mt-16">
+  Calendar export:
   {{if .AllowPublicFeeds}}
-    <a class="button small secondary" href="/courses/calendar.ics">Courses .ics</a>
-    <a class="button small secondary" href="/calendar.ics">Everything .ics</a>
-    <small class="cal-hint">Download or subscribe in Apple/Google Calendar.</small>
+    <a href="/courses/calendar.ics">courses .ics</a> &middot; <a href="/calendar.ics">everything .ics</a> &middot; download or subscribe in Apple/Google Calendar.
   {{else}}
-    <a class="button small secondary" href="/settings">Get Feed URL</a>
-    <small class="cal-hint">Generate a private subscription link in Settings.</small>
+    <a href="/settings">get a private feed URL in Settings</a>.
   {{end}}
-</section>
+</p>
 
 {{if .Courses}}
-  <div class="project-grid">
+  <div class="course-grid mt-24">
     {{range .Courses}}
-      <article class="project-card course-card">
-        <div class="project-card-top">
-          {{if .Course.Provider}}<span class="badge">{{.Course.Provider}}</span>{{end}}
-          <span class="badge status-{{.Course.Status}}">{{.Course.Status}}</span>
+      <section class="card course">
+        <div>
+          <p class="kicker">{{if .Course.Provider}}{{.Course.Provider}} &middot; {{end}}{{.Course.Status}}</p>
+          <h3><a href="/courses/{{.Course.ID}}">{{.Course.Name}}</a></h3>
+          {{if .Course.Instructor}}<p class="meta">with {{.Course.Instructor}}</p>{{end}}
         </div>
-        <a class="course-card-title" href="/courses/{{.Course.ID}}">
-          <h2>{{.Course.Name}}</h2>
-          {{if .Course.Instructor}}<small>with {{.Course.Instructor}}</small>{{end}}
-        </a>
-
-        <div class="project-progress">
-          <div><strong>{{.Course.ProgressPercent}}%</strong><small>{{.CompletedBlocks}} / {{.BlockCount}} blocks</small></div>
-          <div class="progress"><span style="width: {{progressWidth .Course.ProgressPercent}}"></span></div>
+        <div class="progress-row">
+          <div class="progress{{if eq .Course.ProgressPercent 100}} done{{end}}"><span style="width: {{progressWidth .Course.ProgressPercent}}"></span></div>
+          <span class="meta num">{{.Course.ProgressPercent}}%</span>
         </div>
-
-        <ul class="course-next">
-          <li>
-            <span class="cn-label">Next block</span>
-            <span class="cn-value">{{if .HasNextBlock}}{{blockLabel .NextBlock.BlockType}}: {{.NextBlock.Title}}{{else}}<em class="quiet">Nothing queued</em>{{end}}</span>
-          </li>
-          <li>
-            <span class="cn-label">Next deadline</span>
-            <span class="cn-value">{{if .HasNextDeadline}}{{.NextDeadline.Title}} &middot; {{niceDate .NextDeadline.DueDate}}{{else}}<em class="quiet">None set</em>{{end}}</span>
-          </li>
-        </ul>
-
-        <div class="course-card-actions">
-          <a class="button small" href="/courses/{{.Course.ID}}">Open</a>
-          {{if .Course.URL}}<a class="button small secondary" href="{{.Course.URL}}" target="_blank" rel="noopener">Course&nbsp;&#8599;</a>{{end}}
+        <div class="next-block">
+          <div class="next-block-copy">
+            {{if .HasNextBlock}}{{blockLabel .NextBlock.BlockType}}: {{.NextBlock.Title}}{{else}}Nothing queued{{end}}
+            {{if .HasNextDeadline}}<small>next deadline: {{.NextDeadline.Title}} &middot; {{niceDate .NextDeadline.DueDate}}</small>{{end}}
+          </div>
+          <a class="btn sm ghost" href="/courses/{{.Course.ID}}">Open</a>
         </div>
-      </article>
+        <p class="meta">
+          {{.CompletedBlocks}} of {{.BlockCount}} blocks
+          {{- if .Course.URL}} &middot; <a href="{{.Course.URL}}" target="_blank" rel="noopener">course site &#8599;</a>{{end}}
+        </p>
+      </section>
     {{end}}
   </div>
 {{else}}
-  <section class="glass-panel">
-    <p class="empty">No courses yet. <a href="/courses/new">Add your first course</a> — Udemy, a bootcamp, a YouTube series, anything self-paced.</p>
-  </section>
+  <p class="meta mt-24">No courses yet. <a href="/courses/new">Add your first course</a> &mdash; Udemy, a bootcamp, a YouTube series, anything self-paced.</p>
 {{end}}
 {{end}}
