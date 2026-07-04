@@ -8,7 +8,7 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link rel="stylesheet" href="/static/css/styles.css?v=polish-5">
-  <link rel="stylesheet" href="/static/css/v2.css?v=1">
+  <link rel="stylesheet" href="/static/css/v2.css?v=2">
   <script defer src="/static/js/charts.js?v=polish-5"></script>
   <script defer src="/static/js/starmap.js"></script>
   <script defer src="/static/js/rocketroute.js?v=polish-5"></script>
@@ -19,109 +19,35 @@
        main scroll cost). Revert = drop data-design="v2" + the v2.css link
        and restore these divs. */}}
 
-  <div class="app-shell">
-    <header class="topbar">
-      <a class="brand" href="/" aria-label="LifeOps home">
-        <span class="brand-mark">LO</span>
-        <span class="brand-copy">
-          <strong>LifeOps</strong>
-          <small>Local command center</small>
-        </span>
-      </a>
-      {{if ne .Page "dashboard"}}
-        <nav class="top-nav" aria-label="Primary">
-          <a class="{{if eq .Page "today"}}active{{end}}" href="/today">Today</a>
-          <a class="{{if eq .Page "projects"}}active{{end}}" href="/projects">Projects</a>
-          <a class="{{if eq .Page "goals"}}active{{end}}" href="/goals">Goals</a>
-          <a class="{{if eq .Page "roadmap"}}active{{end}}" href="/roadmap">Roadmap</a>
-          <a class="{{if eq .Page "courses"}}active{{end}}" href="/courses">Courses</a>
-          <button type="button" data-more-open>More</button>
-        </nav>
-      {{end}}
-    </header>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/">LifeOps <span>Mission Control</span></a>
+      <nav aria-label="Primary">
+        <a href="/" {{if eq .Page "dashboard"}}aria-current="page"{{end}}>Dashboard</a>
+        <a href="/today" {{if eq .Page "today"}}aria-current="page"{{end}}>Today</a>
+        <a href="/projects" {{if eq .Page "projects"}}aria-current="page"{{end}}>Projects</a>
+        <a href="/roadmap" {{if eq .Page "roadmap"}}aria-current="page"{{end}}>Roadmaps</a>
+        <a href="/courses" {{if eq .Page "courses"}}aria-current="page"{{end}}>Courses</a>
+        <a href="/settings" {{if eq .Page "settings"}}aria-current="page"{{end}}>Settings</a>
+      </nav>
+    </div>
+  </header>
 
-    <main class="main">
-      {{template "content" .}}
-    </main>
-  </div>
+  <main class="wrap">
+    {{template "content" .}}
 
-  {{template "fabMenu" .}}
-  {{template "moreDrawer" .}}
+    <footer class="foot">
+      <a href="/monthly" {{if eq .Page "monthly"}}aria-current="page"{{end}}>Monthly</a>
+      <a href="/tasks" {{if eq .Page "tasks"}}aria-current="page"{{end}}>All tasks</a>
+      <a href="/goals" {{if eq .Page "goals"}}aria-current="page"{{end}}>Goals</a>
+      <a href="/reminders" {{if eq .Page "reminders"}}aria-current="page"{{end}}>Reminders</a>
+      <a href="/analytics" {{if eq .Page "analytics"}}aria-current="page"{{end}}>Analytics</a>
+      <a href="/health" {{if eq .Page "health"}}aria-current="page"{{end}}>Health</a>
+      <a href="/archive" {{if eq .Page "archive"}}aria-current="page"{{end}}>Archive</a>
+    </footer>
+  </main>
 </body>
 </html>
-{{end}}
-
-{{define "fabMenu"}}
-<details class="fab-menu">
-  <summary aria-label="Add new item">+ Add</summary>
-  <div class="fab-panel">
-    <a href="/tasks/new">New Task</a>
-    <a href="/projects/new">New Project</a>
-    <a href="/goals/new">New Goal</a>
-  </div>
-</details>
-{{end}}
-
-{{define "moreDrawer"}}
-<div class="drawer-backdrop" data-more-close></div>
-<aside class="more-drawer" aria-label="More menu" aria-hidden="true">
-  <div class="drawer-head">
-    <div>
-      <p class="eyebrow">More</p>
-      <h2>Control Surfaces</h2>
-    </div>
-    <button class="icon-button" type="button" data-more-close aria-label="Close More menu">
-      <svg class="ui-icon" aria-hidden="true"><use href="#icon-x"></use></svg>
-    </button>
-  </div>
-  <nav class="drawer-grid">
-    <a href="/monthly">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>
-      <span>Monthly View</span>
-      <small>Calendar-level completion</small>
-    </a>
-    <a href="/tasks">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-list-check"></use></svg>
-      <span>All Tasks</span>
-      <small>Full task library</small>
-    </a>
-    <a href="/reminders">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-bell"></use></svg>
-      <span>Reminders</span>
-      <small>Due and overdue pings</small>
-    </a>
-    <a href="/analytics">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-chart-line"></use></svg>
-      <span>Analytics</span>
-      <small>Progress and streak signals</small>
-    </a>
-    <a href="/roadmap">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-target"></use></svg>
-      <span>Roadmaps</span>
-      <small>Projects, milestones, and portfolio exports</small>
-    </a>
-    <a href="/courses">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-list-check"></use></svg>
-      <span>Courses</span>
-      <small>Self-paced learning and study blocks</small>
-    </a>
-    <a href="/health">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-heart-pulse"></use></svg>
-      <span>Health</span>
-      <small>Habit consistency only</small>
-    </a>
-    <a href="/archive">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-archive"></use></svg>
-      <span>Archive</span>
-      <small>Completed storage</small>
-    </a>
-    <a href="/settings">
-      <svg class="drawer-icon" aria-hidden="true"><use href="#icon-gear"></use></svg>
-      <span>Settings</span>
-      <small>Theme and local preferences</small>
-    </a>
-  </nav>
-</aside>
 {{end}}
 
 {{define "iconSprite"}}

@@ -39,13 +39,26 @@
   --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
 }
 
+/* Must restate every token the v2 dark block sets: this block and the base
+   light theme in styles.css have equal specificity, and v2.css loads later,
+   so any token missing here would fall through to the v2 *dark* value. */
 :root[data-design="v2"][data-theme="light"] {
   --bg: #f4f6f8;
   --bg-2: #f4f6f8;
   --panel: #ffffff;
   --panel-strong: #ffffff;
+  --panel-soft: rgba(20, 38, 56, 0.055);
   --border: rgba(20, 38, 56, 0.10);
   --border-strong: rgba(20, 38, 56, 0.20);
+  --text: #101923;
+  --muted: #4d5f70;
+  --quiet: #728294;
+  --cyan: #007f96;
+  --blue: #345fbd;
+  --purple: #7056d8;
+  --green: #168250;
+  --orange: #b45d18;
+  --red: #bd2f45;
   --shadow: 0 1px 2px rgba(20, 38, 56, 0.08);
   --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);
   --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
@@ -101,3 +114,97 @@
 
 /* Slightly quieter route echoes (pure depth decoration) */
 :root[data-design="v2"] .route-echo { stroke: rgba(166, 213, 255, 0.07); }
+
+/* ==========================================================================
+   Step 2 — layout shell (see design-v2/README.md)
+   Static top nav (no sticky), 960px container, footer with the secondary
+   pages that used to live in the More drawer. FAB and drawer retired.
+   ========================================================================== */
+
+:root[data-design="v2"] body {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* ---- top nav ------------------------------------------------------------ */
+:root[data-design="v2"] .nav {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+:root[data-design="v2"] .nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 56px;
+}
+:root[data-design="v2"] .brand {
+  display: inline;                     /* v1 .brand was inline-flex w/ gap */
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+:root[data-design="v2"] .brand span {
+  color: var(--quiet);
+  font-weight: 400;
+  font-size: 13px;
+  margin-left: 10px;
+}
+:root[data-design="v2"] .nav nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  min-width: 0;
+}
+:root[data-design="v2"] .nav nav a {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 120ms, background-color 120ms;
+}
+:root[data-design="v2"] .nav nav a:hover { color: var(--text); }
+:root[data-design="v2"] .nav nav a[aria-current="page"] {
+  color: var(--text);
+  background: var(--panel-strong);
+}
+
+/* ---- 960px container ---------------------------------------------------- */
+:root[data-design="v2"] .wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px 72px;
+}
+
+/* ---- footer (secondary pages, formerly the More drawer) ------------------ */
+:root[data-design="v2"] .foot {
+  margin-top: 64px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  color: var(--quiet);
+  font-size: 13px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+:root[data-design="v2"] .foot a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 120ms;
+}
+:root[data-design="v2"] .foot a:hover { color: var(--text); }
+:root[data-design="v2"] .foot a[aria-current="page"] { color: var(--text); }
+
+@media (max-width: 720px) {
+  :root[data-design="v2"] .nav-inner { gap: 14px; }
+  :root[data-design="v2"] .nav nav {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  :root[data-design="v2"] .nav nav::-webkit-scrollbar { display: none; }
+}
