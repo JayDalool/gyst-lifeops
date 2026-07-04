@@ -1,4 +1,4 @@
-{{define "content"}}
+﻿{{define "content"}}
 <div class="page-head">
   <div>
     <p class="kicker"><a href="/tasks">Tasks</a> / {{.Task.Category}}</p>
@@ -21,7 +21,7 @@
       <li><span class="grow meta">Reward</span><span class="num">{{.Task.StarsReward}} XP &middot; {{.Task.StarsAwarded}} earned</span></li>
     </ul>
     <div class="flag-row mt-16">
-      <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
+      <form method="post" action="/tasks/{{.Task.ID}}/complete">
         <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
         <input type="hidden" name="return_to" value="/tasks/{{.Task.ID}}">
         <button class="btn sm" type="submit">Complete</button>

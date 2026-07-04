@@ -1,79 +1,7 @@
-{{define "rocketRoute"}}
-{{if .Nodes}}
-{{$pathID := printf "route-path-%s" .ID}}
-<section class="rocket-route route-mode-{{.Mode}}" data-mode="{{.Mode}}" aria-label="{{.Title}} route">
-  <div class="route-track">
-    {{/* viewBox aspect matches .route-track (1000:300) with preserveAspectRatio
-         meet, so the path scales uniformly: node %-positions and the ship's
-         tangent angle stay correct. The browser places nodes precisely along
-         this path with getPointAtLength; LeftPct/TopPct are the no-JS fallback. */}}
-    <svg class="route-line" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-      <path id="{{$pathID}}" class="route-base"
-        d="M 50 220 C 170 90, 300 70, 430 150 C 540 218, 600 250, 700 175 C 800 100, 870 90, 960 160" />
-      {{/* Faint parallel "orbital trails" — they reuse the frozen base geometry
-           via <use> (single source of truth; node positions still derive from
-           #route-base) and are offset to read as an abstract flight corridor
-           rather than one obvious line. Static, so they add no animation cost. */}}
-      <use href="#{{$pathID}}" class="route-echo route-echo-up" />
-      <use href="#{{$pathID}}" class="route-echo route-echo-down" />
-      <path class="route-flow"
-        d="M 50 220 C 170 90, 300 70, 430 150 C 540 218, 600 250, 700 175 C 800 100, 870 90, 960 160" />
-    </svg>
-    {{range .Nodes}}
-      <a class="route-node {{.State}}{{if .Current}} is-current{{end}}" href="{{.URL}}"
-         data-url="{{.URL}}" data-index="{{.Index}}" data-path-pct="{{.PathPct}}"
-         style="left:{{.LeftPct}}%;top:{{.TopPct}}%" aria-label="{{.Name}} ({{.State}})">
-        <span class="node-planet"></span>
-        <span class="node-label">{{.Name}}</span>
-      </a>
-    {{end}}
-    <div class="rocket" aria-hidden="true">
-      <span class="rocket-body">
-        <svg class="rocket-icon" viewBox="0 0 24 24"><use href="#icon-rocket"></use></svg>
-        <span class="rocket-flame"></span>
-      </span>
-    </div>
-  </div>
-</section>
-{{end}}
-{{end}}
+{{/* Shared map partial, always parsed by render() alongside layout.html.
+     (Filename is historical; the v1 rocketRoute/shipStats partials that
+     lived here were removed with the design-v2 cleanup.) */}}
 
-{{define "shipStats"}}
-<section class="ship-stats" aria-label="Captain stats">
-  <div class="ship-stat fuel-counter">
-    <span class="stat-head"><svg class="stat-icon" aria-hidden="true"><use href="#icon-bolt"></use></svg><span class="stat-label">Fuel</span></span>
-    <strong>{{.TotalFuel}} <span class="stat-unit">XP</span></strong>
-    <div class="level-meter"><span style="width:{{.LevelProgress}}%"></span></div>
-    <small>Level {{.Level}} &middot; {{.LevelProgress}}/100 to next</small>
-  </div>
-  <div class="ship-stat">
-    <span class="stat-head"><svg class="stat-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg><span class="stat-label">Missions</span></span>
-    <strong>{{.CompletedMissions}}</strong>
-  </div>
-  <div class="ship-stat">
-    <span class="stat-head"><svg class="stat-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg><span class="stat-label">Active Trips</span></span>
-    <strong>{{.ActiveTrips}}</strong>
-  </div>
-  <div class="ship-stat">
-    <span class="stat-head"><svg class="stat-icon" aria-hidden="true"><use href="#icon-flame"></use></svg><span class="stat-label">Streak</span></span>
-    <strong>{{.Streak}} <span class="stat-unit">d</span></strong>
-  </div>
-  <div class="ship-stat">
-    <span class="stat-head"><svg class="stat-icon" aria-hidden="true"><use href="#icon-medal"></use></svg><span class="stat-label">Medals</span></span>
-    <strong>{{.MedalCount}}</strong>
-  </div>
-  {{if .RecentMedal}}
-    <div class="ship-stat recent-medal">
-      <span class="stat-head"><svg class="stat-icon" aria-hidden="true"><use href="#icon-medal"></use></svg><span class="stat-label">Latest Medal</span></span>
-      <strong>{{.RecentMedal}}</strong>
-    </div>
-  {{end}}
-</section>
-{{end}}
-
-{{/* Condensed one-line stats strip for secondary pages (Projects, Roadmap,
-     Today, Task). Same data as shipStats, lighter footprint so it never
-     competes with the page's primary content. */}}
 {{define "routeMapV2"}}
 {{/* Design v2 quiet route map (see design-v2/README.md step 4). Coordinates
      are percentages of the box on both axes; app.js#initMap draws the curve,
@@ -98,30 +26,4 @@
     <span class="status current"><span class="dot"></span>{{routeDone .Nodes}} of {{len .Nodes}} destinations complete</span>
     {{with routeNext .Nodes}}<span>Next: {{.}}</span>{{end}}
   </div>
-{{end}}
-
-{{define "shipStatsStrip"}}
-<section class="ship-strip" aria-label="Captain stats">
-  <span class="strip-stat fuel">
-    <svg class="stat-icon" aria-hidden="true"><use href="#icon-bolt"></use></svg>
-    <span class="strip-copy"><strong>{{.TotalFuel}}</strong><small>Lv {{.Level}}</small></span>
-    <span class="strip-meter"><span style="width:{{.LevelProgress}}%"></span></span>
-  </span>
-  <span class="strip-stat">
-    <svg class="stat-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
-    <span class="strip-copy"><strong>{{.CompletedMissions}}</strong><small>Missions</small></span>
-  </span>
-  <span class="strip-stat">
-    <svg class="stat-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
-    <span class="strip-copy"><strong>{{.ActiveTrips}}</strong><small>Active</small></span>
-  </span>
-  <span class="strip-stat">
-    <svg class="stat-icon" aria-hidden="true"><use href="#icon-flame"></use></svg>
-    <span class="strip-copy"><strong>{{.Streak}}</strong><small>Streak</small></span>
-  </span>
-  <span class="strip-stat">
-    <svg class="stat-icon" aria-hidden="true"><use href="#icon-medal"></use></svg>
-    <span class="strip-copy"><strong>{{.MedalCount}}</strong><small>Medals</small></span>
-  </span>
-</section>
 {{end}}

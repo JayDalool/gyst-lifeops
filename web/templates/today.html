@@ -1,4 +1,4 @@
-{{define "content"}}
+﻿{{define "content"}}
 <div class="page-head">
   <div>
     <p class="kicker">{{niceDate .Today}}</p>
@@ -46,7 +46,7 @@
         <ul class="tasks">
           {{range .Pending}}
             <li class="task" id="task-{{.Task.ID}}">
-              <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
+              <form method="post" action="/tasks/{{.Task.ID}}/complete">
                 <input type="hidden" name="occurrence_date" value="{{.Date}}">
                 <input type="hidden" name="return_to" value="/today#task-{{.Task.ID}}">
                 <input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()">
@@ -74,7 +74,7 @@
           {{end}}
           {{range .Skipped}}
             <li class="task" id="task-{{.Task.ID}}">
-              <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
+              <form method="post" action="/tasks/{{.Task.ID}}/complete">
                 <input type="hidden" name="occurrence_date" value="{{.Date}}">
                 <input type="hidden" name="return_to" value="/today#task-{{.Task.ID}}">
                 <input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()">
