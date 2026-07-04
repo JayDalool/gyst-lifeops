@@ -37,6 +37,14 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);    /* glows off wherever tokens are used */
   --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
+  /* v2-only tokens (no v1 equivalent) */
+  --inset: #0b0e12;
+  --accent: #53c6e4;
+  --accent-text: #7dd4ec;
+  --accent-soft: rgba(83, 198, 228, 0.12);
+  --green-text: #7cd6a4;
+  --amber-text: #e0b077;
+  --red-text: #ea8a99;
 }
 
 /* Must restate every token the v2 dark block sets: this block and the base
@@ -62,6 +70,13 @@
   --shadow: 0 1px 2px rgba(20, 38, 56, 0.08);
   --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);
   --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
+  --inset: #e8edf1;
+  --accent: #007f96;
+  --accent-text: #006e82;
+  --accent-soft: rgba(0, 127, 150, 0.10);
+  --green-text: #168250;
+  --amber-text: #b45d18;
+  --red-text: #bd2f45;
 }
 
 /* ---- 2. solid background ------------------------------------------------ */
@@ -199,6 +214,227 @@
 :root[data-design="v2"] .foot a:hover { color: var(--text); }
 :root[data-design="v2"] .foot a[aria-current="page"] { color: var(--text); }
 
+/* ==========================================================================
+   Step 3+ — shared page patterns (first used by Today, reused by every
+   ported page): page head, cards, buttons, status dots, task rows, lists.
+   All selectors gated so unported v1 pages are untouched.
+   ========================================================================== */
+
+/* ---- type & page head ---------------------------------------------------- */
+:root[data-design="v2"] .page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+:root[data-design="v2"] .kicker { font-size: 13px; color: var(--quiet); margin: 0 0 4px; }
+:root[data-design="v2"] .page-title {
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  margin: 0;
+}
+:root[data-design="v2"] .page-sub { color: var(--muted); margin: 6px 0 0; font-size: 15px; }
+:root[data-design="v2"] .section-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+:root[data-design="v2"] .meta { font-size: 13px; color: var(--quiet); }
+:root[data-design="v2"] .num { font-variant-numeric: tabular-nums; }
+:root[data-design="v2"] .page-body { margin-top: 28px; }
+
+/* ---- columns -------------------------------------------------------------- */
+:root[data-design="v2"] .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+:root[data-design="v2"] .cols-wide {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ---- surfaces ------------------------------------------------------------- */
+:root[data-design="v2"] .card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+:root[data-design="v2"] .card.tight { padding: 14px 16px; }
+:root[data-design="v2"] .card-title { margin: 0 0 8px; }
+:root[data-design="v2"] .side-summary { margin-top: 16px; }
+:root[data-design="v2"] .side-summary p + p { margin-top: 4px; }
+:root[data-design="v2"] .meta b { color: var(--text); font-weight: 600; }
+
+/* ---- buttons --------------------------------------------------------------- */
+:root[data-design="v2"] .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 550;
+  cursor: pointer;
+  background: var(--accent);
+  color: #08262e;
+  text-decoration: none;
+  transition: opacity 120ms, transform 120ms, color 120ms;
+}
+:root[data-design="v2"] .btn:hover { opacity: 0.9; }
+:root[data-design="v2"] .btn:active { transform: translateY(1px); }
+:root[data-design="v2"] .btn.ghost {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--border-strong);
+}
+:root[data-design="v2"] .btn.ghost:hover { color: var(--text); opacity: 1; }
+:root[data-design="v2"] .btn.quiet { background: transparent; color: var(--quiet); padding: 6px 8px; }
+:root[data-design="v2"] .btn.quiet:hover { color: var(--text); }
+:root[data-design="v2"] .btn.sm { padding: 5px 10px; font-size: 13px; }
+
+/* ---- status dots ------------------------------------------------------------ */
+:root[data-design="v2"] .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+  display: inline-block;
+}
+:root[data-design="v2"] .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--muted);
+}
+:root[data-design="v2"] .status.done    { color: var(--green-text); }
+:root[data-design="v2"] .status.current { color: var(--accent-text); }
+:root[data-design="v2"] .status.soon    { color: var(--amber-text); }
+:root[data-design="v2"] .status.late    { color: var(--red-text); }
+:root[data-design="v2"] .status.locked  { color: var(--quiet); }
+
+/* ---- day groups & task rows -------------------------------------------------- */
+:root[data-design="v2"] .day-group { margin-bottom: 8px; }
+:root[data-design="v2"] .group-label { margin: 28px 0 10px; font-size: 13px; color: var(--quiet); }
+:root[data-design="v2"] .day-group:first-child .group-label { margin-top: 0; }
+
+:root[data-design="v2"] .tasks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+:root[data-design="v2"] .task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+:root[data-design="v2"] .task:last-child { border-bottom: 0; }
+/* forms wrap the checkbox / action button; let their contents join the row */
+:root[data-design="v2"] .task form { display: contents; }
+:root[data-design="v2"] .task input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 6px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  transition: background-color 120ms, border-color 120ms;
+}
+:root[data-design="v2"] .task input[type="checkbox"]:hover { border-color: var(--muted); }
+:root[data-design="v2"] .task input[type="checkbox"]:checked {
+  background: var(--green);
+  border-color: var(--green);
+}
+:root[data-design="v2"] .task input[type="checkbox"]:checked::before {
+  content: "";
+  width: 10px;
+  height: 6px;
+  margin-top: -2px;
+  border-left: 2px solid var(--bg);
+  border-bottom: 2px solid var(--bg);
+  transform: rotate(-45deg);
+}
+:root[data-design="v2"] .task input[type="checkbox"]:disabled { cursor: default; }
+:root[data-design="v2"] .task-body { flex: 1; min-width: 0; }
+:root[data-design="v2"] .task-title { font-size: 14.5px; font-weight: 500; }
+:root[data-design="v2"] .task-title a { color: inherit; text-decoration: none; }
+:root[data-design="v2"] .task-title a:hover { color: var(--accent-text); }
+:root[data-design="v2"] .task:has(input:checked) .task-title {
+  color: var(--quiet);
+  text-decoration: line-through;
+  text-decoration-color: var(--border-strong);
+}
+:root[data-design="v2"] .task:has(input:checked) .task-title a { color: inherit; }
+:root[data-design="v2"] .task-meta { font-size: 13px; color: var(--quiet); margin-top: 1px; }
+:root[data-design="v2"] .task-when { font-size: 13px; color: var(--quiet); white-space: nowrap; }
+:root[data-design="v2"] .slot-time {
+  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--quiet);
+  width: 52px;
+  flex: 0 0 auto;
+}
+:root[data-design="v2"] .task .btn.quiet { opacity: 0; }
+:root[data-design="v2"] .task:hover .btn.quiet,
+:root[data-design="v2"] .task:focus-within .btn.quiet { opacity: 1; }
+
+/* ---- simple item lists (deadlines rail etc.) ---------------------------------- */
+:root[data-design="v2"] .list { list-style: none; padding: 0; margin: 0; }
+:root[data-design="v2"] .list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+:root[data-design="v2"] .list li:last-child { border-bottom: 0; }
+:root[data-design="v2"] .list .grow { flex: 1; min-width: 0; }
+:root[data-design="v2"] .list .grow a { color: inherit; text-decoration: none; }
+:root[data-design="v2"] .list .grow a:hover { color: var(--accent-text); }
+:root[data-design="v2"] .list small { display: block; color: var(--quiet); font-size: 13px; }
+
+/* ---- tracker chips (Deen signal), calm restyle of v1 .tracker-dot -------------- */
+:root[data-design="v2"] .tracker-dot {
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 120ms, border-color 120ms, background-color 120ms;
+}
+:root[data-design="v2"] .tracker-dot:hover { transform: none; color: var(--text); }
+:root[data-design="v2"] .tracker-dot span {
+  width: 7px;
+  height: 7px;
+  box-shadow: none;
+  background: currentColor;
+}
+:root[data-design="v2"] .tracker-dot.status-done {
+  border-color: rgba(87, 201, 139, 0.4);
+  background: rgba(87, 201, 139, 0.08);
+  color: var(--green-text);
+}
+:root[data-design="v2"] .tracker-dot.status-skipped {
+  border-color: rgba(217, 160, 84, 0.35);
+  background: rgba(217, 160, 84, 0.07);
+  color: var(--amber-text);
+}
+
 @media (max-width: 720px) {
   :root[data-design="v2"] .nav-inner { gap: 14px; }
   :root[data-design="v2"] .nav nav {
@@ -207,4 +443,9 @@
     -webkit-overflow-scrolling: touch;
   }
   :root[data-design="v2"] .nav nav::-webkit-scrollbar { display: none; }
+  :root[data-design="v2"] .cols,
+  :root[data-design="v2"] .cols-wide { grid-template-columns: 1fr; }
+  :root[data-design="v2"] .page-title { font-size: 22px; }
+  :root[data-design="v2"] .task .btn.quiet { opacity: 1; }   /* no hover on touch */
+  :root[data-design="v2"] .task input[type="checkbox"] { width: 24px; height: 24px; }
 }

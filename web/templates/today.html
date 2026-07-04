@@ -1,33 +1,17 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">{{niceDate .Today}}</p>
-    <h1>Today's Missions</h1>
+    <p class="kicker">{{niceDate .Today}}</p>
+    <h1 class="page-title">Today</h1>
+    <p class="page-sub">{{len .Pending}} missions and {{len .Learning.Blocks}} study blocks left &middot; {{.Progress}}% done.</p>
   </div>
-  <div class="hero-meter">
-    <strong>{{.Progress}}%</strong>
-    <div class="progress fuel-progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-    <small>fuel charged today</small>
-  </div>
-</section>
+  <a class="btn ghost" href="/tasks/new">Add mission</a>
+</div>
 
-{{template "shipStatsStrip" .ShipStats}}
-
-<section class="mission-control mission-control-compact" aria-label="Daily Mission">
-  <div class="section-heading">
-    <div>
-      <p class="eyebrow">Daily Mission</p>
-      <h2>Deen Signal</h2>
-    </div>
-    <strong>{{.Mission.DeenCompletion}}%</strong>
-  </div>
-
-  <div class="mission-grid mission-grid-compact">
-    <article class="mission-panel">
-      <div class="mission-panel-head">
-        <span>Prayer</span>
-        <strong data-mission="prayer">{{.Mission.PrayerCompletion}}%</strong>
-      </div>
+<div class="cols-wide page-body">
+  <div>
+    <div class="day-group" aria-label="Prayer tracker">
+      <p class="group-label">Prayer &middot; <span class="num" data-mission="prayer">{{.Mission.PrayerCompletion}}%</span></p>
       <div class="tracker-row prayer-row">
         {{range .Mission.PrayerItems}}
           <form method="post" action="/trackers/{{.Item.Key}}/toggle">
@@ -39,13 +23,10 @@
           </form>
         {{end}}
       </div>
-    </article>
+    </div>
 
-    <article class="mission-panel">
-      <div class="mission-panel-head">
-        <span>Athkar</span>
-        <strong data-mission="athkar">{{.Mission.AthkarCompletion}}%</strong>
-      </div>
+    <div class="day-group" aria-label="Athkar tracker">
+      <p class="group-label">Athkar &middot; <span class="num" data-mission="athkar">{{.Mission.AthkarCompletion}}%</span></p>
       <div class="tracker-row athkar-row">
         {{range .Mission.AthkarItems}}
           <form method="post" action="/trackers/{{.Item.Key}}/toggle">
@@ -57,170 +38,121 @@
           </form>
         {{end}}
       </div>
-    </article>
-  </div>
-</section>
-
-<section class="task-board">
-  <article class="glass-panel board-main">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Missions</p>
-        <h2>Today's Missions</h2>
-      </div>
-      <span class="count">{{len .Pending}}</span>
     </div>
 
-    {{if .Pending}}
-      <div class="task-card-list">
-        {{range .Pending}}
-          <article id="task-{{.Task.ID}}" class="task-card mission-node">
-            <div class="task-card-copy">
-              <a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a>
-              <small>{{.Task.Category}} / {{.Task.RepeatType}} / {{.Task.Priority}}</small>
-            </div>
-            <div class="quick-actions">
+    <div class="day-group" aria-label="Today's missions">
+      <p class="group-label">Missions</p>
+      {{if or .Pending .Completed .Skipped}}
+        <ul class="tasks">
+          {{range .Pending}}
+            <li class="task" id="task-{{.Task.ID}}">
               <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
                 <input type="hidden" name="occurrence_date" value="{{.Date}}">
                 <input type="hidden" name="return_to" value="/today#task-{{.Task.ID}}">
-                <button class="button small" type="submit">Complete</button>
+                <input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()">
               </form>
+              <div class="task-body">
+                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
+                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}} &middot; {{.Task.Priority}}</div>
+              </div>
               <form method="post" action="/tasks/{{.Task.ID}}/skip">
                 <input type="hidden" name="occurrence_date" value="{{.Date}}">
                 <input type="hidden" name="return_to" value="/today#task-{{.Task.ID}}">
-                <button class="button small secondary" type="submit">Skip</button>
+                <button class="btn quiet sm" type="submit">Skip</button>
               </form>
-            </div>
-          </article>
+            </li>
+          {{end}}
+          {{range .Completed}}
+            <li class="task" id="task-{{.Task.ID}}">
+              <input type="checkbox" checked disabled aria-label="Completed: {{.Task.Title}}">
+              <div class="task-body">
+                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
+                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}}</div>
+              </div>
+              <span class="task-when num">done {{niceDateTime .CompletedAt}}</span>
+            </li>
+          {{end}}
+          {{range .Skipped}}
+            <li class="task" id="task-{{.Task.ID}}">
+              <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
+                <input type="hidden" name="occurrence_date" value="{{.Date}}">
+                <input type="hidden" name="return_to" value="/today#task-{{.Task.ID}}">
+                <input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()">
+              </form>
+              <div class="task-body">
+                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
+                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}}</div>
+              </div>
+              <span class="task-when">skipped</span>
+            </li>
+          {{end}}
+        </ul>
+      {{else}}
+        <p class="meta">No missions in today&apos;s loop.</p>
+      {{end}}
+    </div>
+
+    {{if or .Learning.Blocks .Learning.SuggestStudy}}
+      <div class="day-group" aria-label="Study blocks">
+        <p class="group-label">Study blocks</p>
+        {{if .Learning.Blocks}}
+          <ul class="tasks">
+            {{range .Learning.Blocks}}
+              <li class="task" id="block-{{.ID}}">
+                <span class="slot-time num">{{if .StartTime}}{{.StartTime}}{{else}}&mdash;{{end}}</span>
+                <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/complete">
+                  <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
+                  <input type="checkbox" aria-label="Done: {{.Title}}" onchange="this.form.requestSubmit()">
+                </form>
+                <div class="task-body">
+                  <div class="task-title"><a href="/courses/{{.CourseID}}#block-{{.ID}}">{{.Title}}</a></div>
+                  <div class="task-meta">
+                    {{.CourseName}} &middot; {{blockLabel .BlockType}}{{if .IsCatchup}} &middot; catch-up{{end}}{{if .DueDate}} &middot; due {{niceDate .DueDate}}{{end}}
+                  </div>
+                </div>
+                <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/postpone">
+                  <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
+                  <button class="btn quiet sm" type="submit">Later</button>
+                </form>
+              </li>
+            {{end}}
+          </ul>
+        {{else}}
+          <p class="meta">Nothing scheduled from {{.Learning.SuggestCourse.Name}} today.
+            <a href="/courses/{{.Learning.SuggestCourse.ID}}">Add a study block &rarr;</a></p>
         {{end}}
       </div>
-    {{else}}
-      <p class="empty">No pending tasks in today&apos;s loop.</p>
     {{end}}
-  </article>
+  </div>
 
-  <aside class="side-stack">
-    <article class="glass-panel">
-      <div class="panel-heading">
-        <h2>Reminders</h2>
-        <span class="count">{{len .RemindersToday}}</span>
-      </div>
-      {{if .RemindersToday}}
-        <ul class="stack-list">
-          {{range .RemindersToday}}
-            <li>
-              <span>{{.Title}}</span>
-              <small>{{.ReminderTime}}</small>
-            </li>
-          {{end}}
-        </ul>
-      {{else}}
-        <p class="empty">No reminders due today.</p>
-      {{end}}
-    </article>
+  <aside>
+    <section class="card">
+      <h2 class="section-title card-title">Deadlines</h2>
+      <ul class="list">
+        {{range .RemindersToday}}
+          <li>
+            <span class="status soon"><span class="dot"></span></span>
+            <span class="grow">{{.Title}}</span>
+            <span class="meta num">{{.ReminderTime}}</span>
+          </li>
+        {{end}}
+        {{range .OverdueTasks}}
+          <li>
+            <span class="status late"><span class="dot"></span></span>
+            <span class="grow"><a href="/tasks/{{.ID}}">{{.Title}}</a></span>
+            <span class="meta num">{{niceDate .DueDate}}</span>
+          </li>
+        {{end}}
+        {{if and (not .RemindersToday) (not .OverdueTasks)}}
+          <li><span class="meta">Nothing due, nothing overdue.</span></li>
+        {{end}}
+      </ul>
+    </section>
 
-    <article class="glass-panel warning-panel">
-      <div class="panel-heading">
-        <h2>Overdue</h2>
-        <span class="count">{{len .OverdueTasks}}</span>
-      </div>
-      {{if .OverdueTasks}}
-        <ul class="stack-list">
-          {{range .OverdueTasks}}
-            <li>
-              <a href="/tasks/{{.ID}}">{{.Title}}</a>
-              <small>{{niceDate .DueDate}} / {{.Priority}}</small>
-            </li>
-          {{end}}
-        </ul>
-      {{else}}
-        <p class="empty">Nothing overdue.</p>
-      {{end}}
-    </article>
+    <section class="card tight side-summary">
+      <p class="meta">Done today: <b class="num">{{len .Completed}}</b> &middot; skipped: <b class="num">{{len .Skipped}}</b></p>
+      <p class="meta">Streak: {{.ShipStats.Streak}} days &middot; level {{.ShipStats.Level}} &middot; {{.ShipStats.TotalFuel}} XP</p>
+    </section>
   </aside>
-</section>
-
-{{/* Learning Missions: course blocks due today / overdue + catch-ups. Compact —
-     only renders when there is something to learn or a study block to suggest. */}}
-{{if or .Learning.Blocks .Learning.SuggestStudy}}
-<section class="glass-panel learning-missions">
-  <div class="panel-heading">
-    <div><p class="eyebrow">Learning</p><h2>Learning Missions</h2></div>
-    {{if .Learning.Blocks}}<span class="count">{{len .Learning.Blocks}}</span>{{end}}
-  </div>
-  {{if .Learning.Blocks}}
-    <div class="learning-list">
-      {{range .Learning.Blocks}}
-        <article id="block-{{.ID}}" class="task-card learning-row">
-          <div class="task-card-copy">
-            <a href="/courses/{{.CourseID}}#block-{{.ID}}">{{.Title}}</a>
-            <small>
-              <span class="badge tiny">{{.CourseName}}</span>
-              {{blockLabel .BlockType}}
-              {{if .IsCatchup}} &middot; <span class="quiet">catch-up</span>{{end}}
-              {{if .DueDate}} &middot; due {{niceDate .DueDate}}{{end}}
-              {{if .StartTime}} &middot; {{.StartTime}}{{end}}
-            </small>
-          </div>
-          <div class="quick-actions">
-            <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/complete">
-              <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
-              <button class="button small" type="submit">Done</button>
-            </form>
-            <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/postpone">
-              <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
-              <button class="button small secondary" type="submit">Postpone</button>
-            </form>
-          </div>
-        </article>
-      {{end}}
-    </div>
-  {{else}}
-    <p class="empty">Nothing scheduled from <strong>{{.Learning.SuggestCourse.Name}}</strong> today.
-      <a href="/courses/{{.Learning.SuggestCourse.ID}}">Add a study block &rarr;</a></p>
-  {{end}}
-</section>
-{{end}}
-
-{{/* Logged today: completed + skipped folded into one compact panel instead of
-     two large blocks. Stays open when it has items so the post-completion
-     #task-{id} anchor lands on the moved item. */}}
-<details class="glass-panel logged-panel"{{if or .Completed .Skipped}} open{{end}}>
-  <summary class="logged-summary">
-    <span class="eyebrow">Logged Today</span>
-    <span class="logged-tally"><strong class="good">{{len .Completed}}</strong> done &middot; <strong>{{len .Skipped}}</strong> skipped</span>
-  </summary>
-  <div class="logged-cols">
-    <div>
-      <p class="stop-label">Completed</p>
-      {{if .Completed}}
-        <ul class="stack-list">
-          {{range .Completed}}
-            <li id="task-{{.Task.ID}}">
-              <a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a>
-              <small>{{niceDateTime .CompletedAt}}</small>
-            </li>
-          {{end}}
-        </ul>
-      {{else}}
-        <p class="empty quiet">Nothing logged yet.</p>
-      {{end}}
-    </div>
-    <div>
-      <p class="stop-label">Skipped</p>
-      {{if .Skipped}}
-        <ul class="stack-list">
-          {{range .Skipped}}
-            <li id="task-{{.Task.ID}}">
-              <a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a>
-              <small>{{.Task.Category}}</small>
-            </li>
-          {{end}}
-        </ul>
-      {{else}}
-        <p class="empty quiet">None skipped.</p>
-      {{end}}
-    </div>
-  </div>
-</details>
+</div>
 {{end}}
