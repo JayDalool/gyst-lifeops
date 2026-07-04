@@ -22,7 +22,7 @@
   <a href="/roadmap">View roadmap &rarr;</a>
 </section>
 {{if and .HasRoadmap .ShipRoute.Nodes}}
-  {{template "routeMapV2" .ShipRoute}}
+  <div class="card map-card">{{template "routeMapV2" .ShipRoute}}</div>
 {{else}}
   <div class="card">
     <p class="meta">

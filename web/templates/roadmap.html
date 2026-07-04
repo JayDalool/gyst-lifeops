@@ -1,465 +1,297 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">Galaxy Map</p>
-    <h1>{{if .HasSelectedRoadmap}}{{.SelectedRoadmap.Name}}{{else}}{{.GoalTitle}}{{end}}</h1>
-    <p class="hero-greeting">
-      {{if .HasSelectedRoadmap}}
-        <span class="badge status-{{.SelectedRoadmap.Status}}">{{.SelectedRoadmap.Status}}</span>
-        <span class="badge">Priority {{.SelectedRoadmap.Priority}}</span>
-        {{if ne .SelectedRoadmap.Privacy "public"}}<span class="badge">{{.SelectedRoadmap.Privacy}}</span>{{end}}
-        {{if .SelectedRoadmap.Featured}}<span class="badge status-active">Featured</span>{{end}}
-      {{else}}Target: {{niceDate .GoalDeadline}}{{end}}
-    </p>
+    <p class="kicker">Galaxy map</p>
+    <h1 class="page-title">Roadmaps</h1>
+    <p class="page-sub">Long-term routes. Pick one on the left to see it on the map.</p>
   </div>
-  <div class="header-actions">
-    {{if and .HasSelectedRoadmap (not .SelectedRoadmap.Featured)}}
-      <form method="post" action="/roadmaps/{{.SelectedRoadmap.ID}}/feature">
-        <button class="button" type="submit">Set as Dashboard</button>
-      </form>
+  <a class="btn ghost" href="/roadmaps/new">New roadmap</a>
+</div>
+
+<div class="cols-wide rm-layout page-body">
+  <aside>
+    <ul class="rm-list">
+      {{range .Roadmaps}}
+        <li>
+          <a href="/roadmap?roadmap={{.ID}}" {{if eq .ID $.SelectedRoadmap.ID}}class="active" aria-current="true"{{end}}>
+            <b>{{.Name}}</b>
+            <small>P{{.Priority}}{{if .Featured}} &middot; dashboard{{end}}{{if ne .Privacy "public"}} &middot; {{.Privacy}}{{end}}</small>
+          </a>
+        </li>
+      {{end}}
+    </ul>
+  </aside>
+
+  <section class="card map-card rm-map-host">
+    <div class="map-head">
+      <div>
+        <h2 class="section-title">{{if .HasSelectedRoadmap}}{{.SelectedRoadmap.Name}}{{else}}{{.GoalTitle}}{{end}}</h2>
+        <p class="meta">
+          {{if .HasSelectedRoadmap}}
+            {{.SelectedRoadmap.Status}} &middot; priority {{.SelectedRoadmap.Priority}}{{if ne .SelectedRoadmap.Privacy "public"}} &middot; {{.SelectedRoadmap.Privacy}}{{end}}{{if .SelectedRoadmap.Featured}} &middot; on the dashboard{{end}}
+          {{else}}Target: {{niceDate .GoalDeadline}}{{end}}
+        </p>
+      </div>
+      <div class="map-head-actions">
+        {{if and .HasSelectedRoadmap (not .SelectedRoadmap.Featured)}}
+          <form method="post" action="/roadmaps/{{.SelectedRoadmap.ID}}/feature">
+            <button class="btn sm ghost" type="submit">Set as dashboard</button>
+          </form>
+        {{end}}
+        {{if .HasSelectedRoadmap}}<a class="btn sm quiet" href="/roadmaps/{{.SelectedRoadmap.ID}}/edit">Edit</a>{{end}}
+        <a class="btn sm quiet" href="/roadmap/export/public">Export</a>
+        {{if and .HasSelectedRoadmap (not .SelectedRoadmap.Featured)}}
+          <form method="post" action="/roadmaps/{{.SelectedRoadmap.ID}}/archive" onsubmit="return confirm('Archive &quot;{{.SelectedRoadmap.Name}}&quot;? Its trips stay, but the roadmap leaves the active list.');">
+            <button class="btn sm danger" type="submit">Archive</button>
+          </form>
+        {{end}}
+      </div>
+    </div>
+    {{if .ShipRoute.Nodes}}
+      {{template "routeMapV2" .ShipRoute}}
+    {{else}}
+      <p class="meta map-empty">No destinations on this roadmap yet. <a href="/projects/new">Add a trip</a> to plot the route.</p>
     {{end}}
-    {{if .HasSelectedRoadmap}}<a class="button secondary" href="/roadmaps/{{.SelectedRoadmap.ID}}/edit">Edit Roadmap</a>{{end}}
-    <a class="button secondary" href="/roadmap/export/public">Export</a>
-    {{if and .HasSelectedRoadmap (not .SelectedRoadmap.Featured)}}
-      <form method="post" action="/roadmaps/{{.SelectedRoadmap.ID}}/archive" onsubmit="return confirm('Archive &quot;{{.SelectedRoadmap.Name}}&quot;? Its trips stay, but the roadmap leaves the active list.');">
-        <button class="button danger" type="submit">Archive</button>
-      </form>
-    {{end}}
-  </div>
-</section>
+  </section>
+</div>
 
-{{if .SelectedRoadmap.Description}}<p class="body-copy roadmap-desc">{{.SelectedRoadmap.Description}}</p>{{end}}
+{{if .SelectedRoadmap.Description}}<p class="page-sub mt-16">{{.SelectedRoadmap.Description}}</p>{{end}}
 
-<section class="roadmap-filter" aria-label="Choose roadmap">
-  <span class="rf-label">Roadmap</span>
-  {{range .Roadmaps}}
-    <a class="rf-pill {{if eq .ID $.SelectedRoadmap.ID}}is-active{{end}}" href="/roadmap?roadmap={{.ID}}">
-      <svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
-      <span>{{.Name}}</span>
-      {{if .Featured}}<em class="rf-star" title="Featured">&#9733;</em>{{end}}
-    </a>
-  {{end}}
-  <a class="rf-pill rf-add" href="/roadmaps/new">+ New</a>
-</section>
-
-{{template "shipStatsStrip" .ShipStats}}
-
-{{template "rocketRoute" .ShipRoute}}
+<div class="stats">
+  <div><b class="num">{{.OverallProgress}}%</b> <span>overall</span></div>
+  <div><b class="num">{{.WeeklyCompletion}}%</b> <span>this week</span></div>
+  <div><b class="num">{{len .MissedDeadlines}}</b> <span>missed deadlines</span></div>
+  <div><b class="num">{{len .CurrentFocus}}</b> <span>in focus</span></div>
+</div>
 
 {{if .HasSelectedRoadmap}}
-<section class="glass-panel">
-  <div class="panel-heading">
-    <div><p class="eyebrow">List View</p><h2>Trips &amp; Stops</h2></div>
-    <span class="count">{{len .ScopedTree.Main}}</span>
-  </div>
+  <section class="section-head">
+    <h2 class="section-title">Trips &amp; stops</h2>
+    <a href="/projects?roadmap={{.SelectedRoadmap.ID}}">Open in projects &rarr;</a>
+  </section>
   {{if .ScopedTree.Main}}
-    <div class="roadmap-tree">
+    <ul class="project-list">
       {{range .ScopedTree.Main}}
-        {{$children := index $.ScopedTree.Children .Project.ID}}
-        <article class="tree-trip">
-          <a class="tree-trip-head node-{{nodeState .Project.Status .Progress}}" href="/projects/{{.Project.ID}}">
-            <span class="tree-dot"></span>
-            <strong>{{.Project.Name}}</strong>
-            <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-            <small>{{.Progress}}%</small>
+        <li>
+          <a class="project-row" href="/projects/{{.Project.ID}}">
+            <span class="status {{template "rmStatusClass" (nodeState .Project.Status .Progress)}}"><span class="dot"></span></span>
+            <span class="grow">
+              <h3>{{.Project.Name}}</h3>
+              <p class="meta">{{.Project.Status}}</p>
+            </span>
+            <div class="progress{{if eq (nodeState .Project.Status .Progress) "done"}} done{{end}}"><span style="width: {{progressWidth .Progress}}"></span></div>
+            <span class="meta num">{{.Progress}}%</span>
           </a>
-          {{if $children}}
-            <div class="tree-stops">
-              {{range $children}}
-                <a class="tree-stop node-{{nodeState .Project.Status .Progress}}" href="/projects/{{.Project.ID}}">
-                  <span class="tree-dot"></span>
-                  <span>{{.Project.Name}}</span>
-                  <small>{{.Project.ProjectKind}} &middot; {{.Progress}}%</small>
-                </a>
+          {{with index $.ScopedTree.Children .Project.ID}}
+            <ul class="subprojects">
+              {{range .}}
+                <li>
+                  <span class="status {{template "rmStatusClass" (nodeState .Project.Status .Progress)}}"><span class="dot"></span></span>
+                  <a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a>
+                  <span class="meta num">{{.Progress}}%</span>
+                </li>
               {{end}}
-            </div>
+            </ul>
           {{end}}
-        </article>
+        </li>
       {{end}}
-      {{if .ScopedTree.Upcoming}}
-        <p class="eyebrow tree-section-label">Planned Routes</p>
-        {{range .ScopedTree.Upcoming}}
-          <a class="tree-stop node-locked" href="/projects/{{.Project.ID}}">
-            <span class="tree-dot"></span>
-            <span>{{.Project.Name}}</span>
-            <small>{{.Project.Status}}</small>
+      {{range .ScopedTree.Upcoming}}
+        <li>
+          <a class="project-row is-locked" href="/projects/{{.Project.ID}}">
+            <span class="status locked"><span class="dot"></span></span>
+            <span class="grow">
+              <h3>{{.Project.Name}}</h3>
+              <p class="meta">{{.Project.Status}}</p>
+            </span>
           </a>
-        {{end}}
+        </li>
       {{end}}
-    </div>
+    </ul>
   {{else}}
-    <p class="empty">No trips on this roadmap yet. <a href="/projects/new">Add a trip</a>.</p>
+    <p class="meta">No trips on this roadmap yet. <a href="/projects/new">Add a trip</a>.</p>
   {{end}}
-</section>
 {{end}}
 
-<section class="summary-strip">
-  <article class="mini-card">
-    <span>Roadmap</span>
-    <strong>{{.OverallProgress}}%</strong>
-    <small>overall progress</small>
-  </article>
-  <article class="mini-card">
-    <span>This Week</span>
-    <strong>{{.WeeklyCompletion}}%</strong>
-    <small>{{niceDate .WeekStart}} to {{niceDate .WeekEnd}}</small>
-  </article>
-  <article class="mini-card">
-    <span>Missed</span>
-    <strong>{{len .MissedDeadlines}}</strong>
-    <small>deadlines</small>
-  </article>
-  <article class="mini-card">
-    <span>Focus</span>
-    <strong>{{len .CurrentFocus}}</strong>
-    <small>current projects</small>
-  </article>
+<section class="section-head">
+  <h2 class="section-title">Today&rsquo;s execution</h2>
 </section>
+<div class="card tight">
+  <ul class="list">
+    <li><span class="grow">AI task{{if .Daily.AITask.Title}}<small>{{.Daily.AITask.ProjectName}} &middot; due {{niceDate .Daily.AITask.DueDate}}</small>{{end}}</span><span class="meta">{{if .Daily.AITask.Title}}{{.Daily.AITask.Title}}{{else}}clear{{end}}</span></li>
+    <li><span class="grow">Course{{if .Daily.CourseTask.Title}}<small>{{.Daily.CourseTask.ProjectName}} &middot; due {{niceDate .Daily.CourseTask.DueDate}}</small>{{end}}</span><span class="meta">{{if .Daily.CourseTask.Title}}{{.Daily.CourseTask.Title}}{{else}}clear{{end}}</span></li>
+    <li><span class="grow">Coding{{if .Daily.CodingTask.Title}}<small>{{.Daily.CodingTask.ProjectName}} &middot; due {{niceDate .Daily.CodingTask.DueDate}}</small>{{end}}</span><span class="meta">{{if .Daily.CodingTask.Title}}{{.Daily.CodingTask.Title}}{{else}}clear{{end}}</span></li>
+    <li><span class="grow">Portfolio{{if .Daily.PortfolioTask.Title}}<small>{{.Daily.PortfolioTask.ProjectName}} &middot; due {{niceDate .Daily.PortfolioTask.DueDate}}</small>{{end}}</span><span class="meta">{{if .Daily.PortfolioTask.Title}}{{.Daily.PortfolioTask.Title}}{{else}}clear{{end}}</span></li>
+  </ul>
+</div>
 
-<section class="glass-panel">
-  <div class="panel-heading">
-    <div>
-      <p class="eyebrow">Daily Missions</p>
-      <h2>Today’s AI Execution</h2>
-    </div>
-  </div>
-  <div class="roadmap-daily-grid">
-    <article class="roadmap-daily-card">
-      <span>AI Task</span>
-      {{if .Daily.AITask.Title}}
-        <strong>{{.Daily.AITask.Title}}</strong>
-        <small>{{.Daily.AITask.ProjectName}} / {{niceDate .Daily.AITask.DueDate}}</small>
-      {{else}}
-        <strong>Clear</strong>
-        <small>No pending AI task</small>
-      {{end}}
-    </article>
-    <article class="roadmap-daily-card">
-      <span>Course</span>
-      {{if .Daily.CourseTask.Title}}
-        <strong>{{.Daily.CourseTask.Title}}</strong>
-        <small>{{.Daily.CourseTask.ProjectName}} / {{niceDate .Daily.CourseTask.DueDate}}</small>
-      {{else}}
-        <strong>Clear</strong>
-        <small>No course task queued</small>
-      {{end}}
-    </article>
-    <article class="roadmap-daily-card">
-      <span>Coding</span>
-      {{if .Daily.CodingTask.Title}}
-        <strong>{{.Daily.CodingTask.Title}}</strong>
-        <small>{{.Daily.CodingTask.ProjectName}} / {{niceDate .Daily.CodingTask.DueDate}}</small>
-      {{else}}
-        <strong>Clear</strong>
-        <small>No coding task queued</small>
-      {{end}}
-    </article>
-    <article class="roadmap-daily-card">
-      <span>Portfolio</span>
-      {{if .Daily.PortfolioTask.Title}}
-        <strong>{{.Daily.PortfolioTask.Title}}</strong>
-        <small>{{.Daily.PortfolioTask.ProjectName}} / {{niceDate .Daily.PortfolioTask.DueDate}}</small>
-      {{else}}
-        <strong>Clear</strong>
-        <small>No portfolio task queued</small>
-      {{end}}
-    </article>
-  </div>
-</section>
+<div class="cols mt-16">
+  <section class="card">
+    <h2 class="section-title card-title">Current focus</h2>
+    {{if .CurrentFocus}}
+      <ul class="list">
+        {{range .CurrentFocus}}
+          <li>
+            <span class="status current"><span class="dot"></span></span>
+            <span class="grow">{{.Project.Project.Name}}<small>{{.Meta.ProjectTypeLabel}}</small></span>
+            <span class="meta num">{{.Progress}}%</span>
+          </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="meta">Import a roadmap or mark a project as focus.</p>
+    {{end}}
+  </section>
 
-<section class="detail-layout">
-  <article class="glass-panel focus-panel">
-    <details class="md-import">
-      <summary>
-        <span>
-          <p class="eyebrow">Import / Edit Plan</p>
-          <strong>Markdown Plan</strong>
-        </span>
-        {{if .LatestImport.ID}}<span class="badge">Imported {{niceDateTime .LatestImport.ImportedAt}}</span>{{end}}
-      </summary>
-      <p class="hint-copy">Raw Markdown is only used to import or edit the plan. Normal views stay clean.</p>
-      <form class="form-stack" method="post" action="/roadmap/import">
-        <label class="field">
-          <span>Markdown Plan</span>
-          <textarea name="markdown" rows="12" placeholder="# Goal: Become an AI Engineer before November&#10;&#10;## Project: Real Estate AI Lead Scorer&#10;Type: Real Estate AI&#10;Deadline: 2026-08-15&#10;Tags: ai, real-estate&#10;&#10;### Tasks&#10;- Build lead scoring API Due: 2026-07-10&#10;- [ ] Add portfolio case study"></textarea>
-        </label>
-        <button class="button" type="submit">Import Roadmap</button>
-      </form>
-    </details>
-  </article>
+  <section class="card">
+    <h2 class="section-title card-title">Missed deadlines</h2>
+    {{if .MissedDeadlines}}
+      <ul class="list">
+        {{range .MissedDeadlines}}
+          <li>
+            <span class="status late"><span class="dot"></span></span>
+            <span class="grow">{{.Title}}<small>{{.Kind}} &middot; {{.ProjectName}}</small></span>
+            <span class="meta num">{{niceDate .DueDate}}</span>
+          </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="meta">No missed roadmap deadlines.</p>
+    {{end}}
+  </section>
+</div>
 
-  <aside class="side-stack">
-    <article class="glass-panel">
-      <div class="panel-heading">
-        <h2>Current Focus</h2>
-        <span class="count">{{len .CurrentFocus}}</span>
-      </div>
-      {{if .CurrentFocus}}
-        <ul class="stack-list">
-          {{range .CurrentFocus}}
-            <li>
-              <div>
-                <strong>{{.Project.Project.Name}}</strong>
-                <small>{{.Meta.ProjectTypeLabel}} / {{.Progress}}%</small>
-              </div>
-            </li>
-          {{end}}
-        </ul>
-      {{else}}
-        <p class="empty">Import a roadmap or mark a project as focus.</p>
-      {{end}}
-    </article>
+<details class="card mt-16">
+  <summary class="details-summary">
+    Markdown plan &mdash; import or edit
+    {{if .LatestImport.ID}}<span class="meta">imported {{niceDateTime .LatestImport.ImportedAt}}</span>{{end}}
+  </summary>
+  <p class="meta mt-8">Raw Markdown is only used to import or edit the plan. Normal views stay clean.</p>
+  <form class="form-stack" method="post" action="/roadmap/import">
+    <label class="field">
+      <span>Markdown plan</span>
+      <textarea name="markdown" rows="12" placeholder="# Goal: Become an AI Engineer before November&#10;&#10;## Project: Real Estate AI Lead Scorer&#10;Type: Real Estate AI&#10;Deadline: 2026-08-15&#10;Tags: ai, real-estate&#10;&#10;### Tasks&#10;- Build lead scoring API Due: 2026-07-10&#10;- [ ] Add portfolio case study"></textarea>
+    </label>
+    <button class="btn" type="submit">Import roadmap</button>
+  </form>
+</details>
 
-    <article class="glass-panel warning-panel">
-      <div class="panel-heading">
-        <h2>Missed Deadlines</h2>
-        <span class="count">{{len .MissedDeadlines}}</span>
-      </div>
-      {{if .MissedDeadlines}}
-        <ul class="stack-list">
-          {{range .MissedDeadlines}}
-            <li>
-              <div>
-                <strong>{{.Title}}</strong>
-                <small>{{.Kind}} / {{.ProjectName}} / {{niceDate .DueDate}}</small>
-              </div>
-            </li>
-          {{end}}
-        </ul>
-      {{else}}
-        <p class="empty">No missed roadmap deadlines.</p>
-      {{end}}
-    </article>
-  </aside>
-</section>
-
-<section class="glass-panel roadmap-views">
-  <div class="panel-heading">
-    <div>
-      <p class="eyebrow">Campaign</p>
-      <h2>{{.GoalTitle}}</h2>
-    </div>
-    <div class="view-toggle" role="tablist" aria-label="Roadmap view">
-      <input type="radio" id="view-map" name="roadmap-view" class="view-radio" checked>
-      <label for="view-map" class="view-tab" role="tab">Map View</label>
-      <input type="radio" id="view-list" name="roadmap-view" class="view-radio">
-      <label for="view-list" class="view-tab" role="tab">List View</label>
-    </div>
-  </div>
-
-  {{if .Projects}}
-    <div class="view-panel view-panel-map">
-      <p class="map-hint">Drag, scroll, or use arrow keys. Planets open their system.</p>
-      <div class="starmap" tabindex="0" aria-label="Campaign star map">
-        <div class="starmap-track">
-          <div class="campaign-star" aria-hidden="true">
-            <span class="campaign-core"></span>
-            <small>{{.OverallProgress}}%</small>
+{{if .Projects}}
+  <section class="section-head">
+    <h2 class="section-title">{{.GoalTitle}}</h2>
+  </section>
+  <div class="rm-project-stack">
+    {{range .Projects}}
+      {{$project := .}}
+      <article class="card">
+        <div class="page-head">
+          <div>
+            <p class="kicker">{{.Project.Project.ProjectKind}} &middot; {{.Meta.ProjectTypeLabel}}</p>
+            <h3 class="section-title">{{.Project.Project.Name}}</h3>
+            <p class="meta">
+              {{.Project.Project.Status}}
+              {{- if .Meta.CurrentFocus}} &middot; focus{{end}}
+              {{- if .Meta.IsPrivate}} &middot; private{{end}}
+              {{- if .Meta.LocalOnly}} &middot; local only{{end}}
+              {{- if .Project.Project.TargetDate}} &middot; target {{niceDate .Project.Project.TargetDate}}{{end}}
+            </p>
+            {{if .Project.Project.UnlockNotes}}<p class="meta">{{.Project.Project.UnlockNotes}}</p>{{end}}
           </div>
-          {{range .Projects}}
-            {{if eq .Project.Project.ParentProjectID 0}}
-              {{$system := .}}
-              {{$state := nodeState .Project.Project.Status .Progress}}
-              <div class="system-cluster">
-                <a class="map-node system-node node-{{$state}}"
-                   href="/projects/{{.Project.Project.ID}}"
-                   id="node-{{.Project.Project.ID}}"
-                   {{if or .Meta.CurrentFocus (eq $state "active")}}data-map-active{{end}}
-                   aria-label="{{.Project.Project.Name}} ({{$state}}, {{.Progress}}%)">
-                  <span class="planet"></span>
-                  <span class="map-node-label">{{.Project.Project.Name}}</span>
-                  <span class="map-node-meta">{{.Progress}}%</span>
-                </a>
-                <div class="orbit">
-                  {{range $.Projects}}
-                    {{if eq .Project.Project.ParentProjectID $system.Project.Project.ID}}
-                      <a class="map-node station-node node-{{nodeState .Project.Project.Status .Progress}}"
-                         href="/projects/{{.Project.Project.ID}}"
-                         aria-label="{{.Project.Project.Name}} station">
-                        <span class="station"></span>
-                        <span class="map-node-label">{{.Project.Project.Name}}</span>
-                      </a>
-                    {{end}}
-                  {{end}}
-                  {{range $system.Items}}
-                    <a class="map-node mission-dot node-{{nodeState .Status 0}}"
-                       href="/projects/{{$system.Project.Project.ID}}"
-                       aria-label="Mission: {{.Title}} ({{.Status}})">
-                      <span class="mission-spark"></span>
-                      <span class="map-node-label">{{.Title}}</span>
-                    </a>
-                  {{end}}
-                </div>
-              </div>
-            {{end}}
-          {{end}}
         </div>
-      </div>
-      <div class="map-legend">
-        <span><i class="map-node-state node-active"></i>Active</span>
-        <span><i class="map-node-state node-done"></i>Conquered</span>
-        <span><i class="map-node-state node-locked"></i>Unexplored</span>
-        <span><i class="map-node-state node-blocked"></i>Blocked</span>
-      </div>
-    </div>
 
-    <div class="view-panel view-panel-list">
-    <div class="roadmap-project-list">
-      {{range .Projects}}
-        {{$project := .}}
-        <article class="roadmap-project">
-          <div class="roadmap-project-head">
-            <div>
-              <p class="eyebrow">{{.Project.Project.ProjectKind}} / {{.Meta.ProjectTypeLabel}}</p>
-              <h3>{{.Project.Project.Name}}</h3>
-              <small>{{if .Project.Project.TargetDate}}Target {{niceDate .Project.Project.TargetDate}}{{else}}No target date{{end}}</small>
-              {{if .Project.Project.UnlockNotes}}<p>{{.Project.Project.UnlockNotes}}</p>{{end}}
-            </div>
-            <div class="task-state">
-              <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>
-              {{if .Meta.CurrentFocus}}<span class="badge status-pending">focus</span>{{end}}
-              {{if .Meta.IsPrivate}}<span class="badge status-paused">private</span>{{end}}
-              {{if .Meta.LocalOnly}}<span class="badge priority-high">local only</span>{{end}}
-            </div>
-          </div>
+        <div class="progress-row mt-16">
+          <span class="meta nowrap num">{{.Progress}}%</span>
+          <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+          <span class="meta num">{{.CompletedWork}} / {{.TotalWork}} items</span>
+        </div>
 
-          <div class="project-progress">
-            <div>
-              <strong>{{.Progress}}%</strong>
-              <small>{{.CompletedWork}} / {{.TotalWork}} roadmap items</small>
-            </div>
-            <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-            <canvas class="micro-chart" data-chart="line" data-mini="true" data-max="100"
-              data-labels="{{join .Project.Momentum.Labels "|"}}"
-              data-values="{{joinInts .Project.Momentum.Values "|"}}"></canvas>
-          </div>
-
-          <form class="roadmap-meta-form" method="post" action="/roadmap/projects/{{.Project.Project.ID}}/meta">
-            <div class="form-row">
-              <label class="field">
-                <span>Type</span>
-                <select name="project_type">
-                  {{range $.ProjectTypeOptions}}
-                    <option value="{{.Value}}" {{if eq .Value $project.Meta.ProjectType}}selected{{end}}>{{.Label}}</option>
-                  {{end}}
-                </select>
-              </label>
-              <label class="field">
-                <span>Tags</span>
-                <input name="tags" value="{{.Meta.TagsText}}">
-              </label>
-            </div>
+        <form class="form-stack mt-16" method="post" action="/roadmap/projects/{{.Project.Project.ID}}/meta">
+          <div class="form-row">
             <label class="field">
-              <span>Public Summary</span>
-              <textarea name="public_summary" rows="2">{{.Meta.PublicSummary}}</textarea>
-            </label>
-            <div class="roadmap-flag-row">
-              <label><input type="checkbox" name="current_focus" {{if .Meta.CurrentFocus}}checked{{end}}> Current focus</label>
-              <label><input type="checkbox" name="is_private" {{if .Meta.IsPrivate}}checked{{end}}> Private</label>
-              <label><input type="checkbox" name="local_only" {{if .Meta.LocalOnly}}checked{{end}}> Local/private only</label>
-              <button class="button small secondary" type="submit">Save</button>
-            </div>
-          </form>
-
-          <div class="roadmap-columns">
-            <div>
-              <div class="panel-heading compact-heading">
-                <h3>Milestones</h3>
-                <span class="count">{{len .Milestones}}</span>
-              </div>
-              {{if .Milestones}}
-                <div class="checklist-list">
-                  {{range .Milestones}}
-                    <article class="checklist-item status-row-{{.Status}}">
-                      <div>
-                        <h3>{{.Title}}</h3>
-                        <small>{{niceDate .DueDate}} / {{.Status}}</small>
-                        {{if .Description}}<p>{{.Description}}</p>{{end}}
-                      </div>
-                      <div class="quick-actions">
-                        {{if eq .Status "completed"}}
-                          <form method="post" action="/roadmap/milestones/{{.ID}}/reopen">
-                            <button class="button small secondary" type="submit">Reopen</button>
-                          </form>
-                        {{else}}
-                          <form method="post" action="/roadmap/milestones/{{.ID}}/complete">
-                            <button class="button small" type="submit">Done</button>
-                          </form>
-                        {{end}}
-                      </div>
-                    </article>
-                  {{end}}
-                </div>
-              {{else}}
-                <p class="empty">No milestones parsed yet.</p>
-              {{end}}
-            </div>
-
-            <div>
-              <div class="panel-heading compact-heading">
-                <h3>Tasks</h3>
-                <span class="count">{{len .Items}}</span>
-              </div>
-              {{if .Items}}
-                <div class="checklist-list">
-                  {{range .Items}}
-                    <article class="checklist-item status-row-{{.Status}}">
-                      <div>
-                        <h3>{{.Title}}</h3>
-                        <small>{{niceDate .DueDate}} / {{.Priority}}</small>
-                        {{if .Description}}<p>{{.Description}}</p>{{end}}
-                      </div>
-                      <div class="quick-actions">
-                        {{if eq .Status "completed"}}
-                          <form method="post" action="/roadmap/projects/{{$project.Project.Project.ID}}/items/{{.ID}}/reopen">
-                            <button class="button small secondary" type="submit">Reopen</button>
-                          </form>
-                        {{else}}
-                          <form method="post" action="/roadmap/projects/{{$project.Project.Project.ID}}/items/{{.ID}}/complete">
-                            <button class="button small" type="submit">Done</button>
-                          </form>
-                        {{end}}
-                      </div>
-                    </article>
-                  {{end}}
-                </div>
-              {{else}}
-                <p class="empty">No tasks parsed yet.</p>
-              {{end}}
-            </div>
-          </div>
-
-          {{if .Resources}}
-            <div class="roadmap-resource-row">
-              {{range .Resources}}
-                {{if .URL}}
-                  <a class="badge" href="{{.URL}}" target="_blank" rel="noreferrer">{{.ResourceType}}: {{.Title}}</a>
-                {{else}}
-                  <span class="badge">{{.ResourceType}}: {{.Title}}</span>
+              <span>Type</span>
+              <select name="project_type">
+                {{range $.ProjectTypeOptions}}
+                  <option value="{{.Value}}" {{if eq .Value $project.Meta.ProjectType}}selected{{end}}>{{.Label}}</option>
                 {{end}}
-              {{end}}
-            </div>
-          {{end}}
-        </article>
-      {{end}}
-    </div>
-    </div>
-  {{else}}
-    <p class="empty">Import your AI Engineer roadmap Markdown to create projects, milestones, tasks, resources, and privacy settings.</p>
-  {{end}}
-</section>
+              </select>
+            </label>
+            <label class="field">
+              <span>Tags</span>
+              <input name="tags" value="{{.Meta.TagsText}}">
+            </label>
+          </div>
+          <label class="field">
+            <span>Public summary</span>
+            <textarea name="public_summary" rows="2">{{.Meta.PublicSummary}}</textarea>
+          </label>
+          <div class="flag-row">
+            <label><input type="checkbox" name="current_focus" {{if .Meta.CurrentFocus}}checked{{end}}> Current focus</label>
+            <label><input type="checkbox" name="is_private" {{if .Meta.IsPrivate}}checked{{end}}> Private</label>
+            <label><input type="checkbox" name="local_only" {{if .Meta.LocalOnly}}checked{{end}}> Local only</label>
+            <button class="btn sm ghost" type="submit">Save</button>
+          </div>
+        </form>
 
-<section class="detail-layout">
-  <article class="glass-panel focus-panel">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Weekly Review</p>
-        <h2>Close The Loop</h2>
-      </div>
-    </div>
+        <div class="cols mt-16">
+          <div>
+            <p class="group-label">Milestones</p>
+            {{if .Milestones}}
+              <ul class="list">
+                {{range .Milestones}}
+                  <li>
+                    <span class="status {{if eq .Status "completed"}}done{{else}}pending{{end}}"><span class="dot"></span></span>
+                    <span class="grow">{{.Title}}<small>{{niceDate .DueDate}}{{if .Description}} &middot; {{.Description}}{{end}}</small></span>
+                    {{if eq .Status "completed"}}
+                      <form method="post" action="/roadmap/milestones/{{.ID}}/reopen"><button class="btn quiet sm" type="submit">Reopen</button></form>
+                    {{else}}
+                      <form method="post" action="/roadmap/milestones/{{.ID}}/complete"><button class="btn quiet sm" type="submit">Done</button></form>
+                    {{end}}
+                  </li>
+                {{end}}
+              </ul>
+            {{else}}
+              <p class="meta">No milestones parsed yet.</p>
+            {{end}}
+          </div>
+          <div>
+            <p class="group-label">Tasks</p>
+            {{if .Items}}
+              <ul class="list">
+                {{range .Items}}
+                  <li>
+                    <span class="status {{if eq .Status "completed"}}done{{else}}pending{{end}}"><span class="dot"></span></span>
+                    <span class="grow">{{.Title}}<small>{{niceDate .DueDate}} &middot; {{.Priority}}</small></span>
+                    {{if eq .Status "completed"}}
+                      <form method="post" action="/roadmap/projects/{{$project.Project.Project.ID}}/items/{{.ID}}/reopen"><button class="btn quiet sm" type="submit">Reopen</button></form>
+                    {{else}}
+                      <form method="post" action="/roadmap/projects/{{$project.Project.Project.ID}}/items/{{.ID}}/complete"><button class="btn quiet sm" type="submit">Done</button></form>
+                    {{end}}
+                  </li>
+                {{end}}
+              </ul>
+            {{else}}
+              <p class="meta">No tasks parsed yet.</p>
+            {{end}}
+          </div>
+        </div>
+
+        {{if .Resources}}
+          <p class="meta mt-16">
+            {{range $i, $r := .Resources}}{{if $i}} &middot; {{end}}{{if $r.URL}}<a href="{{$r.URL}}" target="_blank" rel="noreferrer">{{$r.ResourceType}}: {{$r.Title}}</a>{{else}}{{$r.ResourceType}}: {{$r.Title}}{{end}}{{end}}
+          </p>
+        {{end}}
+      </article>
+    {{end}}
+  </div>
+{{else}}
+  <p class="meta mt-24">Import your roadmap Markdown above to create projects, milestones, tasks, and resources.</p>
+{{end}}
+
+<div class="cols mt-16">
+  <section class="card">
+    <h2 class="section-title card-title">Weekly review</h2>
     <form class="form-stack" method="post" action="/roadmap/weekly-review">
       <label class="field">
-        <span>Week Start</span>
+        <span>Week start</span>
         <input type="date" name="week_start" value="{{.WeekStart}}">
       </label>
       <label class="field">
@@ -474,28 +306,28 @@
         <span>What do I need to do next?</span>
         <textarea name="next_steps" rows="3"></textarea>
       </label>
-      <button class="button" type="submit">Save Review</button>
+      <button class="btn" type="submit">Save review</button>
     </form>
-  </article>
+  </section>
 
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Recent Reviews</h2>
-      <span class="count">{{len .WeeklyReviews}}</span>
-    </div>
+  <section class="card">
+    <h2 class="section-title card-title">Recent reviews</h2>
     {{if .WeeklyReviews}}
-      <div class="timeline roadmap-review-list">
+      <ul class="list">
         {{range .WeeklyReviews}}
-          <article>
-            <time>{{niceDate .WeekStart}}</time>
-            <strong>Review</strong>
-            <p><b>Finished:</b> {{.Finished}}<br><b>Blocked:</b> {{.Blocked}}<br><b>Next:</b> {{.NextSteps}}</p>
-          </article>
+          <li>
+            <span class="grow">
+              {{niceDate .WeekStart}}
+              <small>Finished: {{.Finished}} &middot; Blocked: {{.Blocked}} &middot; Next: {{.NextSteps}}</small>
+            </span>
+          </li>
         {{end}}
-      </div>
+      </ul>
     {{else}}
-      <p class="empty">No weekly reviews yet.</p>
+      <p class="meta">No weekly reviews yet.</p>
     {{end}}
-  </article>
-</section>
+  </section>
+</div>
 {{end}}
+
+{{define "rmStatusClass"}}{{if eq . "done"}}done{{else if eq . "active"}}current{{else if eq . "locked"}}locked{{else}}pending{{end}}{{end}}

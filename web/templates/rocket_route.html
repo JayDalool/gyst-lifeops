@@ -77,8 +77,9 @@
 {{define "routeMapV2"}}
 {{/* Design v2 quiet route map (see design-v2/README.md step 4). Coordinates
      are percentages of the box on both axes; app.js#initMap draws the curve,
-     marker, and tooltip. The inline left/top is the no-JS fallback. */}}
-<div class="card map-card">
+     marker, and tooltip. The inline left/top is the no-JS fallback.
+     Callers wrap this in <div class="card map-card"> so they can add their
+     own map-head inside the same card. */}}
   <div class="map" data-map-v2 aria-label="Route map: {{len .Nodes}} destinations">
     {{range .Nodes}}
       <button type="button"
@@ -97,7 +98,6 @@
     <span class="status current"><span class="dot"></span>{{routeDone .Nodes}} of {{len .Nodes}} destinations complete</span>
     {{with routeNext .Nodes}}<span>Next: {{.}}</span>{{end}}
   </div>
-</div>
 {{end}}
 
 {{define "shipStatsStrip"}}

@@ -718,6 +718,107 @@
   color: var(--amber-text);
 }
 
+/* ---- roadmaps page: sidebar + tall map ------------------------------------------ */
+:root[data-design="v2"] .rm-layout { grid-template-columns: 240px 1fr; }
+:root[data-design="v2"] .rm-map-host .map { aspect-ratio: 1000 / 420; }
+:root[data-design="v2"] .rm-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+:root[data-design="v2"] .rm-list a {
+  display: block;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 120ms, border-color 120ms;
+}
+:root[data-design="v2"] .rm-list a:hover { background: var(--panel-strong); }
+:root[data-design="v2"] .rm-list a.active { background: var(--panel-strong); border-color: var(--border-strong); }
+:root[data-design="v2"] .rm-list b { display: block; font-size: 14px; font-weight: 550; }
+:root[data-design="v2"] .rm-list small { color: var(--quiet); font-size: 13px; }
+
+:root[data-design="v2"] .map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px 0;
+}
+:root[data-design="v2"] .map-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+:root[data-design="v2"] .map-empty { padding: 20px; }
+:root[data-design="v2"] .rm-project-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---- forms ------------------------------------------------------------------- */
+:root[data-design="v2"] .form-stack { display: grid; gap: 4px; margin-top: 8px; }
+:root[data-design="v2"] .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+:root[data-design="v2"] .field { display: block; margin: 8px 0; }
+:root[data-design="v2"] .field span {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+:root[data-design="v2"] .field input,
+:root[data-design="v2"] .field select,
+:root[data-design="v2"] .field textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 7px;
+  background: var(--inset);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  transition: border-color 120ms;
+}
+:root[data-design="v2"] .field input:focus,
+:root[data-design="v2"] .field select:focus,
+:root[data-design="v2"] .field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+:root[data-design="v2"] .form-stack .btn { justify-self: start; margin-top: 8px; }
+:root[data-design="v2"] .flag-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+:root[data-design="v2"] .flag-row label { display: inline-flex; align-items: center; gap: 6px; }
+:root[data-design="v2"] .btn.danger {
+  background: transparent;
+  color: var(--red-text);
+  border-color: rgba(226, 99, 119, 0.35);
+}
+:root[data-design="v2"] .details-summary {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 550;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 /* ---- tracker chips (Deen signal), calm restyle of v1 .tracker-dot -------------- */
 :root[data-design="v2"] .tracker-dot {
   min-height: 30px;
@@ -757,7 +858,9 @@
   }
   :root[data-design="v2"] .nav nav::-webkit-scrollbar { display: none; }
   :root[data-design="v2"] .cols,
-  :root[data-design="v2"] .cols-wide { grid-template-columns: 1fr; }
+  :root[data-design="v2"] .cols-wide,
+  :root[data-design="v2"] .rm-layout,
+  :root[data-design="v2"] .form-row { grid-template-columns: 1fr; }
   :root[data-design="v2"] .page-title { font-size: 22px; }
   :root[data-design="v2"] .task .btn.quiet { opacity: 1; }   /* no hover on touch */
   :root[data-design="v2"] .task input[type="checkbox"] { width: 24px; height: 24px; }
