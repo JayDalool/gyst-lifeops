@@ -1,6 +1,6 @@
 {{define "layout"}}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-design="v2">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,18 +8,16 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link rel="stylesheet" href="/static/css/styles.css?v=polish-5">
+  <link rel="stylesheet" href="/static/css/v2.css?v=1">
   <script defer src="/static/js/charts.js?v=polish-5"></script>
   <script defer src="/static/js/starmap.js"></script>
   <script defer src="/static/js/rocketroute.js?v=polish-5"></script>
 </head>
 <body>
   {{template "iconSprite" .}}
-  <div class="ambient ambient-one"></div>
-  <div class="ambient ambient-two"></div>
-  <div class="starfield" aria-hidden="true">
-    <div class="starfield-layer starfield-far"></div>
-    <div class="starfield-layer starfield-near"></div>
-  </div>
+  {{/* Design v2 foundation: starfield + ambient orbs removed (they were the
+       main scroll cost). Revert = drop data-design="v2" + the v2.css link
+       and restore these divs. */}}
 
   <div class="app-shell">
     <header class="topbar">

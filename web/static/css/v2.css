@@ -1,0 +1,103 @@
+/* ==========================================================================
+   Design v2 — foundation layer (Step 1 of the port, see design-v2/README.md)
+
+   Loaded after styles.css and gated behind <html data-design="v2"> so it can
+   be reverted by removing one attribute + one <link>. Scope of this step:
+
+     1. Retheme tokens: calmer palette, opaque panels, hairline borders,
+        soft static shadow, glows off.
+     2. Solid page background (replaces the radial-gradient stack).
+     3. Remove the decorative layers (starfield/ambient — also dropped from
+        layout.html) and every ALWAYS-RUNNING animation. Interaction
+        animations (rocket flight, flame while flying, mission pop, unlock)
+        and the single active-node pulse ring stay.
+     4. Remove drop-shadow filters and glow box-shadows from the map.
+
+   No template structure, routes, or JS behavior change in this step.
+   ========================================================================== */
+
+/* ---- 1. tokens --------------------------------------------------------- */
+:root[data-design="v2"] {
+  --bg: #0f1216;
+  --bg-2: #0f1216;
+  --panel: #161b22;                       /* opaque — no glass */
+  --panel-strong: #1a212a;
+  --panel-soft: rgba(255, 255, 255, 0.045);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #e9eef4;
+  --muted: #a6b0bb;
+  --quiet: #8b96a2;
+  --cyan: #53c6e4;
+  --blue: #7d9fd8;
+  --purple: #9d8fd4;
+  --green: #57c98b;
+  --orange: #d9a054;
+  --red: #e26377;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);    /* glows off wherever tokens are used */
+  --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+:root[data-design="v2"][data-theme="light"] {
+  --bg: #f4f6f8;
+  --bg-2: #f4f6f8;
+  --panel: #ffffff;
+  --panel-strong: #ffffff;
+  --border: rgba(20, 38, 56, 0.10);
+  --border-strong: rgba(20, 38, 56, 0.20);
+  --shadow: 0 1px 2px rgba(20, 38, 56, 0.08);
+  --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);
+  --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* ---- 2. solid background ------------------------------------------------ */
+:root[data-design="v2"] body {
+  background: var(--bg);
+}
+
+/* ---- 3a. decorative layers off (belt and braces; divs removed in layout) - */
+:root[data-design="v2"] .starfield,
+:root[data-design="v2"] .ambient {
+  display: none;
+}
+
+/* ---- 3b. always-running animations off ---------------------------------
+   Kept: node-pulse-ring (the one allowed ambient pulse, already paused
+   offscreen via .route-paused), flame-flicker + rocket-trail (flying only),
+   mission-pop / unlock-rise / anchor-flash / saved-pulse (one-shot). */
+:root[data-design="v2"] .rocket-body { animation: none; }               /* idle bob */
+:root[data-design="v2"] .ship-glow { animation: none; opacity: 0.3; }   /* hero ship halo */
+:root[data-design="v2"] .campaign-core {
+  animation: none;                                                      /* 6s glow pulse */
+  box-shadow: 0 0 18px rgba(101, 232, 255, 0.25);
+}
+:root[data-design="v2"] .node-locked .planet,
+:root[data-design="v2"] .node-locked .station {
+  animation: none;                                                      /* locked shimmer */
+  filter: none;
+  opacity: 0.7;
+}
+/* The travelling light pulse on routes: hide it, the static base + traveled
+   stroke still read the route. (opacity, not display — rocketroute.js may
+   measure path geometry.) */
+:root[data-design="v2"] .route-flow { animation: none; opacity: 0; }
+
+/* ---- 4. glow cleanup ----------------------------------------------------- */
+:root[data-design="v2"] .hero-title-icon,
+:root[data-design="v2"] .ship-mark,
+:root[data-design="v2"] .rocket-icon,
+:root[data-design="v2"] .route-mode-solar .rocket-icon {
+  filter: none;
+}
+:root[data-design="v2"] .node-done .planet,
+:root[data-design="v2"] .node-done .station {
+  box-shadow: none;
+  border-color: rgba(87, 201, 139, 0.65);
+}
+:root[data-design="v2"] .node-done .mission-spark { box-shadow: none; }
+:root[data-design="v2"] .node-blocked .planet,
+:root[data-design="v2"] .node-blocked .station { box-shadow: none; }
+
+/* Slightly quieter route echoes (pure depth decoration) */
+:root[data-design="v2"] .route-echo { stroke: rgba(166, 213, 255, 0.07); }
