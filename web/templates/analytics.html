@@ -1,55 +1,38 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">More / Analytics</p>
-    <h1>Signals</h1>
+    <p class="kicker">Signals</p>
+    <h1 class="page-title">Analytics</h1>
+    <p class="page-sub">Completion trends and progress at a glance. All charts are static.</p>
   </div>
-</section>
+</div>
 
-<section class="summary-strip">
-  <article class="mini-card">
-    <span>Today</span>
-    <strong>{{.Dashboard.TodayCompletion}}%</strong>
-    <small>completion</small>
-  </article>
-  <article class="mini-card">
-    <span>Streak</span>
-    <strong>{{.Dashboard.CurrentStreak}}</strong>
-    <small>complete days</small>
-  </article>
-  <article class="mini-card">
-    <span>Month</span>
-    <strong>{{.Dashboard.MonthlyCompletionPercent}}%</strong>
-    <small>completion</small>
-  </article>
-  <article class="mini-card">
-    <span>Overdue</span>
-    <strong>{{len .Dashboard.OverdueTasks}}</strong>
-    <small>tasks</small>
-  </article>
-</section>
+<div class="stats">
+  <div><b class="num">{{.Dashboard.TodayCompletion}}%</b> <span>today</span></div>
+  <div><b class="num">{{.Dashboard.CurrentStreak}} days</b> <span>streak</span></div>
+  <div><b class="num">{{.Dashboard.MonthlyCompletionPercent}}%</b> <span>this month</span></div>
+  <div><b class="num">{{len .Dashboard.OverdueTasks}}</b> <span>overdue</span></div>
+</div>
 
-<section class="analytics-grid">
-  <article class="glass-panel wide-panel">
-    <div class="panel-heading">
-      <h2>Last 30 Days</h2>
-    </div>
-    <canvas class="chart" data-chart="line" data-max="100" data-labels="{{join .Dashboard.DailyCompletion.Labels "|"}}"
-      data-values="{{joinInts .Dashboard.DailyCompletion.Values "|"}}"></canvas>
-  </article>
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Project Progress</h2>
-    </div>
+<section class="section-head">
+  <h2 class="section-title">Last 30 days</h2>
+</section>
+<div class="card">
+  <canvas class="chart" data-chart="line" data-max="100" data-labels="{{join .Dashboard.DailyCompletion.Labels "|"}}"
+    data-values="{{joinInts .Dashboard.DailyCompletion.Values "|"}}"
+    data-empty="Complete tasks to build the trend."></canvas>
+</div>
+
+<div class="cols mt-16">
+  <section class="card">
+    <h2 class="section-title card-title">Project progress</h2>
     <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Dashboard.ProjectProgress.Labels "|"}}"
       data-values="{{joinInts .Dashboard.ProjectProgress.Values "|"}}"></canvas>
-  </article>
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Yearly Goals</h2>
-    </div>
+  </section>
+  <section class="card">
+    <h2 class="section-title card-title">Yearly goals</h2>
     <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Dashboard.YearlyGoalProgress.Labels "|"}}"
       data-values="{{joinInts .Dashboard.YearlyGoalProgress.Values "|"}}"></canvas>
-  </article>
-</section>
+  </section>
+</div>
 {{end}}

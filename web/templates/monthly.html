@@ -1,55 +1,49 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">{{.MonthName}}</p>
-    <h1>Monthly View</h1>
+    <p class="kicker">{{.MonthName}}</p>
+    <h1 class="page-title">Monthly</h1>
+    <p class="page-sub">{{.Progress}}% of this month&rsquo;s tasks completed.</p>
   </div>
-  <a class="button secondary" href="/tasks/new">New Task</a>
-</section>
+  <a class="btn ghost" href="/tasks/new">New task</a>
+</div>
 
-<section class="analytics-grid">
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Completion</p>
-        <h2>{{.Progress}}%</h2>
-      </div>
-    </div>
-    <div class="progress large"><span style="width: {{progressWidth .Progress}}"></span></div>
-  </article>
-
-  <article class="glass-panel wide-panel">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Completed Per Day</p>
-        <h2>Monthly Signal</h2>
-      </div>
-    </div>
-    <canvas class="chart" data-chart="line" data-labels="{{join .Chart.Labels "|"}}"
-      data-values="{{joinInts .Chart.Values "|"}}"
-      data-empty="Complete missions to build your trajectory."></canvas>
-  </article>
-</section>
-
-<section class="glass-panel">
-  <div class="panel-heading">
-    <h2>This Month&apos;s Queue</h2>
-    <span class="count">{{len .Items}}</span>
+<div class="card tight mt-24">
+  <div class="progress-row">
+    <span class="meta nowrap">This month</span>
+    <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+    <span class="meta num">{{.Progress}}%</span>
   </div>
-  {{if .Items}}
-    <div class="task-card-list compact-list">
+</div>
+
+<section class="section-head">
+  <h2 class="section-title">Completed per day</h2>
+</section>
+<div class="card">
+  <canvas class="chart" data-chart="line" data-labels="{{join .Chart.Labels "|"}}"
+    data-values="{{joinInts .Chart.Values "|"}}"
+    data-empty="Complete tasks to build the month's picture."></canvas>
+</div>
+
+<section class="section-head">
+  <h2 class="section-title">This month&rsquo;s queue</h2>
+</section>
+{{if .Items}}
+  <div class="card tight">
+    <ul class="list">
       {{range .Items}}
-        <article class="task-card">
-          <div class="task-card-copy">
+        <li>
+          <span class="status {{if eq .Status "completed"}}done{{else if eq .Status "skipped"}}locked{{else}}pending{{end}}"><span class="dot"></span></span>
+          <span class="grow">
             <a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a>
-            <small>{{niceDate .Date}} / {{.Task.RepeatType}} / {{.Task.Priority}}</small>
-          </div>
-          <span class="badge status-{{.Status}}">{{.Status}}</span>
-        </article>
+            <small>{{.Task.RepeatType}} &middot; {{.Task.Priority}}{{if ne .Status "pending"}} &middot; {{.Status}}{{end}}</small>
+          </span>
+          <span class="meta num">{{niceDate .Date}}</span>
+        </li>
       {{end}}
-    </div>
-  {{else}}
-    <p class="empty">No tasks due this month.</p>
-  {{end}}
-</section>
+    </ul>
+  </div>
+{{else}}
+  <p class="meta">No tasks due this month.</p>
+{{end}}
 {{end}}

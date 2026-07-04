@@ -1,58 +1,59 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">More / Archive</p>
-    <h1>Cold Storage</h1>
+    <p class="kicker">History</p>
+    <h1 class="page-title">Archive</h1>
+    <p class="page-sub">Archived tasks, projects, and goals. Open one to restore it from its own page.</p>
   </div>
-</section>
+</div>
 
-<section class="status-columns">
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Tasks</h2>
-      <span class="count">{{len .Tasks}}</span>
-    </div>
-    {{if .Tasks}}
-      <ul class="stack-list">
+<div class="page-body">
+  <p class="group-label">Tasks</p>
+  {{if .Tasks}}
+    <div class="card tight">
+      <ul class="list">
         {{range .Tasks}}
-          <li><a href="/tasks/{{.ID}}">{{.Title}}</a><small>{{niceDateTime .ArchivedAt}}</small></li>
+          <li>
+            <span class="grow"><a href="/tasks/{{.ID}}">{{.Title}}</a></span>
+            <span class="meta num">{{niceDateTime .ArchivedAt}}</span>
+          </li>
         {{end}}
       </ul>
-    {{else}}
-      <p class="empty">No archived tasks.</p>
-    {{end}}
-  </article>
-
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Projects</h2>
-      <span class="count">{{len .Projects}}</span>
     </div>
-    {{if .Projects}}
-      <ul class="stack-list">
+  {{else}}
+    <p class="meta">No archived tasks.</p>
+  {{end}}
+
+  <p class="group-label">Projects</p>
+  {{if .Projects}}
+    <div class="card tight">
+      <ul class="list">
         {{range .Projects}}
-          <li><a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a><small>{{.Progress}}% complete</small></li>
+          <li>
+            <span class="grow"><a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a></span>
+            <span class="meta num">{{.Progress}}% complete</span>
+          </li>
         {{end}}
       </ul>
-    {{else}}
-      <p class="empty">No archived projects.</p>
-    {{end}}
-  </article>
-
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Goals</h2>
-      <span class="count">{{len .Goals}}</span>
     </div>
-    {{if .Goals}}
-      <ul class="stack-list">
+  {{else}}
+    <p class="meta">No archived projects.</p>
+  {{end}}
+
+  <p class="group-label">Goals</p>
+  {{if .Goals}}
+    <div class="card tight">
+      <ul class="list">
         {{range .Goals}}
-          <li><a href="/goals/{{.Goal.ID}}">{{.Goal.Title}}</a><small>{{.Progress}}% complete</small></li>
+          <li>
+            <span class="grow"><a href="/goals/{{.Goal.ID}}">{{.Goal.Title}}</a></span>
+            <span class="meta num">{{.Progress}}% complete</span>
+          </li>
         {{end}}
       </ul>
-    {{else}}
-      <p class="empty">No archived goals.</p>
-    {{end}}
-  </article>
-</section>
+    </div>
+  {{else}}
+    <p class="meta">No archived goals.</p>
+  {{end}}
+</div>
 {{end}}

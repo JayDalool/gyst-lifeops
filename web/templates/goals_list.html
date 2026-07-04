@@ -1,52 +1,34 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">Goals</p>
-    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-target"></use></svg>Trajectory</h1>
+    <p class="kicker">Long-term</p>
+    <h1 class="page-title">Goals</h1>
+    <p class="page-sub">Yearly, monthly, and weekly targets, tracked over time.</p>
   </div>
-  <a class="button" href="/goals/new">New Goal</a>
-</section>
-
-<section class="glass-panel">
-  <div class="panel-heading">
-    <div>
-      <p class="eyebrow">Overview</p>
-      <h2>Goal Progress</h2>
-    </div>
-  </div>
-  <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Chart.Labels "|"}}"
-    data-values="{{joinInts .Chart.Values "|"}}"></canvas>
-</section>
+  <a class="btn ghost" href="/goals/new">New goal</a>
+</div>
 
 {{if .Goals}}
-  <section class="goal-grid">
+  <ul class="project-list mt-24">
     {{range .Goals}}
-      <a class="goal-card" href="/goals/{{.Goal.ID}}">
-        <div class="goal-ring" style="--value: {{.Progress}};">
-          <svg class="goal-ring-icon" aria-hidden="true"><use href="#icon-target"></use></svg>
-          <strong>{{.Progress}}%</strong>
-        </div>
-        <div class="goal-copy">
-          <div class="goal-meta">
-            <span class="badge">{{.Goal.Type}}</span>
-            <span class="badge status-{{.Goal.Status}}">{{.Goal.Status}}</span>
-          </div>
-          <h2>{{.Goal.Title}}</h2>
-          <p>{{.Goal.Description}}</p>
-          <small>{{.Goal.Category}} / {{niceNumber .Goal.CurrentValue}} of {{niceNumber .Goal.TargetValue}} {{.Goal.Unit}}</small>
-          <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-          <canvas class="micro-chart" data-chart="line" data-mini="true" data-max="100"
-            data-labels="{{join .Momentum.Labels "|"}}"
-            data-values="{{joinInts .Momentum.Values "|"}}"></canvas>
-        </div>
-      </a>
+      <li>
+        <a class="project-row" href="/goals/{{.Goal.ID}}">
+          <span class="status {{if eq .Goal.Status "completed"}}done{{else if eq .Goal.Status "active"}}current{{else}}pending{{end}}"><span class="dot"></span></span>
+          <span class="grow">
+            <h3>{{.Goal.Title}}</h3>
+            <p class="meta">
+              {{.Goal.Type}} &middot; {{.Goal.Category}} &middot; {{niceNumber .Goal.CurrentValue}} of {{niceNumber .Goal.TargetValue}} {{.Goal.Unit}}
+              {{- if .Goal.EndDate}} &middot; by {{niceDate .Goal.EndDate}}{{end}}
+              {{- if ne .Goal.Status "active"}} &middot; {{.Goal.Status}}{{end}}
+            </p>
+          </span>
+          <div class="progress{{if eq .Progress 100}} done{{end}}"><span style="width: {{progressWidth .Progress}}"></span></div>
+          <span class="meta num">{{.Progress}}%</span>
+        </a>
+      </li>
     {{end}}
-  </section>
+  </ul>
 {{else}}
-  <section class="glass-panel empty-state">
-    <h2>No goals yet</h2>
-    <p>Create a yearly, monthly, or weekly target and track progress over time.</p>
-    <a class="button" href="/goals/new">Create Goal</a>
-  </section>
+  <p class="meta mt-24">No goals yet. <a href="/goals/new">Create a yearly, monthly, or weekly target</a> and track progress over time.</p>
 {{end}}
 {{end}}

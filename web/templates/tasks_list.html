@@ -1,47 +1,55 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">More / All Tasks</p>
-    <h1>Task Library</h1>
+    <p class="kicker">Task library</p>
+    <h1 class="page-title">Tasks</h1>
+    <p class="page-sub">Every active task, filterable by state.</p>
   </div>
-  <a class="button" href="/tasks/new">New Task</a>
-</section>
+  <a class="btn ghost" href="/tasks/new">New task</a>
+</div>
 
-<section class="glass-panel">
-  <div class="panel-heading">
-    <h2>Active Tasks</h2>
-    <span class="count">{{len .Tasks}}</span>
-  </div>
-  {{if .Tasks}}
-    <div class="task-card-list">
+<nav class="pill-row" aria-label="Filter by status">
+  <a href="/tasks" {{if eq .StatusFilter "all"}}aria-current="true"{{end}}>All</a>
+  <a href="/tasks?status=pending" {{if eq .StatusFilter "pending"}}aria-current="true"{{end}}>Pending</a>
+  <a href="/tasks?status=overdue" {{if eq .StatusFilter "overdue"}}aria-current="true"{{end}}>Overdue</a>
+  <a href="/tasks?status=completed" {{if eq .StatusFilter "completed"}}aria-current="true"{{end}}>Completed</a>
+  <a href="/tasks?status=skipped" {{if eq .StatusFilter "skipped"}}aria-current="true"{{end}}>Skipped</a>
+</nav>
+
+{{if .Tasks}}
+  <div class="card tight mt-16">
+    <ul class="tasks">
       {{range .Tasks}}
-        <article class="task-card">
-          <div class="task-card-copy">
-            <a href="/tasks/{{.ID}}">{{.Title}}</a>
-            <small>{{.Category}} / {{niceDate .DueDate}} / {{.RepeatType}}</small>
+        <li class="task" id="task-{{.ID}}">
+          <span class="status {{if eq .Status "completed"}}done{{else if eq .Status "skipped"}}locked{{else if and (eq .Status "pending") .DueDate (lt .DueDate $.Today)}}late{{else}}current{{end}}"><span class="dot"></span></span>
+          <div class="task-body">
+            <div class="task-title"><a href="/tasks/{{.ID}}">{{.Title}}</a></div>
+            <div class="task-meta">
+              {{.Category}} &middot; {{.RepeatType}} &middot; {{.Priority}}
+              {{- if .DueDate}} &middot; due {{niceDate .DueDate}}{{end}}
+              {{- if ne .Status "pending"}} &middot; {{.Status}}{{end}}
+            </div>
           </div>
-          <div class="task-state">
-            <span class="badge priority-{{.Priority}}">{{.Priority}}</span>
-            <span class="badge status-{{.Status}}">{{.Status}}</span>
-          </div>
-          <div class="quick-actions">
-            <a class="button small secondary" href="/tasks/{{.ID}}/edit">Edit</a>
-            {{if eq .Status "pending"}}
-              <form method="post" action="/tasks/{{.ID}}/complete">
-                <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
-                <button class="button small" type="submit">Done</button>
-              </form>
-              <form method="post" action="/tasks/{{.ID}}/skip">
-                <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
-                <button class="button small secondary" type="submit">Skip</button>
-              </form>
-            {{end}}
-          </div>
-        </article>
+          {{if eq .Status "pending"}}
+            <form method="post" action="/tasks/{{.ID}}/complete">
+              <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
+              <input type="hidden" name="return_to" value="/tasks?status={{$.StatusFilter}}#task-{{.ID}}">
+              <button class="btn quiet sm" type="submit">Done</button>
+            </form>
+            <form method="post" action="/tasks/{{.ID}}/skip">
+              <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
+              <input type="hidden" name="return_to" value="/tasks?status={{$.StatusFilter}}#task-{{.ID}}">
+              <button class="btn quiet sm" type="submit">Skip</button>
+            </form>
+          {{end}}
+          <a class="btn quiet sm" href="/tasks/{{.ID}}/edit">Edit</a>
+        </li>
       {{end}}
-    </div>
-  {{else}}
-    <p class="empty">No active tasks yet.</p>
-  {{end}}
-</section>
+    </ul>
+  </div>
+{{else}}
+  <p class="meta mt-24">
+    {{if eq .StatusFilter "all"}}No active tasks yet. <a href="/tasks/new">Create one</a>.{{else}}Nothing {{.StatusFilter}} right now.{{end}}
+  </p>
+{{end}}
 {{end}}

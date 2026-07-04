@@ -1,65 +1,56 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">Mission / {{.Task.Category}}</p>
-    <h1>{{.Task.Title}}</h1>
-    <p class="hero-greeting"><span class="badge status-{{.Task.Status}}">{{.Task.Status}}</span></p>
+    <p class="kicker"><a href="/tasks">Tasks</a> / {{.Task.Category}}</p>
+    <h1 class="page-title">{{.Task.Title}}</h1>
+    <p class="page-sub">
+      {{.Task.Status}}{{if .Task.DueDate}} &middot; due {{niceDate .Task.DueDate}}{{end}} &middot; {{.Task.RepeatType}} &middot; {{.Task.Priority}} priority.
+    </p>
+    {{if .Task.Description}}<p class="page-sub">{{.Task.Description}}</p>{{end}}
   </div>
-  <div class="header-actions">
-    <a class="button secondary" href="/tasks/{{.Task.ID}}/edit">Edit</a>
-    <a class="button secondary" href="/tasks">Back</a>
-  </div>
-</section>
+  <a class="btn ghost" href="/tasks/{{.Task.ID}}/edit">Edit</a>
+</div>
 
-{{template "shipStatsStrip" .ShipStats}}
-
-<section class="detail-layout">
-  <article class="glass-panel focus-panel">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Mission Brief</p>
-        <h2>Details</h2>
-      </div>
-      <span class="fuel-badge">+{{.Task.StarsReward}} fuel</span>
+<div class="cols page-body">
+  <section class="card tight">
+    <h2 class="section-title card-title">Details</h2>
+    <ul class="list">
+      <li><span class="grow meta">Priority</span><span>{{.Task.Priority}}</span></li>
+      <li><span class="grow meta">Due</span><span class="num">{{if .Task.DueDate}}{{niceDate .Task.DueDate}}{{else}}none{{end}}</span></li>
+      <li><span class="grow meta">Repeat</span><span>{{.Task.RepeatType}}</span></li>
+      <li><span class="grow meta">Reward</span><span class="num">{{.Task.StarsReward}} XP &middot; {{.Task.StarsAwarded}} earned</span></li>
+    </ul>
+    <div class="flag-row mt-16">
+      <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
+        <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
+        <input type="hidden" name="return_to" value="/tasks/{{.Task.ID}}">
+        <button class="btn sm" type="submit">Complete</button>
+      </form>
+      <form method="post" action="/tasks/{{.Task.ID}}/skip">
+        <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
+        <input type="hidden" name="return_to" value="/tasks/{{.Task.ID}}">
+        <button class="btn sm ghost" type="submit">Skip</button>
+      </form>
+      <form method="post" action="/tasks/{{.Task.ID}}/archive">
+        <button class="btn sm danger" type="submit">Archive</button>
+      </form>
     </div>
-    {{if .Task.Description}}<p class="body-copy">{{.Task.Description}}</p>{{end}}
-    <div class="stat-grid compact-stats">
-      <div><span>Priority</span><strong>{{.Task.Priority}}</strong></div>
-      <div><span>Due</span><strong>{{niceDate .Task.DueDate}}</strong></div>
-      <div><span>Repeat</span><strong>{{.Task.RepeatType}}</strong></div>
-      <div><span>Fuel</span><strong>{{.Task.StarsReward}} / {{.Task.StarsAwarded}} earned</strong></div>
-    </div>
-  </article>
+  </section>
 
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Evidence</h2>
-      {{if .Task.ProofRequired}}<span class="map-node-state node-blocked">Required</span>{{else}}<span class="map-node-state node-locked">Optional</span>{{end}}
-    </div>
-    <dl class="details">
-      <div><dt>Type</dt><dd>{{if eq .Task.ProofType "none"}}No evidence type set{{else}}{{.Task.ProofType}}{{end}}</dd></div>
-      <div><dt>Submitted</dt><dd>{{if .Task.ProofURL}}<a href="{{.Task.ProofURL}}" target="_blank" rel="noreferrer">{{.Task.ProofURL}}</a>{{else}}{{if .Task.ProofPath}}{{.Task.ProofPath}}{{else}}None yet{{end}}{{end}}</dd></div>
-    </dl>
-    <p class="hint-copy">Add or update evidence from <a href="/tasks/{{.Task.ID}}/edit">Edit</a>. Submitting required evidence awards bonus fuel.</p>
-  </article>
-</section>
-
-<section class="glass-panel mission-node">
-  <div class="panel-heading">
-    <h2>Mission Control</h2>
-  </div>
-  <div class="button-row">
-    <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
-      <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
-      <button class="button" type="submit">Complete Mission</button>
-    </form>
-    <form method="post" action="/tasks/{{.Task.ID}}/skip">
-      <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
-      <button class="button secondary" type="submit">Skip</button>
-    </form>
-    <form method="post" action="/tasks/{{.Task.ID}}/archive">
-      <button class="button danger" type="submit">Archive</button>
-    </form>
-  </div>
-</section>
+  <section class="card tight">
+    <h2 class="section-title card-title">Evidence {{if .Task.ProofRequired}}<span class="meta">&middot; required</span>{{else}}<span class="meta">&middot; optional</span>{{end}}</h2>
+    <ul class="list">
+      <li><span class="grow meta">Type</span><span>{{if eq .Task.ProofType "none"}}none set{{else}}{{.Task.ProofType}}{{end}}</span></li>
+      <li>
+        <span class="grow meta">Submitted</span>
+        <span>
+          {{if .Task.ProofURL}}<a href="{{.Task.ProofURL}}" target="_blank" rel="noreferrer">{{.Task.ProofURL}}</a>
+          {{else if .Task.ProofPath}}{{.Task.ProofPath}}
+          {{else}}none yet{{end}}
+        </span>
+      </li>
+    </ul>
+    <p class="meta mt-8">Add or update evidence from <a href="/tasks/{{.Task.ID}}/edit">Edit</a>. Submitting required evidence awards bonus XP.</p>
+  </section>
+</div>
 {{end}}

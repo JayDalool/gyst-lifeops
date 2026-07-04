@@ -1,48 +1,45 @@
 {{define "content"}}
-<section class="page-hero compact">
+<div class="page-head">
   <div>
-    <p class="eyebrow">{{niceDate .Today}}</p>
-    <h1>Reminders</h1>
+    <p class="kicker">{{niceDate .Today}}</p>
+    <h1 class="page-title">Reminders</h1>
+    <p class="page-sub">{{len .RemindersToday}} due today, {{len .OverdueReminders}} overdue.</p>
   </div>
-</section>
+</div>
 
-<section class="status-columns">
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Due Today</h2>
-      <span class="count">{{len .RemindersToday}}</span>
-    </div>
+<div class="cols page-body">
+  <section class="card tight">
+    <h2 class="section-title card-title">Due today</h2>
     {{if .RemindersToday}}
-      <ul class="stack-list">
+      <ul class="list">
         {{range .RemindersToday}}
           <li>
-            <span>{{.Title}}</span>
-            <small>{{.ReminderTime}}</small>
+            <span class="status soon"><span class="dot"></span></span>
+            <span class="grow">{{.Title}}</span>
+            <span class="meta num">{{.ReminderTime}}</span>
           </li>
         {{end}}
       </ul>
     {{else}}
-      <p class="empty">No reminders due today.</p>
+      <p class="meta">No reminders due today.</p>
     {{end}}
-  </article>
+  </section>
 
-  <article class="glass-panel warning-panel">
-    <div class="panel-heading">
-      <h2>Overdue</h2>
-      <span class="count">{{len .OverdueReminders}}</span>
-    </div>
+  <section class="card tight">
+    <h2 class="section-title card-title">Overdue</h2>
     {{if .OverdueReminders}}
-      <ul class="stack-list">
+      <ul class="list">
         {{range .OverdueReminders}}
           <li>
-            <span>{{.Title}}</span>
-            <small>{{niceDate .ReminderDate}} / {{.ReminderTime}}</small>
+            <span class="status late"><span class="dot"></span></span>
+            <span class="grow">{{.Title}}</span>
+            <span class="meta num">{{niceDate .ReminderDate}}{{if .ReminderTime}} &middot; {{.ReminderTime}}{{end}}</span>
           </li>
         {{end}}
       </ul>
     {{else}}
-      <p class="empty">No overdue reminders.</p>
+      <p class="meta">No overdue reminders.</p>
     {{end}}
-  </article>
-</section>
+  </section>
+</div>
 {{end}}

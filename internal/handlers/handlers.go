@@ -45,6 +45,10 @@ type TaskListData struct {
 	Page  string
 	Today string
 	Tasks []models.Task
+	// StatusFilter is the ?status= view filter: pending | completed | skipped |
+	// overdue | all. Presentation-only; "overdue" means pending with a past due
+	// date.
+	StatusFilter string
 }
 
 type TaskFormData struct {
@@ -365,7 +369,28 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 			serverError(w, err)
 			return
 		}
-		h.render(w, "tasks_list.html", TaskListData{Page: "tasks", Today: h.Service.TodayString(), Tasks: tasks})
+		today := h.Service.TodayString()
+		filter := r.URL.Query().Get("status")
+		switch filter {
+		case "pending", "completed", "skipped", "overdue":
+			filtered := make([]models.Task, 0, len(tasks))
+			for _, task := range tasks {
+				switch filter {
+				case "overdue":
+					if task.Status == "pending" && task.DueDate != "" && task.DueDate < today {
+						filtered = append(filtered, task)
+					}
+				default:
+					if task.Status == filter {
+						filtered = append(filtered, task)
+					}
+				}
+			}
+			tasks = filtered
+		default:
+			filter = "all"
+		}
+		h.render(w, "tasks_list.html", TaskListData{Page: "tasks", Today: today, Tasks: tasks, StatusFilter: filter})
 		return
 	}
 
