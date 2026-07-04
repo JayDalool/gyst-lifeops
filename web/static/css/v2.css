@@ -910,6 +910,9 @@
 :root[data-design="v2"] .body-text { color: var(--muted); font-size: 14.5px; }
 
 /* ---- forms ------------------------------------------------------------------- */
+/* create/edit form pages: one calm single-column card */
+:root[data-design="v2"] .form-card { max-width: 640px; }
+:root[data-design="v2"] .req { color: var(--accent-text); font-style: normal; }
 :root[data-design="v2"] .form-stack { display: grid; gap: 4px; margin-top: 8px; }
 :root[data-design="v2"] .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 :root[data-design="v2"] .field { display: block; margin: 8px 0; }

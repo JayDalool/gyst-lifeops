@@ -1,87 +1,96 @@
 {{define "content"}}
-<section class="page-header">
+<div class="page-head">
   <div>
-    <p class="eyebrow">Tasks</p>
-    <h1>{{.Title}}</h1>
+    <p class="kicker"><a href="/tasks">Tasks</a></p>
+    <h1 class="page-title">{{.Title}}</h1>
+    <p class="page-sub">Fields marked <em class="req">*</em> are required.</p>
   </div>
-  <a class="button secondary" href="/tasks">Back</a>
-</section>
+  <a class="btn quiet" href="/tasks">Cancel</a>
+</div>
 
-<form class="panel form-grid" method="post" action="{{.Action}}">
-  <label class="field span-2">
-    <span>Title</span>
+<form class="card form-card form-stack mt-24" method="post" action="{{.Action}}">
+  <label class="field">
+    <span>Title <em class="req">*</em></span>
     <input name="title" required value="{{.Task.Title}}">
   </label>
-  <label class="field span-2">
+  <label class="field">
     <span>Description</span>
     <textarea name="description" rows="4">{{.Task.Description}}</textarea>
   </label>
+  <div class="form-row">
+    <label class="field">
+      <span>Category</span>
+      <input name="category" value="{{.Task.Category}}" placeholder="personal, health, coding&hellip;">
+    </label>
+    <label class="field">
+      <span>Priority</span>
+      <select name="priority">
+        <option value="low" {{if eq .Task.Priority "low"}}selected{{end}}>Low</option>
+        <option value="medium" {{if eq .Task.Priority "medium"}}selected{{end}}>Medium</option>
+        <option value="high" {{if eq .Task.Priority "high"}}selected{{end}}>High</option>
+      </select>
+    </label>
+  </div>
+  <div class="form-row">
+    <label class="field">
+      <span>Status</span>
+      <select name="status">
+        <option value="pending" {{if eq .Task.Status "pending"}}selected{{end}}>Pending</option>
+        <option value="completed" {{if eq .Task.Status "completed"}}selected{{end}}>Completed</option>
+        <option value="skipped" {{if eq .Task.Status "skipped"}}selected{{end}}>Skipped</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Repeat</span>
+      <select name="repeat_type">
+        <option value="none" {{if eq .Task.RepeatType "none"}}selected{{end}}>None</option>
+        <option value="daily" {{if eq .Task.RepeatType "daily"}}selected{{end}}>Daily</option>
+        <option value="weekly" {{if eq .Task.RepeatType "weekly"}}selected{{end}}>Weekly</option>
+        <option value="monthly" {{if eq .Task.RepeatType "monthly"}}selected{{end}}>Monthly</option>
+        <option value="yearly" {{if eq .Task.RepeatType "yearly"}}selected{{end}}>Yearly</option>
+      </select>
+    </label>
+  </div>
+  <div class="form-row">
+    <label class="field">
+      <span>Due date</span>
+      <input type="date" name="due_date" value="{{.Task.DueDate}}">
+    </label>
+    <label class="field">
+      <span>Reminder time</span>
+      <input type="time" name="reminder_time" value="{{.Task.ReminderTime}}">
+    </label>
+  </div>
   <label class="field">
-    <span>Category</span>
-    <input name="category" value="{{.Task.Category}}">
-  </label>
-  <label class="field">
-    <span>Priority</span>
-    <select name="priority">
-      <option value="low" {{if eq .Task.Priority "low"}}selected{{end}}>Low</option>
-      <option value="medium" {{if eq .Task.Priority "medium"}}selected{{end}}>Medium</option>
-      <option value="high" {{if eq .Task.Priority "high"}}selected{{end}}>High</option>
-    </select>
-  </label>
-  <label class="field">
-    <span>Status</span>
-    <select name="status">
-      <option value="pending" {{if eq .Task.Status "pending"}}selected{{end}}>Pending</option>
-      <option value="completed" {{if eq .Task.Status "completed"}}selected{{end}}>Completed</option>
-      <option value="skipped" {{if eq .Task.Status "skipped"}}selected{{end}}>Skipped</option>
-    </select>
-  </label>
-  <label class="field">
-    <span>Repeat</span>
-    <select name="repeat_type">
-      <option value="none" {{if eq .Task.RepeatType "none"}}selected{{end}}>None</option>
-      <option value="daily" {{if eq .Task.RepeatType "daily"}}selected{{end}}>Daily</option>
-      <option value="weekly" {{if eq .Task.RepeatType "weekly"}}selected{{end}}>Weekly</option>
-      <option value="monthly" {{if eq .Task.RepeatType "monthly"}}selected{{end}}>Monthly</option>
-      <option value="yearly" {{if eq .Task.RepeatType "yearly"}}selected{{end}}>Yearly</option>
-    </select>
-  </label>
-  <label class="field">
-    <span>Due Date</span>
-    <input type="date" name="due_date" value="{{.Task.DueDate}}">
-  </label>
-  <label class="field">
-    <span>Reminder Time</span>
-    <input type="time" name="reminder_time" value="{{.Task.ReminderTime}}">
-  </label>
-  <label class="field">
-    <span>Stars Reward</span>
+    <span>XP reward</span>
     <input type="number" name="stars_reward" min="1" value="{{.Task.StarsReward}}">
   </label>
+
+  <p class="group-label">Evidence (optional)</p>
+  <div class="form-row">
+    <label class="field">
+      <span>Type</span>
+      <select name="proof_type">
+        <option value="none" {{if eq .Task.ProofType "none"}}selected{{end}}>None</option>
+        <option value="photo" {{if eq .Task.ProofType "photo"}}selected{{end}}>Photo</option>
+        <option value="file" {{if eq .Task.ProofType "file"}}selected{{end}}>File</option>
+        <option value="link" {{if eq .Task.ProofType "link"}}selected{{end}}>Link</option>
+        <option value="text" {{if eq .Task.ProofType "text"}}selected{{end}}>Text</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>URL</span>
+      <input name="proof_url" value="{{.Task.ProofURL}}" placeholder="https://&hellip;">
+    </label>
+  </div>
   <label class="field">
-    <span>Proof Type</span>
-    <select name="proof_type">
-      <option value="none" {{if eq .Task.ProofType "none"}}selected{{end}}>None</option>
-      <option value="photo" {{if eq .Task.ProofType "photo"}}selected{{end}}>Photo</option>
-      <option value="file" {{if eq .Task.ProofType "file"}}selected{{end}}>File</option>
-      <option value="link" {{if eq .Task.ProofType "link"}}selected{{end}}>Link</option>
-      <option value="text" {{if eq .Task.ProofType "text"}}selected{{end}}>Text</option>
-    </select>
-  </label>
-  <label class="field checkbox-field">
-    <span>Proof Required</span>
-    <label><input type="checkbox" name="proof_required" {{if .Task.ProofRequired}}checked{{end}}> Require proof for bonus</label>
-  </label>
-  <label class="field">
-    <span>Proof URL</span>
-    <input name="proof_url" value="{{.Task.ProofURL}}">
-  </label>
-  <label class="field span-2">
-    <span>Proof Path / Text</span>
+    <span>Path or text</span>
     <input name="proof_path" value="{{.Task.ProofPath}}">
   </label>
-  <div class="form-actions span-2">
-    <button class="button" type="submit">Save Task</button>
+  <div class="flag-row">
+    <label><input type="checkbox" name="proof_required" {{if .Task.ProofRequired}}checked{{end}}> Require evidence for the bonus XP</label>
   </div>
+
+  <button class="btn" type="submit">Save task</button>
 </form>
 {{end}}

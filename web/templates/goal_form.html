@@ -1,51 +1,56 @@
 {{define "content"}}
-<section class="page-header">
+<div class="page-head">
   <div>
-    <p class="eyebrow">Goals</p>
-    <h1>{{.Title}}</h1>
+    <p class="kicker"><a href="/goals">Goals</a></p>
+    <h1 class="page-title">{{.Title}}</h1>
+    <p class="page-sub">A goal is a number you move toward &mdash; sessions, hours, days. Fields marked <em class="req">*</em> are required.</p>
   </div>
-  <a class="button secondary" href="/goals">Back</a>
-</section>
+  <a class="btn quiet" href="/goals">Cancel</a>
+</div>
 
-<form class="panel form-grid" method="post" action="{{.Action}}">
-  <label class="field span-2">
-    <span>Title</span>
+<form class="card form-card form-stack mt-24" method="post" action="{{.Action}}">
+  <label class="field">
+    <span>Title <em class="req">*</em></span>
     <input name="title" required value="{{.Goal.Title}}">
   </label>
-  <label class="field span-2">
+  <label class="field">
     <span>Description</span>
     <textarea name="description" rows="4">{{.Goal.Description}}</textarea>
   </label>
-  <label class="field">
-    <span>Type</span>
-    <select name="type">
-      <option value="yearly" {{if eq .Goal.Type "yearly"}}selected{{end}}>Yearly</option>
-      <option value="monthly" {{if eq .Goal.Type "monthly"}}selected{{end}}>Monthly</option>
-      <option value="weekly" {{if eq .Goal.Type "weekly"}}selected{{end}}>Weekly</option>
-    </select>
-  </label>
-  <label class="field">
-    <span>Category</span>
-    <select name="category">
-      <option value="health" {{if eq .Goal.Category "health"}}selected{{end}}>Health</option>
-      <option value="coding" {{if eq .Goal.Category "coding"}}selected{{end}}>Coding</option>
-      <option value="business" {{if eq .Goal.Category "business"}}selected{{end}}>Business</option>
-      <option value="finance" {{if eq .Goal.Category "finance"}}selected{{end}}>Finance</option>
-      <option value="personal" {{if eq .Goal.Category "personal"}}selected{{end}}>Personal</option>
-      <option value="other" {{if eq .Goal.Category "other"}}selected{{end}}>Other</option>
-    </select>
-  </label>
-  <label class="field">
-    <span>Target Value</span>
-    <input type="number" step="0.1" min="0" name="target_value" value="{{niceNumber .Goal.TargetValue}}">
-  </label>
-  <label class="field">
-    <span>Current Value</span>
-    <input type="number" step="0.1" min="0" name="current_value" value="{{niceNumber .Goal.CurrentValue}}">
-  </label>
+  <div class="form-row">
+    <label class="field">
+      <span>Type</span>
+      <select name="type">
+        <option value="yearly" {{if eq .Goal.Type "yearly"}}selected{{end}}>Yearly</option>
+        <option value="monthly" {{if eq .Goal.Type "monthly"}}selected{{end}}>Monthly</option>
+        <option value="weekly" {{if eq .Goal.Type "weekly"}}selected{{end}}>Weekly</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Category</span>
+      <select name="category">
+        <option value="health" {{if eq .Goal.Category "health"}}selected{{end}}>Health</option>
+        <option value="coding" {{if eq .Goal.Category "coding"}}selected{{end}}>Coding</option>
+        <option value="business" {{if eq .Goal.Category "business"}}selected{{end}}>Business</option>
+        <option value="finance" {{if eq .Goal.Category "finance"}}selected{{end}}>Finance</option>
+        <option value="personal" {{if eq .Goal.Category "personal"}}selected{{end}}>Personal</option>
+        <option value="other" {{if eq .Goal.Category "other"}}selected{{end}}>Other</option>
+      </select>
+    </label>
+  </div>
+  <div class="form-row">
+    <label class="field">
+      <span>Target value</span>
+      <input type="number" step="0.1" min="0" name="target_value" value="{{niceNumber .Goal.TargetValue}}">
+    </label>
+    <label class="field">
+      <span>Current value</span>
+      <input type="number" step="0.1" min="0" name="current_value" value="{{niceNumber .Goal.CurrentValue}}">
+    </label>
+  </div>
   <label class="field">
     <span>Unit</span>
-    <input name="unit" value="{{.Goal.Unit}}" placeholder="sessions">
+    <input name="unit" value="{{.Goal.Unit}}" placeholder="sessions, hours, days&hellip;">
   </label>
   <label class="field">
     <span>Status</span>
@@ -55,16 +60,16 @@
       <option value="archived" {{if eq .Goal.Status "archived"}}selected{{end}}>Archived</option>
     </select>
   </label>
-  <label class="field">
-    <span>Start Date</span>
-    <input type="date" name="start_date" value="{{.Goal.StartDate}}">
-  </label>
-  <label class="field">
-    <span>End Date</span>
-    <input type="date" name="end_date" value="{{.Goal.EndDate}}">
-  </label>
-  <div class="form-actions span-2">
-    <button class="button" type="submit">Save Goal</button>
+  <div class="form-row">
+    <label class="field">
+      <span>Start date</span>
+      <input type="date" name="start_date" value="{{.Goal.StartDate}}">
+    </label>
+    <label class="field">
+      <span>End date</span>
+      <input type="date" name="end_date" value="{{.Goal.EndDate}}">
+    </label>
   </div>
+  <button class="btn" type="submit">Save goal</button>
 </form>
 {{end}}

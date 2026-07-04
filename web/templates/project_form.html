@@ -1,61 +1,66 @@
 {{define "content"}}
-<section class="page-header">
+<div class="page-head">
   <div>
-    <p class="eyebrow">Projects</p>
-    <h1>{{.Title}}</h1>
+    <p class="kicker"><a href="/projects">Projects</a></p>
+    <h1 class="page-title">{{.Title}}</h1>
+    <p class="page-sub">Fields marked <em class="req">*</em> are required.</p>
   </div>
-  <a class="button secondary" href="/projects">Back</a>
-</section>
+  <a class="btn quiet" href="/projects">Cancel</a>
+</div>
 
-<form class="panel form-grid" method="post" action="{{.Action}}">
-  <label class="field span-2">
-    <span>Name</span>
+<form class="card form-card form-stack mt-24" method="post" action="{{.Action}}">
+  <label class="field">
+    <span>Name <em class="req">*</em></span>
     <input name="name" required value="{{.Project.Name}}">
   </label>
-  <label class="field span-2">
+  <label class="field">
     <span>Description</span>
     <textarea name="description" rows="4">{{.Project.Description}}</textarea>
   </label>
-  <label class="field">
-    <span>Category</span>
-    <select name="category">
-      <option value="coding" {{if eq .Project.Category "coding"}}selected{{end}}>Coding</option>
-      <option value="sim rig" {{if eq .Project.Category "sim rig"}}selected{{end}}>Sim Rig</option>
-      <option value="car" {{if eq .Project.Category "car"}}selected{{end}}>Car</option>
-      <option value="health" {{if eq .Project.Category "health"}}selected{{end}}>Health</option>
-      <option value="business" {{if eq .Project.Category "business"}}selected{{end}}>Business</option>
-      <option value="personal" {{if eq .Project.Category "personal"}}selected{{end}}>Personal</option>
-      <option value="other" {{if eq .Project.Category "other"}}selected{{end}}>Other</option>
-    </select>
-  </label>
-  <label class="field">
-    <span>Kind</span>
-    <select name="project_kind">
-      <option value="main" {{if eq .Project.ProjectKind "main"}}selected{{end}}>Main Quest</option>
-      <option value="subproject" {{if eq .Project.ProjectKind "subproject"}}selected{{end}}>Subproject</option>
-      <option value="phase" {{if eq .Project.ProjectKind "phase"}}selected{{end}}>Phase / Chapter</option>
-    </select>
-  </label>
-  <label class="field">
-    <span>Roadmap</span>
-    <select name="roadmap_id">
-      <option value="">Unassigned</option>
-      {{range .Roadmaps}}
-        <option value="{{.ID}}" {{if eq .ID $.Project.RoadmapID}}selected{{end}}>{{.Name}}</option>
-      {{end}}
-    </select>
-  </label>
-  <label class="field">
-    <span>Parent Trip</span>
-    <select name="parent_project_id">
-      <option value="">None</option>
-      {{range .Projects}}
-        {{if ne .Project.ID $.Project.ID}}
-          <option value="{{.Project.ID}}" {{if eq .Project.ID $.Project.ParentProjectID}}selected{{end}}>{{.Project.Name}}</option>
+  <div class="form-row">
+    <label class="field">
+      <span>Category</span>
+      <select name="category">
+        <option value="coding" {{if eq .Project.Category "coding"}}selected{{end}}>Coding</option>
+        <option value="sim rig" {{if eq .Project.Category "sim rig"}}selected{{end}}>Sim rig</option>
+        <option value="car" {{if eq .Project.Category "car"}}selected{{end}}>Car</option>
+        <option value="health" {{if eq .Project.Category "health"}}selected{{end}}>Health</option>
+        <option value="business" {{if eq .Project.Category "business"}}selected{{end}}>Business</option>
+        <option value="personal" {{if eq .Project.Category "personal"}}selected{{end}}>Personal</option>
+        <option value="other" {{if eq .Project.Category "other"}}selected{{end}}>Other</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Kind</span>
+      <select name="project_kind">
+        <option value="main" {{if eq .Project.ProjectKind "main"}}selected{{end}}>Main project</option>
+        <option value="subproject" {{if eq .Project.ProjectKind "subproject"}}selected{{end}}>Subproject</option>
+        <option value="phase" {{if eq .Project.ProjectKind "phase"}}selected{{end}}>Phase / chapter</option>
+      </select>
+    </label>
+  </div>
+  <div class="form-row">
+    <label class="field">
+      <span>Roadmap</span>
+      <select name="roadmap_id">
+        <option value="">Unassigned</option>
+        {{range .Roadmaps}}
+          <option value="{{.ID}}" {{if eq .ID $.Project.RoadmapID}}selected{{end}}>{{.Name}}</option>
         {{end}}
-      {{end}}
-    </select>
-  </label>
+      </select>
+    </label>
+    <label class="field">
+      <span>Parent project</span>
+      <select name="parent_project_id">
+        <option value="">None</option>
+        {{range .Projects}}
+          {{if ne .Project.ID $.Project.ID}}
+            <option value="{{.Project.ID}}" {{if eq .Project.ID $.Project.ParentProjectID}}selected{{end}}>{{.Project.Name}}</option>
+          {{end}}
+        {{end}}
+      </select>
+    </label>
+  </div>
   <label class="field">
     <span>Status</span>
     <select name="status">
@@ -66,24 +71,24 @@
       <option value="archived" {{if eq .Project.Status "archived"}}selected{{end}}>Archived</option>
     </select>
   </label>
+  <div class="form-row">
+    <label class="field">
+      <span>Start date</span>
+      <input type="date" name="start_date" value="{{.Project.StartDate}}">
+    </label>
+    <label class="field">
+      <span>Target date</span>
+      <input type="date" name="target_date" value="{{.Project.TargetDate}}">
+    </label>
+  </div>
   <label class="field">
-    <span>Start Date</span>
-    <input type="date" name="start_date" value="{{.Project.StartDate}}">
-  </label>
-  <label class="field">
-    <span>Target Date</span>
-    <input type="date" name="target_date" value="{{.Project.TargetDate}}">
-  </label>
-  <label class="field span-2">
     <span>Notes</span>
-    <textarea name="notes" rows="5">{{.Project.Notes}}</textarea>
+    <textarea name="notes" rows="4">{{.Project.Notes}}</textarea>
   </label>
-  <label class="field span-2">
-    <span>Unlock Notes / Reminder</span>
-    <textarea name="unlock_notes" rows="3">{{.Project.UnlockNotes}}</textarea>
-  </label>
+
+  <p class="group-label">Unlocking (optional)</p>
   <label class="field">
-    <span>Depends On</span>
+    <span>Depends on</span>
     <select name="depends_on_project_id">
       <option value="">None</option>
       {{range .Projects}}
@@ -93,12 +98,14 @@
       {{end}}
     </select>
   </label>
-  <label class="field checkbox-field">
-    <span>Auto Unlock</span>
-    <label><input type="checkbox" name="auto_unlock" {{if .Project.AutoUnlock}}checked{{end}}> Unlock when dependency is done</label>
+  <label class="field">
+    <span>Unlock notes</span>
+    <textarea name="unlock_notes" rows="2" placeholder="Shown while this project is locked or upcoming.">{{.Project.UnlockNotes}}</textarea>
   </label>
-  <div class="form-actions span-2">
-    <button class="button" type="submit">Save Project</button>
+  <div class="flag-row">
+    <label><input type="checkbox" name="auto_unlock" {{if .Project.AutoUnlock}}checked{{end}}> Unlock automatically when the dependency is done</label>
   </div>
+
+  <button class="btn" type="submit">Save project</button>
 </form>
 {{end}}
