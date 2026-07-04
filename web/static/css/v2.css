@@ -764,6 +764,18 @@
   gap: 16px;
 }
 
+/* ---- phase strip (project page mini-map) ----------------------------------------- */
+:root[data-design="v2"] .phase-strip { display: flex; align-items: center; gap: 6px; }
+:root[data-design="v2"] .phase-strip i {
+  height: 4px;
+  border-radius: 2px;
+  flex: 1;
+  background: var(--panel-soft);
+}
+:root[data-design="v2"] .phase-strip i.done { background: var(--green); }
+:root[data-design="v2"] .phase-strip i.current { background: var(--accent); }
+:root[data-design="v2"] .body-text { color: var(--muted); font-size: 14.5px; }
+
 /* ---- forms ------------------------------------------------------------------- */
 :root[data-design="v2"] .form-stack { display: grid; gap: 4px; margin-top: 8px; }
 :root[data-design="v2"] .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

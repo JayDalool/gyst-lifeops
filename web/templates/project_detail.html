@@ -1,226 +1,187 @@
 {{define "content"}}
-<nav class="cosmic-breadcrumb" aria-label="Location">
-  <a href="/roadmap{{if .HasRoadmap}}?roadmap={{.Roadmap.ID}}{{end}}">Galaxy</a>
-  {{if .HasRoadmap}}<span class="sep">&rsaquo;</span><a href="/roadmap?roadmap={{.Roadmap.ID}}">{{.Roadmap.Name}}</a>{{end}}
-  {{if .HasParent}}<span class="sep">&rsaquo;</span><a href="/projects/{{.Parent.ID}}">{{.Parent.Name}}</a>{{end}}
-  <span class="sep">&rsaquo;</span><span class="current">{{.Project.Project.Name}}</span>
-</nav>
-
-<section class="system-core">
-  <div class="system-star{{if or (eq .Project.Project.Status "done") (eq .Project.Project.Status "completed")}} is-done{{else if eq .Project.Project.Status "locked"}} is-locked{{end}}">
-    <strong>{{.Project.Progress}}%</strong>
+<div class="page-head">
+  <div>
+    <p class="kicker">
+      {{if .HasRoadmap}}<a href="/roadmap?roadmap={{.Roadmap.ID}}">{{.Roadmap.Name}}</a>{{else}}<a href="/projects">Projects</a>{{end}}
+      {{- if .HasParent}} / <a href="/projects/{{.Parent.ID}}">{{.Parent.Name}}</a>{{end}} / {{.Project.Project.Category}}
+    </p>
+    <h1 class="page-title">{{.Project.Project.Name}}</h1>
+    <p class="page-sub">
+      {{.Project.CompletedItems}} of {{.Project.TotalItems}} missions done
+      {{- if .Project.Project.TargetDate}} &middot; target {{niceDate .Project.Project.TargetDate}}{{end}} &middot; {{.Project.Project.Status}}.
+    </p>
+    {{if .Project.Project.Description}}<p class="page-sub">{{.Project.Project.Description}}</p>{{end}}
   </div>
-  <div class="system-core-copy">
-    <p class="eyebrow">Solar System / {{.Project.Project.Category}}</p>
-    <h1>{{.Project.Project.Name}}</h1>
-    {{if .Project.Project.Description}}<p class="body-copy">{{.Project.Project.Description}}</p>{{end}}
-    <div class="system-core-meta">
-      <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>
-      <span class="badge">{{.Project.CompletedItems}} / {{.Project.TotalItems}} missions</span>
-      {{if .HasRoadmap}}<span class="badge rm-badge">{{.Roadmap.Name}}</span>{{end}}
-      {{if .Project.Project.TargetDate}}<span class="badge">Target {{niceDate .Project.Project.TargetDate}}</span>{{end}}
-      {{if .HasParent}}<span class="badge">Station of {{.Parent.Name}}</span>{{end}}
-    </div>
-    <div class="header-actions">
-      <a class="button secondary" href="/projects/{{.Project.Project.ID}}/edit">Edit Trip</a>
-      <a class="button secondary" href="/projects">Back to Deck</a>
-    </div>
+  <a class="btn ghost" href="/projects/{{.Project.Project.ID}}/edit">Edit trip</a>
+</div>
+
+<div class="card tight mt-24">
+  <div class="progress-row">
+    <div class="progress{{if or (eq .Project.Project.Status "done") (eq .Project.Project.Status "completed")}} done{{end}}"><span style="width: {{progressWidth .Project.Progress}}"></span></div>
+    <span class="num meta">{{.Project.Progress}}%</span>
   </div>
-</section>
+  {{if .Stops}}
+    <div class="phase-strip mt-16" aria-label="Stops on this trip">
+      {{range .Stops}}<i class="{{template "phaseClass" (nodeState .Project.Status .Progress)}}"></i>{{end}}
+    </div>
+    <p class="meta mt-8">{{len .Stops}} stops on this trip.</p>
+  {{end}}
+</div>
 
-{{if .Route.Nodes}}
-  {{/* Solar route: child stations (or this trip's missions when it has none). */}}
-  {{template "rocketRoute" .Route}}
-{{else}}
-  <section class="route-strip" aria-label="Trip progress">
-    <span class="route-strip-cap">Launch</span>
-    <div class="route-strip-track">
-      <span class="route-strip-fill" style="width:{{progressWidth .Project.Progress}}"></span>
-      <span class="route-strip-rocket" style="left:{{progressWidth .Project.Progress}}">
-        <svg class="rocket-icon" viewBox="0 0 24 24"><use href="#icon-rocket"></use></svg>
-      </span>
+<div class="cols-wide mt-16">
+  <div>
+    <section class="section-head">
+      <h2 class="section-title">Missions</h2>
+    </section>
+    <div class="card tight">
+      {{if .Items}}
+        <ul class="tasks">
+          {{range .Items}}
+            <li class="task" id="mission-{{.ID}}">
+              {{if eq .Status "completed"}}
+                <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/reopen">
+                  <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
+                  <input type="checkbox" checked aria-label="Reopen: {{.Title}}" onchange="this.form.requestSubmit()">
+                </form>
+              {{else}}
+                <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/complete">
+                  <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
+                  <input type="checkbox" aria-label="Complete: {{.Title}}" onchange="this.form.requestSubmit()">
+                </form>
+              {{end}}
+              <div class="task-body">
+                <div class="task-title">{{.Title}}</div>
+                <div class="task-meta">{{.Priority}}{{if .Description}} &middot; {{.Description}}{{end}}</div>
+              </div>
+              {{if .DueDate}}<span class="task-when num">{{niceDate .DueDate}}</span>{{end}}
+              <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/delete">
+                <button class="btn quiet sm" type="submit">Delete</button>
+              </form>
+            </li>
+          {{end}}
+        </ul>
+      {{else}}
+        <p class="meta">No missions yet &mdash; add one on the right.</p>
+      {{end}}
     </div>
-    <span class="route-strip-cap">{{.Project.Progress}}%</span>
-  </section>
-{{end}}
 
-<section class="detail-layout">
-  <article class="glass-panel focus-panel">
-    <div class="panel-heading">
-      <div>
-        <p class="eyebrow">Trip Pulse</p>
-        <h2>{{.Project.Progress}}% complete</h2>
-      </div>
-      <span class="badge status-{{.Project.Project.Status}}">{{.Project.Project.Status}}</span>
-    </div>
-    <div class="progress large"><span style="width: {{progressWidth .Project.Progress}}"></span></div>
-    <canvas class="project-pulse-chart" data-chart="line" data-max="100"
-      data-labels="{{join .Project.Momentum.Labels "|"}}"
-      data-values="{{joinInts .Project.Momentum.Values "|"}}"
-      data-empty="Complete missions to build your trajectory."></canvas>
-    <div class="stat-grid compact-stats">
-      <div><span>Missions</span><strong>{{.Project.CompletedItems}} / {{.Project.TotalItems}}</strong></div>
-      <div><span>Target</span><strong>{{niceDate .Project.Project.TargetDate}}</strong></div>
-      <div><span>Next</span><strong>{{if .Project.NextDueItem}}{{.Project.NextDueItem}}{{else}}No pending mission{{end}}</strong></div>
-    </div>
-    {{if or .Project.Project.Notes .Project.Project.Description}}
-      <p class="body-copy">{{if .Project.Project.Notes}}{{.Project.Project.Notes}}{{else}}{{.Project.Project.Description}}{{end}}</p>
+    {{if .Stops}}
+      <section class="section-head">
+        <h2 class="section-title">Stops</h2>
+      </section>
+      <ul class="project-list">
+        {{range .Stops}}
+          <li>
+            <a class="project-row" href="/projects/{{.Project.ID}}">
+              <span class="status {{template "detailStatusClass" (nodeState .Project.Status .Progress)}}"><span class="dot"></span></span>
+              <span class="grow">
+                <h3>{{.Project.Name}}</h3>
+                <p class="meta">{{.Project.ProjectKind}}{{if .Project.UnlockNotes}} &middot; {{.Project.UnlockNotes}}{{end}}</p>
+              </span>
+              <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
+              <span class="meta num">{{.Progress}}%</span>
+            </a>
+          </li>
+        {{end}}
+      </ul>
     {{end}}
-    {{if .Project.Project.UnlockNotes}}<p class="body-copy unlock-note"><strong>Unlock:</strong> {{.Project.Project.UnlockNotes}}</p>{{end}}
-    <div class="button-row">
-      <form method="post" action="/projects/{{.Project.Project.ID}}/status">
-        <input type="hidden" name="status" value="active">
-        <button class="button small secondary" type="submit">Make Active</button>
+
+    {{if .Project.Project.Notes}}
+      <section class="card mt-16">
+        <h2 class="section-title card-title">Notes</h2>
+        <p class="body-text">{{.Project.Project.Notes}}</p>
+      </section>
+    {{end}}
+  </div>
+
+  <aside>
+    <section class="card tight">
+      <h2 class="section-title card-title">About this trip</h2>
+      <ul class="list">
+        <li><span class="grow meta">Status</span><span class="status {{template "detailStatusClass" (nodeState .Project.Project.Status .Project.Progress)}}"><span class="dot"></span>{{.Project.Project.Status}}</span></li>
+        <li><span class="grow meta">Missions</span><span class="num">{{.Project.CompletedItems}} / {{.Project.TotalItems}}</span></li>
+        {{if .Project.Project.TargetDate}}<li><span class="grow meta">Target</span><span class="num">{{niceDate .Project.Project.TargetDate}}</span></li>{{end}}
+        {{if .Project.NextDueItem}}<li><span class="grow meta">Next</span><span>{{.Project.NextDueItem}}</span></li>{{end}}
+        {{if eq .Project.Project.Status "locked"}}
+          <li>
+            <span class="grow meta">Locked</span>
+            <span class="meta">{{if .Project.Project.DependsOnProjectID}}depends on trip #{{.Project.Project.DependsOnProjectID}} &middot; {{end}}auto-unlock {{if .Project.Project.AutoUnlock}}on{{else}}off{{end}}</span>
+          </li>
+        {{end}}
+      </ul>
+      {{if .Project.Project.UnlockNotes}}<p class="meta mt-8">Unlock: {{.Project.Project.UnlockNotes}}</p>{{end}}
+      <div class="flag-row mt-16">
+        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+          <input type="hidden" name="status" value="active">
+          <button class="btn sm ghost" type="submit">Make active</button>
+        </form>
+        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+          <input type="hidden" name="status" value="upcoming">
+          <button class="btn sm quiet" type="submit">Move upcoming</button>
+        </form>
+        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+          <input type="hidden" name="status" value="done">
+          <button class="btn sm" type="submit">Complete</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="card tight mt-16">
+      <h2 class="section-title card-title">Add mission</h2>
+      <form class="form-stack" method="post" action="/projects/{{.Project.Project.ID}}/items">
+        <label class="field">
+          <span>Title</span>
+          <input name="title" required>
+        </label>
+        <label class="field">
+          <span>Description</span>
+          <textarea name="description" rows="3"></textarea>
+        </label>
+        <div class="form-row">
+          <label class="field">
+            <span>Priority</span>
+            <select name="priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Due</span>
+            <input type="date" name="due_date">
+          </label>
+        </div>
+        <button class="btn" type="submit">Add mission</button>
       </form>
-      <form method="post" action="/projects/{{.Project.Project.ID}}/status">
-        <input type="hidden" name="status" value="upcoming">
-        <button class="button small secondary" type="submit">Move Upcoming</button>
-      </form>
-      <form method="post" action="/projects/{{.Project.Project.ID}}/status">
-        <input type="hidden" name="status" value="done">
-        <button class="button small" type="submit">Complete Expedition</button>
-      </form>
-    </div>
-    <div class="trip-actions">
-      <a class="button small secondary" href="/projects/new">Add Stop</a>
-      <a class="button small secondary" href="/roadmap{{if .HasRoadmap}}?roadmap={{.Roadmap.ID}}{{end}}">View on Galaxy Map</a>
+    </section>
+
+    {{if .NextDestinations}}
+      <section class="card tight mt-16">
+        <h2 class="section-title card-title">Next destination</h2>
+        <ul class="list">
+          {{range .NextDestinations}}
+            <li>
+              <span class="status locked"><span class="dot"></span></span>
+              <span class="grow"><a href="/projects/{{.ID}}">{{.Name}}</a><small>unlocks when this trip completes</small></span>
+            </li>
+          {{end}}
+        </ul>
+      </section>
+    {{end}}
+
+    <div class="flag-row mt-16">
       {{if and .HasRoadmap (not .Roadmap.Featured)}}
         <form method="post" action="/roadmaps/{{.Roadmap.ID}}/feature">
-          <button class="button small" type="submit">Set Roadmap as Dashboard</button>
+          <button class="btn sm quiet" type="submit">Set roadmap as dashboard</button>
         </form>
       {{end}}
+      <form method="post" action="/projects/{{.Project.Project.ID}}/archive">
+        <button class="btn sm danger" type="submit">Archive trip</button>
+      </form>
     </div>
-  </article>
-
-  <article class="glass-panel">
-    <div class="panel-heading">
-      <h2>Add Mission</h2>
-    </div>
-    <form class="form-stack" method="post" action="/projects/{{.Project.Project.ID}}/items">
-      <label class="field">
-        <span>Title</span>
-        <input name="title" required>
-      </label>
-      <label class="field">
-        <span>Description</span>
-        <textarea name="description" rows="3"></textarea>
-      </label>
-      <div class="form-row">
-        <label class="field">
-          <span>Priority</span>
-          <select name="priority">
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>Due</span>
-          <input type="date" name="due_date">
-        </label>
-      </div>
-      <button class="button" type="submit">Add Mission</button>
-    </form>
-  </article>
-</section>
-
-{{if .Stops}}
-<section class="glass-panel">
-  <div class="panel-heading">
-    <div>
-      <p class="eyebrow">Orbiting</p>
-      <h2>Planets &amp; Stations</h2>
-    </div>
-    <span class="count">{{len .Stops}}</span>
-  </div>
-  <div class="project-grid">
-    {{range .Stops}}
-      <a class="project-card trip-card node-{{nodeState .Project.Status .Progress}}" href="/projects/{{.Project.ID}}">
-        <div class="project-card-top">
-          <span class="badge">{{.Project.ProjectKind}}</span>
-          <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-        </div>
-        <h2>{{.Project.Name}}</h2>
-        <p>{{if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else}}{{.Project.Notes}}{{end}}</p>
-        <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-      </a>
-    {{end}}
-  </div>
-</section>
+  </aside>
+</div>
 {{end}}
 
-<section class="glass-panel">
-  <div class="panel-heading">
-    <div>
-      <p class="eyebrow">Missions</p>
-      <h2>Mission Queue</h2>
-    </div>
-    <span class="count">{{len .Items}}</span>
-  </div>
-
-  {{if .Items}}
-    <div class="checklist-list">
-      {{range .Items}}
-        <article id="mission-{{.ID}}" class="checklist-item status-row-{{.Status}}">
-          <div>
-            <h3>{{.Title}}</h3>
-            <small>{{if .DueDate}}{{niceDate .DueDate}}{{else}}No due date{{end}} / {{.Priority}}</small>
-            {{if .Description}}<p>{{.Description}}</p>{{end}}
-          </div>
-          <div class="quick-actions">
-            {{if eq .Status "completed"}}
-              <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/reopen">
-                <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
-                <button class="button small secondary" type="submit">Reopen</button>
-              </form>
-            {{else}}
-              <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/complete">
-                <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
-                <button class="button small" type="submit">Done</button>
-              </form>
-            {{end}}
-            <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/delete">
-              <button class="button small danger" type="submit">Delete</button>
-            </form>
-          </div>
-        </article>
-      {{end}}
-    </div>
-  {{else}}
-    <p class="empty">No missions yet.</p>
-  {{end}}
-</section>
-
-{{if or .NextDestinations (eq .Project.Project.Status "locked")}}
-<section class="glass-panel">
-  <div class="panel-heading">
-    <div><p class="eyebrow">Route Links</p><h2>Unlock &amp; Dependencies</h2></div>
-  </div>
-  {{if eq .Project.Project.Status "locked"}}
-    <p class="body-copy">
-      This destination is locked.{{if .Project.Project.DependsOnProjectID}} Depends on trip #{{.Project.Project.DependsOnProjectID}}.{{end}}
-      Auto-unlock is {{if .Project.Project.AutoUnlock}}on{{else}}off{{end}}.
-    </p>
-    {{if .Project.Project.UnlockNotes}}<p class="body-copy unlock-note"><strong>Unlock:</strong> {{.Project.Project.UnlockNotes}}</p>{{end}}
-  {{end}}
-  {{if .NextDestinations}}
-    <p class="eyebrow">Next Destination</p>
-    <div class="project-grid">
-      {{range .NextDestinations}}
-        <a class="project-card" href="/projects/{{.ID}}">
-          <div class="project-card-top"><span class="badge status-{{.Status}}">{{.Status}}</span></div>
-          <h2>{{.Name}}</h2>
-          <p>Unlocks when this trip completes.</p>
-        </a>
-      {{end}}
-    </div>
-  {{end}}
-</section>
-{{end}}
-
-<section class="danger-zone">
-  <form method="post" action="/projects/{{.Project.Project.ID}}/archive">
-    <button class="button danger" type="submit">Archive Trip</button>
-  </form>
-</section>
-{{end}}
+{{define "detailStatusClass"}}{{if eq . "done"}}done{{else if eq . "active"}}current{{else if eq . "locked"}}locked{{else}}pending{{end}}{{end}}
+{{define "phaseClass"}}{{if eq . "done"}}done{{else if eq . "active"}}current{{end}}{{end}}
