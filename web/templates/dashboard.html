@@ -1,189 +1,129 @@
 {{define "content"}}
-<section class="page-hero compact mission-hero">
+<div class="page-head">
   <div>
-    <p class="eyebrow">{{niceDate .Today}} &middot; LifeOps Command</p>
-    <h1><svg class="hero-title-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>GYST Mission Control</h1>
-    <p class="hero-greeting">{{greeting}}</p>
+    <p class="kicker">{{niceDate .Today}}</p>
+    <h1 class="page-title">{{greeting}}</h1>
+    {{if .ActiveProjects}}{{with index .ActiveProjects 0}}
+      <p class="page-sub">Current focus: <a class="focus-link" href="/projects/{{.Project.ID}}">{{.Project.Name}}</a> &mdash; {{.Progress}}%.</p>
+    {{end}}{{end}}
   </div>
-  <a class="button" href="/today">Open Today</a>
+  <a class="btn" href="/today">Open today</a>
+</div>
+
+<div class="stats">
+  <div><b class="num">Level {{.ShipStats.Level}}</b> <span>{{.ShipStats.TotalFuel}} XP</span></div>
+  <div><b class="num">{{.ShipStats.Streak}} days</b> <span>streak</span></div>
+  <div><b class="num">{{.Activity.CompletedToday}}</b> <span>done today</span></div>
+  <div><b class="num">{{len .ActiveProjects}}</b> <span>active trips</span></div>
+</div>
+
+<section class="section-head">
+  <h2 class="section-title">{{if .HasRoadmap}}{{.DashboardRoadmap.Name}}{{else}}No roadmap selected{{end}}</h2>
+  <a href="/roadmap">View roadmap &rarr;</a>
 </section>
-
-{{template "shipStats" .ShipStats}}
-
-<section class="bridge-layout">
-  <aside class="glass-panel roadmap-rail" aria-label="Roadmaps">
-    <div class="rail-head">
-      <h2>Roadmaps</h2>
-      <a class="rail-add" href="#new-roadmap" aria-label="Create roadmap">+</a>
-    </div>
-    {{if .Roadmaps}}
-      <ul class="roadmap-list">
-        {{range .Roadmaps}}
-          <li class="roadmap-item {{if eq .ID $.DashboardRoadmap.ID}}is-active{{end}}">
-            <span class="rm-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg></span>
-            <span class="rm-copy">
-              <strong>{{.Name}}</strong>
-              <small>P{{.Priority}}{{if .Featured}} &middot; Featured{{end}}{{if ne .Privacy "public"}} &middot; {{.Privacy}}{{end}}</small>
-            </span>
-            {{if ne .Privacy "public"}}<span class="rm-lock" title="{{.Privacy}}">&#128274;</span>{{end}}
-            {{if not .Featured}}
-              <form method="post" action="/roadmaps/{{.ID}}/feature">
-                <button class="rm-set" type="submit" title="Set as dashboard">Set</button>
-              </form>
-            {{end}}
-          </li>
-        {{end}}
-      </ul>
-    {{else}}
-      <p class="empty">No roadmaps yet.</p>
-    {{end}}
-    <details class="rm-new" id="new-roadmap">
-      <summary>+ New Roadmap</summary>
-      <form method="post" action="/roadmaps/new" class="form-stack">
-        <input name="name" placeholder="Roadmap name" required>
-        <div class="form-row">
-          <input type="number" name="priority" placeholder="Priority" value="5">
-          <select name="privacy">
-            <option value="private">Private</option>
-            <option value="public">Public</option>
-            <option value="local_only">Local only</option>
-          </select>
-        </div>
-        <label class="rm-feature"><input type="checkbox" name="featured"> Set as dashboard</label>
-        <button class="button small" type="submit">Create Roadmap</button>
-      </form>
-    </details>
-  </aside>
-
-  <section class="glass-panel bridge-hero">
-    <div class="hero-head">
-      <div>
-        <p class="eyebrow">Current Destination</p>
-        <h2>{{if .HasRoadmap}}{{.DashboardRoadmap.Name}}{{else}}No roadmap selected{{end}}</h2>
-      </div>
-      <a class="button small secondary" href="/roadmap">View Full Route</a>
-    </div>
-    {{if .HasRoadmap}}
-      {{if .ShipRoute.Nodes}}
-        {{template "rocketRoute" .ShipRoute}}
+{{if and .HasRoadmap .ShipRoute.Nodes}}
+  {{template "routeMapV2" .ShipRoute}}
+{{else}}
+  <div class="card">
+    <p class="meta">
+      {{if .HasRoadmap}}
+        No destinations on this roadmap yet. <a href="/projects/new">Add a trip</a> to plot the route.
       {{else}}
-        <p class="empty">No destinations on this roadmap yet. Add a trip to plot the route.</p>
+        Create a roadmap on the <a href="/roadmap">Roadmaps page</a> to plot your first journey.
       {{end}}
-    {{else}}
-      <p class="empty">Create a roadmap to plot your first journey.</p>
-      <a class="button small" href="#new-roadmap">Create Roadmap</a>
-    {{end}}
-  </section>
+    </p>
+  </div>
+{{end}}
+
+<section class="section-head">
+  <h2 class="section-title">Today</h2>
+  <a href="/today">View all &rarr;</a>
 </section>
-
-<nav class="quick-actions-bar" aria-label="Quick actions">
-  <a href="/tasks/new"><svg class="ui-icon" aria-hidden="true"><use href="#icon-list-check"></use></svg><span>New Mission</span></a>
-  <a href="/projects/new"><svg class="ui-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg><span>New Trip</span></a>
-  <a href="/roadmap"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg><span>Galaxy Map</span></a>
-  <a href="/today"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg><span>Today</span></a>
-</nav>
-
-<div class="bridge-cards">
-  <section class="glass-panel">
-    <div class="panel-heading">
-      <div><p class="eyebrow">In Flight</p><h2>Active Trips</h2></div>
-      <span class="count">{{len .ActiveProjects}}</span>
-    </div>
-    {{if .ActiveProjects}}
-      <div class="project-grid embedded-grid">
-        {{range .ActiveProjects}}
-          <a class="project-card system-card" href="/projects/{{.Project.ID}}">
-            <div class="project-card-top">
-              <span class="badge">Trip</span>
-              <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-            </div>
-            <h2>{{.Project.Name}}</h2>
-            <p>{{if .NextDueItem}}Next mission: {{.NextDueItem}}{{else}}{{.Project.Notes}}{{end}}</p>
-            <div class="project-progress">
-              <div><strong>{{.Progress}}%</strong><small>{{.CompletedItems}} / {{.TotalItems}} missions</small></div>
-              <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-            </div>
-          </a>
-        {{end}}
-      </div>
-    {{else}}
-      <p class="empty">No active trips in this roadmap.</p>
-    {{end}}
-  </section>
-
-  <section class="glass-panel">
-    <div class="panel-heading">
-      <div><p class="eyebrow">Planned</p><h2>Planned Routes</h2></div>
-      <span class="count">{{len .UpcomingProjects}}</span>
-    </div>
-    {{if .UpcomingProjects}}
-      <div class="project-grid embedded-grid">
-        {{range .UpcomingProjects}}
-          <a class="project-card locked-card" href="/projects/{{.Project.ID}}">
-            <div class="project-card-top">
-              <span class="badge status-{{.Project.Status}}">{{.Project.Status}}</span>
-              <span class="badge">{{if .Project.AutoUnlock}}auto unlock{{else}}manual{{end}}</span>
-            </div>
-            <h2>{{.Project.Name}}</h2>
-            <p>{{if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else}}{{.Project.Notes}}{{end}}</p>
-          </a>
-        {{end}}
-      </div>
-    {{else}}
-      <p class="empty">No planned routes queued.</p>
-    {{end}}
-  </section>
-</div>
-
-<div class="bridge-cards">
-  <section class="glass-panel rewards-center">
-    <div class="panel-heading">
-      <div><p class="eyebrow">Rewards</p><h2>Command Center</h2></div>
-    </div>
-    {{/* Streak / Fuel / Medals already live in the stats bar above — the
-         rewards panel keeps only the progression hero (the rewarding bit) plus
-         unlocks, instead of repeating those numbers. */}}
-    <div class="level-hero">
-      <div class="level-hero-top">
-        <span class="level-badge"><svg class="stat-icon" aria-hidden="true"><use href="#icon-bolt"></use></svg>Level {{.ShipStats.Level}}</span>
-        <strong>{{.ShipStats.TotalFuel}} <small>XP</small></strong>
-      </div>
-      <div class="level-meter big"><span style="width:{{.ShipStats.LevelProgress}}%"></span></div>
-      <small>{{.ShipStats.LevelProgress}}/100 fuel to next level</small>
-    </div>
-    {{if .RecentAchievements}}
-      <div class="recent-unlocks">
-        <p class="eyebrow">Recent Unlocks</p>
-        <div class="medal-row">
-          {{range .RecentAchievements}}
-            <span class="medal-chip" title="{{.Title}}"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg></span>
-          {{end}}
-        </div>
-      </div>
-      {{with index .RecentAchievements 0}}
-        <div class="mission-achieved">
-          <span>Mission Achieved</span>
-          <strong>{{.Title}}</strong>
-          <em>+{{.StarsBonus}} XP</em>
-        </div>
+<div class="card tight">
+  {{$pending := 0}}
+  <ul class="tasks">
+    {{range .TodayItems}}
+      {{if and (ne .Status "completed") (ne .Status "skipped")}}
+        {{$pending = 1}}
+        <li class="task">
+          <form method="post" action="/tasks/{{.Task.ID}}/complete" data-mission-complete>
+            <input type="hidden" name="occurrence_date" value="{{.Date}}">
+            <input type="hidden" name="return_to" value="/">
+            <input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()">
+          </form>
+          <div class="task-body">
+            <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
+            <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}}</div>
+          </div>
+          {{if .Task.ReminderTime}}<span class="task-when num">{{.Task.ReminderTime}}</span>{{else}}<span class="task-when">anytime</span>{{end}}
+        </li>
       {{end}}
-    {{else}}
-      <p class="empty">Earn medals by completing missions and submitting evidence.</p>
     {{end}}
+  </ul>
+  {{if not $pending}}<p class="meta">Nothing left today &mdash; {{.Activity.CompletedToday}} done.</p>{{end}}
+</div>
+
+<div class="cols mt-16">
+  <section class="card">
+    <h2 class="section-title card-title">Upcoming deadlines</h2>
+    <ul class="list">
+      {{range .RemindersToday}}
+        <li>
+          <span class="status soon"><span class="dot"></span></span>
+          <span class="grow">{{.Title}}</span>
+          <span class="meta num">{{.ReminderTime}}</span>
+        </li>
+      {{end}}
+      {{range .OverdueTasks}}
+        <li>
+          <span class="status late"><span class="dot"></span></span>
+          <span class="grow"><a href="/tasks/{{.ID}}">{{.Title}}</a><small>overdue</small></span>
+          <span class="meta num">{{niceDate .DueDate}}</span>
+        </li>
+      {{end}}
+      {{if and (not .RemindersToday) (not .OverdueTasks)}}
+        <li><span class="meta">Nothing due, nothing overdue.</span></li>
+      {{end}}
+    </ul>
   </section>
 
-  <section class="glass-panel activity-summary">
-    <div class="panel-heading">
-      <div><p class="eyebrow">Today</p><h2>Activity Summary</h2></div>
-      <a class="button small secondary" href="/today">Details</a>
-    </div>
-    <ul class="activity-list">
-      <li><span>Reminders</span><strong>{{.Activity.Reminders}}</strong></li>
-      <li><span>Overdue</span><strong class="{{if .Activity.Overdue}}warn{{end}}">{{.Activity.Overdue}}</strong></li>
-      <li><span>Completed</span><strong class="good">{{.Activity.CompletedToday}}</strong></li>
-      <li><span>Skipped</span><strong>{{.Activity.Skipped}}</strong></li>
+  <section class="card">
+    <h2 class="section-title card-title">Trips</h2>
+    <ul class="list">
+      {{range .ActiveProjects}}
+        <li>
+          <span class="status current"><span class="dot"></span></span>
+          <span class="grow">
+            <a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a>
+            {{if .NextDueItem}}<small>next: {{.NextDueItem}}</small>{{end}}
+          </span>
+          <span class="meta num">{{.Progress}}%</span>
+        </li>
+      {{end}}
+      {{range .UpcomingProjects}}
+        <li>
+          <span class="status locked"><span class="dot"></span></span>
+          <span class="grow">
+            <a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a>
+            <small>{{if .Project.AutoUnlock}}auto unlock{{else}}manual unlock{{end}}</small>
+          </span>
+        </li>
+      {{end}}
+      {{if and (not .ActiveProjects) (not .UpcomingProjects)}}
+        <li><span class="meta">No trips on this roadmap yet.</span></li>
+      {{end}}
     </ul>
-    <p class="activity-link"><a href="/tasks">Open Tasks &rarr;</a></p>
   </section>
 </div>
+
+<section class="card tight mt-16">
+  <div class="progress-row">
+    <span class="meta nowrap">Level {{.ShipStats.Level}}</span>
+    <div class="progress"><span style="width: {{progressWidth .ShipStats.LevelProgress}}"></span></div>
+    <span class="meta num">{{.ShipStats.LevelProgress}}/100 to next</span>
+  </div>
+  <p class="meta mt-8">
+    {{.ShipStats.MedalCount}} medals{{if .RecentAchievements}}{{with index .RecentAchievements 0}} &middot; latest: {{.Title}}, +{{.StarsBonus}} XP{{end}}{{end}}
+  </p>
+</section>
 {{end}}

@@ -1594,6 +1594,23 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		"levelPct":     levelPct,
 		"toNextLevel":  toNextLevel,
 		"blockLabel":   services.BlockTypeLabel,
+		"routeDone": func(nodes []models.RouteNode) int {
+			done := 0
+			for _, node := range nodes {
+				if node.State == "done" {
+					done++
+				}
+			}
+			return done
+		},
+		"routeNext": func(nodes []models.RouteNode) string {
+			for _, node := range nodes {
+				if node.State != "done" && !node.Current {
+					return node.Name
+				}
+			}
+			return ""
+		},
 		"progressWidth": func(value int) template.CSS {
 			if value < 0 {
 				value = 0

@@ -74,6 +74,32 @@
 {{/* Condensed one-line stats strip for secondary pages (Projects, Roadmap,
      Today, Task). Same data as shipStats, lighter footprint so it never
      competes with the page's primary content. */}}
+{{define "routeMapV2"}}
+{{/* Design v2 quiet route map (see design-v2/README.md step 4). Coordinates
+     are percentages of the box on both axes; app.js#initMap draws the curve,
+     marker, and tooltip. The inline left/top is the no-JS fallback. */}}
+<div class="card map-card">
+  <div class="map" data-map-v2 aria-label="Route map: {{len .Nodes}} destinations">
+    {{range .Nodes}}
+      <button type="button"
+        class="node{{if .Current}} current{{else if eq .State "done"}} done{{else if eq .State "locked"}} locked{{end}}"
+        style="left: {{.LeftPct}}%; top: {{.TopPct}}%"
+        data-x="{{.LeftPct}}" data-y="{{.TopPct}}"
+        data-title="{{.Name}}"
+        data-status="{{if eq .State "done"}}Completed{{else if .Current}}In progress{{else if eq .State "locked"}}Locked{{else}}Planned{{end}}"
+        {{if .URL}}data-href="{{.URL}}"{{end}}
+        aria-label="{{.Name}}, {{if eq .State "done"}}completed{{else if .Current}}in progress{{else if eq .State "locked"}}locked{{else}}planned{{end}}">
+        <i></i>{{if .Current}}<span class="lbl">{{.Name}}</span>{{end}}
+      </button>
+    {{end}}
+  </div>
+  <div class="map-foot">
+    <span class="status current"><span class="dot"></span>{{routeDone .Nodes}} of {{len .Nodes}} destinations complete</span>
+    {{with routeNext .Nodes}}<span>Next: {{.}}</span>{{end}}
+  </div>
+</div>
+{{end}}
+
 {{define "shipStatsStrip"}}
 <section class="ship-strip" aria-label="Captain stats">
   <span class="strip-stat fuel">

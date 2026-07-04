@@ -405,6 +405,233 @@
 :root[data-design="v2"] .list .grow a:hover { color: var(--accent-text); }
 :root[data-design="v2"] .list small { display: block; color: var(--quiet); font-size: 13px; }
 
+/* ---- utilities ----------------------------------------------------------- */
+:root[data-design="v2"] .mt-16 { margin-top: 16px; }
+:root[data-design="v2"] .mt-8 { margin-top: 8px; }
+:root[data-design="v2"] .nowrap { white-space: nowrap; }
+:root[data-design="v2"] .focus-link { color: var(--accent-text); text-decoration: none; }
+:root[data-design="v2"] .focus-link:hover { text-decoration: underline; }
+:root[data-design="v2"] .meta a { color: var(--muted); }
+:root[data-design="v2"] .meta a:hover { color: var(--accent-text); }
+
+/* ---- quiet stats line (no boxes) ------------------------------------------- */
+:root[data-design="v2"] .stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 0;
+  padding: 14px 0;
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--muted);
+}
+:root[data-design="v2"] .stats > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0 20px;
+}
+:root[data-design="v2"] .stats > div:first-child { padding-left: 0; }
+:root[data-design="v2"] .stats > div + div { border-left: 1px solid var(--border); }
+:root[data-design="v2"] .stats b {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- section heads ----------------------------------------------------------- */
+:root[data-design="v2"] .section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 40px 0 14px;
+}
+:root[data-design="v2"] .section-head a {
+  color: var(--quiet);
+  font-size: 13px;
+  text-decoration: none;
+}
+:root[data-design="v2"] .section-head a:hover { color: var(--accent-text); }
+
+/* ---- thin progress bars --------------------------------------------------------- */
+:root[data-design="v2"] .progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--panel-soft);
+  overflow: hidden;
+  flex: 1;
+}
+:root[data-design="v2"] .progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+:root[data-design="v2"] .progress.done span { background: var(--green); }
+:root[data-design="v2"] .progress-row { display: flex; align-items: center; gap: 12px; }
+:root[data-design="v2"] .progress-row .num { font-size: 13px; color: var(--muted); }
+
+/* ==========================================================================
+   The quiet route map (design v2 signature feature). Rendered by the
+   routeMapV2 partial + app.js. Coordinates are percentages on both axes.
+   ========================================================================== */
+:root[data-design="v2"] .map-card { padding: 0; overflow: hidden; }
+:root[data-design="v2"] .map-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px 16px;
+  font-size: 13px;
+  color: var(--quiet);
+  flex-wrap: wrap;
+}
+:root[data-design="v2"] .map-foot .status { font-size: 13px; }
+
+:root[data-design="v2"] .map {
+  position: relative;
+  margin: 14px 12px;
+  border-radius: 7px;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  aspect-ratio: 1000 / 320;
+  min-height: 190px;
+}
+:root[data-design="v2"] .map.tall { aspect-ratio: 1000 / 420; }
+:root[data-design="v2"] .map svg.routes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+:root[data-design="v2"] .map .route {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.13);
+  stroke-width: 1.5;
+}
+:root[data-design="v2"] .map .route-done {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  opacity: 0.85;
+}
+:root[data-design="v2"][data-theme="light"] .map .route { stroke: rgba(20, 38, 56, 0.16); }
+
+:root[data-design="v2"] .map .node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;                 /* generous hit area */
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+:root[data-design="v2"] .map .node i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--panel-strong);
+  border: 1.5px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  transition: transform 120ms, border-color 120ms;
+}
+:root[data-design="v2"] .map .node:hover i,
+:root[data-design="v2"] .map .node:focus-visible i {
+  transform: scale(1.35);
+  border-color: var(--muted);
+}
+:root[data-design="v2"] .map .node.done i { background: var(--green); border-color: var(--green); }
+:root[data-design="v2"] .map .node.done i::before {
+  content: "";
+  width: 5px;
+  height: 3px;
+  margin-top: -1px;
+  border-left: 1.5px solid var(--bg);
+  border-bottom: 1.5px solid var(--bg);
+  transform: rotate(-45deg);
+}
+:root[data-design="v2"] .map .node.current { width: 44px; height: 44px; }
+:root[data-design="v2"] .map .node.current i {
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+:root[data-design="v2"] .map .node.current::after {   /* the one allowed ambient animation */
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  opacity: 0.5;
+  animation: v2-ring 3s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+:root[data-design="v2"] .map.paused .node.current::after { animation-play-state: paused; }
+@keyframes v2-ring {
+  0%   { transform: scale(0.8); opacity: 0.5; }
+  70%  { transform: scale(1.25); opacity: 0; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+:root[data-design="v2"] .map .node.locked i {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--quiet);
+}
+:root[data-design="v2"] .map .node .lbl {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+:root[data-design="v2"] .map .node.current .lbl { color: var(--text); font-weight: 550; }
+
+/* marker (small ship glyph at the current position; moves only on click) */
+:root[data-design="v2"] .map .marker {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  color: var(--accent);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* tooltip */
+:root[data-design="v2"] .map .tip {
+  position: absolute;
+  z-index: 10;
+  width: 220px;
+  background: var(--panel-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(3px);
+  pointer-events: none;
+  transition: opacity 120ms, transform 120ms;
+  font-size: 13px;
+}
+:root[data-design="v2"] .map .tip.open { opacity: 1; transform: none; }
+:root[data-design="v2"] .map .tip b { display: block; font-size: 14px; margin-bottom: 2px; }
+:root[data-design="v2"] .map .tip .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
 /* ---- tracker chips (Deen signal), calm restyle of v1 .tracker-dot -------------- */
 :root[data-design="v2"] .tracker-dot {
   min-height: 30px;
