@@ -632,6 +632,92 @@
   color: var(--muted);
 }
 
+/* ---- project rows ------------------------------------------------------------ */
+:root[data-design="v2"] .mt-24 { margin-top: 24px; }
+:root[data-design="v2"] .project-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+:root[data-design="v2"] .project-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms, background-color 120ms;
+}
+:root[data-design="v2"] a.project-row:hover {
+  border-color: var(--border-strong);
+  background: var(--panel-strong);
+}
+:root[data-design="v2"] .project-row .grow { flex: 1; min-width: 0; }
+:root[data-design="v2"] .project-row h3 { font-size: 15px; font-weight: 600; margin: 0; }
+:root[data-design="v2"] .project-row .meta { margin-top: 1px; }
+:root[data-design="v2"] .project-row .progress { max-width: 140px; }
+:root[data-design="v2"] .project-row.is-locked { opacity: 0.75; }
+:root[data-design="v2"] .status.pending { color: var(--quiet); }
+:root[data-design="v2"] .status.pending .dot { opacity: 0.45; }
+
+:root[data-design="v2"] .subprojects {
+  list-style: none;
+  padding: 0 0 0 18px;
+  margin: 6px 0 0;
+  border-left: 1px solid var(--border);
+}
+:root[data-design="v2"] .subprojects li {
+  padding: 6px 0 6px 14px;
+  font-size: 14px;
+  color: var(--muted);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+:root[data-design="v2"] .subprojects a { color: inherit; text-decoration: none; flex: 1; min-width: 0; }
+:root[data-design="v2"] .subprojects a:hover { color: var(--accent-text); }
+
+/* ---- quiet pill filter row ------------------------------------------------------ */
+:root[data-design="v2"] .pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 24px;
+}
+:root[data-design="v2"] .pill-row a {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 120ms, background-color 120ms;
+}
+:root[data-design="v2"] .pill-row a:hover { color: var(--text); }
+:root[data-design="v2"] .pill-row a[aria-current="true"] {
+  color: var(--text);
+  background: var(--panel-strong);
+}
+
+/* ---- amber notice ------------------------------------------------------------ */
+:root[data-design="v2"] .notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid rgba(217, 160, 84, 0.3);
+  border-radius: 7px;
+  background: rgba(217, 160, 84, 0.07);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--amber-text);
+}
+
 /* ---- tracker chips (Deen signal), calm restyle of v1 .tracker-dot -------------- */
 :root[data-design="v2"] .tracker-dot {
   min-height: 30px;

@@ -72,19 +72,19 @@ func TestProjectsAllRoadmapsGrouped(t *testing.T) {
 
 	body := getProjects(t, h, "/projects")
 
-	if n := strings.Count(body, "roadmap-section-head"); n < 2 {
-		t.Fatalf("expected a section per roadmap (>=2), got %d", n)
+	if n := strings.Count(body, `class="group-label"`); n < 2 {
+		t.Fatalf("expected a group label per roadmap (>=2), got %d", n)
 	}
 	// Featured default roadmap section comes before the higher-priority one.
 	if strings.Index(body, defaultRM.Name) > strings.Index(body, "Sim Rig Build") {
 		t.Fatalf("featured roadmap must sort first")
 	}
-	// The locked subproject nests as a stop, never as a top-level locked card.
+	// The locked subproject nests under its parent, never as a top-level row.
 	if !strings.Contains(body, "Pedal Mod") {
 		t.Fatalf("subproject should still be visible (nested)")
 	}
-	if strings.Contains(body, `locked-card`) && strings.Contains(body, `<h2>Pedal Mod</h2>`) {
-		t.Fatalf("subproject was flattened into a top-level planned card")
+	if strings.Contains(body, "<h3>Pedal Mod</h3>") {
+		t.Fatalf("subproject was flattened into a top-level project row")
 	}
 }
 
@@ -102,11 +102,11 @@ func TestProjectsSpecificRoadmapSingleView(t *testing.T) {
 	}
 
 	body := getProjects(t, h, "/projects?roadmap="+strconv.FormatInt(rm.ID, 10))
-	if strings.Contains(body, "roadmap-section-head") {
+	if strings.Contains(body, `class="group-label"`) {
 		t.Fatalf("specific-roadmap view must not render group sections")
 	}
-	if !strings.Contains(body, "deck-panel") {
-		t.Fatalf("specific-roadmap view should render the single filtered deck")
+	if !strings.Contains(body, `class="project-list"`) {
+		t.Fatalf("specific-roadmap view should render the single project list")
 	}
 	if !strings.Contains(body, "Solo Trip") {
 		t.Fatalf("selected roadmap's trip should render")
@@ -159,13 +159,14 @@ func TestRenderProjectsGroupedMultipleGroups(t *testing.T) {
 		AnyProjects:   true,
 		OpenAllGroups: true,
 	})
-	if strings.Count(body, "roadmap-section-head") != 2 {
-		t.Fatalf("expected two group sections")
+	if strings.Count(body, `class="group-label"`) != 2 {
+		t.Fatalf("expected two group labels")
 	}
-	// Section header carries name, priority, dashboard/featured + count.
-	for _, want := range []string{"AI Engineer", "P10", "Dashboard", "2 trips", "Sim Rig"} {
+	// Group labels carry the name and the dashboard marker; rows include the
+	// nested subproject and the locked upcoming trip.
+	for _, want := range []string{"AI Engineer", "dashboard", "Sim Rig", "Phase 1", "Healthcare AI"} {
 		if !strings.Contains(body, want) {
-			t.Fatalf("section header missing %q", want)
+			t.Fatalf("grouped body missing %q", want)
 		}
 	}
 }
@@ -186,7 +187,7 @@ func TestRenderProjectsAllRoadmapsEmpty(t *testing.T) {
 	if !strings.Contains(body, "Plot your first trip") {
 		t.Fatalf("all-empty view should show the create-project empty state")
 	}
-	if strings.Contains(body, "roadmap-section-head") {
+	if strings.Contains(body, `class="group-label"`) {
 		t.Fatalf("all-empty view must not render group sections")
 	}
 }
