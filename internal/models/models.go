@@ -69,6 +69,11 @@ type Project struct {
 type GalaxyPlanet struct {
 	ID       int64          `json:"id"`
 	Name     string         `json:"name"`
+	Category string         `json:"category"`
+	Summary  string         `json:"summary"`
+	Target   string         `json:"target,omitempty"`
+	Next     string         `json:"next,omitempty"`
+	Missions int            `json:"missions"`
 	URL      string         `json:"url"`
 	State    string         `json:"state"`
 	Size     float64        `json:"size"`

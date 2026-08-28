@@ -21,6 +21,7 @@ async function initGalaxy(root, THREE) {
   const list = root.querySelector("[data-galaxy-list]");
   const fallback = root.querySelector("[data-galaxy-fallback]");
   const openButton = root.querySelector("[data-galaxy-open]");
+	const contextPanel = root.querySelector("[data-galaxy-context]");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.motion === "reduced";
   let planets;
   try {
@@ -61,7 +62,8 @@ async function initGalaxy(root, THREE) {
   }
   try {
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x070b12, 0.006);
+  scene.background = new THREE.Color(0x03050b);
+  scene.fog = new THREE.FogExp2(0x050812, 0.0032);
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 600);
   camera.position.set(0, 8, 125);
 	 scene.add(camera);
@@ -70,27 +72,57 @@ async function initGalaxy(root, THREE) {
 	 ship.position.set(0, -3.5, -8);
 	 camera.add(ship);
 	 const shipTarget = new THREE.Vector3(0, -3.5, -8);
-  scene.add(new THREE.AmbientLight(0x7187a8, 1.2));
-  const sun = new THREE.PointLight(0xffffff, 1700, 300);
-  sun.position.set(5, 20, 80);
+  scene.add(new THREE.AmbientLight(0x65749a, 0.72));
+  const sun = new THREE.PointLight(0xb9e8ff, 2600, 350);
+  sun.position.set(0, 4, 0);
   scene.add(sun);
 
+	const core = new THREE.Mesh(new THREE.SphereGeometry(3.8, 32, 24), new THREE.MeshBasicMaterial({ color: 0xdff8ff }));
+	scene.add(core);
+	const coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(THREE, [125, 218, 255]), color: 0x8bddff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+	coreGlow.scale.set(30, 30, 1);
+	scene.add(coreGlow);
+	[[0x4361ee, -38, 5, -26, 62], [0x8f5bd7, 42, -7, 18, 52], [0x1f9eaa, 5, 3, -58, 46]].forEach((cloud) => {
+	  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(THREE, [(cloud[0] >> 16) & 255, (cloud[0] >> 8) & 255, cloud[0] & 255]), transparent: true, opacity: 0.24, blending: THREE.AdditiveBlending, depthWrite: false }));
+	  sprite.position.set(cloud[1], cloud[2], cloud[3]); sprite.scale.set(cloud[4] * 1.8, cloud[4], 1); scene.add(sprite);
+	});
+
   const starGeometry = new THREE.BufferGeometry();
-  const starPositions = new Float32Array(1800 * 3);
-  for (let i = 0; i < starPositions.length; i++) starPositions[i] = (Math.random() - 0.5) * 420;
+  const starPositions = new Float32Array(3600 * 3);
+	for (let i = 0; i < 3600; i++) {
+	  const arm = i % 4;
+	  const radius = 4 + Math.pow(Math.random(), 0.68) * 180;
+	  const angle = radius * 0.055 + arm * Math.PI / 2 + (Math.random() - 0.5) * 0.58;
+	  starPositions[i * 3] = Math.cos(angle) * radius + (Math.random() - 0.5) * 7;
+	  starPositions[i * 3 + 1] = (Math.random() - 0.5) * Math.max(2, 15 - radius * 0.055);
+	  starPositions[i * 3 + 2] = Math.sin(angle) * radius + (Math.random() - 0.5) * 7;
+	}
   starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
-  scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xb9d8ff, size: 0.45, transparent: true, opacity: 0.7 })));
+  scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xc9ddff, size: 0.48, transparent: true, opacity: 0.78, blending: THREE.AdditiveBlending, depthWrite: false })));
 
   const colors = { active: 0x4dbfd0, current: 0x4dbfd0, done: 0x57c98b, locked: 0x596273, upcoming: 0xd9a054 };
+	const categoryColors = { career: 0x4dbfd0, learning: 0x7d8cff, health: 0x57c98b, finance: 0xd9a054, deen: 0x9b7de5, personal: 0xe47b9b, other: 0x89a2c7 };
   const objects = [];
+	const labels = [];
   planets.forEach((planet) => {
-    const material = new THREE.MeshStandardMaterial({ color: colors[planet.state] || colors.upcoming, roughness: 0.72, metalness: 0.12, emissive: planet.state === "done" ? 0x163d2a : 0x000000, emissiveIntensity: 0.8, transparent: true, opacity: planet.state === "locked" ? 0.45 : 1 });
+    const planetColor = categoryColors[(planet.category || "other").toLowerCase()] || colors[planet.state] || categoryColors.other;
+	const material = new THREE.MeshStandardMaterial({ color: planetColor, roughness: 0.58, metalness: 0.18, emissive: planet.state === "done" ? planetColor : 0x07101a, emissiveIntensity: planet.state === "done" ? 0.42 : 0.18, transparent: true, opacity: planet.state === "locked" ? 0.48 : 1 });
     const mesh = new THREE.Mesh(new THREE.SphereGeometry(Math.max(1.5, planet.size * 1.35), 32, 20), material);
-    mesh.position.set(planet.x, planet.y, planet.z);
+    mesh.position.set(planet.x, planet.y * 0.16, planet.z);
 	 if (planet.state === "locked") mesh.position.multiplyScalar(1.35);
     mesh.userData = planet;
     scene.add(mesh);
     objects.push(mesh);
+	const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(Math.max(1.8, planet.size * 1.52), 24, 16), new THREE.MeshBasicMaterial({ color: planetColor, transparent: true, opacity: planet.state === "locked" ? 0.05 : 0.13, blending: THREE.AdditiveBlending, side: THREE.BackSide }));
+	atmosphere.position.copy(mesh.position); scene.add(atmosphere);
+	const orbitRadius = Math.hypot(mesh.position.x, mesh.position.z);
+	const orbit = new THREE.Mesh(new THREE.RingGeometry(Math.max(2, orbitRadius - 0.08), orbitRadius + 0.08, 128), new THREE.MeshBasicMaterial({ color: planetColor, transparent: true, opacity: 0.09, side: THREE.DoubleSide, depthWrite: false }));
+	orbit.rotation.x = Math.PI / 2; scene.add(orbit);
+	if (planet.state === "upcoming" || planet.state === "locked") {
+	  const ring = new THREE.Mesh(new THREE.RingGeometry(planet.size * 1.7, planet.size * 2.05, 64), new THREE.MeshBasicMaterial({ color: planetColor, transparent: true, opacity: 0.48, side: THREE.DoubleSide }));
+	  ring.rotation.x = Math.PI * 0.68; ring.position.copy(mesh.position); scene.add(ring);
+	}
+	const label = document.createElement("span"); label.className = "galaxy-planet-label"; label.textContent = planet.name; stage.appendChild(label); labels.push({ element: label, object: mesh });
     planet.moons.forEach((moon, index) => {
       const angle = (index / Math.max(1, planet.moons.length)) * Math.PI * 2;
       const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.45, moon.size), 18, 12), new THREE.MeshStandardMaterial({ color: colors[moon.state] || 0x8893a5, roughness: 0.9 }));
@@ -110,6 +142,13 @@ async function initGalaxy(root, THREE) {
     status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state}`;
     openButton.href = object.userData.url;
     openButton.hidden = false;
+	contextPanel.hidden = false;
+	contextPanel.querySelector("[data-galaxy-category]").textContent = object.userData.category || "Project";
+	contextPanel.querySelector("[data-galaxy-name]").textContent = object.userData.name;
+	contextPanel.querySelector("[data-galaxy-summary]").textContent = object.userData.summary || "No project brief yet.";
+	contextPanel.querySelector("[data-galaxy-progress]").style.width = object.userData.progress + "%";
+	contextPanel.querySelector("[data-galaxy-meta]").textContent = object.userData.missions + " missions · " + object.userData.progress + "% complete" + (object.userData.target ? " · target " + object.userData.target : "");
+	contextPanel.querySelector("[data-galaxy-next]").textContent = object.userData.next ? "Next mission: " + object.userData.next : "No pending mission queued.";
     target.copy(object.position).add(new THREE.Vector3(0, 3, 18));
   }
   function pick(event) {
@@ -149,6 +188,13 @@ async function initGalaxy(root, THREE) {
     else camera.position.copy(target);
 	if (!reduced) ship.position.lerp(shipTarget, 0.09);
     camera.lookAt(selected ? selected.position : scene.position);
+	labels.forEach((label) => {
+	  const point = label.object.position.clone().project(camera);
+	  const visible = point.z < 1 && point.z > -1;
+	  label.element.hidden = !visible;
+	  if (visible) label.element.style.transform = "translate(-50%, -50%) translate(" + ((point.x * 0.5 + 0.5) * stage.clientWidth).toFixed(1) + "px," + ((-point.y * 0.5 + 0.5) * stage.clientHeight - 18).toFixed(1) + "px)";
+	  label.element.classList.toggle("selected", selected === label.object);
+	});
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
@@ -156,4 +202,16 @@ async function initGalaxy(root, THREE) {
   } catch (error) {
     showGalaxyFallback(root, error);
   }
+}
+
+function glowTexture(THREE, color) {
+  const canvas = document.createElement("canvas"); canvas.width = canvas.height = 256;
+  const context = canvas.getContext("2d");
+  const gradient = context.createRadialGradient(128, 128, 3, 128, 128, 128);
+  gradient.addColorStop(0, `rgba(${color[0]},${color[1]},${color[2]},1)`);
+  gradient.addColorStop(0.18, `rgba(${color[0]},${color[1]},${color[2]},.45)`);
+  gradient.addColorStop(0.55, `rgba(${color[0]},${color[1]},${color[2]},.12)`);
+  gradient.addColorStop(1, `rgba(${color[0]},${color[1]},${color[2]},0)`);
+  context.fillStyle = gradient; context.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(canvas);
 }
