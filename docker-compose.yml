@@ -10,3 +10,26 @@ services:
     environment:
       - PORT=8080
       - DB_PATH=/app/data/lifeops.db
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_SUBSCRIBER=${VAPID_SUBSCRIBER:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - JIRA_EMAIL=${JIRA_EMAIL:-}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+  caddy:
+    image: caddy:2.10.2-alpine
+    container_name: gyst-caddy
+    restart: unless-stopped
+    depends_on:
+      - gyst-lifeops
+    ports:
+      - "3443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

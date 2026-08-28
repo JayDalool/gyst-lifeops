@@ -130,10 +130,15 @@ calculated in UTC, which preserves the correct offset on DST transition days.
 
 ## Deployment
 
-The repository currently documents local execution with `go run .`. Deployment
-configuration is not yet part of the tracked architecture. Any container setup
-must pass the app's command-line flags rather than assume `PORT` or `DB_PATH`
-environment variables are consumed.
+Docker Compose runs the Go app on port 3005 for local diagnostics and Caddy on
+HTTPS port 3443. Caddy terminates TLS and reverse-proxies to the private Compose
+service. VAPID private keys and provider tokens enter through environment
+variables and are never written to `app_settings` or committed.
+
+The root-scoped service worker caches the application shell and handles prayer
+push payloads. `push_subscriptions` stores browser endpoints/keys, while the
+unique `push_deliveries` key prevents duplicate sends across scheduler ticks and
+restarts. Invalid or expired endpoints are removed on HTTP 404/410 responses.
 
 ## Designed for later
 

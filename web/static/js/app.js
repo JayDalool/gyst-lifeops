@@ -20,6 +20,29 @@
     );
   }
 
+	function urlBase64ToUint8Array(value) {
+	  var padding = "=".repeat((4 - value.length % 4) % 4);
+	  var raw = atob((value + padding).replace(/-/g, "+").replace(/_/g, "/"));
+	  return Uint8Array.from(raw, function (character) { return character.charCodeAt(0); });
+	}
+
+	function enableWebPush() {
+	  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return Promise.resolve(false);
+	  return navigator.serviceWorker.ready.then(function (registration) {
+		return fetch("/api/push/vapid-key", { headers: { Accept: "application/json" } }).then(function (response) {
+		  if (!response.ok) return null;
+		  return response.json();
+		}).then(function (config) {
+		  if (!config) return false;
+		  return registration.pushManager.getSubscription().then(function (existing) {
+			return existing || registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(config.publicKey) });
+		  }).then(function (subscription) {
+			return fetch("/api/push/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(subscription) });
+		  }).then(function (response) { return response.ok; });
+		});
+	  }).catch(function () { return false; });
+	}
+
   /* Smooth curve through points (Catmull-Rom -> cubic beziers) */
   function curve(pts) {
     var d = "M" + pts[0].x + " " + pts[0].y;
@@ -225,7 +248,10 @@
 		var permission = "Notification" in window ? Notification.requestPermission() : Promise.resolve("unsupported");
 		permission.then(function (result) {
 		  alertsEnabled = true;
-		  alertState.textContent = result === "granted" ? "Alerts and sound are enabled while this page is open." : "Sound is enabled while this page is open; browser notifications are unavailable.";
+		  var push = result === "granted" ? enableWebPush() : Promise.resolve(false);
+		  push.then(function (pushEnabled) {
+			alertState.textContent = result === "granted" ? (pushEnabled ? "Alerts are enabled, including closed-browser prayer notifications." : "Alerts and sound are enabled while this page is open.") : "Sound is enabled while this page is open; browser notifications are unavailable.";
+		  });
 		  enable.textContent = "Prayer alerts enabled";
 		  enable.disabled = true;
 		});
@@ -293,6 +319,8 @@
       document.documentElement.dataset.motion = "reduced";
     }
   } catch (e) {}
+
+	if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("/service-worker.js").catch(function () {}); });
 
   function init() {
     document.querySelectorAll("[data-map-v2]").forEach(function (m) { initMap(m); });

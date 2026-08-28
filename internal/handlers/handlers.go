@@ -286,6 +286,69 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.trackers(w, r, segments)
 	case "external-links":
 		h.externalLinks(w, r, segments)
+	case "api":
+		h.pushAPI(w, r, segments)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func (h *Handler) pushAPI(w http.ResponseWriter, r *http.Request, segments []string) {
+	if len(segments) != 3 || segments[1] != "push" {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	switch segments[2] {
+	case "vapid-key":
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w)
+			return
+		}
+		key := h.Service.PushPublicKey()
+		if key == "" {
+			http.Error(w, `{"error":"push is not configured"}`, http.StatusServiceUnavailable)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]string{"publicKey": key})
+	case "subscribe":
+		if r.Method != http.MethodPost && r.Method != http.MethodDelete {
+			methodNotAllowed(w)
+			return
+		}
+		var input struct {
+			Endpoint string `json:"endpoint"`
+			Keys     struct {
+				P256DH string `json:"p256dh"`
+				Auth   string `json:"auth"`
+			} `json:"keys"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&input); err != nil {
+			http.Error(w, `{"error":"invalid subscription"}`, http.StatusBadRequest)
+			return
+		}
+		if !strings.HasPrefix(input.Endpoint, "https://") || len(input.Endpoint) > 4096 {
+			http.Error(w, `{"error":"invalid endpoint"}`, http.StatusBadRequest)
+			return
+		}
+		if r.Method == http.MethodDelete {
+			if err := h.Service.Repo.DeletePushSubscription(input.Endpoint); err != nil {
+				serverError(w, err)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		if input.Keys.P256DH == "" || input.Keys.Auth == "" {
+			http.Error(w, `{"error":"subscription keys required"}`, http.StatusBadRequest)
+			return
+		}
+		if err := h.Service.Repo.UpsertPushSubscription(models.PushSubscription{Endpoint: input.Endpoint, P256DH: input.Keys.P256DH, Auth: input.Keys.Auth, UserAgent: r.UserAgent()}); err != nil {
+			serverError(w, err)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"ok":true}`))
 	default:
 		http.NotFound(w, r)
 	}

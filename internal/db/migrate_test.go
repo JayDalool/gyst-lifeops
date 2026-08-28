@@ -33,8 +33,8 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
 		t.Fatal(err)
 	}
-	if applied != 12 {
-		t.Fatalf("applied migrations = %d, want 12", applied)
+	if applied != 13 {
+		t.Fatalf("applied migrations = %d, want 13", applied)
 	}
 	var externalLinksTable int
 	if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='external_links'`).Scan(&externalLinksTable); err != nil {
@@ -83,6 +83,7 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 		"010_project_item_rewards.sql",
 		"011_external_links.sql",
 		"012_galaxy_positions.sql",
+		"013_push_subscriptions.sql",
 	} {
 		copyMigration(t, sourceDir, migrationDir, name)
 	}

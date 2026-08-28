@@ -1,0 +1,77 @@
+package services
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	webpush "github.com/SherClockHolmes/webpush-go"
+)
+
+type PushConfig struct{ PublicKey, PrivateKey, Subscriber string }
+
+func PushConfigFromEnvironment() PushConfig {
+	return PushConfig{PublicKey: strings.TrimSpace(os.Getenv("VAPID_PUBLIC_KEY")), PrivateKey: strings.TrimSpace(os.Getenv("VAPID_PRIVATE_KEY")), Subscriber: strings.TrimSpace(os.Getenv("VAPID_SUBSCRIBER"))}
+}
+
+func (s *Service) PushPublicKey() string { return PushConfigFromEnvironment().PublicKey }
+
+func (s *Service) RunPushScheduler(ctx context.Context) {
+	config := PushConfigFromEnvironment()
+	if config.PublicKey == "" || config.PrivateKey == "" || config.Subscriber == "" {
+		return
+	}
+	s.sendDuePrayerPushes(ctx, config, s.Now())
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case now := <-ticker.C:
+			s.sendDuePrayerPushes(ctx, config, now)
+		}
+	}
+}
+
+func (s *Service) sendDuePrayerPushes(ctx context.Context, config PushConfig, now time.Time) {
+	schedule, err := s.PrayerTimes(now)
+	if err != nil {
+		return
+	}
+	for _, prayer := range schedule.Times {
+		if now.Before(prayer.At) || now.Sub(prayer.At) >= 2*time.Minute {
+			continue
+		}
+		s.sendPrayerPush(ctx, config, schedule.Date, prayer.Name)
+	}
+}
+
+func (s *Service) sendPrayerPush(ctx context.Context, config PushConfig, date, prayer string) {
+	subscriptions, err := s.Repo.PushSubscriptions()
+	if err != nil {
+		return
+	}
+	payload, _ := json.Marshal(map[string]string{"title": prayer + " prayer", "body": "It is time for " + prayer + ".", "url": "/today", "tag": "prayer-" + date + "-" + strings.ToLower(prayer)})
+	for _, subscription := range subscriptions {
+		claimed, err := s.Repo.ClaimPushDelivery(subscription.ID, date, prayer)
+		if err != nil || !claimed {
+			continue
+		}
+		response, err := webpush.SendNotificationWithContext(ctx, payload, &webpush.Subscription{Endpoint: subscription.Endpoint, Keys: webpush.Keys{P256dh: subscription.P256DH, Auth: subscription.Auth}}, &webpush.Options{Subscriber: config.Subscriber, VAPIDPublicKey: config.PublicKey, VAPIDPrivateKey: config.PrivateKey, TTL: 120})
+		if err != nil {
+			_ = s.Repo.ReleasePushDelivery(subscription.ID, date, prayer)
+			continue
+		}
+		response.Body.Close()
+		if response.StatusCode == http.StatusGone || response.StatusCode == http.StatusNotFound {
+			_ = s.Repo.DeletePushSubscription(subscription.Endpoint)
+		}
+		if response.StatusCode < 200 || response.StatusCode >= 300 {
+			_ = s.Repo.ReleasePushDelivery(subscription.ID, date, prayer)
+		}
+	}
+}

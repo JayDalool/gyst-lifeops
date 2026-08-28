@@ -31,6 +31,7 @@ The app applies SQL migrations on startup and loads `seeds/example.sql` only whe
 - `/` and `/today` share one prayer-first daily surface: next prayer, live countdown, five-prayer tracker, Athkar, missions, study blocks, and deadlines.
 - Prayer times are calculated locally with configurable location, method, Asr method, and signed minute adjustments.
 - Explicitly enabled open-page prayer alerts support browser notifications, an app-owned chime, or a user-supplied Athan file.
+- Installable PWA support and VAPID Web Push deliver prayer notifications when the browser is closed; mobile operating systems control the notification sound and cannot play a full Athan in the background.
 - The interactive 3D Galaxy uses stable project positions, project state/progress, and chapter moons. It includes touch controls, reduced motion, a keyboard list, and a conventional `/projects` fallback.
 - Compact manual references connect tasks, projects, and missions to Jira, GitHub, Slack, Linear, Asana, Notion, or other work systems without affecting XP.
 - More holds Courses, Monthly, Analytics, Health, Archive, All Tasks, Goals, Reminders, and Settings.
@@ -109,7 +110,22 @@ Asr and signed per-prayer minute adjustments. Today provides a live countdown
 and explicitly enabled open-page notification/audio alerts.
 
 Database migrations are applied in filename order and currently run through
-`012_galaxy_positions.sql`.
+`013_push_subscriptions.sql`.
+
+## HTTPS and Web Push
+
+Generate VAPID keys once and place them in an untracked `.env` file:
+
+```sh
+docker run --rm -v "$PWD":/app -w /app golang:1.25-bookworm go run ./cmd/vapid
+```
+
+Replace the generated subscriber placeholder with your `mailto:` address, then
+start the app and Caddy reverse proxy with `docker compose up -d --build`.
+HTTPS is available at `https://localhost:3443`. Caddy uses its internal CA for
+local deployment; trust the CA certificate exported from the `caddy_data`
+volume before enabling push in a browser. Public deployment should use a real
+hostname so Caddy obtains a publicly trusted certificate automatically.
 
 ## Reminders TODO
 

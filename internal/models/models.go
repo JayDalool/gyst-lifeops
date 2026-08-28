@@ -263,6 +263,14 @@ type NextPrayer struct {
 	Tomorrow  bool
 }
 
+type PushSubscription struct {
+	ID        int64
+	Endpoint  string
+	P256DH    string
+	Auth      string
+	UserAgent string
+}
+
 // Roadmap is a top-level journey that groups projects (trips). It is distinct
 // from the markdown-import RoadmapData feature.
 type Roadmap struct {

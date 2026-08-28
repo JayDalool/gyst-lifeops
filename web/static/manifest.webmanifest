@@ -1,0 +1,11 @@
+{
+  "name": "LifeOps Mission Control",
+  "short_name": "LifeOps",
+  "description": "Local-first daily command center",
+  "start_url": "/today",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080d16",
+  "theme_color": "#080d16",
+  "icons": [{"src":"/static/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

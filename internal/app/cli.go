@@ -35,7 +35,7 @@ func Run() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer lifeOps.DB.Close()
+	defer lifeOps.Close()
 
 	log.Printf("LifeOps Tracker running at http://localhost%s", *addr)
 	if err := http.ListenAndServe(*addr, lifeOps.Handler); err != nil {
