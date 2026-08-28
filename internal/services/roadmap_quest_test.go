@@ -3,6 +3,8 @@ package services
 import (
 	"testing"
 	"time"
+
+	"lifeops-tracker/internal/models"
 )
 
 func TestParseRoadmapMarkdownQuestHierarchy(t *testing.T) {
@@ -47,5 +49,34 @@ Unlock Notes: Start after portfolio shell is done.
 	}
 	if chapter.Tasks[0].StarsReward != 5 || chapter.Tasks[0].ProofType != "link" || !chapter.Tasks[0].ProofRequired {
 		t.Errorf("task rewards = stars %d proof %q required %t", chapter.Tasks[0].StarsReward, chapter.Tasks[0].ProofType, chapter.Tasks[0].ProofRequired)
+	}
+}
+
+func TestImportResolvesForwardDependencyByProjectName(t *testing.T) {
+	service := testService(t)
+	service.Now = func() time.Time { return time.Date(2026, time.June, 24, 12, 0, 0, 0, time.UTC) }
+	source := `# Campaign
+
+## First Quest
+Status: locked
+Depends On: Later Quest
+Auto Unlock: true
+
+## Later Quest
+Status: active
+`
+	if _, err := service.ImportRoadmapMarkdown(source); err != nil {
+		t.Fatalf("import roadmap: %v", err)
+	}
+	projects, err := service.Repo.ListProjects(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byName := make(map[string]models.Project)
+	for _, project := range projects {
+		byName[project.Project.Name] = project.Project
+	}
+	if byName["First Quest"].DependsOnProjectID != byName["Later Quest"].ID {
+		t.Fatalf("forward dependency = %d, want %d", byName["First Quest"].DependsOnProjectID, byName["Later Quest"].ID)
 	}
 }

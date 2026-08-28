@@ -17,15 +17,9 @@ ADD COLUMN depends_on_project_id INTEGER REFERENCES projects (id) ON DELETE SET 
 ALTER TABLE projects
 ADD COLUMN auto_unlock INTEGER NOT NULL DEFAULT 1 CHECK (auto_unlock IN (0, 1));
 
-UPDATE projects
-SET
-    status = CASE
-        WHEN status = 'completed' THEN 'done'
-        WHEN status = 'paused' THEN 'upcoming'
-        ELSE status
-    END
-WHERE
-    status IN ('completed', 'paused');
+-- Status values are normalized by migration 005 while it rebuilds the table.
+-- Updating them here would violate the original 001 CHECK constraint on a
+-- populated pre-quest database.
 
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects (status);
 

@@ -455,9 +455,9 @@ func (r *Repository) reconcileProjectStatus(projectID int64) error {
 		return err
 	}
 	if nextStatus == "done" {
-		if _, err := r.db.Exec(`INSERT INTO achievements
-			(title, description, stars_bonus, trigger_type)
-			VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), 10, 'project_done')`, projectID); err != nil {
+		if _, err := r.db.Exec(`INSERT OR IGNORE INTO achievements
+			(title, description, stars_bonus, trigger_type, source_project_id)
+			VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), 10, 'project_done', ?)`, projectID, projectID); err != nil {
 			return err
 		}
 		return r.AutoUnlockDependents(projectID, "upcoming")

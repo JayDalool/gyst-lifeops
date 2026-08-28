@@ -37,7 +37,13 @@ INSERT INTO projects_new (
     parent_project_id, project_kind, unlock_notes, depends_on_project_id, auto_unlock
 )
 SELECT
-    id, uuid, name, description, category, status, start_date, target_date,
+    id, uuid, name, description, category,
+    CASE status
+        WHEN 'completed' THEN 'done'
+        WHEN 'paused' THEN 'upcoming'
+        ELSE status
+    END,
+    start_date, target_date,
     notes, created_at, updated_at, archived_at, sync_version, last_modified_device_id,
     parent_project_id, project_kind, unlock_notes, depends_on_project_id, auto_unlock
 FROM projects;

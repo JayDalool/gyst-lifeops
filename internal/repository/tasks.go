@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"lifeops-tracker/internal/models"
@@ -190,6 +191,9 @@ func (r *Repository) SetTaskOccurrenceStatus(taskID int64, occurrenceDate, statu
 	if occurrenceDate == "" {
 		occurrenceDate = task.DueDate
 	}
+	if status == "completed" && task.ProofRequired && !taskHasProof(task) {
+		return fmt.Errorf("task %d requires valid %s proof before completion", task.ID, task.ProofType)
+	}
 
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -236,12 +240,13 @@ func (r *Repository) SetTaskOccurrenceStatus(taskID int64, occurrenceDate, statu
 			return err
 		}
 		if award > 0 && taskHasProof(task) {
-			if _, err := tx.Exec(`INSERT INTO achievements
-				(title, description, stars_bonus, trigger_type)
-				VALUES (?, ?, ?, 'proof_submitted')`,
+			if _, err := tx.Exec(`INSERT OR IGNORE INTO achievements
+				(title, description, stars_bonus, trigger_type, source_task_id)
+				VALUES (?, ?, ?, 'proof_submitted', ?)`,
 				"Proof submitted",
 				task.Title,
 				0,
+				task.ID,
 			); err != nil {
 				tx.Rollback()
 				return err
@@ -258,7 +263,7 @@ func (r *Repository) PlayerStats() (models.PlayerStats, error) {
 		COALESCE((SELECT SUM(stars_awarded) FROM tasks), 0) +
 		COALESCE((SELECT SUM(stars_bonus) FROM achievements), 0),
 		(SELECT COUNT(*) FROM tasks WHERE status = 'completed'),
-		(SELECT COUNT(*) FROM tasks WHERE proof_type != 'none' AND (COALESCE(proof_url, '') != '' OR COALESCE(proof_path, '') != ''))
+		(SELECT COUNT(*) FROM achievements WHERE trigger_type = 'proof_submitted')
 	`).Scan(&stats.TotalStars, &stats.TaskDoneCount, &stats.ProofCount); err != nil {
 		return models.PlayerStats{}, err
 	}
@@ -314,7 +319,15 @@ func cleanProofType(value string) string {
 }
 
 func taskHasProof(task models.Task) bool {
-	return task.ProofType != "none" && (strings.TrimSpace(task.ProofURL) != "" || strings.TrimSpace(task.ProofPath) != "")
+	switch cleanProofType(task.ProofType) {
+	case "link":
+		parsed, err := url.ParseRequestURI(strings.TrimSpace(task.ProofURL))
+		return err == nil && parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https")
+	case "photo", "file", "text":
+		return strings.TrimSpace(task.ProofPath) != ""
+	default:
+		return false
+	}
 }
 
 func proofBonus(task models.Task) int {

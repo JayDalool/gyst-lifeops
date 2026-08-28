@@ -58,6 +58,11 @@ func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, er
 	}
 
 	projectIDsByName := map[string]int64{}
+	type importedProject struct {
+		id   int64
+		plan models.RoadmapProjectPlan
+	}
+	importedProjects := make([]importedProject, 0, len(plan.Projects))
 	for _, project := range plan.Projects {
 		if strings.TrimSpace(project.Name) == "" {
 			continue
@@ -73,6 +78,7 @@ func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, er
 			return 0, err
 		}
 		projectIDsByName[strings.ToLower(project.Name)] = projectID
+		importedProjects = append(importedProjects, importedProject{id: projectID, plan: project})
 		for _, milestone := range project.Milestones {
 			if err := insertRoadmapMilestone(tx, projectID, milestone); err != nil {
 				return 0, err
@@ -87,6 +93,25 @@ func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, er
 			if err := insertRoadmapResource(tx, importID, projectID, resource); err != nil {
 				return 0, err
 			}
+		}
+	}
+
+	// Resolve relationships after every project has an ID. This supports
+	// dependencies declared before their target appears in the Markdown while
+	// preserving the normal parent-before-child hierarchy.
+	for _, imported := range importedProjects {
+		parentID := imported.plan.ParentProjectID
+		if imported.plan.ParentName != "" {
+			parentID = projectIDsByName[strings.ToLower(imported.plan.ParentName)]
+		}
+		dependencyID := imported.plan.DependsOnProjectID
+		if imported.plan.DependsOn != "" {
+			dependencyID = projectIDsByName[strings.ToLower(imported.plan.DependsOn)]
+		}
+		if _, err := tx.Exec(`UPDATE projects
+			SET parent_project_id = ?, depends_on_project_id = ?
+			WHERE id = ?`, nullableInt64(parentID), nullableInt64(dependencyID), imported.id); err != nil {
+			return 0, err
 		}
 	}
 

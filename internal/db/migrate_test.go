@@ -1,10 +1,117 @@
 package db
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func copyMigration(t *testing.T, sourceDir, targetDir, name string) {
+	t.Helper()
+	body, err := os.ReadFile(filepath.Join(sourceDir, name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(targetDir, name), body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
+	database, err := Open(filepath.Join(t.TempDir(), "fresh.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+
+	if err := Migrate(database, "../../migrations"); err != nil {
+		t.Fatalf("fresh migration path: %v", err)
+	}
+
+	var applied int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
+		t.Fatal(err)
+	}
+	if applied != 9 {
+		t.Fatalf("applied migrations = %d, want 9", applied)
+	}
+	assertNoForeignKeyViolations(t, database)
+}
+
+func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
+	sourceDir := "../../migrations"
+	migrationDir := filepath.Join(t.TempDir(), "migrations")
+	if err := os.MkdirAll(migrationDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"001_init.sql", "002_trackers.sql", "003_ai_roadmap.sql"} {
+		copyMigration(t, sourceDir, migrationDir, name)
+	}
+
+	database, err := Open(filepath.Join(filepath.Dir(migrationDir), "upgrade.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	if err := Migrate(database, migrationDir); err != nil {
+		t.Fatalf("apply pre-quest migrations: %v", err)
+	}
+	if _, err := database.Exec(`INSERT INTO projects (id, name, status) VALUES
+		(1, 'Completed legacy quest', 'completed'),
+		(2, 'Paused legacy quest', 'paused')`); err != nil {
+		t.Fatalf("seed legacy projects: %v", err)
+	}
+	if _, err := database.Exec(`INSERT INTO project_items (project_id, title) VALUES (1, 'Legacy mission')`); err != nil {
+		t.Fatalf("seed legacy mission: %v", err)
+	}
+
+	for _, name := range []string{
+		"004_quest_system.sql",
+		"005_fix_project_status_check.sql",
+		"006_multiple_roadmaps.sql",
+		"007_courses.sql",
+		"008_app_settings.sql",
+		"009_quest_reward_integrity.sql",
+	} {
+		copyMigration(t, sourceDir, migrationDir, name)
+	}
+	if err := Migrate(database, migrationDir); err != nil {
+		t.Fatalf("upgrade pre-quest database: %v", err)
+	}
+
+	for id, want := range map[int]string{1: "done", 2: "upcoming"} {
+		var got string
+		if err := database.QueryRow(`SELECT status FROM projects WHERE id = ?`, id).Scan(&got); err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Fatalf("project %d status = %q, want %q", id, got, want)
+		}
+	}
+	var items int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM project_items WHERE project_id = 1`).Scan(&items); err != nil {
+		t.Fatal(err)
+	}
+	if items != 1 {
+		t.Fatalf("legacy missions after upgrade = %d, want 1", items)
+	}
+	assertNoForeignKeyViolations(t, database)
+}
+
+func assertNoForeignKeyViolations(t *testing.T, database interface {
+	Query(string, ...any) (*sql.Rows, error)
+}) {
+	t.Helper()
+	rows, err := database.Query(`PRAGMA foreign_key_check`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	if rows.Next() {
+		t.Fatal("foreign_key_check reported violations")
+	}
+}
 
 // Verifies migration 005 rebuilds projects without losing child rows to a
 // foreign-key cascade and that the new status CHECK accepts quest states.

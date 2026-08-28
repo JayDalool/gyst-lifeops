@@ -96,6 +96,15 @@ web/templates/          Server-rendered HTML
 web/static/             CSS and chart JavaScript
 ```
 
+## Developer Documentation
+
+- `docs/ARCHITECTURE.md` describes the current application layers and data flow.
+- `docs/QUEST_SYSTEM.md` documents quest statuses, dependency unlocking,
+  rewards, proof validation, Markdown import, and remaining product gaps.
+
+Database migrations are applied in filename order and currently run through
+`009_quest_reward_integrity.sql`.
+
 ## Reminders TODO
 
 Version 1 stores reminder dates and times in SQLite and shows due or overdue reminders in the dashboard.
