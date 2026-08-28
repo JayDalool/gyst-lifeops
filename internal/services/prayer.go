@@ -3,12 +3,56 @@ package services
 import (
 	"fmt"
 	"math"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"lifeops-tracker/internal/models"
 )
+
+// SavePrayerConfig validates and persists the user-facing prayer settings.
+func (s *Service) SavePrayerConfig(values url.Values) error {
+	latitude, err := strconv.ParseFloat(strings.TrimSpace(values.Get("latitude")), 64)
+	if err != nil || latitude < -90 || latitude > 90 {
+		return fmt.Errorf("latitude must be between -90 and 90")
+	}
+	longitude, err := strconv.ParseFloat(strings.TrimSpace(values.Get("longitude")), 64)
+	if err != nil || longitude < -180 || longitude > 180 {
+		return fmt.Errorf("longitude must be between -180 and 180")
+	}
+	timezone := strings.TrimSpace(values.Get("timezone"))
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return fmt.Errorf("invalid timezone")
+	}
+	method := strings.ToLower(strings.TrimSpace(values.Get("method")))
+	if _, ok := prayerMethods[method]; !ok {
+		return fmt.Errorf("invalid prayer method")
+	}
+	asr := strings.ToLower(strings.TrimSpace(values.Get("asr_method")))
+	if asr != AsrMethodShafi && asr != AsrMethodHanafi {
+		return fmt.Errorf("invalid Asr method")
+	}
+	settings := map[string]string{
+		"prayer.latitude":  strconv.FormatFloat(latitude, 'f', -1, 64),
+		"prayer.longitude": strconv.FormatFloat(longitude, 'f', -1, 64),
+		"prayer.timezone":  timezone, "prayer.method": method, "prayer.asr_method": asr,
+	}
+	for _, name := range prayerNames {
+		value := strings.TrimSpace(values.Get("adjust_" + name))
+		minutes, parseErr := strconv.Atoi(value)
+		if parseErr != nil || minutes < -120 || minutes > 120 {
+			return fmt.Errorf("%s adjustment must be between -120 and 120 minutes", titlePrayer(name))
+		}
+		settings["prayer.adjust."+name] = strconv.Itoa(minutes)
+	}
+	for key, value := range settings {
+		if err := s.Repo.SetSetting(key, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 const (
 	PrayerMethodISNA       = "isna"

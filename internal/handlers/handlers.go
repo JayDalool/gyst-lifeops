@@ -39,6 +39,14 @@ type TodayData struct {
 	OverdueTasks   []models.Task
 	RemindersToday []models.ReminderView
 	Learning       models.TodayLearning
+	Prayer         PrayerTodayData
+}
+
+type PrayerTodayData struct {
+	Schedule    models.PrayerSchedule
+	Next        models.NextPrayer
+	NextAt      string
+	CurrentName string
 }
 
 type TaskListData struct {
@@ -210,6 +218,7 @@ type SettingsData struct {
 	Page          string
 	CalendarToken string
 	BaseURL       string
+	Prayer        models.PrayerConfig
 }
 
 type RoadmapFormData struct {
@@ -325,6 +334,25 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	schedule, err := h.Service.PrayerTimes(h.Service.Now())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	nextPrayer, err := h.Service.NextPrayer(h.Service.Now())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	currentName := ""
+	for i, prayer := range schedule.Times {
+		if !prayer.At.After(h.Service.Now()) {
+			currentName = prayer.Name
+		}
+		if i == 0 && prayer.At.After(h.Service.Now()) {
+			currentName = ""
+		}
+	}
 	h.render(w, "today.html", TodayData{
 		Page:           "today",
 		Today:          h.Service.TodayString(),
@@ -337,6 +365,10 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		OverdueTasks:   overdueTasks,
 		RemindersToday: remindersToday,
 		Learning:       learning,
+		Prayer: PrayerTodayData{
+			Schedule: schedule, Next: nextPrayer,
+			NextAt: nextPrayer.Prayer.At.Format(time.RFC3339), CurrentName: currentName,
+		},
 	})
 }
 
@@ -1298,6 +1330,18 @@ func (h *Handler) archive(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []string) {
+	if len(segments) == 2 && segments[1] == "prayer" {
+		if r.Method != http.MethodPost {
+			methodNotAllowed(w)
+			return
+		}
+		if err := h.Service.SavePrayerConfig(r.Form); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		http.Redirect(w, r, "/settings#prayer", http.StatusSeeOther)
+		return
+	}
 	// POST /settings/calendar-token — generate/rotate or revoke the feed token.
 	if len(segments) == 2 && segments[1] == "calendar-token" {
 		if r.Method != http.MethodPost {
@@ -1330,7 +1374,12 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 		serverError(w, err)
 		return
 	}
-	h.render(w, "settings.html", SettingsData{Page: "settings", CalendarToken: token, BaseURL: requestBaseURL(r)})
+	prayer, err := h.Service.PrayerConfig()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	h.render(w, "settings.html", SettingsData{Page: "settings", CalendarToken: token, BaseURL: requestBaseURL(r), Prayer: prayer})
 }
 
 // roadmaps handles the multiple-roadmaps entity: create, edit, set-as-dashboard.

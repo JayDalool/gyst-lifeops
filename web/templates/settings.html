@@ -2,9 +2,43 @@
 <div class="page-head">
   <div>
     <h1 class="page-title">Settings</h1>
-    <p class="page-sub">Calendar feed, appearance, and motion.</p>
+    <p class="page-sub">Prayer times, calendar feed, appearance, and motion.</p>
   </div>
 </div>
+
+<section class="card mt-24 settings-card" id="prayer">
+  <h2 class="section-title">Prayer times</h2>
+  <p class="meta measure mt-8">Calculated locally. Defaults are Winnipeg, ISNA, and Standard/Shafi Asr.</p>
+  <form class="form-stack mt-16" method="post" action="/settings/prayer">
+    <div class="form-row">
+      <label class="field"><span>Latitude</span><input name="latitude" type="number" min="-90" max="90" step="0.0001" required value="{{.Prayer.Latitude}}"></label>
+      <label class="field"><span>Longitude</span><input name="longitude" type="number" min="-180" max="180" step="0.0001" required value="{{.Prayer.Longitude}}"></label>
+    </div>
+    <label class="field"><span>Timezone</span><input name="timezone" required value="{{.Prayer.Timezone}}"></label>
+    <div class="form-row">
+      <label class="field"><span>Calculation method</span><select name="method">
+        <option value="isna" {{if eq .Prayer.Method "isna"}}selected{{end}}>ISNA</option>
+        <option value="mwl" {{if eq .Prayer.Method "mwl"}}selected{{end}}>Muslim World League</option>
+        <option value="umm_al_qura" {{if eq .Prayer.Method "umm_al_qura"}}selected{{end}}>Umm al-Qura</option>
+        <option value="egyptian" {{if eq .Prayer.Method "egyptian"}}selected{{end}}>Egyptian</option>
+        <option value="karachi" {{if eq .Prayer.Method "karachi"}}selected{{end}}>Karachi</option>
+      </select></label>
+      <label class="field"><span>Asr method</span><select name="asr_method">
+        <option value="shafi" {{if eq .Prayer.AsrMethod "shafi"}}selected{{end}}>Standard / Shafi</option>
+        <option value="hanafi" {{if eq .Prayer.AsrMethod "hanafi"}}selected{{end}}>Hanafi</option>
+      </select></label>
+    </div>
+    <p class="meta">Minute adjustments</p>
+    <div class="prayer-adjustments">
+      <label class="field"><span>Fajr</span><input name="adjust_fajr" type="number" min="-120" max="120" required value="{{index .Prayer.Adjustments "fajr"}}"></label>
+      <label class="field"><span>Dhuhr</span><input name="adjust_dhuhr" type="number" min="-120" max="120" required value="{{index .Prayer.Adjustments "dhuhr"}}"></label>
+      <label class="field"><span>Asr</span><input name="adjust_asr" type="number" min="-120" max="120" required value="{{index .Prayer.Adjustments "asr"}}"></label>
+      <label class="field"><span>Maghrib</span><input name="adjust_maghrib" type="number" min="-120" max="120" required value="{{index .Prayer.Adjustments "maghrib"}}"></label>
+      <label class="field"><span>Isha</span><input name="adjust_isha" type="number" min="-120" max="120" required value="{{index .Prayer.Adjustments "isha"}}"></label>
+    </div>
+    <button class="btn" type="submit">Save prayer settings</button>
+  </form>
+</section>
 
 <section class="card mt-24 settings-card">
   <h2 class="section-title">Calendar feed</h2>

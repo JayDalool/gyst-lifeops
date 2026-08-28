@@ -170,6 +170,22 @@
 
   /* ---------------- small stuff (copy buttons, reduced-motion toggle) ------ */
   function initMisc() {
+    document.querySelectorAll("[data-next-prayer]").forEach(function (hero) {
+      var output = hero.querySelector("[data-prayer-countdown]");
+      var target = new Date(hero.dataset.nextPrayer).getTime();
+      function tick() {
+        var remaining = Math.max(0, target - Date.now());
+        var total = Math.floor(remaining / 1000);
+        var hours = Math.floor(total / 3600);
+        var minutes = Math.floor((total % 3600) / 60);
+        var seconds = total % 60;
+        output.textContent = hours + "h " + String(minutes).padStart(2, "0") + "m " + String(seconds).padStart(2, "0") + "s";
+        if (remaining === 0) window.setTimeout(function () { window.location.reload(); }, 1000);
+      }
+      tick();
+      window.setInterval(tick, 1000);
+    });
+
     document.querySelectorAll("[data-copy]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var el = document.querySelector(btn.dataset.copy);

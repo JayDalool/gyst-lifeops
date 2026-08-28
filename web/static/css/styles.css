@@ -4038,6 +4038,18 @@ i.map-node-state {
 :root .day-group { margin-bottom: 8px; }
 :root .group-label { margin: 28px 0 10px; font-size: 13px; color: var(--quiet); }
 :root .day-group:first-child .group-label { margin-top: 0; }
+:root .prayer-hero {
+  display: flex; align-items: end; justify-content: space-between; gap: 20px;
+  padding: 22px; margin-bottom: 22px; border: 1px solid rgba(77, 191, 208, .35);
+  border-radius: 12px; background: linear-gradient(135deg, rgba(77,191,208,.12), var(--panel));
+}
+:root .prayer-hero .group-label { margin: 0 0 6px; }
+:root .prayer-hero h2 { margin: 0; font-size: 24px; }
+:root .prayer-time { margin: 5px 0 0; color: var(--accent-text); }
+:root .prayer-countdown { font-size: 20px; color: var(--text); white-space: nowrap; }
+:root .tracker-dot small { margin-left: 4px; color: var(--quiet); font-size: 11px; }
+:root .tracker-dot.prayer-current { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77,191,208,.12); }
+:root .prayer-adjustments { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 
 :root .tasks {
   list-style: none;
@@ -4763,4 +4775,6 @@ i.map-node-state {
   :root .page-title { font-size: 22px; }
   :root .task .btn.quiet { opacity: 1; }   /* no hover on touch */
   :root .task input[type="checkbox"] { width: 24px; height: 24px; }
+  :root .prayer-hero { align-items: flex-start; flex-direction: column; }
+  :root .prayer-adjustments { grid-template-columns: repeat(2, 1fr); }
 }

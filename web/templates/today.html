@@ -10,15 +10,24 @@
 
 <div class="cols-wide page-body">
   <div>
+    <section class="prayer-hero" data-next-prayer="{{.Prayer.NextAt}}">
+      <div>
+        <p class="group-label">Next prayer &middot; {{.Prayer.Schedule.Location}}</p>
+        <h2>{{.Prayer.Next.Prayer.Name}}</h2>
+        <p class="prayer-time num">{{.Prayer.Next.Prayer.Time}}</p>
+      </div>
+      <div class="prayer-countdown num" data-prayer-countdown aria-live="polite">&mdash;</div>
+    </section>
+
     <div class="day-group" aria-label="Prayer tracker">
       <p class="group-label">Prayer &middot; <span class="num" data-mission="prayer">{{.Mission.PrayerCompletion}}%</span></p>
       <div class="tracker-row prayer-row">
-        {{range .Mission.PrayerItems}}
+        {{range $i, $item := .Mission.PrayerItems}}
           <form method="post" action="/trackers/{{.Item.Key}}/toggle">
             <input type="hidden" name="log_date" value="{{.Date}}">
-            <button class="tracker-dot status-{{.Status}}" type="button" title="{{.Item.Title}}: {{.Status}}">
+            <button class="tracker-dot status-{{.Status}}{{if eq .Item.Title $.Prayer.CurrentName}} prayer-current{{end}}" type="button" title="{{.Item.Title}}: {{.Status}}">
               <span></span>
-              {{.Item.Title}}
+              {{.Item.Title}}{{with index $.Prayer.Schedule.Times $i}} <small class="num">{{.Time}}</small>{{end}}
             </button>
           </form>
         {{end}}
