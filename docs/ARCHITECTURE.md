@@ -76,12 +76,32 @@ Browser behavior is intentionally small:
 
 SQLite data lives in `data/lifeops.db` by default and is excluded from Git.
 Migrations currently cover the base task/project/goal system, trackers, AI
-roadmaps, quests, multiple roadmaps, courses, and application settings.
+roadmaps, quests, multiple roadmaps, courses, application settings, and manual
+external work-item references.
 
 Recurring task occurrences are calculated by services instead of being copied
 into the task table. Per-date completion records preserve occurrence history.
 Stable UUID, sync version, timestamp, and device fields prepare records for a
 future client sync layer without implementing that layer today.
+
+## External work references
+
+Tasks, projects, and project missions can hold compact links to Jira, GitHub,
+Slack, Linear, Asana, Notion, or another web system. The browser posts a URL and
+summary to the handler; the external-link service validates and classifies the
+URL without making a network request; the repository stores it in the additive
+`external_links` table.
+
+```mermaid
+flowchart LR
+    DetailPage[Task or project detail] --> LinkHandler[External-link handler]
+    LinkHandler --> Classifier[URL validation and provider classification]
+    Classifier --> ExternalLinks[(external_links)]
+```
+
+External links are context, not evidence. They are not stored in proof fields,
+do not complete tasks or missions, and are absent from all XP and achievement
+queries.
 
 ## Calendar integration
 

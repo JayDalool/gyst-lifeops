@@ -58,6 +58,41 @@
                   {{- if ne .ProofType "none"}} &middot; {{.ProofType}} proof{{if .ProofRequired}} required{{end}}{{end}}
                   {{- if .Description}} &middot; {{.Description}}{{end}}
                 </div>
+                {{$links := index $.ItemLinks .ID}}
+                {{if $links}}
+                  <div class="external-links compact">
+                    {{range $links}}
+                      <div class="external-link-row">
+                        <a class="external-link-chip" href="{{.URL}}" target="_blank" rel="noopener noreferrer">
+                          <span class="external-provider">{{.Provider}}</span><strong>{{if .ExternalKey}}{{.ExternalKey}}{{else}}{{.Title}}{{end}}</strong>{{if .Summary}}<span>{{.Summary}}</span>{{end}}
+                        </a>
+                        <details class="external-link-actions">
+                          <summary aria-label="Edit external link">Edit</summary>
+                          <form class="form-stack" method="post" action="/external-links/{{.ID}}/edit">
+                            <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.EntityID}}">
+                            <label class="field"><span>Summary</span><input name="summary" value="{{.Summary}}"></label>
+                            <button class="btn sm ghost" type="submit">Save</button>
+                          </form>
+                          <form method="post" action="/external-links/{{.ID}}/delete">
+                            <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.EntityID}}">
+                            <button class="btn sm danger" type="submit">Detach</button>
+                          </form>
+                        </details>
+                      </div>
+                    {{end}}
+                  </div>
+                {{end}}
+                <details class="details-summary external-attach">
+                  <summary>Attach external work</summary>
+                  <form class="form-stack" method="post" action="/external-links">
+                    <input type="hidden" name="entity_type" value="project_item">
+                    <input type="hidden" name="entity_id" value="{{.ID}}">
+                    <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
+                    <label class="field"><span>Work item URL</span><input name="url" type="url" placeholder="Jira, GitHub, Slack, or another URL" required></label>
+                    <label class="field"><span>One-line summary</span><input name="summary" maxlength="180"></label>
+                    <button class="btn sm ghost" type="submit">Attach</button>
+                  </form>
+                </details>
                 {{if and (eq $.Project.Project.Status "active") (ne .Status "completed") (ne .ProofType "none")}}
                   <details class="details-summary mt-8">
                     <summary>{{if or .ProofURL .ProofPath}}Update proof{{else}}Add proof{{end}}</summary>
@@ -144,6 +179,44 @@
           <button class="btn sm" type="submit">Complete</button>
         </form>
       </div>
+    </section>
+
+    <section class="card tight mt-16">
+      <h2 class="section-title card-title">External work</h2>
+      {{if .ExternalLinks}}
+        <div class="external-links">
+          {{range .ExternalLinks}}
+            <div class="external-link-row">
+              <a class="external-link-chip" href="{{.URL}}" target="_blank" rel="noopener noreferrer">
+                <span class="external-provider">{{.Provider}}</span><strong>{{if .ExternalKey}}{{.ExternalKey}}{{else}}{{.Title}}{{end}}</strong>{{if .Summary}}<span>{{.Summary}}</span>{{end}}
+              </a>
+              <details class="external-link-actions">
+                <summary aria-label="Edit external link">Edit</summary>
+                <form class="form-stack" method="post" action="/external-links/{{.ID}}/edit">
+                  <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}">
+                  <label class="field"><span>Summary</span><input name="summary" value="{{.Summary}}"></label>
+                  <button class="btn sm ghost" type="submit">Save</button>
+                </form>
+                <form method="post" action="/external-links/{{.ID}}/delete">
+                  <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}">
+                  <button class="btn sm danger" type="submit">Detach</button>
+                </form>
+              </details>
+            </div>
+          {{end}}
+        </div>
+      {{else}}<p class="meta">No external work attached to this trip.</p>{{end}}
+      <details class="details-summary mt-16">
+        <summary>Attach link</summary>
+        <form class="form-stack" method="post" action="/external-links">
+          <input type="hidden" name="entity_type" value="project">
+          <input type="hidden" name="entity_id" value="{{.Project.Project.ID}}">
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
+          <label class="field"><span>Work item URL</span><input name="url" type="url" placeholder="https://&hellip;" required></label>
+          <label class="field"><span>One-line summary</span><input name="summary" maxlength="180"></label>
+          <button class="btn sm ghost" type="submit">Attach</button>
+        </form>
+      </details>
     </section>
 
     <section class="card tight mt-16">

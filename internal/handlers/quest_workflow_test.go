@@ -116,3 +116,43 @@ func TestProjectMissionProofHandler(t *testing.T) {
 		t.Fatalf("proof workflow result: %#v", items)
 	}
 }
+
+func TestAttachJiraLinkToMissionRendersChipWithoutReward(t *testing.T) {
+	h := testHandler(t)
+	project := models.Project{Name: "Integration Quest", Status: "active", ProjectKind: "main"}
+	if err := h.Service.Repo.CreateProject(&project); err != nil {
+		t.Fatal(err)
+	}
+	item := models.ProjectItem{ProjectID: project.ID, Title: "Tracked mission", StarsReward: 5}
+	if err := h.Service.Repo.CreateProjectItem(&item); err != nil {
+		t.Fatal(err)
+	}
+	before, err := h.Service.Repo.PlayerStats()
+	if err != nil {
+		t.Fatal(err)
+	}
+	projectPath := fmt.Sprintf("/projects/%d", project.ID)
+	postQuestForm(t, h, "/external-links", url.Values{
+		"entity_type": {"project_item"},
+		"entity_id":   {strconv.FormatInt(item.ID, 10)},
+		"url":         {"https://team.atlassian.net/browse/GYST-88"},
+		"summary":     {"Review the imported ticket"},
+		"return_to":   {projectPath},
+	})
+	req := httptest.NewRequest(http.MethodGet, projectPath, nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	for _, want := range []string{"GYST-88", "Review the imported ticket", `target="_blank"`, `rel="noopener noreferrer"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("project page missing %q", want)
+		}
+	}
+	after, err := h.Service.Repo.PlayerStats()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before != after {
+		t.Fatalf("attaching external work changed player stats: before=%#v after=%#v", before, after)
+	}
+}

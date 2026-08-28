@@ -81,6 +81,28 @@ type ProjectItem struct {
 	CompletedAt   string
 }
 
+// ExternalLink is a read-only reference to work managed outside LifeOps. It is
+// deliberately separate from proof: attaching or editing one never completes
+// work and never awards XP.
+type ExternalLink struct {
+	ID                   int64
+	UUID                 string
+	EntityType           string
+	EntityID             int64
+	Provider             string
+	ExternalKey          string
+	URL                  string
+	Title                string
+	Summary              string
+	StatusText           string
+	SyncSource           string
+	LastSyncedAt         string
+	SyncVersion          int
+	LastModifiedDeviceID string
+	CreatedAt            string
+	UpdatedAt            string
+}
+
 type ProjectWithProgress struct {
 	Project        Project
 	TotalItems     int

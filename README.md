@@ -103,7 +103,7 @@ web/static/             CSS and chart JavaScript
   rewards, proof validation, Markdown import, and remaining product gaps.
 
 Database migrations are applied in filename order and currently run through
-`010_project_item_rewards.sql`.
+`011_external_links.sql`.
 
 ## Reminders TODO
 

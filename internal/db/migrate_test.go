@@ -33,8 +33,15 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
 		t.Fatal(err)
 	}
-	if applied != 10 {
-		t.Fatalf("applied migrations = %d, want 10", applied)
+	if applied != 11 {
+		t.Fatalf("applied migrations = %d, want 11", applied)
+	}
+	var externalLinksTable int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='external_links'`).Scan(&externalLinksTable); err != nil {
+		t.Fatal(err)
+	}
+	if externalLinksTable != 1 {
+		t.Fatal("external_links table was not created")
 	}
 	assertNoForeignKeyViolations(t, database)
 }
@@ -74,6 +81,7 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 		"008_app_settings.sql",
 		"009_quest_reward_integrity.sql",
 		"010_project_item_rewards.sql",
+		"011_external_links.sql",
 	} {
 		copyMigration(t, sourceDir, migrationDir, name)
 	}
@@ -104,6 +112,11 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 	}
 	if starsReward != 1 || proofType != "none" {
 		t.Fatalf("legacy mission reward defaults = %d/%q, want 1/none", starsReward, proofType)
+	}
+	if _, err := database.Exec(`INSERT INTO external_links
+		(uuid, entity_type, entity_id, provider, external_key, url, title, summary)
+		VALUES ('upgrade-link', 'project_item', 1, 'jira', 'LEGACY-1', 'https://example.atlassian.net/browse/LEGACY-1', 'Jira', 'Legacy reference')`); err != nil {
+		t.Fatalf("external links unavailable after upgrade: %v", err)
 	}
 	assertNoForeignKeyViolations(t, database)
 }

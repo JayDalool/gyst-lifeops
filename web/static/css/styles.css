@@ -4686,6 +4686,38 @@ i.map-node-state {
   flex-wrap: wrap;
 }
 
+/* External references are context only: compact, visually distinct from proof
+   and completion controls, and intentionally free of reward styling. */
+:root .external-links { display: grid; gap: 8px; margin-top: 10px; }
+:root .external-links.compact { margin-top: 8px; }
+:root .external-link-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+:root .external-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--inset);
+  color: var(--muted);
+  font-size: 12.5px;
+  text-decoration: none;
+}
+:root .external-link-chip:hover { border-color: var(--accent); color: var(--text); }
+:root .external-link-chip strong { color: var(--text); white-space: nowrap; }
+:root .external-provider { color: var(--accent-text); text-transform: capitalize; }
+:root .external-link-actions { position: relative; font-size: 12px; color: var(--quiet); }
+:root .external-link-actions > summary { cursor: pointer; }
+:root .external-link-actions[open] {
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--panel);
+}
+:root .external-attach { margin-top: 8px; font-size: 12.5px; font-weight: 400; color: var(--quiet); }
+
 /* ---- tracker chips (Deen signal), calm restyle of v1 .tracker-dot -------------- */
 :root .tracker-dot {
   min-height: 30px;

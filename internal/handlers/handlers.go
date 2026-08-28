@@ -60,9 +60,10 @@ type TaskFormData struct {
 }
 
 type TaskDetailData struct {
-	Page      string
-	Task      models.Task
-	ShipStats models.ShipStats
+	Page          string
+	Task          models.Task
+	ShipStats     models.ShipStats
+	ExternalLinks []models.ExternalLink
 }
 
 type MonthlyData struct {
@@ -151,6 +152,8 @@ type ProjectDetailData struct {
 	Parent           models.Project
 	HasParent        bool
 	NextDestinations []models.Project
+	ExternalLinks    []models.ExternalLink
+	ItemLinks        map[int64][]models.ExternalLink
 }
 
 type GoalListData struct {
@@ -266,6 +269,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.settings(w, r, segments)
 	case "trackers":
 		h.trackers(w, r, segments)
+	case "external-links":
+		h.externalLinks(w, r, segments)
 	default:
 		http.NotFound(w, r)
 	}
@@ -424,7 +429,12 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 			serverError(w, err)
 			return
 		}
-		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, ShipStats: stats})
+		links, err := h.Service.Repo.ExternalLinks("task", id)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, ShipStats: stats, ExternalLinks: links})
 		return
 	}
 
@@ -751,6 +761,20 @@ func (h *Handler) projectDetail(w http.ResponseWriter, r *http.Request, id int64
 		serverError(w, err)
 		return
 	}
+	externalLinks, err := h.Service.Repo.ExternalLinks("project", id)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	itemLinks := make(map[int64][]models.ExternalLink, len(items))
+	for _, item := range items {
+		links, linkErr := h.Service.Repo.ExternalLinks("project_item", item.ID)
+		if linkErr != nil {
+			serverError(w, linkErr)
+			return
+		}
+		itemLinks[item.ID] = links
+	}
 	// Stops = subprojects of this trip (any status), derived from the project
 	// hierarchy. No schema change: we filter the existing project list.
 	allProjects, err := h.Service.Repo.ListProjects(false)
@@ -798,7 +822,67 @@ func (h *Handler) projectDetail(w http.ResponseWriter, r *http.Request, id int64
 		Parent:           parent,
 		HasParent:        hasParent,
 		NextDestinations: nextDestinations,
+		ExternalLinks:    externalLinks,
+		ItemLinks:        itemLinks,
 	})
+}
+
+func (h *Handler) externalLinks(w http.ResponseWriter, r *http.Request, segments []string) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
+	redirectTarget := safeReturnTo(r)
+	if redirectTarget == "" {
+		redirectTarget = "/"
+	}
+	if len(segments) == 1 {
+		entityID, err := strconv.ParseInt(r.FormValue("entity_id"), 10, 64)
+		if err != nil {
+			http.Error(w, "invalid link target", http.StatusBadRequest)
+			return
+		}
+		link, err := h.Service.BuildExternalLink(r.FormValue("entity_type"), entityID, r.FormValue("url"), r.FormValue("summary"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := h.Service.Repo.CreateExternalLink(&link); err != nil {
+			serverError(w, err)
+			return
+		}
+		http.Redirect(w, r, redirectTarget, http.StatusSeeOther)
+		return
+	}
+	id, ok := parseID(segmentAt(segments, 1))
+	if !ok || len(segments) != 3 {
+		http.NotFound(w, r)
+		return
+	}
+	switch segments[2] {
+	case "edit":
+		if _, err := h.Service.Repo.ExternalLinkByID(id); err != nil {
+			notFoundOrError(w, err)
+			return
+		}
+		if err := h.Service.Repo.UpdateExternalLinkSummary(id, strings.TrimSpace(r.FormValue("summary"))); err != nil {
+			serverError(w, err)
+			return
+		}
+	case "delete":
+		if err := h.Service.Repo.DeleteExternalLink(id); err != nil {
+			notFoundOrError(w, err)
+			return
+		}
+	default:
+		http.NotFound(w, r)
+		return
+	}
+	http.Redirect(w, r, redirectTarget, http.StatusSeeOther)
 }
 
 func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) {
