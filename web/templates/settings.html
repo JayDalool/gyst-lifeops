@@ -36,6 +36,13 @@
       <label class="field"><span>Maghrib</span><input name="adjust_maghrib" type="number" min="-120" max="120" required value="{{index .Prayer.Adjustments "maghrib"}}"></label>
       <label class="field"><span>Isha</span><input name="adjust_isha" type="number" min="-120" max="120" required value="{{index .Prayer.Adjustments "isha"}}"></label>
     </div>
+    <div class="form-row">
+      <label class="field"><span>Alert sound</span><select name="alert_sound">
+        <option value="chime" {{if eq .Prayer.AlertSound "chime"}}selected{{end}}>Built-in chime</option>
+        <option value="athan" {{if eq .Prayer.AlertSound "athan"}}selected{{end}}>Athan file</option>
+      </select></label>
+      <label class="field"><span>Athan filename</span><input name="athan_file" value="{{.Prayer.AthanFile}}" placeholder="athan.mp3"><small>Place the file in web/static/audio/. Filename only.</small></label>
+    </div>
     <button class="btn" type="submit">Save prayer settings</button>
   </form>
 </section>

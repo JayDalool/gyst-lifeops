@@ -241,6 +241,8 @@ type PrayerConfig struct {
 	Method      string
 	AsrMethod   string
 	Adjustments map[string]int
+	AlertSound  string
+	AthanFile   string
 }
 
 type PrayerTime struct {

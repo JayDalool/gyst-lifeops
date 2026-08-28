@@ -33,10 +33,19 @@ func (s *Service) SavePrayerConfig(values url.Values) error {
 	if asr != AsrMethodShafi && asr != AsrMethodHanafi {
 		return fmt.Errorf("invalid Asr method")
 	}
+	alertSound := strings.ToLower(strings.TrimSpace(values.Get("alert_sound")))
+	if alertSound != "chime" && alertSound != "athan" {
+		return fmt.Errorf("invalid alert sound")
+	}
+	athanFile := strings.TrimSpace(values.Get("athan_file"))
+	if strings.Contains(athanFile, "/") || strings.Contains(athanFile, "\\") || strings.Contains(athanFile, "..") {
+		return fmt.Errorf("Athan file must be a filename from web/static/audio")
+	}
 	settings := map[string]string{
 		"prayer.latitude":  strconv.FormatFloat(latitude, 'f', -1, 64),
 		"prayer.longitude": strconv.FormatFloat(longitude, 'f', -1, 64),
 		"prayer.timezone":  timezone, "prayer.method": method, "prayer.asr_method": asr,
+		"prayer.alert_sound": alertSound, "prayer.athan_file": athanFile,
 	}
 	for _, name := range prayerNames {
 		value := strings.TrimSpace(values.Get("adjust_" + name))
@@ -91,6 +100,7 @@ func (s *Service) PrayerConfig() (models.PrayerConfig, error) {
 		Method:      PrayerMethodISNA,
 		AsrMethod:   AsrMethodShafi,
 		Adjustments: make(map[string]int, len(prayerNames)),
+		AlertSound:  "chime",
 	}
 	settings := []struct {
 		key string
@@ -115,6 +125,12 @@ func (s *Service) PrayerConfig() (models.PrayerConfig, error) {
 				config.AsrMethod = value
 			}
 		}},
+		{"prayer.alert_sound", func(value string) {
+			if value == "chime" || value == "athan" {
+				config.AlertSound = value
+			}
+		}},
+		{"prayer.athan_file", func(value string) { config.AthanFile = strings.TrimSpace(value) }},
 	}
 	for _, setting := range settings {
 		value, err := s.Repo.GetSetting(setting.key)

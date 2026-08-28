@@ -173,6 +173,64 @@
     document.querySelectorAll("[data-next-prayer]").forEach(function (hero) {
       var output = hero.querySelector("[data-prayer-countdown]");
       var target = new Date(hero.dataset.nextPrayer).getTime();
+	  var enable = hero.querySelector("[data-prayer-enable]");
+	  var test = hero.querySelector("[data-prayer-test]");
+	  var alertState = hero.querySelector("[data-prayer-alert-state]");
+	  var audio = document.querySelector("[data-prayer-audio]");
+	  var audioContext = null;
+	  var alertsEnabled = false;
+	  var prayerTimes = Array.prototype.slice.call(document.querySelectorAll("[data-prayer-at]"));
+
+	  function chime() {
+		var Context = window.AudioContext || window.webkitAudioContext;
+		if (!Context) return;
+		audioContext = audioContext || new Context();
+		if (audioContext.state === "suspended") audioContext.resume();
+		[0, 0.18].forEach(function (delay, index) {
+		  var oscillator = audioContext.createOscillator();
+		  var gain = audioContext.createGain();
+		  oscillator.frequency.value = index ? 659.25 : 523.25;
+		  gain.gain.setValueAtTime(0.0001, audioContext.currentTime + delay);
+		  gain.gain.exponentialRampToValueAtTime(0.16, audioContext.currentTime + delay + 0.02);
+		  gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + delay + 0.55);
+		  oscillator.connect(gain).connect(audioContext.destination);
+		  oscillator.start(audioContext.currentTime + delay);
+		  oscillator.stop(audioContext.currentTime + delay + 0.58);
+		});
+	  }
+	  function playAlert() {
+		if (hero.dataset.alertSound === "athan" && audio && audio.getAttribute("src")) {
+		  audio.currentTime = 0;
+		  audio.play().catch(function () { alertState.textContent = "Audio was blocked; use Test sound to enable it."; });
+		} else chime();
+	  }
+	  function checkPrayerAlerts() {
+		if (!alertsEnabled) return;
+		var now = Date.now();
+		prayerTimes.forEach(function (item) {
+		  var at = new Date(item.dataset.prayerAt).getTime();
+		  var key = item.dataset.prayerAt + ":" + item.dataset.prayerName;
+		  if (now < at || now - at > 1500 || sessionStorage.getItem("lifeops-prayer-" + key)) return;
+		  sessionStorage.setItem("lifeops-prayer-" + key, "sent");
+		  if ("Notification" in window && Notification.permission === "granted") new Notification(item.dataset.prayerName + " prayer", { body: "It is time for " + item.dataset.prayerName + "." });
+		  playAlert();
+		});
+	  }
+	  enable.addEventListener("click", function () {
+		chime();
+		if (audio && audio.getAttribute("src")) {
+		  audio.muted = true;
+		  audio.play().then(function () { audio.pause(); audio.currentTime = 0; audio.muted = false; }).catch(function () { audio.muted = false; });
+		}
+		var permission = "Notification" in window ? Notification.requestPermission() : Promise.resolve("unsupported");
+		permission.then(function (result) {
+		  alertsEnabled = true;
+		  alertState.textContent = result === "granted" ? "Alerts and sound are enabled while this page is open." : "Sound is enabled while this page is open; browser notifications are unavailable.";
+		  enable.textContent = "Prayer alerts enabled";
+		  enable.disabled = true;
+		});
+	  });
+	  test.addEventListener("click", playAlert);
       function tick() {
         var remaining = Math.max(0, target - Date.now());
         var total = Math.floor(remaining / 1000);
@@ -180,6 +238,7 @@
         var minutes = Math.floor((total % 3600) / 60);
         var seconds = total % 60;
         output.textContent = hours + "h " + String(minutes).padStart(2, "0") + "m " + String(seconds).padStart(2, "0") + "s";
+		checkPrayerAlerts();
         if (remaining === 0) window.setTimeout(function () { window.location.reload(); }, 1000);
       }
       tick();

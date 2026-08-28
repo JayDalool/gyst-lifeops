@@ -1,9 +1,33 @@
 package services
 
 import (
+	"net/url"
 	"testing"
 	"time"
 )
+
+func TestSavePrayerConfigAlertSettings(t *testing.T) {
+	service := testService(t)
+	values := url.Values{
+		"latitude": {"49.8951"}, "longitude": {"-97.1384"}, "timezone": {"America/Winnipeg"},
+		"method": {"isna"}, "asr_method": {"hanafi"}, "alert_sound": {"athan"}, "athan_file": {"my-athan.mp3"},
+		"adjust_fajr": {"0"}, "adjust_dhuhr": {"1"}, "adjust_asr": {"0"}, "adjust_maghrib": {"-1"}, "adjust_isha": {"0"},
+	}
+	if err := service.SavePrayerConfig(values); err != nil {
+		t.Fatal(err)
+	}
+	config, err := service.PrayerConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.AlertSound != "athan" || config.AthanFile != "my-athan.mp3" || config.AsrMethod != AsrMethodHanafi {
+		t.Fatalf("saved config = %#v", config)
+	}
+	values.Set("athan_file", "../secret.mp3")
+	if err := service.SavePrayerConfig(values); err == nil {
+		t.Fatal("unsafe Athan path accepted")
+	}
+}
 
 func winnipegTime(t *testing.T, value string) time.Time {
 	t.Helper()

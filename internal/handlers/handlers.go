@@ -47,6 +47,7 @@ type PrayerTodayData struct {
 	Next        models.NextPrayer
 	NextAt      string
 	CurrentName string
+	Config      models.PrayerConfig
 }
 
 type TaskListData struct {
@@ -367,6 +368,11 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	prayerConfig, err := h.Service.PrayerConfig()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
 	nextPrayer, err := h.Service.NextPrayer(h.Service.Now())
 	if err != nil {
 		serverError(w, err)
@@ -395,7 +401,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		Learning:       learning,
 		Prayer: PrayerTodayData{
 			Schedule: schedule, Next: nextPrayer,
-			NextAt: nextPrayer.Prayer.At.Format(time.RFC3339), CurrentName: currentName,
+			NextAt: nextPrayer.Prayer.At.Format(time.RFC3339), CurrentName: currentName, Config: prayerConfig,
 		},
 	})
 }

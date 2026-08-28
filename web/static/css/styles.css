@@ -4047,6 +4047,9 @@ i.map-node-state {
 :root .prayer-hero h2 { margin: 0; font-size: 24px; }
 :root .prayer-time { margin: 5px 0 0; color: var(--accent-text); }
 :root .prayer-countdown { font-size: 20px; color: var(--text); white-space: nowrap; }
+:root .prayer-alert-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+:root .prayer-alert-actions { display: flex; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
+:root .prayer-alert-panel .meta { max-width: 360px; text-align: right; }
 :root .tracker-dot small { margin-left: 4px; color: var(--quiet); font-size: 11px; }
 :root .tracker-dot.prayer-current { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77,191,208,.12); }
 :root .prayer-adjustments { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
@@ -4797,6 +4800,8 @@ i.map-node-state {
   :root .task .btn.quiet { opacity: 1; }   /* no hover on touch */
   :root .task input[type="checkbox"] { width: 24px; height: 24px; }
   :root .prayer-hero { align-items: flex-start; flex-direction: column; }
+	:root .prayer-alert-panel { align-items: flex-start; }
+	:root .prayer-alert-panel .meta { text-align: left; }
   :root .prayer-adjustments { grid-template-columns: repeat(2, 1fr); }
   :root .galaxy-head { align-items: flex-start; flex-direction: column; }
   :root .galaxy-stage { height: 58vh; min-height: 360px; }
