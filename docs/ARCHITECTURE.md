@@ -1,0 +1,104 @@
+# LifeOps Architecture
+
+## Overview
+
+LifeOps is a local-first, server-rendered Go application. A single process owns
+HTTP routing, application services, SQLite persistence, template rendering, and
+static assets. The browser uses small JavaScript modules for charts, tracker
+actions, theme settings, and the roadmap interaction; there is no frontend build
+step.
+
+```mermaid
+flowchart LR
+    Browser[Browser: HTML, CSS, small JS] -->|HTTP forms and page requests| Handlers[Go handlers]
+    Handlers --> Services[Application services]
+    Services --> Repository[SQLite repositories]
+    Repository --> DB[(SQLite)]
+    Handlers --> Templates[Go HTML templates]
+    Templates --> Browser
+```
+
+## Process and routing
+
+- `main.go` and `cmd/lifeops/main.go` are equivalent entrypoints.
+- `internal/app/cli.go` reads command-line configuration and starts the HTTP
+  server.
+- `internal/app/app.go` opens the database, applies migrations, constructs the
+  application, and registers routes.
+- `internal/handlers/` handles requests and renders `web/templates/`.
+
+Runtime paths are configured with command-line flags such as `-addr`, `-db`,
+`-migrations`, `-templates`, and `-static`. Public calendar feeds are disabled
+unless `ALLOW_PUBLIC_CALENDAR_FEEDS` is explicitly enabled; tokenized feeds stay
+available.
+
+## Application layers
+
+```text
+Page or form submission
+        ↓
+HTTP handler
+        ↓
+Service (recurrence, course, roadmap, calendar, or LifeOps rules)
+        ↓
+Repository query/update
+        ↓
+SQLite
+```
+
+- `internal/models/` contains data exchanged between layers.
+- `internal/services/` owns recurrence, course, roadmap, calendar, quest, and
+  dashboard behavior.
+- `internal/repository/` owns SQLite queries and mutations.
+- `migrations/` is the source of truth for schema evolution.
+- `seeds/example.sql` initializes an empty development database when seeding is
+  enabled.
+
+## User interface
+
+The UI is server-rendered from `web/templates/`. `web/templates/layout.html`
+provides the shared navigation and loads one production stylesheet,
+`web/static/css/styles.css`.
+
+The current design is the restrained design-v2 system: a 960px content area,
+flat surfaces, one accent color, quiet status treatments, and one route-map
+animation. Historical prototype files and design rationale live under
+`docs/design/v2/`; they are references, not runtime dependencies.
+
+Browser behavior is intentionally small:
+
+- `web/static/js/app.js` controls route-map tooltips and movement plus minor UI
+  interactions.
+- `web/static/js/charts.js` renders static charts and handles theme and tracker
+  controls.
+
+## Data
+
+SQLite data lives in `data/lifeops.db` by default and is excluded from Git.
+Migrations currently cover the base task/project/goal system, trackers, AI
+roadmaps, quests, multiple roadmaps, courses, and application settings.
+
+Recurring task occurrences are calculated by services instead of being copied
+into the task table. Per-date completion records preserve occurrence history.
+Stable UUID, sync version, timestamp, and device fields prepare records for a
+future client sync layer without implementing that layer today.
+
+## Calendar integration
+
+Calendar output is an HTTP boundary over the existing project, course, and task
+data. Detailed behavior and security decisions are documented in
+`google-calendar-plan.md` and `calendar-course-integration.md`.
+
+## Deployment
+
+The repository currently documents local execution with `go run .`. Deployment
+configuration is not yet part of the tracked architecture. Any container setup
+must pass the app's command-line flags rather than assume `PORT` or `DB_PATH`
+environment variables are consumed.
+
+## Designed for later
+
+The data model supports a future mobile sync client. AI roadmap and quest logic
+is kept in services and repositories; a future coding-agent execution subsystem
+should remain separate from the LifeOps task/project domain and communicate
+through a provider/session boundary.

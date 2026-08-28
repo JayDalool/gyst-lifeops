@@ -3,7 +3,8 @@
 Calm, premium, daily-use first. The space identity survives as a *tone* (Mission
 Control subtitle, destinations, missions, one quiet map) instead of a costume.
 
-Open `design-v2/index.html`. Production `web/` is untouched.
+Open `docs/design/v2/index.html`. These files are the original prototype and
+design rationale; production lives under `web/`.
 
 **Total weight:** one stylesheet (~15 KB), one script (~8 KB), no fonts fetched,
 no libraries, no build step.
@@ -71,8 +72,8 @@ Enforced in code, not aspiration:
 Each step ships independently; the app never breaks in between.
 
 1. **Foundation** — add the v2 tokens to `web/static/css/styles.css` behind a
-   `data-design="v2"` attribute on `<html>`; delete the starfield/ambient divs and
-   `backdrop-filter` when it's set. This alone fixes most of the perceived lag.
+   temporary design gate; delete the starfield/ambient divs and
+   `backdrop-filter` when it is set. This alone fixes most of the perceived lag.
 2. **Layout shell** (`layout.html`) — static top nav with the plain labels, 960px
    container, footer. Retire the FAB and the "More" drawer (all pages fit the nav).
 3. **Today** — smallest template, pure lists (`today.html` pattern: `.task`,
@@ -88,8 +89,9 @@ Each step ships independently; the app never breaks in between.
    markup; add the phase strip. Drop the orbit view.
 8. **Courses / Settings** — card and form styles port directly; keep existing
    handlers for token regenerate/revoke.
-9. **Cleanup** — remove `starmap.js`, `charts.js` chart types no longer used, and
-   the `data-design` gate once every page is migrated.
+9. **Cleanup** — remove `starmap.js`, unused chart types, and the temporary
+   design gate once every page is migrated. Completed in production; the chart
+   module remains for pages that still render static charts and tracker controls.
 
 ## Verification results
 

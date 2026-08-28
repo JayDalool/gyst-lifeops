@@ -3664,3 +3664,1020 @@ i.map-node-state {
 
 .form-hint { font-size: 12px; margin: 6px 0 0; }
 .form-stack .field small { color: var(--quiet); font-weight: 600; text-transform: none; letter-spacing: 0; }
+
+
+/* ==========================================================================
+   Design v2 — production design layer
+
+   Consolidated after the original base rules. These final rules define the
+   production appearance while older shared primitives remain available.
+
+     1. Retheme tokens: calmer palette, opaque panels, hairline borders,
+        soft static shadow, glows off.
+     2. Solid page background (replaces the radial-gradient stack).
+     3. Remove the decorative layers (starfield/ambient — also dropped from
+        layout.html) and every ALWAYS-RUNNING animation. Interaction
+        animations (rocket flight, flame while flying, mission pop, unlock)
+        and the single active-node pulse ring stay.
+     4. Remove drop-shadow filters and glow box-shadows from the map.
+
+   No template structure, routes, or JS behavior change in this step.
+   ========================================================================== */
+
+/* ---- 1. tokens --------------------------------------------------------- */
+:root {
+  --bg: #0f1216;
+  --bg-2: #0f1216;
+  --panel: #161b22;                       /* opaque — no glass */
+  --panel-strong: #1a212a;
+  --panel-soft: rgba(255, 255, 255, 0.045);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #e9eef4;
+  --muted: #a6b0bb;
+  --quiet: #8b96a2;
+  --cyan: #53c6e4;
+  --blue: #7d9fd8;
+  --purple: #9d8fd4;
+  --green: #57c98b;
+  --orange: #d9a054;
+  --red: #e26377;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);    /* glows off wherever tokens are used */
+  --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
+  /* v2-only tokens (no v1 equivalent) */
+  --inset: #0b0e12;
+  --accent: #53c6e4;
+  --accent-text: #7dd4ec;
+  --accent-soft: rgba(83, 198, 228, 0.12);
+  --green-text: #7cd6a4;
+  --amber-text: #e0b077;
+  --red-text: #ea8a99;
+}
+
+/* Restate every production token for the light theme so none fall through to
+   the dark values above. */
+:root[data-theme="light"] {
+  --bg: #f4f6f8;
+  --bg-2: #f4f6f8;
+  --panel: #ffffff;
+  --panel-strong: #ffffff;
+  --panel-soft: rgba(20, 38, 56, 0.055);
+  --border: rgba(20, 38, 56, 0.10);
+  --border-strong: rgba(20, 38, 56, 0.20);
+  --text: #101923;
+  --muted: #4d5f70;
+  --quiet: #728294;
+  --cyan: #007f96;
+  --blue: #345fbd;
+  --purple: #7056d8;
+  --green: #168250;
+  --orange: #b45d18;
+  --red: #bd2f45;
+  --shadow: 0 1px 2px rgba(20, 38, 56, 0.08);
+  --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);
+  --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
+  --inset: #e8edf1;
+  --accent: #007f96;
+  --accent-text: #006e82;
+  --accent-soft: rgba(0, 127, 150, 0.10);
+  --green-text: #168250;
+  --amber-text: #b45d18;
+  --red-text: #bd2f45;
+}
+
+/* ---- 2. solid background ------------------------------------------------ */
+:root body {
+  background: var(--bg);
+}
+
+/* ---- 3a. decorative layers off (belt and braces; divs removed in layout) - */
+:root .starfield,
+:root .ambient {
+  display: none;
+}
+
+/* ---- 3b. always-running animations off ---------------------------------
+   Kept: node-pulse-ring (the one allowed ambient pulse, already paused
+   offscreen via .route-paused), flame-flicker + rocket-trail (flying only),
+   mission-pop / unlock-rise / anchor-flash / saved-pulse (one-shot). */
+:root .rocket-body { animation: none; }               /* idle bob */
+:root .ship-glow { animation: none; opacity: 0.3; }   /* hero ship halo */
+:root .campaign-core {
+  animation: none;                                                      /* 6s glow pulse */
+  box-shadow: 0 0 18px rgba(101, 232, 255, 0.25);
+}
+:root .node-locked .planet,
+:root .node-locked .station {
+  animation: none;                                                      /* locked shimmer */
+  filter: none;
+  opacity: 0.7;
+}
+/* The travelling light pulse on routes: hide it, the static base + traveled
+   stroke still read the route. (opacity, not display — rocketroute.js may
+   measure path geometry.) */
+:root .route-flow { animation: none; opacity: 0; }
+
+/* ---- 4. glow cleanup ----------------------------------------------------- */
+:root .hero-title-icon,
+:root .ship-mark,
+:root .rocket-icon,
+:root .route-mode-solar .rocket-icon {
+  filter: none;
+}
+:root .node-done .planet,
+:root .node-done .station {
+  box-shadow: none;
+  border-color: rgba(87, 201, 139, 0.65);
+}
+:root .node-done .mission-spark { box-shadow: none; }
+:root .node-blocked .planet,
+:root .node-blocked .station { box-shadow: none; }
+
+/* Slightly quieter route echoes (pure depth decoration) */
+:root .route-echo { stroke: rgba(166, 213, 255, 0.07); }
+
+/* ==========================================================================
+   Layout shell (see docs/design/v2/README.md)
+   Static top nav (no sticky), 960px container, footer with the secondary
+   pages that used to live in the More drawer. FAB and drawer retired.
+   ========================================================================== */
+
+:root body {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* ---- top nav ------------------------------------------------------------ */
+:root .nav {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+:root .nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 56px;
+}
+:root .brand {
+  display: inline;                     /* v1 .brand was inline-flex w/ gap */
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+:root .brand span {
+  color: var(--quiet);
+  font-weight: 400;
+  font-size: 13px;
+  margin-left: 10px;
+}
+:root .nav nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  min-width: 0;
+}
+:root .nav nav a {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 120ms, background-color 120ms;
+}
+:root .nav nav a:hover { color: var(--text); }
+:root .nav nav a[aria-current="page"] {
+  color: var(--text);
+  background: var(--panel-strong);
+}
+
+/* ---- 960px container ---------------------------------------------------- */
+:root .wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px 72px;
+}
+
+/* ---- footer (secondary pages, formerly the More drawer) ------------------ */
+:root .foot {
+  margin-top: 64px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  color: var(--quiet);
+  font-size: 13px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+:root .foot a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 120ms;
+}
+:root .foot a:hover { color: var(--text); }
+:root .foot a[aria-current="page"] { color: var(--text); }
+
+/* ==========================================================================
+   Step 3+ — shared page patterns (first used by Today, reused by every
+   ported page): page head, cards, buttons, status dots, task rows, lists.
+   All selectors gated so unported v1 pages are untouched.
+   ========================================================================== */
+
+/* ---- type & page head ---------------------------------------------------- */
+:root .page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+:root .kicker { font-size: 13px; color: var(--quiet); margin: 0 0 4px; }
+:root .page-title {
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  margin: 0;
+}
+:root .page-sub { color: var(--muted); margin: 6px 0 0; font-size: 15px; }
+:root .section-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+:root .meta { font-size: 13px; color: var(--quiet); }
+:root .num { font-variant-numeric: tabular-nums; }
+:root .page-body { margin-top: 28px; }
+
+/* ---- columns -------------------------------------------------------------- */
+:root .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+:root .cols-wide {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ---- surfaces ------------------------------------------------------------- */
+:root .card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+:root .card.tight { padding: 14px 16px; }
+:root .card-title { margin: 0 0 8px; }
+:root .side-summary { margin-top: 16px; }
+:root .side-summary p + p { margin-top: 4px; }
+:root .meta b { color: var(--text); font-weight: 600; }
+
+/* ---- buttons --------------------------------------------------------------- */
+:root .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 550;
+  cursor: pointer;
+  background: var(--accent);
+  color: #08262e;
+  text-decoration: none;
+  transition: opacity 120ms, transform 120ms, color 120ms;
+}
+:root .btn:hover { opacity: 0.9; }
+:root .btn:active { transform: translateY(1px); }
+:root .btn.ghost {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--border-strong);
+}
+:root .btn.ghost:hover { color: var(--text); opacity: 1; }
+:root .btn.quiet { background: transparent; color: var(--quiet); padding: 6px 8px; }
+:root .btn.quiet:hover { color: var(--text); }
+:root .btn.sm { padding: 5px 10px; font-size: 13px; }
+
+/* ---- status dots ------------------------------------------------------------ */
+:root .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+  display: inline-block;
+}
+:root .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--muted);
+}
+:root .status.done    { color: var(--green-text); }
+:root .status.current { color: var(--accent-text); }
+:root .status.soon    { color: var(--amber-text); }
+:root .status.late    { color: var(--red-text); }
+:root .status.locked  { color: var(--quiet); }
+
+/* ---- day groups & task rows -------------------------------------------------- */
+:root .day-group { margin-bottom: 8px; }
+:root .group-label { margin: 28px 0 10px; font-size: 13px; color: var(--quiet); }
+:root .day-group:first-child .group-label { margin-top: 0; }
+
+:root .tasks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+:root .task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+:root .task:last-child { border-bottom: 0; }
+/* forms wrap the checkbox / action button; let their contents join the row */
+:root .task form { display: contents; }
+:root .task input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 6px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  transition: background-color 120ms, border-color 120ms;
+}
+:root .task input[type="checkbox"]:hover { border-color: var(--muted); }
+:root .task input[type="checkbox"]:checked {
+  background: var(--green);
+  border-color: var(--green);
+}
+:root .task input[type="checkbox"]:checked::before {
+  content: "";
+  width: 10px;
+  height: 6px;
+  margin-top: -2px;
+  border-left: 2px solid var(--bg);
+  border-bottom: 2px solid var(--bg);
+  transform: rotate(-45deg);
+}
+:root .task input[type="checkbox"]:disabled { cursor: default; }
+:root .task-body { flex: 1; min-width: 0; }
+:root .task-title { font-size: 14.5px; font-weight: 500; }
+:root .task-title a { color: inherit; text-decoration: none; }
+:root .task-title a:hover { color: var(--accent-text); }
+:root .task:has(input:checked) .task-title {
+  color: var(--quiet);
+  text-decoration: line-through;
+  text-decoration-color: var(--border-strong);
+}
+:root .task:has(input:checked) .task-title a { color: inherit; }
+:root .task-meta { font-size: 13px; color: var(--quiet); margin-top: 1px; }
+:root .task-when { font-size: 13px; color: var(--quiet); white-space: nowrap; }
+:root .slot-time {
+  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--quiet);
+  width: 52px;
+  flex: 0 0 auto;
+}
+:root .task .btn.quiet { opacity: 0; }
+:root .task:hover .btn.quiet,
+:root .task:focus-within .btn.quiet { opacity: 1; }
+
+/* ---- simple item lists (deadlines rail etc.) ---------------------------------- */
+:root .list { list-style: none; padding: 0; margin: 0; }
+:root .list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+:root .list li:last-child { border-bottom: 0; }
+:root .list .grow { flex: 1; min-width: 0; }
+:root .list .grow a { color: inherit; text-decoration: none; }
+:root .list .grow a:hover { color: var(--accent-text); }
+:root .list small { display: block; color: var(--quiet); font-size: 13px; }
+
+/* ---- utilities ----------------------------------------------------------- */
+:root .mt-16 { margin-top: 16px; }
+:root .mt-8 { margin-top: 8px; }
+:root .nowrap { white-space: nowrap; }
+:root .focus-link { color: var(--accent-text); text-decoration: none; }
+:root .focus-link:hover { text-decoration: underline; }
+:root .meta a { color: var(--muted); }
+:root .meta a:hover { color: var(--accent-text); }
+
+/* ---- quiet stats line (no boxes) ------------------------------------------- */
+:root .stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 0;
+  padding: 14px 0;
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--muted);
+}
+:root .stats > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0 20px;
+}
+:root .stats > div:first-child { padding-left: 0; }
+:root .stats > div + div { border-left: 1px solid var(--border); }
+:root .stats b {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- section heads ----------------------------------------------------------- */
+:root .section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 40px 0 14px;
+}
+:root .section-head a {
+  color: var(--quiet);
+  font-size: 13px;
+  text-decoration: none;
+}
+:root .section-head a:hover { color: var(--accent-text); }
+
+/* ---- thin progress bars --------------------------------------------------------- */
+:root .progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--panel-soft);
+  overflow: hidden;
+  flex: 1;
+}
+:root .progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+:root .progress.done span { background: var(--green); }
+:root .progress-row { display: flex; align-items: center; gap: 12px; }
+:root .progress-row .num { font-size: 13px; color: var(--muted); }
+
+/* ==========================================================================
+   The quiet route map (design v2 signature feature). Rendered by the
+   routeMapV2 partial + app.js. Coordinates are percentages on both axes.
+   ========================================================================== */
+:root .map-card { padding: 0; overflow: hidden; }
+:root .map-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px 16px;
+  font-size: 13px;
+  color: var(--quiet);
+  flex-wrap: wrap;
+}
+:root .map-foot .status { font-size: 13px; }
+
+:root .map {
+  position: relative;
+  margin: 14px 12px;
+  border-radius: 7px;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  aspect-ratio: 1000 / 320;
+  min-height: 190px;
+}
+:root .map.tall { aspect-ratio: 1000 / 420; }
+:root .map svg.routes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+:root .map .route {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.13);
+  stroke-width: 1.5;
+}
+:root .map .route-done {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  opacity: 0.85;
+}
+:root[data-theme="light"] .map .route { stroke: rgba(20, 38, 56, 0.16); }
+
+:root .map .node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;                 /* generous hit area */
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+:root .map .node i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--panel-strong);
+  border: 1.5px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  transition: transform 120ms, border-color 120ms;
+}
+:root .map .node:hover i,
+:root .map .node:focus-visible i {
+  transform: scale(1.35);
+  border-color: var(--muted);
+}
+:root .map .node.done i { background: var(--green); border-color: var(--green); }
+:root .map .node.done i::before {
+  content: "";
+  width: 5px;
+  height: 3px;
+  margin-top: -1px;
+  border-left: 1.5px solid var(--bg);
+  border-bottom: 1.5px solid var(--bg);
+  transform: rotate(-45deg);
+}
+:root .map .node.current { width: 44px; height: 44px; }
+:root .map .node.current i {
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+:root .map .node.current::after {   /* the one allowed ambient animation */
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  opacity: 0.5;
+  animation: v2-ring 3s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+:root .map.paused .node.current::after { animation-play-state: paused; }
+@keyframes v2-ring {
+  0%   { transform: scale(0.8); opacity: 0.5; }
+  70%  { transform: scale(1.25); opacity: 0; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+:root .map .node.locked i {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--quiet);
+}
+:root .map .node .lbl {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+:root .map .node.current .lbl { color: var(--text); font-weight: 550; }
+
+/* marker (small ship glyph at the current position; moves only on click) */
+:root .map .marker {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  color: var(--accent);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* tooltip */
+:root .map .tip {
+  position: absolute;
+  z-index: 10;
+  width: 220px;
+  background: var(--panel-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(3px);
+  pointer-events: none;
+  transition: opacity 120ms, transform 120ms;
+  font-size: 13px;
+}
+:root .map .tip.open { opacity: 1; transform: none; }
+:root .map .tip b { display: block; font-size: 14px; margin-bottom: 2px; }
+:root .map .tip .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+/* ---- project rows ------------------------------------------------------------ */
+:root .mt-24 { margin-top: 24px; }
+:root .project-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+:root .project-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms, background-color 120ms;
+}
+:root a.project-row:hover {
+  border-color: var(--border-strong);
+  background: var(--panel-strong);
+}
+:root .project-row .grow { flex: 1; min-width: 0; }
+:root .project-row h3 { font-size: 15px; font-weight: 600; margin: 0; }
+:root .project-row .meta { margin-top: 1px; }
+:root .project-row .progress { max-width: 140px; }
+:root .project-row.is-locked { opacity: 0.75; }
+:root .status.pending { color: var(--quiet); }
+:root .status.pending .dot { opacity: 0.45; }
+
+:root .subprojects {
+  list-style: none;
+  padding: 0 0 0 18px;
+  margin: 6px 0 0;
+  border-left: 1px solid var(--border);
+}
+:root .subprojects li {
+  padding: 6px 0 6px 14px;
+  font-size: 14px;
+  color: var(--muted);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+:root .subprojects a { color: inherit; text-decoration: none; flex: 1; min-width: 0; }
+:root .subprojects a:hover { color: var(--accent-text); }
+
+/* ---- quiet pill filter row ------------------------------------------------------ */
+:root .pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 24px;
+}
+:root .pill-row a {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 120ms, background-color 120ms;
+}
+:root .pill-row a:hover { color: var(--text); }
+:root .pill-row a[aria-current="true"] {
+  color: var(--text);
+  background: var(--panel-strong);
+}
+
+/* ---- amber notice ------------------------------------------------------------ */
+:root .notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid rgba(217, 160, 84, 0.3);
+  border-radius: 7px;
+  background: rgba(217, 160, 84, 0.07);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--amber-text);
+}
+
+/* ---- roadmaps page: sidebar + tall map ------------------------------------------ */
+:root .rm-layout { grid-template-columns: 240px 1fr; }
+:root .rm-map-host .map { aspect-ratio: 1000 / 420; }
+:root .rm-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+:root .rm-list a {
+  display: block;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 120ms, border-color 120ms;
+}
+:root .rm-list a:hover { background: var(--panel-strong); }
+:root .rm-list a.active { background: var(--panel-strong); border-color: var(--border-strong); }
+:root .rm-list b { display: block; font-size: 14px; font-weight: 550; }
+:root .rm-list small { color: var(--quiet); font-size: 13px; }
+
+:root .map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px 0;
+}
+:root .map-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+:root .map-empty { padding: 20px; }
+:root .rm-project-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---- gym strip (health page), calm restyle of v1 .gym-day ------------------------ */
+:root .gym-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+:root .gym-day {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 120ms, border-color 120ms, background-color 120ms;
+}
+:root .gym-day:hover { transform: none; color: var(--text); }
+:root .gym-day span {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+}
+:root .gym-day::after { content: none; }   /* v1 status dot */
+:root .gym-day.status-not_done {           /* calm, not alarming */
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--muted);
+}
+:root .gym-day.status-done {
+  border-color: rgba(87, 201, 139, 0.4);
+  background: rgba(87, 201, 139, 0.08);
+  color: var(--green-text);
+}
+:root .gym-day.status-skipped {
+  border-color: rgba(217, 160, 84, 0.35);
+  background: rgba(217, 160, 84, 0.07);
+  color: var(--amber-text);
+}
+
+/* ---- settings ------------------------------------------------------------------- */
+:root .settings-card { max-width: 760px; }
+:root .measure { max-width: 60ch; }
+:root .token {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--inset);
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  padding: 10px 14px;
+  font: 13px/1.5 ui-monospace, "Cascadia Code", Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+:root .token span { flex: 1; }
+:root .warn-note { font-size: 13.5px; color: var(--amber-text); margin-top: 12px; }
+
+:root .setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+:root .setting:last-child { border-bottom: 0; padding-bottom: 0; }
+:root .setting b { display: block; font-weight: 600; font-size: 14.5px; }
+:root .setting p { color: var(--quiet); font-size: 13.5px; max-width: 52ch; margin: 2px 0 0; }
+
+:root .switch { position: relative; width: 40px; height: 22px; flex: 0 0 auto; }
+:root .switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+:root .switch i {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  pointer-events: none;
+  background: var(--panel-strong);
+  border: 1px solid var(--border-strong);
+  transition: background-color 120ms;
+}
+:root .switch i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 120ms cubic-bezier(0.25, 0.1, 0.25, 1), background-color 120ms;
+}
+:root .switch input:checked + i { background: var(--accent-soft); border-color: var(--accent); }
+:root .switch input:checked + i::after { transform: translateX(18px); background: var(--accent); }
+:root .switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* user-forced reduced motion (settings switch), mirroring prefers-reduced-motion */
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation: none !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* ---- courses ------------------------------------------------------------------- */
+:root .course-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+:root .course { display: flex; flex-direction: column; gap: 12px; }
+:root .course .kicker { margin: 0; }
+:root .course h3 { font-size: 16px; font-weight: 600; margin: 0; }
+:root .course h3 a { color: inherit; text-decoration: none; }
+:root .course h3 a:hover { color: var(--accent-text); }
+:root .next-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel-strong);
+  border-radius: 7px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+:root .next-block-copy { flex: 1; min-width: 0; }
+:root .next-block small { display: block; color: var(--quiet); font-size: 13px; }
+
+/* ---- phase strip (project page mini-map) ----------------------------------------- */
+:root .phase-strip { display: flex; align-items: center; gap: 6px; }
+:root .phase-strip i {
+  height: 4px;
+  border-radius: 2px;
+  flex: 1;
+  background: var(--panel-soft);
+}
+:root .phase-strip i.done { background: var(--green); }
+:root .phase-strip i.current { background: var(--accent); }
+:root .body-text { color: var(--muted); font-size: 14.5px; }
+
+/* ---- forms ------------------------------------------------------------------- */
+/* create/edit form pages: one calm single-column card */
+:root .form-card { max-width: 640px; }
+:root .req { color: var(--accent-text); font-style: normal; }
+:root .form-stack { display: grid; gap: 4px; margin-top: 8px; }
+:root .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+:root .field { display: block; margin: 8px 0; }
+:root .field span {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+:root .field input,
+:root .field select,
+:root .field textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 7px;
+  background: var(--inset);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  transition: border-color 120ms;
+}
+:root .field input:focus,
+:root .field select:focus,
+:root .field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+:root .form-stack .btn { justify-self: start; margin-top: 8px; }
+:root .flag-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+:root .flag-row label { display: inline-flex; align-items: center; gap: 6px; }
+:root .btn.danger {
+  background: transparent;
+  color: var(--red-text);
+  border-color: rgba(226, 99, 119, 0.35);
+}
+:root .details-summary {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 550;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---- tracker chips (Deen signal), calm restyle of v1 .tracker-dot -------------- */
+:root .tracker-dot {
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 120ms, border-color 120ms, background-color 120ms;
+}
+:root .tracker-dot:hover { transform: none; color: var(--text); }
+:root .tracker-dot span {
+  width: 7px;
+  height: 7px;
+  box-shadow: none;
+  background: currentColor;
+}
+:root .tracker-dot.status-done {
+  border-color: rgba(87, 201, 139, 0.4);
+  background: rgba(87, 201, 139, 0.08);
+  color: var(--green-text);
+}
+:root .tracker-dot.status-skipped {
+  border-color: rgba(217, 160, 84, 0.35);
+  background: rgba(217, 160, 84, 0.07);
+  color: var(--amber-text);
+}
+
+@media (max-width: 720px) {
+  :root .nav-inner { gap: 14px; }
+  :root .nav nav {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  :root .nav nav::-webkit-scrollbar { display: none; }
+  :root .cols,
+  :root .cols-wide,
+  :root .rm-layout,
+  :root .course-grid,
+  :root .form-row { grid-template-columns: 1fr; }
+  :root .page-title { font-size: 22px; }
+  :root .task .btn.quiet { opacity: 1; }   /* no hover on touch */
+  :root .task input[type="checkbox"] { width: 24px; height: 24px; }
+}

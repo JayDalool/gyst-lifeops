@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Design v2 map + interactions (port of design-v2/assets/app.js).
+   Design v2 map + interactions (port of docs/design/v2/assets/app.js).
    Only touches elements marked [data-map-v2], so unported v1 pages are
    unaffected. No continuous rAF loops: the single script animation is the
    marker flight on node click, one short run that terminates.

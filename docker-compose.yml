@@ -1,0 +1,12 @@
+services:
+  gyst-lifeops:
+    build: .
+    container_name: gyst-lifeops
+    restart: unless-stopped
+    ports:
+      - "3005:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=8080
+      - DB_PATH=/app/data/lifeops.db

@@ -1,18 +1,13 @@
 {{define "layout"}}
 <!doctype html>
-<html lang="en" data-design="v2">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LifeOps</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  {{/* TODO(design-v2): styles.css still provides the base tokens and shared
-       primitives v2.css layers on; collapsing the two stylesheets (and then
-       dropping the data-design gate) is a follow-up refactor. charts.js stays
-       for the static canvas charts, theme toggle, and tracker toggles. */}}
-  <link rel="stylesheet" href="/static/css/styles.css?v=polish-5">
-  <link rel="stylesheet" href="/static/css/v2.css?v=8">
+  <link rel="stylesheet" href="/static/css/styles.css?v=design-2">
   <script defer src="/static/js/charts.js?v=polish-5"></script>
   <script defer src="/static/js/app.js?v=2"></script>
 </head>
