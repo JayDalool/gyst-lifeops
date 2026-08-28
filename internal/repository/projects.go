@@ -12,7 +12,7 @@ import (
 const projectColumns = `id, uuid, COALESCE(parent_project_id, 0), name, description, category, project_kind, status,
 	COALESCE(start_date, ''), COALESCE(target_date, ''), notes, unlock_notes,
 	COALESCE(depends_on_project_id, 0), auto_unlock,
-	created_at, updated_at, COALESCE(archived_at, ''), COALESCE(roadmap_id, 0)`
+	created_at, updated_at, COALESCE(archived_at, ''), COALESCE(roadmap_id, 0), pos_x, pos_y, pos_z`
 
 func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithProgress, error) {
 	where := "WHERE p.archived_at IS NULL AND p.status != 'archived'"
@@ -93,6 +93,9 @@ func (r *Repository) listProjectsWhere(where string, args ...any) ([]models.Proj
 			&item.Project.UpdatedAt,
 			&item.Project.ArchivedAt,
 			&item.Project.RoadmapID,
+			&item.Project.PosX,
+			&item.Project.PosY,
+			&item.Project.PosZ,
 			&item.TotalItems,
 			&item.CompletedItems,
 			&item.NextDueItem,
@@ -105,6 +108,11 @@ func (r *Repository) listProjectsWhere(where string, args ...any) ([]models.Proj
 		projects = append(projects, item)
 	}
 	return projects, rows.Err()
+}
+
+func (r *Repository) SetGalaxyPosition(id int64, x, y, z float64) error {
+	_, err := r.db.Exec(`UPDATE projects SET pos_x = ?, pos_y = ?, pos_z = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, x, y, z, id)
+	return err
 }
 
 func (r *Repository) ProjectTree() (models.ProjectTree, error) {

@@ -108,7 +108,7 @@ Asr and signed per-prayer minute adjustments. The Today interface and browser
 alerts are introduced in later build phases.
 
 Database migrations are applied in filename order and currently run through
-`011_external_links.sql`.
+`012_galaxy_positions.sql`.
 
 ## Reminders TODO
 

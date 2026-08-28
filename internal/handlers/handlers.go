@@ -247,7 +247,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "today":
 		h.today(w, r)
 	case "galaxy":
-		h.projects(w, r, []string{"projects"})
+		if len(segments) == 2 && segments[1] == "data" {
+			h.galaxyData(w, r)
+		} else {
+			h.projects(w, r, []string{"projects"})
+		}
 	case "monthly":
 		h.monthly(w, r)
 	case "tasks":
@@ -282,6 +286,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.externalLinks(w, r, segments)
 	default:
 		http.NotFound(w, r)
+	}
+}
+
+func (h *Handler) galaxyData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+	planets, err := h.Service.GalaxyData()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := json.NewEncoder(w).Encode(planets); err != nil {
+		serverError(w, err)
 	}
 }
 

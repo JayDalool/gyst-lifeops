@@ -49,6 +49,42 @@ func TestRocketRouteForRoadmapExcludesSubprojects(t *testing.T) {
 	}
 }
 
+func TestGalaxyDataPersistsStablePositionsAndMoons(t *testing.T) {
+	svc := testService(t)
+	top := models.Project{Name: "Stable Planet", ProjectKind: "main", Status: "active", AutoUnlock: true}
+	if err := svc.Repo.CreateProject(&top); err != nil {
+		t.Fatal(err)
+	}
+	moon := models.Project{Name: "Moon", ProjectKind: "phase", Status: "locked", ParentProjectID: top.ID, AutoUnlock: true}
+	if err := svc.Repo.CreateProject(&moon); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := svc.GalaxyData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := svc.GalaxyData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != 1 || len(first[0].Moons) != 1 {
+		t.Fatalf("galaxy hierarchy = %+v", first)
+	}
+	if first[0].X != second[0].X || first[0].Y != second[0].Y || first[0].Z != second[0].Z {
+		t.Fatal("position changed between reads")
+	}
+	projects, err := svc.Repo.ListProjects(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, project := range projects {
+		if project.Project.PosX == nil || project.Project.PosY == nil || project.Project.PosZ == nil {
+			t.Fatalf("position not persisted for %q", project.Project.Name)
+		}
+	}
+}
+
 func TestProjectSolarSystemIncludesChildren(t *testing.T) {
 	svc := testService(t)
 	top := models.Project{Name: "Solar System A", ProjectKind: "main", Status: "active", AutoUnlock: true}

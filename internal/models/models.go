@@ -61,6 +61,22 @@ type Project struct {
 	CreatedAt          string
 	UpdatedAt          string
 	ArchivedAt         string
+	PosX               *float64
+	PosY               *float64
+	PosZ               *float64
+}
+
+type GalaxyPlanet struct {
+	ID       int64          `json:"id"`
+	Name     string         `json:"name"`
+	URL      string         `json:"url"`
+	State    string         `json:"state"`
+	Size     float64        `json:"size"`
+	Progress int            `json:"progress"`
+	X        float64        `json:"x"`
+	Y        float64        `json:"y"`
+	Z        float64        `json:"z"`
+	Moons    []GalaxyPlanet `json:"moons"`
 }
 
 type ProjectItem struct {

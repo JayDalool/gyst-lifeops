@@ -33,8 +33,8 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
 		t.Fatal(err)
 	}
-	if applied != 11 {
-		t.Fatalf("applied migrations = %d, want 11", applied)
+	if applied != 12 {
+		t.Fatalf("applied migrations = %d, want 12", applied)
 	}
 	var externalLinksTable int
 	if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='external_links'`).Scan(&externalLinksTable); err != nil {
@@ -82,6 +82,7 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 		"009_quest_reward_integrity.sql",
 		"010_project_item_rewards.sql",
 		"011_external_links.sql",
+		"012_galaxy_positions.sql",
 	} {
 		copyMigration(t, sourceDir, migrationDir, name)
 	}
@@ -104,6 +105,13 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 	}
 	if items != 1 {
 		t.Fatalf("legacy missions after upgrade = %d, want 1", items)
+	}
+	var positionColumns int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('projects') WHERE name IN ('pos_x', 'pos_y', 'pos_z')`).Scan(&positionColumns); err != nil {
+		t.Fatal(err)
+	}
+	if positionColumns != 3 {
+		t.Fatalf("galaxy position columns = %d, want 3", positionColumns)
 	}
 	var starsReward int
 	var proofType string

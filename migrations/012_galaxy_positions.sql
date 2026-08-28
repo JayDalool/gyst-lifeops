@@ -1,0 +1,3 @@
+ALTER TABLE projects ADD COLUMN pos_x REAL;
+ALTER TABLE projects ADD COLUMN pos_y REAL;
+ALTER TABLE projects ADD COLUMN pos_z REAL;
