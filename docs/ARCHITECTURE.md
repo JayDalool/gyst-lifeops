@@ -109,6 +109,15 @@ Calendar output is an HTTP boundary over the existing project, course, and task
 data. Detailed behavior and security decisions are documented in
 `google-calendar-plan.md` and `calendar-course-integration.md`.
 
+## Prayer calculation
+
+Prayer times are calculated locally in `internal/services/prayer.go` using solar
+coordinates and the configured calculation method. Settings are read through
+the existing `app_settings` repository; missing or invalid values fall back to
+Winnipeg, ISNA, and Shafi defaults. The engine makes no network request and has
+no cache table. Timezone conversion occurs after each astronomical event is
+calculated in UTC, which preserves the correct offset on DST transition days.
+
 ## Deployment
 
 The repository currently documents local execution with `go run .`. Deployment

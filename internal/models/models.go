@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Task struct {
 	ID            int64
 	UUID          string
@@ -212,6 +214,35 @@ type PlayerStats struct {
 	ActiveStreak  int
 	ProofCount    int
 	TaskDoneCount int
+}
+
+// PrayerConfig controls the local solar calculation. Adjustments are signed
+// minutes applied after astronomical times are calculated.
+type PrayerConfig struct {
+	Latitude    float64
+	Longitude   float64
+	Timezone    string
+	Method      string
+	AsrMethod   string
+	Adjustments map[string]int
+}
+
+type PrayerTime struct {
+	Name string
+	Time string
+	At   time.Time
+}
+
+type PrayerSchedule struct {
+	Date     string
+	Location string
+	Times    []PrayerTime
+}
+
+type NextPrayer struct {
+	Prayer    PrayerTime
+	Remaining time.Duration
+	Tomorrow  bool
 }
 
 // Roadmap is a top-level journey that groups projects (trips). It is distinct

@@ -102,6 +102,11 @@ web/static/             CSS and chart JavaScript
 - `docs/QUEST_SYSTEM.md` documents quest statuses, dependency unlocking,
   rewards, proof validation, Markdown import, and remaining product gaps.
 
+Prayer times are calculated locally with Winnipeg, ISNA, and Shafi defaults.
+The engine supports MWL, Umm al-Qura, Egyptian, and Karachi methods plus Hanafi
+Asr and signed per-prayer minute adjustments. The Today interface and browser
+alerts are introduced in later build phases.
+
 Database migrations are applied in filename order and currently run through
 `011_external_links.sql`.
 

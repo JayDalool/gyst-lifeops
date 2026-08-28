@@ -79,3 +79,15 @@ WHERE reminder_time IS NOT NULL;
 
 INSERT INTO reminders (source_type, source_id, title, reminder_date, reminder_time, status) VALUES
   ('manual', NULL, 'Review yearly goals', date('now'), '20:00', 'active');
+
+INSERT OR IGNORE INTO app_settings (setting_key, setting_value) VALUES
+  ('prayer.latitude', '49.8951'),
+  ('prayer.longitude', '-97.1384'),
+  ('prayer.timezone', 'America/Winnipeg'),
+  ('prayer.method', 'isna'),
+  ('prayer.asr_method', 'shafi'),
+  ('prayer.adjust.fajr', '0'),
+  ('prayer.adjust.dhuhr', '0'),
+  ('prayer.adjust.asr', '0'),
+  ('prayer.adjust.maghrib', '0'),
+  ('prayer.adjust.isha', '0');
