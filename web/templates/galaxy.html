@@ -1,0 +1,27 @@
+{{define "content"}}
+<section class="galaxy-shell" data-galaxy aria-labelledby="galaxy-title">
+  <div class="galaxy-head">
+    <div>
+      <p class="kicker">Mission map</p>
+      <h1 class="page-title" id="galaxy-title">Galaxy</h1>
+      <p class="page-sub">Select a planet to inspect it. Select it again to open the project.</p>
+    </div>
+    <div class="galaxy-actions">
+      <a class="btn ghost" href="/projects">List view</a>
+      <a class="btn" data-galaxy-open hidden>Open project</a>
+    </div>
+  </div>
+  <div class="galaxy-stage" data-galaxy-stage tabindex="0" aria-label="Interactive project galaxy">
+    <canvas data-galaxy-canvas aria-hidden="true"></canvas>
+    <div class="galaxy-status" data-galaxy-status role="status">Loading galaxy&hellip;</div>
+  </div>
+  <div class="galaxy-browser">
+    <h2 class="section-title">Projects</h2>
+    <p class="meta">Keyboard and conventional view. Press Enter on a project to open it.</p>
+    <ul class="galaxy-list" data-galaxy-list></ul>
+    <p class="galaxy-fallback" data-galaxy-fallback hidden>
+      3D is unavailable in this browser. <a href="/projects">Open the full project list.</a>
+    </p>
+  </div>
+</section>
+{{end}}

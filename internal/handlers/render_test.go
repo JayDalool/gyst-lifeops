@@ -26,6 +26,10 @@ func renderOK(t *testing.T, page string, data any) {
 	}
 }
 
+func TestRenderGalaxy(t *testing.T) {
+	renderOK(t, "galaxy.html", struct{ Page string }{Page: "galaxy"})
+}
+
 func TestRenderDashboard(t *testing.T) {
 	data := models.DashboardData{
 		Page:             "dashboard",

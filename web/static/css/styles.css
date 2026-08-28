@@ -4051,6 +4051,27 @@ i.map-node-state {
 :root .tracker-dot.prayer-current { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77,191,208,.12); }
 :root .prayer-adjustments { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 
+/* ---- Galaxy: canvas is decorative; the adjacent list is the accessible map. --- */
+:root .galaxy-shell { width: min(1240px, calc(100vw - 32px)); margin-left: 50%; transform: translateX(-50%); }
+:root .galaxy-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 16px; }
+:root .galaxy-actions { display: flex; gap: 8px; }
+:root .galaxy-stage { position: relative; height: min(68vh, 680px); min-height: 440px; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: radial-gradient(circle at 50% 40%, #142239 0, #080d16 50%, #05070c 100%); touch-action: none; }
+:root .galaxy-stage:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:root .galaxy-stage canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+:root .galaxy-status { position: absolute; left: 16px; bottom: 14px; max-width: calc(100% - 32px); padding: 7px 11px; color: #dce9f4; background: rgba(5, 9, 15, .78); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; font-size: 13px; pointer-events: none; }
+:root .galaxy-browser { margin-top: 18px; }
+:root .galaxy-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; padding: 0; margin: 10px 0 0; }
+:root .galaxy-list a { display: grid; grid-template-columns: auto 1fr; column-gap: 9px; align-items: center; min-height: 54px; padding: 9px 12px; color: var(--text); text-decoration: none; border: 1px solid var(--border); border-radius: 9px; background: var(--panel); }
+:root .galaxy-list a:hover, :root .galaxy-list a:focus-visible { border-color: var(--border-strong); background: var(--panel-strong); }
+:root .galaxy-list b { font-size: 13px; font-weight: 600; }
+:root .galaxy-list small { grid-column: 2; color: var(--quiet); text-transform: capitalize; }
+:root .galaxy-state { grid-row: 1 / 3; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+:root .galaxy-state.state-active, :root .galaxy-state.state-current { background: var(--accent); }
+:root .galaxy-state.state-done { background: var(--green); }
+:root .galaxy-state.state-locked { background: var(--quiet); }
+:root .galaxy-state.state-upcoming { background: var(--amber); }
+:root .galaxy-fallback { padding: 14px; border: 1px solid var(--border); border-radius: 9px; color: var(--muted); }
+
 :root .tasks {
   list-style: none;
   padding: 0;
@@ -4777,4 +4798,10 @@ i.map-node-state {
   :root .task input[type="checkbox"] { width: 24px; height: 24px; }
   :root .prayer-hero { align-items: flex-start; flex-direction: column; }
   :root .prayer-adjustments { grid-template-columns: repeat(2, 1fr); }
+  :root .galaxy-head { align-items: flex-start; flex-direction: column; }
+  :root .galaxy-stage { height: 58vh; min-height: 360px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .galaxy-stage canvas { cursor: default; }
 }

@@ -17,7 +17,7 @@
       <a class="brand" href="/">LifeOps <span>Mission Control</span></a>
       <nav aria-label="Primary">
         <a href="/" {{if eq .Page "today"}}aria-current="page"{{end}}>Today</a>
-        <a href="/galaxy" {{if eq .Page "projects"}}aria-current="page"{{end}}>Galaxy</a>
+        <a href="/galaxy" {{if or (eq .Page "projects") (eq .Page "galaxy")}}aria-current="page"{{end}}>Galaxy</a>
 
         <details class="nav-menu">
           <summary>Add</summary>
@@ -49,6 +49,7 @@
   <main class="wrap">
     {{template "content" .}}
   </main>
+  {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=1"></script>{{end}}
 </body>
 </html>
 {{end}}

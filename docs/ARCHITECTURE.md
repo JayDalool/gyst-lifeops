@@ -71,6 +71,10 @@ Browser behavior is intentionally small:
   interactions.
 - `web/static/js/charts.js` renders static charts and handles theme and tracker
   controls.
+- `web/static/js/galaxy.js` consumes `/galaxy/data` and renders the optional 3D
+  project map. Three.js `0.180.0` is pinned at
+  `web/static/js/vendor/three.module.js`; there is no package manager or build
+  step. The adjacent project list remains the keyboard and WebGL fallback.
 
 ## Data
 

@@ -250,7 +250,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if len(segments) == 2 && segments[1] == "data" {
 			h.galaxyData(w, r)
 		} else {
-			h.projects(w, r, []string{"projects"})
+			h.galaxy(w, r)
 		}
 	case "monthly":
 		h.monthly(w, r)
@@ -287,6 +287,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func (h *Handler) galaxy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+	h.render(w, "galaxy.html", struct{ Page string }{Page: "galaxy"})
 }
 
 func (h *Handler) galaxyData(w http.ResponseWriter, r *http.Request) {
