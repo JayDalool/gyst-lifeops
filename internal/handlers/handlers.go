@@ -224,14 +224,18 @@ func New(service *services.Service, templateDir string) *Handler {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := strings.Trim(r.URL.Path, "/")
 	if path == "" {
-		h.dashboard(w, r)
+		h.today(w, r)
 		return
 	}
 
 	segments := strings.Split(path, "/")
 	switch segments[0] {
+	case "dashboard":
+		h.dashboard(w, r)
 	case "today":
 		h.today(w, r)
+	case "galaxy":
+		h.projects(w, r, []string{"projects"})
 	case "monthly":
 		h.monthly(w, r)
 	case "tasks":

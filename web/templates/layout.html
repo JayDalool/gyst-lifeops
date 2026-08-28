@@ -16,28 +16,38 @@
     <div class="nav-inner">
       <a class="brand" href="/">LifeOps <span>Mission Control</span></a>
       <nav aria-label="Primary">
-        <a href="/" {{if eq .Page "dashboard"}}aria-current="page"{{end}}>Dashboard</a>
-        <a href="/today" {{if eq .Page "today"}}aria-current="page"{{end}}>Today</a>
-        <a href="/projects" {{if eq .Page "projects"}}aria-current="page"{{end}}>Projects</a>
-        <a href="/roadmap" {{if eq .Page "roadmap"}}aria-current="page"{{end}}>Roadmaps</a>
-        <a href="/courses" {{if eq .Page "courses"}}aria-current="page"{{end}}>Courses</a>
-        <a href="/settings" {{if eq .Page "settings"}}aria-current="page"{{end}}>Settings</a>
+        <a href="/" {{if eq .Page "today"}}aria-current="page"{{end}}>Today</a>
+        <a href="/galaxy" {{if eq .Page "projects"}}aria-current="page"{{end}}>Galaxy</a>
+
+        <details class="nav-menu">
+          <summary>Add</summary>
+          <div class="nav-menu-popover">
+            <a href="/tasks/new">Task</a>
+            <a href="/projects/new">Project</a>
+            <a href="/courses/new">Course</a>
+          </div>
+        </details>
+
+        <details class="nav-menu" {{if or (eq .Page "courses") (eq .Page "monthly") (eq .Page "analytics") (eq .Page "health") (eq .Page "archive") (eq .Page "tasks") (eq .Page "goals") (eq .Page "reminders") (eq .Page "settings")}}data-active="true"{{end}}>
+          <summary>More</summary>
+          <div class="nav-menu-popover nav-menu-more">
+            <a href="/courses">Courses</a>
+            <a href="/monthly">Monthly</a>
+            <a href="/analytics">Analytics</a>
+            <a href="/health">Health</a>
+            <a href="/archive">Archive</a>
+            <a href="/tasks">All tasks</a>
+            <a href="/goals">Goals</a>
+            <a href="/reminders">Reminders</a>
+            <a href="/settings">Settings</a>
+          </div>
+        </details>
       </nav>
     </div>
   </header>
 
   <main class="wrap">
     {{template "content" .}}
-
-    <footer class="foot">
-      <a href="/monthly" {{if eq .Page "monthly"}}aria-current="page"{{end}}>Monthly</a>
-      <a href="/tasks" {{if eq .Page "tasks"}}aria-current="page"{{end}}>All tasks</a>
-      <a href="/goals" {{if eq .Page "goals"}}aria-current="page"{{end}}>Goals</a>
-      <a href="/reminders" {{if eq .Page "reminders"}}aria-current="page"{{end}}>Reminders</a>
-      <a href="/analytics" {{if eq .Page "analytics"}}aria-current="page"{{end}}>Analytics</a>
-      <a href="/health" {{if eq .Page "health"}}aria-current="page"{{end}}>Health</a>
-      <a href="/archive" {{if eq .Page "archive"}}aria-current="page"{{end}}>Archive</a>
-    </footer>
   </main>
 </body>
 </html>

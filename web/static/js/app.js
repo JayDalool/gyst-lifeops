@@ -192,6 +192,25 @@
         try { localStorage.setItem("lifeops-motion", motion.checked ? "reduced" : ""); } catch (e) {}
       });
     }
+
+    var navMenus = Array.prototype.slice.call(document.querySelectorAll(".nav-menu"));
+    navMenus.forEach(function (menu) {
+      menu.addEventListener("toggle", function () {
+        if (!menu.open) return;
+        navMenus.forEach(function (other) {
+          if (other !== menu) other.open = false;
+        });
+      });
+    });
+    document.addEventListener("click", function (event) {
+      navMenus.forEach(function (menu) {
+        if (!menu.contains(event.target)) menu.open = false;
+      });
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return;
+      navMenus.forEach(function (menu) { menu.open = false; });
+    });
   }
 
   try {
