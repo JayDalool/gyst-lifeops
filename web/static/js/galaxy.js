@@ -1,9 +1,20 @@
-import * as THREE from "/static/js/vendor/three.module.js";
-
 const root = document.querySelector("[data-galaxy]");
-if (root) initGalaxy(root);
+if (root) {
+  import("/static/js/vendor/three.module.js")
+    .then((THREE) => initGalaxy(root, THREE))
+    .catch((error) => showGalaxyFallback(root, error));
+}
 
-async function initGalaxy(root) {
+function showGalaxyFallback(root, error) {
+  const status = root.querySelector("[data-galaxy-status]");
+  const fallback = root.querySelector("[data-galaxy-fallback]");
+  if (status) status.textContent = "3D view unavailable. Use the project list below.";
+  if (fallback) fallback.hidden = false;
+  root.classList.add("galaxy-load-failed");
+  if (error) console.error("Galaxy startup failed", error);
+}
+
+async function initGalaxy(root, THREE) {
   const stage = root.querySelector("[data-galaxy-stage]");
   const canvas = root.querySelector("[data-galaxy-canvas]");
   const status = root.querySelector("[data-galaxy-status]");
@@ -13,12 +24,14 @@ async function initGalaxy(root) {
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.motion === "reduced";
   let planets;
   try {
-    const response = await fetch("/galaxy/data", { headers: { Accept: "application/json" } });
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 10000);
+    const response = await fetch("/galaxy/data", { headers: { Accept: "application/json" }, signal: controller.signal });
+    window.clearTimeout(timeout);
     if (!response.ok) throw new Error("Galaxy data could not be loaded");
     planets = await response.json();
   } catch (error) {
-    status.textContent = error.message;
-    fallback.hidden = false;
+    showGalaxyFallback(root, error);
     return;
   }
 
@@ -42,11 +55,11 @@ async function initGalaxy(root) {
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
-  } catch (_) {
-    stage.hidden = true;
-    fallback.hidden = false;
+  } catch (error) {
+    showGalaxyFallback(root, error);
     return;
   }
+  try {
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x070b12, 0.006);
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 600);
@@ -140,4 +153,7 @@ async function initGalaxy(root) {
     requestAnimationFrame(frame);
   }
   frame();
+  } catch (error) {
+    showGalaxyFallback(root, error);
+  }
 }
