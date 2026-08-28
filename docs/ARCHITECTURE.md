@@ -107,6 +107,12 @@ External links are context, not evidence. They are not stored in proof fields,
 do not complete tasks or missions, and are absent from all XP and achievement
 queries.
 
+GitHub, Jira, and Slack links may refresh their stored title/status snapshots
+through `internal/services/providers/`. Page rendering never performs remote
+I/O. GitHub can use `GITHUB_TOKEN`; Jira requires `JIRA_EMAIL` and
+`JIRA_API_TOKEN`; Slack requires `SLACK_BOT_TOKEN`. Missing credentials leave
+the manual snapshot unchanged.
+
 ## Calendar integration
 
 Calendar output is an HTTP boundary over the existing project, course, and task

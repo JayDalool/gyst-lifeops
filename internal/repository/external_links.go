@@ -89,6 +89,23 @@ func (r *Repository) UpdateExternalLinkSummary(id int64, summary string) error {
 	return nil
 }
 
+func (r *Repository) UpdateExternalLinkSnapshot(id int64, title, status string) error {
+	res, err := r.db.Exec(`UPDATE external_links SET title = ?, status_text = ?, sync_source = 'api',
+		last_synced_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1,
+		updated_at = CURRENT_TIMESTAMP WHERE id = ?`, title, status, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (r *Repository) DeleteExternalLink(id int64) error {
 	res, err := r.db.Exec(`DELETE FROM external_links WHERE id = ?`, id)
 	if err != nil {

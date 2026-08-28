@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -929,6 +930,13 @@ func (h *Handler) externalLinks(w http.ResponseWriter, r *http.Request, segments
 	case "delete":
 		if err := h.Service.Repo.DeleteExternalLink(id); err != nil {
 			notFoundOrError(w, err)
+			return
+		}
+	case "sync":
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		if err := h.Service.SyncExternalLink(ctx, id); err != nil {
+			http.Error(w, "sync failed: "+err.Error(), http.StatusBadGateway)
 			return
 		}
 	default:

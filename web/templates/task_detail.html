@@ -77,6 +77,7 @@
                 <button class="btn sm danger" type="submit">Detach</button>
               </form>
             </details>
+			{{if or (eq .Provider "github") (eq .Provider "jira") (eq .Provider "slack")}}<form method="post" action="/external-links/{{.ID}}/sync"><input type="hidden" name="return_to" value="/tasks/{{$.Task.ID}}"><button class="btn sm quiet" type="submit">Sync</button></form>{{end}}
           </div>
         {{end}}
       </div>
