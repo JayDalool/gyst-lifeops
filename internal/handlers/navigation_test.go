@@ -51,11 +51,10 @@ func TestPrimaryNavigationIsReduced(t *testing.T) {
 	}
 }
 
-func TestGalaxyAndLegacyRoutesRemainReachable(t *testing.T) {
+func TestGalaxyAndSecondaryRoutesRemainReachable(t *testing.T) {
 	h := testHandler(t)
 	paths := []string{
 		"/galaxy",
-		"/dashboard",
 		"/projects",
 		"/roadmap",
 		"/courses",
@@ -74,5 +73,10 @@ func TestGalaxyAndLegacyRoutesRemainReachable(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Errorf("GET %s status %d", path, rec.Code)
 		}
+	}
+	dashboard := httptest.NewRecorder()
+	h.ServeHTTP(dashboard, httptest.NewRequest(http.MethodGet, "/dashboard", nil))
+	if dashboard.Code != http.StatusPermanentRedirect || dashboard.Header().Get("Location") != "/today" {
+		t.Fatalf("legacy dashboard redirect = %d %q", dashboard.Code, dashboard.Header().Get("Location"))
 	}
 }

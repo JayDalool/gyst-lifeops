@@ -1,7 +1,7 @@
 # GYST Build Plan — Daily Command Center
 
 Owner: Jay Dalool
-Status: approved, ready to build
+Status: Phases 0-7 and safe Phase 10 cleanup complete; Phase 8 optional; Phase 9 blocked on HTTPS
 Date: 2026-08-27
 
 This document answers every open question from the design review and defines the

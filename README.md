@@ -27,30 +27,31 @@ The app applies SQL migrations on startup and loads `seeds/example.sql` only whe
 
 ## Features
 
-- Dark, minimal command-center UI with glass panels, subtle cyan/blue/purple accents, and responsive layouts.
-- Homepage with only four primary icon cards: Today, Projects, Goals, and More, plus a small floating Add menu.
-- Daily Mission dashboard section with date-based toggles for five prayers, Sabah/Masaa Athkar, a weekly gym strip, and quick project momentum cards.
-- Signal Board under the homepage command cards with compact clickable mini graphs for Deen consistency, body rhythm, task flow, project momentum, goal progress, and reminder load.
-- More drawer with icons for Monthly View, All Tasks, Reminders, Analytics, Health, Archive, and Settings.
+- Restrained, responsive command-center UI with four primary destinations: Today, Galaxy, Add, and More.
+- `/` and `/today` share one prayer-first daily surface: next prayer, live countdown, five-prayer tracker, Athkar, missions, study blocks, and deadlines.
+- Prayer times are calculated locally with configurable location, method, Asr method, and signed minute adjustments.
+- Explicitly enabled open-page prayer alerts support browser notifications, an app-owned chime, or a user-supplied Athan file.
+- The interactive 3D Galaxy uses stable project positions, project state/progress, and chapter moons. It includes touch controls, reduced motion, a keyboard list, and a conventional `/projects` fallback.
+- Compact manual references connect tasks, projects, and missions to Jira, GitHub, Slack, Linear, Asana, Notion, or other work systems without affecting XP.
+- More holds Courses, Monthly, Analytics, Health, Archive, All Tasks, Goals, Reminders, and Settings.
 - Task CRUD with priority, status, due date, recurrence, reminder time, complete, skip, and archive actions.
-- `/today` generated from task recurrence rules plus per-date completion records, with reminders and overdue items surfaced beside the checklist.
+- Today is generated from task recurrence rules plus per-date completion records, with reminders and overdue items surfaced beside the checklist.
 - `/projects` as card-based project progress, with detail pages for checklist execution.
 - `/goals` as card-based yearly/monthly/weekly progress, with habit-based health goals supported.
 - `/health` includes the weekly gym strip and a compact body-rhythm sparkline. The logic stays habit-based and consistency-focused.
 - `/monthly`, `/analytics`, and `/reminders` as clean secondary views with dark-theme charts.
 - Native selects/options are explicitly themed for readable dark-mode dropdowns, with light-mode overrides.
-- Dashboard charts use a lightweight custom canvas renderer, compact sparklines, and batched redraws instead of heavy chart re-creation.
+- Analytics charts use a lightweight custom canvas renderer, compact sparklines, and batched redraws instead of heavy chart re-creation.
 - Optional light mode toggle in Settings, stored locally in the browser.
 - Habit-based health and wellness goals only. There are no weight-loss, calorie-counting, fat-loss, or body-comparison features.
 
 ## UI Structure
 
-- `/` is the personal command center and intentionally stays simple.
-- The command center uses four large icon cards and a compact Signal Board rather than a dense dashboard.
-- `/today`, `/projects`, and `/goals` are the three primary work surfaces.
-- `/today` includes the Deen tracker; `/health` includes the gym rhythm tracker.
-- Secondary tools live behind the More drawer to keep the front page calm.
-- The floating `+ Add` menu creates tasks, projects, or goals from anywhere.
+- `/` and `/today` are the same daily command center.
+- `/galaxy` is the spatial project overview; `/projects` is its conventional list fallback and project detail remains checklist-based.
+- Add creates a task, project, or course from the primary navigation.
+- Secondary tools live under More to keep daily navigation calm.
+- `/dashboard` remains a compatibility redirect to Today.
 
 ## Data Model
 
@@ -104,15 +105,15 @@ web/static/             CSS and chart JavaScript
 
 Prayer times are calculated locally with Winnipeg, ISNA, and Shafi defaults.
 The engine supports MWL, Umm al-Qura, Egyptian, and Karachi methods plus Hanafi
-Asr and signed per-prayer minute adjustments. The Today interface and browser
-alerts are introduced in later build phases.
+Asr and signed per-prayer minute adjustments. Today provides a live countdown
+and explicitly enabled open-page notification/audio alerts.
 
 Database migrations are applied in filename order and currently run through
 `012_galaxy_positions.sql`.
 
 ## Reminders TODO
 
-Version 1 stores reminder dates and times in SQLite and shows due or overdue reminders in the dashboard.
+Version 1 stores reminder dates and times in SQLite and shows due or overdue reminders on Today.
 
 Future iOS reminders should use native Swift `UserNotifications` so reminders work on-device even when the Go web app is not open.
 

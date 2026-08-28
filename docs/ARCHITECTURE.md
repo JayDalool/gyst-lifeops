@@ -61,14 +61,14 @@ provides the shared navigation and loads one production stylesheet,
 `web/static/css/styles.css`.
 
 The current design is the restrained design-v2 system: a 960px content area,
-flat surfaces, one accent color, quiet status treatments, and one route-map
-animation. Historical prototype files and design rationale live under
+flat surfaces, one accent color, quiet status treatments, and a full-width
+Galaxy surface. Historical prototype files and design rationale live under
 `docs/design/v2/`; they are references, not runtime dependencies.
 
 Browser behavior is intentionally small:
 
-- `web/static/js/app.js` controls route-map tooltips and movement plus minor UI
-  interactions.
+- `web/static/js/app.js` controls tracker interactions, prayer countdown/alerts,
+  route-map compatibility behavior, and minor UI interactions.
 - `web/static/js/charts.js` renders static charts and handles theme and tracker
   controls.
 - `web/static/js/galaxy.js` consumes `/galaxy/data` and renders the optional 3D

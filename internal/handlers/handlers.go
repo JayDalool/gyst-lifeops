@@ -244,7 +244,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	segments := strings.Split(path, "/")
 	switch segments[0] {
 	case "dashboard":
-		h.dashboard(w, r)
+		http.Redirect(w, r, "/today", http.StatusPermanentRedirect)
 	case "today":
 		h.today(w, r)
 	case "galaxy":
@@ -312,19 +312,6 @@ func (h *Handler) galaxyData(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(planets); err != nil {
 		serverError(w, err)
 	}
-}
-
-func (h *Handler) dashboard(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		methodNotAllowed(w)
-		return
-	}
-	data, err := h.Service.Dashboard()
-	if err != nil {
-		serverError(w, err)
-		return
-	}
-	h.render(w, "dashboard.html", data)
 }
 
 func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
