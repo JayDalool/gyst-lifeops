@@ -334,7 +334,9 @@ func (r *Repository) AutoUnlockDependents(doneProjectID int64, targetStatus stri
 
 func (r *Repository) ProjectItems(projectID int64) ([]models.ProjectItem, error) {
 	rows, err := r.db.Query(`SELECT id, project_id, title, description, status, priority,
-		COALESCE(due_date, ''), sort_order, created_at, updated_at, COALESCE(completed_at, '')
+		COALESCE(due_date, ''), sort_order, stars_reward, proof_required, proof_type,
+		COALESCE(proof_url, ''), COALESCE(proof_path, ''), stars_awarded,
+		created_at, updated_at, COALESCE(completed_at, '')
 		FROM project_items
 		WHERE project_id = ?
 		ORDER BY status = 'completed', sort_order, due_date, created_at`, projectID)
@@ -346,6 +348,7 @@ func (r *Repository) ProjectItems(projectID int64) ([]models.ProjectItem, error)
 	var items []models.ProjectItem
 	for rows.Next() {
 		var item models.ProjectItem
+		var proofRequired int
 		if err := rows.Scan(
 			&item.ID,
 			&item.ProjectID,
@@ -355,12 +358,19 @@ func (r *Repository) ProjectItems(projectID int64) ([]models.ProjectItem, error)
 			&item.Priority,
 			&item.DueDate,
 			&item.SortOrder,
+			&item.StarsReward,
+			&proofRequired,
+			&item.ProofType,
+			&item.ProofURL,
+			&item.ProofPath,
+			&item.StarsAwarded,
 			&item.CreatedAt,
 			&item.UpdatedAt,
 			&item.CompletedAt,
 		); err != nil {
 			return nil, err
 		}
+		item.ProofRequired = proofRequired == 1
 		items = append(items, item)
 	}
 	return items, rows.Err()
@@ -369,6 +379,10 @@ func (r *Repository) ProjectItems(projectID int64) ([]models.ProjectItem, error)
 func (r *Repository) CreateProjectItem(item *models.ProjectItem) error {
 	item.Priority = clean(item.Priority, "medium")
 	item.Status = clean(item.Status, "pending")
+	item.ProofType = cleanProofType(item.ProofType)
+	if item.StarsReward <= 0 {
+		item.StarsReward = 1
+	}
 	if item.SortOrder == 0 {
 		if err := r.db.QueryRow(`SELECT COALESCE(MAX(sort_order), 0) + 1 FROM project_items WHERE project_id = ?`, item.ProjectID).Scan(&item.SortOrder); err != nil {
 			return err
@@ -376,8 +390,9 @@ func (r *Repository) CreateProjectItem(item *models.ProjectItem) error {
 	}
 
 	res, err := r.db.Exec(`INSERT INTO project_items
-		(project_id, title, description, status, priority, due_date, sort_order)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		(project_id, title, description, status, priority, due_date, sort_order,
+		 stars_reward, proof_required, proof_type, proof_url, proof_path)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		item.ProjectID,
 		item.Title,
 		item.Description,
@@ -385,6 +400,11 @@ func (r *Repository) CreateProjectItem(item *models.ProjectItem) error {
 		item.Priority,
 		nullString(item.DueDate),
 		item.SortOrder,
+		item.StarsReward,
+		boolFlag(item.ProofRequired),
+		item.ProofType,
+		nullString(item.ProofURL),
+		nullString(item.ProofPath),
 	)
 	if err != nil {
 		return err
@@ -401,20 +421,81 @@ func (r *Repository) SetProjectItemStatus(projectID, itemID int64, status string
 		return fmt.Errorf("unsupported project item status %q", status)
 	}
 
-	completedAt := "NULL"
-	if status == "completed" {
-		completedAt = "CURRENT_TIMESTAMP"
+	var item models.ProjectItem
+	var proofRequired int
+	var projectStatus string
+	if err := r.db.QueryRow(`SELECT i.stars_reward, i.proof_required, i.proof_type,
+		COALESCE(i.proof_url, ''), COALESCE(i.proof_path, ''), i.stars_awarded, p.status
+		FROM project_items i
+		JOIN projects p ON p.id = i.project_id
+		WHERE i.id = ? AND i.project_id = ?`, itemID, projectID).Scan(
+		&item.StarsReward,
+		&proofRequired,
+		&item.ProofType,
+		&item.ProofURL,
+		&item.ProofPath,
+		&item.StarsAwarded,
+		&projectStatus,
+	); err != nil {
+		return err
+	}
+	item.ProofRequired = proofRequired == 1
+	if status == "completed" && projectStatus != "active" {
+		return fmt.Errorf("project %d is %s; only active project missions can be completed", projectID, projectStatus)
+	}
+	validProof := proofIsValid(item.ProofType, item.ProofURL, item.ProofPath)
+	if status == "completed" && item.ProofRequired && !validProof {
+		return fmt.Errorf("mission %d requires valid %s proof before completion", itemID, item.ProofType)
 	}
 
-	if _, err := r.db.Exec(fmt.Sprintf(`UPDATE project_items SET
+	completedAt := "NULL"
+	desiredAward := item.StarsAwarded
+	if status == "completed" {
+		completedAt = "CURRENT_TIMESTAMP"
+		desiredAward = max(item.StarsReward, 1)
+		if validProof {
+			desiredAward += 2
+		}
+	}
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(fmt.Sprintf(`UPDATE project_items SET
 		status = ?,
 		completed_at = %s,
+		stars_awarded = CASE WHEN ? = 'completed' AND stars_awarded < ? THEN ? ELSE stars_awarded END,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
-		WHERE id = ? AND project_id = ?`, completedAt), status, itemID, projectID); err != nil {
+		WHERE id = ? AND project_id = ?`, completedAt), status, status, desiredAward, desiredAward, itemID, projectID); err != nil {
+		return err
+	}
+	if status == "completed" && validProof {
+		if _, err := tx.Exec(`INSERT OR IGNORE INTO achievements
+			(title, description, stars_bonus, trigger_type, source_project_item_id)
+			VALUES ('Mission proof submitted', (SELECT title FROM project_items WHERE id = ?), 0, 'proof_submitted', ?)`, itemID, itemID); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 	return r.reconcileProjectStatus(projectID)
+}
+
+func (r *Repository) UpdateProjectItemProof(projectID, itemID int64, proofType, proofURL, proofPath string) error {
+	_, err := r.db.Exec(`UPDATE project_items SET
+		proof_type = ?, proof_url = ?, proof_path = ?,
+		updated_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1
+		WHERE id = ? AND project_id = ?`,
+		cleanProofType(proofType),
+		nullString(strings.TrimSpace(proofURL)),
+		nullString(strings.TrimSpace(proofPath)),
+		itemID,
+		projectID,
+	)
+	return err
 }
 
 func (r *Repository) DeleteProjectItem(projectID, itemID int64) error {

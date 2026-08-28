@@ -33,8 +33,8 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
 		t.Fatal(err)
 	}
-	if applied != 9 {
-		t.Fatalf("applied migrations = %d, want 9", applied)
+	if applied != 10 {
+		t.Fatalf("applied migrations = %d, want 10", applied)
 	}
 	assertNoForeignKeyViolations(t, database)
 }
@@ -73,6 +73,7 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 		"007_courses.sql",
 		"008_app_settings.sql",
 		"009_quest_reward_integrity.sql",
+		"010_project_item_rewards.sql",
 	} {
 		copyMigration(t, sourceDir, migrationDir, name)
 	}
@@ -95,6 +96,14 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 	}
 	if items != 1 {
 		t.Fatalf("legacy missions after upgrade = %d, want 1", items)
+	}
+	var starsReward int
+	var proofType string
+	if err := database.QueryRow(`SELECT stars_reward, proof_type FROM project_items WHERE project_id = 1`).Scan(&starsReward, &proofType); err != nil {
+		t.Fatal(err)
+	}
+	if starsReward != 1 || proofType != "none" {
+		t.Fatalf("legacy mission reward defaults = %d/%q, want 1/none", starsReward, proofType)
 	}
 	assertNoForeignKeyViolations(t, database)
 }

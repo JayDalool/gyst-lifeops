@@ -261,6 +261,7 @@ func (r *Repository) PlayerStats() (models.PlayerStats, error) {
 	var stats models.PlayerStats
 	if err := r.db.QueryRow(`SELECT
 		COALESCE((SELECT SUM(stars_awarded) FROM tasks), 0) +
+		COALESCE((SELECT SUM(stars_awarded) FROM project_items), 0) +
 		COALESCE((SELECT SUM(stars_bonus) FROM achievements), 0),
 		(SELECT COUNT(*) FROM tasks WHERE status = 'completed'),
 		(SELECT COUNT(*) FROM achievements WHERE trigger_type = 'proof_submitted')
@@ -319,12 +320,16 @@ func cleanProofType(value string) string {
 }
 
 func taskHasProof(task models.Task) bool {
-	switch cleanProofType(task.ProofType) {
+	return proofIsValid(task.ProofType, task.ProofURL, task.ProofPath)
+}
+
+func proofIsValid(proofType, proofURL, proofPath string) bool {
+	switch cleanProofType(proofType) {
 	case "link":
-		parsed, err := url.ParseRequestURI(strings.TrimSpace(task.ProofURL))
+		parsed, err := url.ParseRequestURI(strings.TrimSpace(proofURL))
 		return err == nil && parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https")
 	case "photo", "file", "text":
-		return strings.TrimSpace(task.ProofPath) != ""
+		return strings.TrimSpace(proofPath) != ""
 	default:
 		return false
 	}

@@ -62,17 +62,23 @@ type Project struct {
 }
 
 type ProjectItem struct {
-	ID          int64
-	ProjectID   int64
-	Title       string
-	Description string
-	Status      string
-	Priority    string
-	DueDate     string
-	SortOrder   int
-	CreatedAt   string
-	UpdatedAt   string
-	CompletedAt string
+	ID            int64
+	ProjectID     int64
+	Title         string
+	Description   string
+	Status        string
+	Priority      string
+	DueDate       string
+	SortOrder     int
+	StarsReward   int
+	ProofRequired bool
+	ProofType     string
+	ProofURL      string
+	ProofPath     string
+	StarsAwarded  int
+	CreatedAt     string
+	UpdatedAt     string
+	CompletedAt   string
 }
 
 type ProjectWithProgress struct {

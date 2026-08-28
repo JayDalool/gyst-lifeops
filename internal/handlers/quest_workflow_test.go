@@ -86,7 +86,33 @@ func TestProjectMissionCompletionHandlerDoesNotDuplicateReward(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stats.TotalStars != 10 {
-		t.Fatalf("total stars = %d, want one 10-star quest reward", stats.TotalStars)
+	if stats.TotalStars != 11 {
+		t.Fatalf("total stars = %d, want one mission star and one 10-star quest reward", stats.TotalStars)
+	}
+}
+
+func TestProjectMissionProofHandler(t *testing.T) {
+	h := testHandler(t)
+	project := models.Project{Name: "Proof Quest", Status: "active", ProjectKind: "main"}
+	if err := h.Service.Repo.CreateProject(&project); err != nil {
+		t.Fatal(err)
+	}
+	item := models.ProjectItem{ProjectID: project.ID, Title: "Evidence", ProofRequired: true, ProofType: "link", StarsReward: 3}
+	if err := h.Service.Repo.CreateProjectItem(&item); err != nil {
+		t.Fatal(err)
+	}
+	base := fmt.Sprintf("/projects/%d/items/%d", project.ID, item.ID)
+	postQuestForm(t, h, base+"/proof", url.Values{
+		"proof_type": {"link"},
+		"proof_url":  {"https://example.com/evidence"},
+	})
+	postQuestForm(t, h, base+"/complete", nil)
+
+	items, err := h.Service.Repo.ProjectItems(project.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].StarsAwarded != 5 || items[0].ProofURL == "" {
+		t.Fatalf("proof workflow result: %#v", items)
 	}
 }

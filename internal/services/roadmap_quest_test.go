@@ -80,3 +80,30 @@ Status: active
 		t.Fatalf("forward dependency = %d, want %d", byName["First Quest"].DependsOnProjectID, byName["Later Quest"].ID)
 	}
 }
+
+func TestImportPersistsStructuredMissionRewards(t *testing.T) {
+	service := testService(t)
+	service.Now = func() time.Time { return time.Date(2026, time.June, 24, 12, 0, 0, 0, time.UTC) }
+	source := `# Campaign
+
+## Quest
+- [ ] Publish demo Stars: 5 Proof Required: link
+`
+	if _, err := service.ImportRoadmapMarkdown(source); err != nil {
+		t.Fatalf("import roadmap: %v", err)
+	}
+	projects, err := service.Repo.ListProjects(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(projects) != 1 {
+		t.Fatalf("projects = %d, want 1", len(projects))
+	}
+	items, err := service.Repo.ProjectItems(projects[0].Project.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].StarsReward != 5 || items[0].ProofType != "link" || !items[0].ProofRequired {
+		t.Fatalf("imported mission metadata: %#v", items)
+	}
+}

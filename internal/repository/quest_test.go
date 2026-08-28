@@ -228,8 +228,8 @@ func TestProjectCompletionRewardIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stats.TotalStars != 10 {
-		t.Fatalf("quest reward stars = %d, want 10", stats.TotalStars)
+	if stats.TotalStars != 11 {
+		t.Fatalf("quest and mission reward stars = %d, want 11", stats.TotalStars)
 	}
 	var achievements int
 	if err := repo.db.QueryRow(`SELECT COUNT(*) FROM achievements WHERE trigger_type = 'project_done'`).Scan(&achievements); err != nil {
@@ -237,5 +237,75 @@ func TestProjectCompletionRewardIsIdempotent(t *testing.T) {
 	}
 	if achievements != 1 {
 		t.Fatalf("quest completion achievements = %d, want 1", achievements)
+	}
+}
+
+func TestProjectMissionProofRewardIsStructuredAndIdempotent(t *testing.T) {
+	repo := testRepository(t)
+	project := models.Project{Name: "Proof Quest", Status: "active", ProjectKind: "main"}
+	if err := repo.CreateProject(&project); err != nil {
+		t.Fatal(err)
+	}
+	item := models.ProjectItem{
+		ProjectID:     project.ID,
+		Title:         "Publish evidence",
+		StarsReward:   4,
+		ProofRequired: true,
+		ProofType:     "link",
+		ProofURL:      "https://example.com/evidence",
+	}
+	if err := repo.CreateProjectItem(&item); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetProjectItemStatus(project.ID, item.ID, "completed"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetProjectItemStatus(project.ID, item.ID, "pending"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetProjectItemStatus(project.ID, item.ID, "completed"); err != nil {
+		t.Fatal(err)
+	}
+
+	items, err := repo.ProjectItems(project.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].StarsAwarded != 6 || items[0].ProofType != "link" || !items[0].ProofRequired {
+		t.Fatalf("structured mission reward not preserved: %#v", items)
+	}
+	var proofAchievements int
+	if err := repo.db.QueryRow(`SELECT COUNT(*) FROM achievements WHERE source_project_item_id = ?`, item.ID).Scan(&proofAchievements); err != nil {
+		t.Fatal(err)
+	}
+	if proofAchievements != 1 {
+		t.Fatalf("proof achievements = %d, want 1", proofAchievements)
+	}
+}
+
+func TestProjectMissionRequiresProofAndActiveProject(t *testing.T) {
+	repo := testRepository(t)
+	project := models.Project{Name: "Locked Proof Quest", Status: "locked", ProjectKind: "main"}
+	if err := repo.CreateProject(&project); err != nil {
+		t.Fatal(err)
+	}
+	item := models.ProjectItem{ProjectID: project.ID, Title: "Evidence", ProofRequired: true, ProofType: "file"}
+	if err := repo.CreateProjectItem(&item); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetProjectItemStatus(project.ID, item.ID, "completed"); err == nil {
+		t.Fatal("expected locked project mission completion to fail")
+	}
+	if err := repo.SetProjectStatus(project.ID, "active"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetProjectItemStatus(project.ID, item.ID, "completed"); err == nil {
+		t.Fatal("expected missing required proof to fail")
+	}
+	if err := repo.UpdateProjectItemProof(project.ID, item.ID, "file", "", "/tmp/evidence.pdf"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetProjectItemStatus(project.ID, item.ID, "completed"); err != nil {
+		t.Fatalf("complete after valid proof: %v", err)
 	}
 }

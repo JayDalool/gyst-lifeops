@@ -38,7 +38,9 @@
         <ul class="tasks">
           {{range .Items}}
             <li class="task" id="mission-{{.ID}}">
-              {{if eq .Status "completed"}}
+              {{if or (eq $.Project.Project.Status "locked") (eq $.Project.Project.Status "upcoming") (eq $.Project.Project.Status "archived")}}
+                <input type="checkbox" {{if eq .Status "completed"}}checked{{end}} disabled aria-label="Unavailable until project is active: {{.Title}}">
+              {{else if eq .Status "completed"}}
                 <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/reopen">
                   <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
                   <input type="checkbox" checked aria-label="Reopen: {{.Title}}" onchange="this.form.requestSubmit()">
@@ -51,7 +53,25 @@
               {{end}}
               <div class="task-body">
                 <div class="task-title">{{.Title}}</div>
-                <div class="task-meta">{{.Priority}}{{if .Description}} &middot; {{.Description}}{{end}}</div>
+                <div class="task-meta">
+                  {{.Priority}} &middot; {{.StarsReward}} XP
+                  {{- if ne .ProofType "none"}} &middot; {{.ProofType}} proof{{if .ProofRequired}} required{{end}}{{end}}
+                  {{- if .Description}} &middot; {{.Description}}{{end}}
+                </div>
+                {{if and (eq $.Project.Project.Status "active") (ne .Status "completed") (ne .ProofType "none")}}
+                  <details class="details-summary mt-8">
+                    <summary>{{if or .ProofURL .ProofPath}}Update proof{{else}}Add proof{{end}}</summary>
+                    <form class="form-stack" method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/proof">
+                      <input type="hidden" name="proof_type" value="{{.ProofType}}">
+                      {{if eq .ProofType "link"}}
+                        <label class="field"><span>Proof URL</span><input name="proof_url" type="url" value="{{.ProofURL}}" placeholder="https://&hellip;" required></label>
+                      {{else}}
+                        <label class="field"><span>{{if eq .ProofType "text"}}Proof text{{else}}Proof path{{end}}</span><input name="proof_path" value="{{.ProofPath}}" required></label>
+                      {{end}}
+                      <button class="btn sm ghost" type="submit">Save proof</button>
+                    </form>
+                  </details>
+                {{end}}
               </div>
               {{if .DueDate}}<span class="task-when num">{{niceDate .DueDate}}</span>{{end}}
               <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/delete">
@@ -151,6 +171,23 @@
             <input type="date" name="due_date">
           </label>
         </div>
+        <div class="form-row">
+          <label class="field">
+            <span>XP reward</span>
+            <input type="number" name="stars_reward" min="1" value="1">
+          </label>
+          <label class="field">
+            <span>Proof</span>
+            <select name="proof_type">
+              <option value="none">None</option>
+              <option value="photo">Photo</option>
+              <option value="file">File</option>
+              <option value="link">Link</option>
+              <option value="text">Text</option>
+            </select>
+          </label>
+        </div>
+        <label class="flag-row"><input type="checkbox" name="proof_required"> Require proof before completion</label>
         <button class="btn" type="submit">Add mission</button>
       </form>
     </section>

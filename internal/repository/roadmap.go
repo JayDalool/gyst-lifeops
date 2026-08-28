@@ -198,15 +198,23 @@ func insertRoadmapTask(tx *sql.Tx, projectID int64, task models.RoadmapTaskPlan)
 	}
 	status := cleanItemStatus(task.Status)
 	_, err := tx.Exec(`INSERT INTO project_items
-		(project_id, title, description, status, priority, due_date, sort_order, completed_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'completed' THEN CURRENT_TIMESTAMP ELSE NULL END)`,
+		(project_id, title, description, status, priority, due_date, sort_order,
+		 stars_reward, proof_required, proof_type, stars_awarded, completed_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+		 CASE WHEN ? = 'completed' THEN ? ELSE 0 END,
+		 CASE WHEN ? = 'completed' THEN CURRENT_TIMESTAMP ELSE NULL END)`,
 		projectID,
 		task.Title,
-		taskDescriptionWithRewards(task),
+		task.Description,
 		status,
 		cleanPriority(task.Priority),
 		nullString(task.DueDate),
 		task.SortOrder,
+		max(task.StarsReward, 1),
+		boolFlag(task.ProofRequired),
+		cleanProofType(task.ProofType),
+		status,
+		max(task.StarsReward, 1),
 		status,
 	)
 	return err
@@ -600,20 +608,6 @@ func uniqueStrings(values []string) []string {
 		cleaned = append(cleaned, value)
 	}
 	return cleaned
-}
-
-func taskDescriptionWithRewards(task models.RoadmapTaskPlan) string {
-	var parts []string
-	if strings.TrimSpace(task.Description) != "" {
-		parts = append(parts, strings.TrimSpace(task.Description))
-	}
-	if task.StarsReward > 0 {
-		parts = append(parts, fmt.Sprintf("Stars: %d", task.StarsReward))
-	}
-	if task.ProofType != "" && task.ProofType != "none" {
-		parts = append(parts, "Proof required: "+task.ProofType)
-	}
-	return strings.Join(parts, "\n")
 }
 
 func firstNonEmpty(values ...string) string {

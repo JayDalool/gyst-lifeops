@@ -10,8 +10,8 @@ Campaign / Goal
 ```
 
 Projects store hierarchy, status, dependency, automatic-unlock preference, and
-locked notes. Project items are project-scoped missions. Standalone tasks carry
-XP and proof fields and feed the daily recurrence system.
+locked notes. Both project items and standalone tasks carry structured XP and
+proof fields. Standalone tasks additionally feed the daily recurrence system.
 
 ## Project status flow
 
@@ -37,21 +37,21 @@ are left untouched.
 
 ## Rewards and proof
 
-One-time standalone tasks store their full award in `tasks.stars_awarded` when
-first completed. The base XP comes from `stars_reward`; valid proof adds two XP.
+Standalone tasks and project items store their full award in `stars_awarded`
+when completed. The base XP comes from `stars_reward`; valid proof adds two XP.
 Required proof blocks completion until a matching location is supplied:
 
 - `link` requires an absolute HTTP or HTTPS URL in `proof_url`.
 - `photo` and `file` require a non-empty path in `proof_path`.
 - `text` requires non-empty text in `proof_path`.
 
-Generated proof and quest-completion achievements carry their source task or
-project ID. Unique partial indexes added by migration `009` prevent retries,
-reopens, or repeated completion requests from creating duplicate achievements
-or bonus XP.
+Generated proof and quest-completion achievements carry their source task,
+project item, or project ID. Unique partial indexes prevent retries, reopens, or
+repeated completion requests from creating duplicate achievements or bonus XP.
 
-Project completion awards ten XP once when all of its project items become
-complete. Reopening and recompleting the project does not award it again.
+Each project mission awards its configured XP once. Project completion awards
+an additional ten XP once when all project items become complete. Reopening and
+recompleting either level does not duplicate rewards.
 
 ## Markdown import
 
@@ -91,10 +91,6 @@ upgrading through the latest migration.
 
 ## Known product gaps
 
-- Stars and proof parsed from Markdown checklist items are preserved in the
-  item description, but project items do not yet have structured reward/proof
-  columns. Standalone tasks do. Unifying these two mission representations is
-  the next architectural decision.
 - Move-under-parent and locked-note editing are available through the project
   edit form, but dedicated contextual actions would make them easier to find.
 - Required-proof completion currently returns the normal server error response;

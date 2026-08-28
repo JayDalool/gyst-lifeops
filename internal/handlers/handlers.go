@@ -921,6 +921,21 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 			serverError(w, err)
 			return
 		}
+	case "proof":
+		if err := r.ParseForm(); err != nil {
+			serverError(w, err)
+			return
+		}
+		if err := h.Service.Repo.UpdateProjectItemProof(
+			projectID,
+			itemID,
+			cleanForm(r.FormValue("proof_type"), "none"),
+			strings.TrimSpace(r.FormValue("proof_url")),
+			strings.TrimSpace(r.FormValue("proof_path")),
+		); err != nil {
+			serverError(w, err)
+			return
+		}
 	case "delete":
 		if err := h.Service.Repo.DeleteProjectItem(projectID, itemID); err != nil {
 			serverError(w, err)
@@ -1704,11 +1719,16 @@ func projectItemFromRequest(r *http.Request) (models.ProjectItem, error) {
 	}
 	sortOrder, _ := strconv.Atoi(r.FormValue("sort_order"))
 	return models.ProjectItem{
-		Title:       strings.TrimSpace(r.FormValue("title")),
-		Description: strings.TrimSpace(r.FormValue("description")),
-		Priority:    cleanForm(r.FormValue("priority"), "medium"),
-		DueDate:     strings.TrimSpace(r.FormValue("due_date")),
-		SortOrder:   sortOrder,
+		Title:         strings.TrimSpace(r.FormValue("title")),
+		Description:   strings.TrimSpace(r.FormValue("description")),
+		Priority:      cleanForm(r.FormValue("priority"), "medium"),
+		DueDate:       strings.TrimSpace(r.FormValue("due_date")),
+		SortOrder:     sortOrder,
+		StarsReward:   parseIntForm(r.FormValue("stars_reward"), 1),
+		ProofRequired: r.FormValue("proof_required") == "on",
+		ProofType:     cleanForm(r.FormValue("proof_type"), "none"),
+		ProofURL:      strings.TrimSpace(r.FormValue("proof_url")),
+		ProofPath:     strings.TrimSpace(r.FormValue("proof_path")),
 	}, nil
 }
 
