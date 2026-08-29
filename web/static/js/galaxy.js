@@ -156,6 +156,7 @@ async function initGalaxy(root, THREE) {
 	let roamInputX = 0;
 	let roamInputY = 0;
 	let recentering = false;
+	let openTimer = 0;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
 	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
@@ -182,7 +183,7 @@ async function initGalaxy(root, THREE) {
 	selectionHalo.position.copy(object.position);
 	roamInputX = 0;
 	roamInputY = 0;
-    status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state}`;
+    status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state} · arrows move`;
     openButton.href = object.userData.url;
     openButton.hidden = false;
 	contextPanel.hidden = false;
@@ -224,13 +225,9 @@ async function initGalaxy(root, THREE) {
 	});
 	return match;
   }
-  canvas.addEventListener("pointerup", () => {
-	const object = planetAtPointer();
-	if (object) {
-	  if (hovered === object) location.href = object.userData.url;
-	  else preview(object);
-	  return;
-	}
+  function recenterGalaxy() {
+	window.clearTimeout(openTimer);
+	openTimer = 0;
 	preview(null);
 	orbitRadius = 125;
 	orbitYaw = 0;
@@ -240,7 +237,45 @@ async function initGalaxy(root, THREE) {
 	updateOrbitTarget();
 	recentering = true;
 	status.textContent = "Returning to the Galaxy map";
+  }
+  function directionalPlanet(directionX, directionY) {
+	if (!hovered) return null;
+	const origin = hovered.position.clone().project(camera);
+	let match = null;
+	let bestScore = Infinity;
+	objects.forEach((object) => {
+	  if (object === hovered) return;
+	  const point = object.position.clone().project(camera);
+	  if (point.z <= -1 || point.z >= 1) return;
+	  const deltaX = point.x - origin.x;
+	  const deltaY = point.y - origin.y;
+	  const forward = deltaX * directionX + deltaY * directionY;
+	  if (forward <= 0.025) return;
+	  const sideways = Math.abs(deltaX * directionY - deltaY * directionX);
+	  const score = forward + sideways * 2.4;
+	  if (score < bestScore) {
+		match = object;
+		bestScore = score;
+	  }
+	});
+	return match;
+  }
+  canvas.addEventListener("pointerup", () => {
+	const object = planetAtPointer();
+	if (object) {
+	  if (hovered === object) {
+		window.clearTimeout(openTimer);
+		openTimer = window.setTimeout(() => { location.href = object.userData.url; }, 320);
+	  } else preview(object);
+	  return;
+	}
+	recenterGalaxy();
   });
+	canvas.addEventListener("dblclick", (event) => {
+	  if (!hovered) return;
+	  event.preventDefault();
+	  recenterGalaxy();
+	});
   if (matchMedia("(pointer: fine)").matches) {
     stage.addEventListener("pointermove", (event) => {
       const rect = stage.getBoundingClientRect();
@@ -258,6 +293,15 @@ async function initGalaxy(root, THREE) {
 	window.addEventListener("blur", () => {
 	  roamInputX = 0;
 	  roamInputY = 0;
+	});
+	window.addEventListener("keydown", (event) => {
+	  if (!hovered) return;
+	  const directions = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
+	  const direction = directions[event.key];
+	  if (!direction) return;
+	  event.preventDefault();
+	  const next = directionalPlanet(direction[0], direction[1]);
+	  if (next) preview(next);
 	});
 	stage.addEventListener("pointerleave", () => {
 	  roamInputX = 0; roamInputY = 0;
