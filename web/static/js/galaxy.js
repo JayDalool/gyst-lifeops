@@ -143,8 +143,6 @@ async function initGalaxy(root, THREE) {
 	const cameraTarget = camera.position.clone();
 	const lookTarget = new THREE.Vector3();
 	const focusDirection = new THREE.Vector3();
-	const travelTarget = new THREE.Vector3();
-	const travelLookTarget = new THREE.Vector3();
 	const selectionHalo = new THREE.Mesh(
 	  new THREE.RingGeometry(1.12, 1.42, 64),
 	  new THREE.MeshBasicMaterial({ color: 0x6eeaff, transparent: true, opacity: 0.72, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false })
@@ -157,7 +155,7 @@ async function initGalaxy(root, THREE) {
 	let orbitPitch = 0.08;
 	let roamInputX = 0;
 	let roamInputY = 0;
-	let travelling = false;
+	let recentering = false;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
 	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
@@ -179,7 +177,7 @@ async function initGalaxy(root, THREE) {
 	object.userData._baseEmissiveIntensity ??= object.material.emissiveIntensity;
 	object.material.emissiveIntensity = Math.max(0.78, object.userData._baseEmissiveIntensity);
 	focusDirection.copy(camera.position).sub(object.position).normalize();
-	travelling = false;
+	recentering = false;
 	selectionHalo.visible = true;
 	selectionHalo.position.copy(object.position);
 	roamInputX = 0;
@@ -226,19 +224,22 @@ async function initGalaxy(root, THREE) {
 	});
 	return match;
   }
-  canvas.addEventListener("pointerup", (event) => {
+  canvas.addEventListener("pointerup", () => {
 	const object = planetAtPointer();
 	if (object) {
 	  if (hovered === object) location.href = object.userData.url;
 	  else preview(object);
 	  return;
 	}
-	raycaster.setFromCamera(pointer, camera);
 	preview(null);
-	travelTarget.copy(camera.position).addScaledVector(raycaster.ray.direction, 34);
-	travelLookTarget.copy(camera.position).addScaledVector(raycaster.ray.direction, 100);
-	travelling = true;
-	status.textContent = "Travelling through the galaxy";
+	orbitRadius = 125;
+	orbitYaw = 0;
+	orbitPitch = 0.08;
+	roamInputX = 0;
+	roamInputY = 0;
+	updateOrbitTarget();
+	recentering = true;
+	status.textContent = "Returning to the Galaxy map";
   });
   if (matchMedia("(pointer: fine)").matches) {
     stage.addEventListener("pointermove", (event) => {
@@ -249,6 +250,7 @@ async function initGalaxy(root, THREE) {
 	  shipTarget.x = normalizedX * shipHalfHeight * camera.aspect;
 	  shipTarget.y = normalizedY * shipHalfHeight;
 	  pointer.set(normalizedX, normalizedY);
+	  recentering = false;
 	  roamInputX = deadZone(normalizedX);
 	  roamInputY = deadZone(normalizedY);
     });
@@ -278,15 +280,10 @@ async function initGalaxy(root, THREE) {
 	  const focusDistance = Math.max(15, hovered.geometry.parameters.radius * 5.2);
 	  cameraTarget.copy(hovered.position).addScaledVector(focusDirection, focusDistance);
 	  lookTarget.lerp(hovered.position, reduced ? 1 : 0.045);
-	} else if (travelling) {
-	  cameraTarget.copy(travelTarget);
-	  lookTarget.lerp(travelLookTarget, reduced ? 1 : 0.075);
-	  if (camera.position.distanceTo(travelTarget) < 0.35) {
-		travelling = false;
-		orbitRadius = camera.position.length();
-		orbitYaw = Math.atan2(camera.position.x, camera.position.z);
-		orbitPitch = Math.asin(THREE.MathUtils.clamp(camera.position.y / orbitRadius, -1, 1));
-	  }
+	} else if (recentering) {
+	  updateOrbitTarget();
+	  lookTarget.lerp(scene.position, reduced ? 1 : 0.075);
+	  if (camera.position.distanceTo(cameraTarget) < 0.35) recentering = false;
 	} else {
 	  orbitYaw += roamInputX * 0.0032;
 	  orbitPitch = Math.max(-1.05, Math.min(1.05, orbitPitch + roamInputY * 0.0018));
