@@ -67,9 +67,14 @@ async function initGalaxy(root, THREE) {
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 600);
   camera.position.set(0, 8, 125);
 	 scene.add(camera);
-	 const ship = new THREE.Mesh(new THREE.ConeGeometry(0.38, 1.4, 5), new THREE.MeshBasicMaterial({ color: 0xe5f7ff }));
-	 ship.rotation.z = -Math.PI / 2;
+	 const oliverTexture = new THREE.TextureLoader().load("/static/images/oliver-galaxy-pixel.png");
+	 oliverTexture.colorSpace = THREE.SRGBColorSpace;
+	 oliverTexture.magFilter = THREE.NearestFilter;
+	 oliverTexture.minFilter = THREE.LinearMipmapLinearFilter;
+	 const ship = new THREE.Sprite(new THREE.SpriteMaterial({ map: oliverTexture, transparent: true, alphaTest: 0.08, depthTest: false, depthWrite: false }));
+	 ship.scale.set(4.8, 3.6, 1);
 	 ship.position.set(0, -3.5, -8);
+	 ship.renderOrder = 20;
 	 camera.add(ship);
 	 const shipTarget = new THREE.Vector3(0, -3.5, -8);
   scene.add(new THREE.AmbientLight(0x65749a, 0.72));
@@ -187,7 +192,12 @@ async function initGalaxy(root, THREE) {
   function frame() {
     if (!reduced) camera.position.lerp(target, selected ? 0.045 : 0.018);
     else camera.position.copy(target);
-	if (!reduced) ship.position.lerp(shipTarget, 0.09);
+	if (!reduced) {
+	  ship.position.lerp(shipTarget, 0.09);
+	  const flap = Math.sin(performance.now() * 0.012);
+	  ship.scale.y = 3.6 + flap * 0.16;
+	  ship.material.rotation = flap * 0.025;
+	}
     camera.lookAt(selected ? selected.position : scene.position);
 	labels.forEach((label) => {
 	  const point = label.object.position.clone().project(camera);
