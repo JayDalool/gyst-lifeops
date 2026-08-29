@@ -144,6 +144,10 @@ async function initGalaxy(root, THREE) {
 	let orbitRadius = 125;
 	let orbitYaw = 0;
 	let orbitPitch = 0.08;
+	let roamInputX = 0;
+	let roamInputY = 0;
+	let pointerActive = false;
+	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
 	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
 	  cameraTarget.set(Math.sin(orbitYaw) * horizontalRadius, Math.sin(orbitPitch) * orbitRadius, Math.cos(orbitYaw) * horizontalRadius);
@@ -186,12 +190,15 @@ async function initGalaxy(root, THREE) {
 	  const normalizedY = 1 - ((event.clientY - rect.top) / rect.height) * 2;
 	  shipTarget.x = normalizedX * 7;
 	  shipTarget.y = normalizedY * 4;
-	  orbitYaw = normalizedX * Math.PI;
-	  orbitPitch = normalizedY * 0.72;
-	  updateOrbitTarget();
-	  preview(objectAt(event));
+	  roamInputX = deadZone(normalizedX);
+	  roamInputY = deadZone(normalizedY);
+	  pointer.set(normalizedX, normalizedY);
+	  pointerActive = true;
     });
   }
+	stage.addEventListener("pointerleave", () => {
+	  roamInputX = 0; roamInputY = 0; pointerActive = false; preview(null);
+	});
 	stage.addEventListener("wheel", (event) => {
 	  event.preventDefault();
 	  orbitRadius = Math.max(58, Math.min(175, orbitRadius + event.deltaY * 0.08));
@@ -206,6 +213,9 @@ async function initGalaxy(root, THREE) {
   new ResizeObserver(resize).observe(stage); resize();
   status.textContent = "Select a planet";
   function frame() {
+	orbitYaw += roamInputX * 0.0032;
+	orbitPitch = Math.max(-1.05, Math.min(1.05, orbitPitch + roamInputY * 0.0018));
+	updateOrbitTarget();
 	camera.position.lerp(cameraTarget, reduced ? 1 : 0.065);
 	ship.position.lerp(shipTarget, reduced ? 1 : 0.18);
 	if (!reduced) {
@@ -214,10 +224,17 @@ async function initGalaxy(root, THREE) {
 	  ship.material.rotation = flap * 0.025;
 	}
 	 camera.lookAt(lookTarget);
+	 camera.updateMatrixWorld();
+	 scene.updateMatrixWorld();
+	 if (pointerActive) {
+	   raycaster.setFromCamera(pointer, camera);
+	   const currentHover = raycaster.intersectObjects(objects, false)[0]?.object || null;
+	   if (currentHover !== hovered) preview(currentHover);
+	 }
 	labels.forEach((label) => {
 	  const point = label.object.position.clone().project(camera);
 	  const visible = point.z < 1 && point.z > -1;
-	  label.element.hidden = !visible || hovered !== label.object;
+	  label.element.hidden = !visible;
 	  if (visible) label.element.style.transform = "translate(-50%, -50%) translate(" + ((point.x * 0.5 + 0.5) * stage.clientWidth).toFixed(1) + "px," + ((-point.y * 0.5 + 0.5) * stage.clientHeight - 18).toFixed(1) + "px)";
 	  label.element.classList.toggle("selected", hovered === label.object);
 	});

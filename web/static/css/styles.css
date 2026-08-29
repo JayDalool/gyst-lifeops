@@ -4072,8 +4072,8 @@ i.map-node-state {
 :root .galaxy-legend { position: absolute; z-index: 2; left: 16px; top: 14px; display: flex; gap: 12px; padding: 6px 9px; border-radius: 8px; color: #9baabd; background: rgba(4,8,15,.58); font-size: 11px; backdrop-filter: blur(8px); }
 :root .galaxy-legend span::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: currentColor; box-shadow: 0 0 7px currentColor; }
 :root .galaxy-legend .done { color: #57c98b; } :root .galaxy-legend .active { color: #4dbfd0; } :root .galaxy-legend .upcoming { color: #d9a054; } :root .galaxy-legend .locked { color: #697386; }
-:root .galaxy-planet-label { position: absolute; z-index: 2; left: 0; top: 0; max-width: 140px; overflow: hidden; color: rgba(211,228,242,.72); font-size: 10px; letter-spacing: .04em; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 5px #000, 0 0 12px #000; pointer-events: none; }
-:root .galaxy-planet-label.selected { color: #fff; font-size: 12px; font-weight: 650; }
+:root .galaxy-planet-label { position: absolute; z-index: 2; left: 0; top: 0; max-width: 140px; overflow: hidden; padding: 2px 5px; color: rgba(196,214,230,.68); background: rgba(3,6,12,.34); border-radius: 5px; font-size: 10px; letter-spacing: .04em; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 5px #000, 0 0 12px #000; pointer-events: none; transition: color 120ms, background-color 120ms, transform 120ms; }
+:root .galaxy-planet-label.selected { color: #6eeaff; background: rgba(8,32,43,.88); font-size: 12px; font-weight: 700; text-shadow: 0 0 10px rgba(77,191,208,.9); }
 :root .galaxy-browser { margin-top: 18px; }
 :root .galaxy-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; padding: 0; margin: 10px 0 0; }
 :root .galaxy-list a { display: grid; grid-template-columns: auto 1fr; column-gap: 9px; align-items: center; min-height: 54px; padding: 9px 12px; color: var(--text); text-decoration: none; border: 1px solid var(--border); border-radius: 9px; background: var(--panel); }
