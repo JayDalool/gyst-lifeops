@@ -202,6 +202,10 @@ async function initGalaxy(root, THREE) {
 	contextPanel.querySelector("[data-galaxy-next]").textContent = object.userData.next ? "Next mission: " + object.userData.next : "No pending mission queued.";
   }
   function planetAtPointer() {
+	raycaster.setFromCamera(pointer, camera);
+	const directHit = raycaster.intersectObjects(objects, false)[0]?.object || null;
+	if (directHit) return directHit;
+
 	const width = stage.clientWidth;
 	const height = stage.clientHeight;
 	const pointerX = (pointer.x * 0.5 + 0.5) * width;
@@ -219,9 +223,9 @@ async function initGalaxy(root, THREE) {
 	  const edgeX = (edge.x * 0.5 + 0.5) * width;
 	  const edgeY = (-edge.y * 0.5 + 0.5) * height;
 	  const screenRadius = Math.max(5, Math.hypot(edgeX - centerX, edgeY - centerY));
-	  const contactPadding = object === hovered ? 36 : 28;
+	  const contactPadding = object === hovered ? 44 : 28;
 	  const edgeDistance = Math.hypot(pointerX - centerX, pointerY - centerY) - screenRadius;
-	  if (edgeDistance <= contactPadding && edgeDistance < bestEdge) {
+	  if (edgeDistance >= 0 && edgeDistance <= contactPadding && edgeDistance < bestEdge) {
 		match = object;
 		bestEdge = edgeDistance;
 	  }
@@ -259,8 +263,9 @@ async function initGalaxy(root, THREE) {
       const rect = stage.getBoundingClientRect();
 	  const normalizedX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
 	  const normalizedY = 1 - ((event.clientY - rect.top) / rect.height) * 2;
-	  shipTarget.x = normalizedX * 7;
-	  shipTarget.y = normalizedY * 4;
+	  const shipHalfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * 8;
+	  shipTarget.x = normalizedX * shipHalfHeight * camera.aspect;
+	  shipTarget.y = normalizedY * shipHalfHeight;
 	  pointer.set(normalizedX, normalizedY);
 	  pointerActive = true;
 	  if (event.shiftKey || shiftFlight) {
@@ -277,7 +282,7 @@ async function initGalaxy(root, THREE) {
 	  const anchorDistance = hovered
 		? Math.hypot((pointer.x - selectionAnchor.x) * rect.width * 0.5, (pointer.y - selectionAnchor.y) * rect.height * 0.5)
 		: Infinity;
-	  pointerDirty = !hovered || anchorDistance > 48;
+	  pointerDirty = !hovered || anchorDistance > 70;
     });
   }
 	window.addEventListener("keydown", (event) => {
