@@ -137,16 +137,24 @@ async function initGalaxy(root, THREE) {
     });
   });
 
-  const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 	const cameraTarget = camera.position.clone();
 	const lookTarget = new THREE.Vector3();
+	const focusDirection = new THREE.Vector3();
+	const selectionHalo = new THREE.Mesh(
+	  new THREE.RingGeometry(1.12, 1.42, 64),
+	  new THREE.MeshBasicMaterial({ color: 0x6eeaff, transparent: true, opacity: 0.72, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false })
+	);
+	selectionHalo.visible = false;
+	selectionHalo.renderOrder = 8;
+	scene.add(selectionHalo);
 	let orbitRadius = 125;
 	let orbitYaw = 0;
 	let orbitPitch = 0.08;
 	let roamInputX = 0;
 	let roamInputY = 0;
 	let pointerActive = false;
+	let pointerDirty = false;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
 	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
@@ -155,13 +163,23 @@ async function initGalaxy(root, THREE) {
 	updateOrbitTarget();
   let hovered = null;
   function preview(object) {
+	if (hovered === object) return;
+	if (hovered) hovered.material.emissiveIntensity = hovered.userData._baseEmissiveIntensity;
     hovered = object || null;
 	if (!object) {
+	  selectionHalo.visible = false;
 	  status.textContent = "Free roam · click a planet to enter";
 	  contextPanel.hidden = true;
 	  openButton.hidden = true;
 	  return;
 	}
+	object.userData._baseEmissiveIntensity ??= object.material.emissiveIntensity;
+	object.material.emissiveIntensity = Math.max(0.78, object.userData._baseEmissiveIntensity);
+	focusDirection.copy(camera.position).sub(object.position).normalize();
+	selectionHalo.visible = true;
+	selectionHalo.position.copy(object.position);
+	roamInputX = 0;
+	roamInputY = 0;
     status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state}`;
     openButton.href = object.userData.url;
     openButton.hidden = false;
@@ -173,14 +191,29 @@ async function initGalaxy(root, THREE) {
 	contextPanel.querySelector("[data-galaxy-meta]").textContent = object.userData.missions + " missions · " + object.userData.progress + "% complete" + (object.userData.target ? " · target " + object.userData.target : "");
 	contextPanel.querySelector("[data-galaxy-next]").textContent = object.userData.next ? "Next mission: " + object.userData.next : "No pending mission queued.";
   }
-  function objectAt(event) {
-    const rect = canvas.getBoundingClientRect();
-    pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
-    raycaster.setFromCamera(pointer, camera);
-	return raycaster.intersectObjects(objects, false)[0]?.object || null;
+  function planetAtPointer() {
+	let match = null;
+	let bestScore = Infinity;
+	const halfFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
+	objects.forEach((object) => {
+	  const projected = object.position.clone().project(camera);
+	  if (projected.z <= -1 || projected.z >= 1) return;
+	  const distance = camera.position.distanceTo(object.position);
+	  const worldRadius = object.geometry.parameters.radius;
+	  const radiusY = Math.max(0.022, worldRadius / (distance * Math.tan(halfFov)));
+	  const radiusX = radiusY / camera.aspect;
+	  const dx = (pointer.x - projected.x) / radiusX;
+	  const dy = (pointer.y - projected.y) / radiusY;
+	  const score = Math.hypot(dx, dy);
+	  if (score <= 1.18 && score < bestScore) {
+		match = object;
+		bestScore = score;
+	  }
+	});
+	return match;
   }
-  canvas.addEventListener("pointerup", (event) => {
-	const object = objectAt(event);
+  canvas.addEventListener("pointerup", () => {
+	const object = hovered || planetAtPointer();
 	if (object) location.href = object.userData.url;
   });
   if (matchMedia("(pointer: fine)").matches) {
@@ -194,6 +227,7 @@ async function initGalaxy(root, THREE) {
 	  roamInputY = deadZone(normalizedY);
 	  pointer.set(normalizedX, normalizedY);
 	  pointerActive = true;
+	  pointerDirty = true;
     });
   }
 	stage.addEventListener("pointerleave", () => {
@@ -213,11 +247,18 @@ async function initGalaxy(root, THREE) {
   new ResizeObserver(resize).observe(stage); resize();
   status.textContent = "Select a planet";
   function frame() {
-	orbitYaw += roamInputX * 0.0032;
-	orbitPitch = Math.max(-1.05, Math.min(1.05, orbitPitch + roamInputY * 0.0018));
-	updateOrbitTarget();
+	if (hovered) {
+	  const focusDistance = Math.max(13, hovered.geometry.parameters.radius * 4.8);
+	  cameraTarget.copy(hovered.position).addScaledVector(focusDirection, focusDistance);
+	  lookTarget.lerp(hovered.position, reduced ? 1 : 0.11);
+	} else {
+	  orbitYaw += roamInputX * 0.0032;
+	  orbitPitch = Math.max(-1.05, Math.min(1.05, orbitPitch + roamInputY * 0.0018));
+	  updateOrbitTarget();
+	  lookTarget.lerp(scene.position, reduced ? 1 : 0.08);
+	}
 	camera.position.lerp(cameraTarget, reduced ? 1 : 0.065);
-	ship.position.lerp(shipTarget, reduced ? 1 : 0.18);
+	ship.position.copy(shipTarget);
 	if (!reduced) {
 	  const flap = Math.sin(performance.now() * 0.012);
 	  ship.scale.y = 0.465 + flap * 0.022;
@@ -226,11 +267,17 @@ async function initGalaxy(root, THREE) {
 	 camera.lookAt(lookTarget);
 	 camera.updateMatrixWorld();
 	 scene.updateMatrixWorld();
-	 if (pointerActive) {
-	   raycaster.setFromCamera(pointer, camera);
-	   const currentHover = raycaster.intersectObjects(objects, false)[0]?.object || null;
-	   if (currentHover !== hovered) preview(currentHover);
+	 if (pointerActive && pointerDirty) {
+	   preview(planetAtPointer());
+	   pointerDirty = false;
 	 }
+	if (hovered) {
+	  const pulse = reduced ? 1 : 1 + Math.sin(performance.now() * 0.007) * 0.08;
+	  selectionHalo.position.copy(hovered.position);
+	  selectionHalo.lookAt(camera.position);
+	  selectionHalo.scale.setScalar(hovered.geometry.parameters.radius * pulse);
+	  selectionHalo.material.opacity = reduced ? 0.72 : 0.62 + Math.sin(performance.now() * 0.007) * 0.18;
+	}
 	labels.forEach((label) => {
 	  const point = label.object.position.clone().project(camera);
 	  const visible = point.z < 1 && point.z > -1;
