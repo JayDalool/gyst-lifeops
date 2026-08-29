@@ -72,7 +72,7 @@ async function initGalaxy(root, THREE) {
 	 oliverTexture.magFilter = THREE.NearestFilter;
 	 oliverTexture.minFilter = THREE.LinearMipmapLinearFilter;
 	 const ship = new THREE.Sprite(new THREE.SpriteMaterial({ map: oliverTexture, transparent: true, alphaTest: 0.08, depthTest: false, depthWrite: false }));
-	 ship.scale.set(1.35, 1.02, 1);
+	 ship.scale.set(0.62, 0.465, 1);
 	 ship.position.set(0, -3.5, -8);
 	 ship.renderOrder = 20;
 	 camera.add(ship);
@@ -139,6 +139,8 @@ async function initGalaxy(root, THREE) {
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
+	const cameraTarget = camera.position.clone();
+	const lookTarget = new THREE.Vector3();
   let hovered = null;
   function preview(object) {
     hovered = object || null;
@@ -172,8 +174,14 @@ async function initGalaxy(root, THREE) {
   if (matchMedia("(pointer: fine)").matches) {
     stage.addEventListener("pointermove", (event) => {
       const rect = stage.getBoundingClientRect();
-	  shipTarget.x = (((event.clientX - rect.left) / rect.width) - 0.5) * 14;
-	  shipTarget.y = (0.5 - ((event.clientY - rect.top) / rect.height)) * 8;
+	  const normalizedX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+	  const normalizedY = 1 - ((event.clientY - rect.top) / rect.height) * 2;
+	  shipTarget.x = normalizedX * 7;
+	  shipTarget.y = normalizedY * 4;
+	  cameraTarget.x = normalizedX * 28;
+	  cameraTarget.y = 8 + normalizedY * 13;
+	  lookTarget.x = normalizedX * 14;
+	  lookTarget.y = normalizedY * 5;
 	  preview(objectAt(event));
     });
   }
@@ -186,13 +194,14 @@ async function initGalaxy(root, THREE) {
   new ResizeObserver(resize).observe(stage); resize();
   status.textContent = "Select a planet";
   function frame() {
+	camera.position.lerp(cameraTarget, reduced ? 1 : 0.035);
 	ship.position.lerp(shipTarget, reduced ? 1 : 0.18);
 	if (!reduced) {
 	  const flap = Math.sin(performance.now() * 0.012);
-	  ship.scale.y = 1.02 + flap * 0.045;
+	  ship.scale.y = 0.465 + flap * 0.022;
 	  ship.material.rotation = flap * 0.025;
 	}
-	 camera.lookAt(scene.position);
+	 camera.lookAt(lookTarget);
 	labels.forEach((label) => {
 	  const point = label.object.position.clone().project(camera);
 	  const visible = point.z < 1 && point.z > -1;
