@@ -1,4 +1,4 @@
-https://localhost {
+https://localhost, https://jay-server, https://10.0.0.183, https://100.117.218.14 {
     tls internal
     encode zstd gzip
     reverse_proxy gyst-lifeops:8080
