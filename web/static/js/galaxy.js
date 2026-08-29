@@ -157,11 +157,6 @@ async function initGalaxy(root, THREE) {
 	let orbitPitch = 0.08;
 	let roamInputX = 0;
 	let roamInputY = 0;
-	let pointerActive = false;
-	let pointerDirty = false;
-	let pendingObject;
-	let pendingSince = 0;
-	const selectionAnchor = new THREE.Vector2();
 	let travelling = false;
 	let shiftFlight = false;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
@@ -185,7 +180,6 @@ async function initGalaxy(root, THREE) {
 	object.userData._baseEmissiveIntensity ??= object.material.emissiveIntensity;
 	object.material.emissiveIntensity = Math.max(0.78, object.userData._baseEmissiveIntensity);
 	focusDirection.copy(camera.position).sub(object.position).normalize();
-	selectionAnchor.copy(pointer);
 	travelling = false;
 	selectionHalo.visible = true;
 	selectionHalo.position.copy(object.position);
@@ -233,27 +227,20 @@ async function initGalaxy(root, THREE) {
 	});
 	return match;
   }
-  function queuePreview(object) {
-	if (object === hovered) {
-	  pendingObject = undefined;
-	  return;
-	}
-	if (object !== pendingObject) {
-	  pendingObject = object;
-	  pendingSince = performance.now();
-	}
-  }
   canvas.addEventListener("pointerup", (event) => {
 	const flightCommand = event.shiftKey || shiftFlight;
 	const object = flightCommand ? null : planetAtPointer();
 	if (!flightCommand && object) {
-	  location.href = object.userData.url;
+	  if (hovered === object) location.href = object.userData.url;
+	  else preview(object);
 	  return;
 	}
-	if (!flightCommand) return;
+	if (!flightCommand) {
+	  preview(null);
+	  return;
+	}
 	raycaster.setFromCamera(pointer, camera);
 	preview(null);
-	pendingObject = undefined;
 	travelTarget.copy(camera.position).addScaledVector(raycaster.ray.direction, 34);
 	travelLookTarget.copy(camera.position).addScaledVector(raycaster.ray.direction, 100);
 	travelling = true;
@@ -268,29 +255,21 @@ async function initGalaxy(root, THREE) {
 	  shipTarget.x = normalizedX * shipHalfHeight * camera.aspect;
 	  shipTarget.y = normalizedY * shipHalfHeight;
 	  pointer.set(normalizedX, normalizedY);
-	  pointerActive = true;
 	  if (event.shiftKey || shiftFlight) {
 		roamInputX = deadZone(normalizedX);
 		roamInputY = deadZone(normalizedY);
-		pointerDirty = false;
-		pendingObject = undefined;
 		if (hovered) preview(null);
 		status.textContent = "Flight mode · release Shift for selection";
 		return;
 	  }
 	  roamInputX = 0;
 	  roamInputY = 0;
-	  const anchorDistance = hovered
-		? Math.hypot((pointer.x - selectionAnchor.x) * rect.width * 0.5, (pointer.y - selectionAnchor.y) * rect.height * 0.5)
-		: Infinity;
-	  pointerDirty = !hovered || anchorDistance > 70;
     });
   }
 	window.addEventListener("keydown", (event) => {
 	  if (event.key !== "Shift" || shiftFlight) return;
 	  shiftFlight = true;
 	  travelling = false;
-	  pendingObject = undefined;
 	  preview(null);
 	  status.textContent = "Flight mode · move Oliver to roam";
 	});
@@ -299,8 +278,7 @@ async function initGalaxy(root, THREE) {
 	  shiftFlight = false;
 	  roamInputX = 0;
 	  roamInputY = 0;
-	  pointerDirty = pointerActive;
-	  status.textContent = "Selection mode · hover over a planet";
+	  status.textContent = "Selection mode · click a planet to focus";
 	});
 	window.addEventListener("blur", () => {
 	  shiftFlight = false;
@@ -308,7 +286,7 @@ async function initGalaxy(root, THREE) {
 	  roamInputY = 0;
 	});
 	stage.addEventListener("pointerleave", () => {
-	  roamInputX = 0; roamInputY = 0; pointerActive = false; pendingObject = undefined; preview(null);
+	  roamInputX = 0; roamInputY = 0;
 	});
 	stage.addEventListener("wheel", (event) => {
 	  event.preventDefault();
@@ -359,15 +337,6 @@ async function initGalaxy(root, THREE) {
 	  ship.position.lerp(focusedShipTarget, reduced ? 1 : 0.12);
 	} else {
 	  ship.position.copy(shipTarget);
-	}
-	 if (pointerActive && pointerDirty) {
-	   queuePreview(planetAtPointer());
-	   pointerDirty = false;
-	 }
-	const selectionDelay = pendingObject ? 250 : 80;
-	if (pendingObject !== undefined && performance.now() - pendingSince >= selectionDelay) {
-	  preview(pendingObject);
-	  pendingObject = undefined;
 	}
 	objects.forEach((object) => {
 	  const targetScale = object === hovered ? 1.14 : 1;
