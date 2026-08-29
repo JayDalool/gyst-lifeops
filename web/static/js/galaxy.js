@@ -141,6 +141,14 @@ async function initGalaxy(root, THREE) {
   const pointer = new THREE.Vector2();
 	const cameraTarget = camera.position.clone();
 	const lookTarget = new THREE.Vector3();
+	let orbitRadius = 125;
+	let orbitYaw = 0;
+	let orbitPitch = 0.08;
+	function updateOrbitTarget() {
+	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
+	  cameraTarget.set(Math.sin(orbitYaw) * horizontalRadius, Math.sin(orbitPitch) * orbitRadius, Math.cos(orbitYaw) * horizontalRadius);
+	}
+	updateOrbitTarget();
   let hovered = null;
   function preview(object) {
     hovered = object || null;
@@ -178,13 +186,17 @@ async function initGalaxy(root, THREE) {
 	  const normalizedY = 1 - ((event.clientY - rect.top) / rect.height) * 2;
 	  shipTarget.x = normalizedX * 7;
 	  shipTarget.y = normalizedY * 4;
-	  cameraTarget.x = normalizedX * 28;
-	  cameraTarget.y = 8 + normalizedY * 13;
-	  lookTarget.x = normalizedX * 14;
-	  lookTarget.y = normalizedY * 5;
+	  orbitYaw = normalizedX * Math.PI;
+	  orbitPitch = normalizedY * 0.72;
+	  updateOrbitTarget();
 	  preview(objectAt(event));
     });
   }
+	stage.addEventListener("wheel", (event) => {
+	  event.preventDefault();
+	  orbitRadius = Math.max(58, Math.min(175, orbitRadius + event.deltaY * 0.08));
+	  updateOrbitTarget();
+	}, { passive: false });
 
   function resize() {
     const width = stage.clientWidth, height = stage.clientHeight;
@@ -194,7 +206,7 @@ async function initGalaxy(root, THREE) {
   new ResizeObserver(resize).observe(stage); resize();
   status.textContent = "Select a planet";
   function frame() {
-	camera.position.lerp(cameraTarget, reduced ? 1 : 0.035);
+	camera.position.lerp(cameraTarget, reduced ? 1 : 0.065);
 	ship.position.lerp(shipTarget, reduced ? 1 : 0.18);
 	if (!reduced) {
 	  const flap = Math.sin(performance.now() * 0.012);
