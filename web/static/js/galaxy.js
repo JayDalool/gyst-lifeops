@@ -82,14 +82,15 @@ async function initGalaxy(root, THREE) {
 	const coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(THREE, [125, 218, 255]), color: 0x8bddff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
 	coreGlow.scale.set(30, 30, 1);
 	scene.add(coreGlow);
-	[[0x4361ee, -38, 5, -26, 62], [0x8f5bd7, 42, -7, 18, 52], [0x1f9eaa, 5, 3, -58, 46]].forEach((cloud) => {
+	[[0x4361ee, -38, 5, -26, 62], [0x8f5bd7, 42, -7, 18, 52]].forEach((cloud) => {
 	  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(THREE, [(cloud[0] >> 16) & 255, (cloud[0] >> 8) & 255, cloud[0] & 255]), transparent: true, opacity: 0.24, blending: THREE.AdditiveBlending, depthWrite: false }));
-	  sprite.position.set(cloud[1], cloud[2], cloud[3]); sprite.scale.set(cloud[4] * 1.8, cloud[4], 1); scene.add(sprite);
+	  sprite.position.set(cloud[1], cloud[2], cloud[3]); sprite.scale.set(cloud[4] * 1.55, cloud[4] * 0.82, 1); scene.add(sprite);
 	});
 
   const starGeometry = new THREE.BufferGeometry();
-  const starPositions = new Float32Array(3600 * 3);
-	for (let i = 0; i < 3600; i++) {
+	const starCount = 850;
+  const starPositions = new Float32Array(starCount * 3);
+	for (let i = 0; i < starCount; i++) {
 	  const arm = i % 4;
 	  const radius = 4 + Math.pow(Math.random(), 0.68) * 180;
 	  const angle = radius * 0.055 + arm * Math.PI / 2 + (Math.random() - 0.5) * 0.58;
@@ -98,7 +99,7 @@ async function initGalaxy(root, THREE) {
 	  starPositions[i * 3 + 2] = Math.sin(angle) * radius + (Math.random() - 0.5) * 7;
 	}
   starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
-  scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xc9ddff, size: 0.48, transparent: true, opacity: 0.78, blending: THREE.AdditiveBlending, depthWrite: false })));
+  scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xc9ddff, size: 0.38, transparent: true, opacity: 0.48, blending: THREE.AdditiveBlending, depthWrite: false })));
 
   const colors = { active: 0x4dbfd0, current: 0x4dbfd0, done: 0x57c98b, locked: 0x596273, upcoming: 0xd9a054 };
 	const categoryColors = { career: 0x4dbfd0, learning: 0x7d8cff, health: 0x57c98b, finance: 0xd9a054, deen: 0x9b7de5, personal: 0xe47b9b, other: 0x89a2c7 };
@@ -191,7 +192,7 @@ async function initGalaxy(root, THREE) {
 	labels.forEach((label) => {
 	  const point = label.object.position.clone().project(camera);
 	  const visible = point.z < 1 && point.z > -1;
-	  label.element.hidden = !visible;
+	  label.element.hidden = !visible || selected !== label.object;
 	  if (visible) label.element.style.transform = "translate(-50%, -50%) translate(" + ((point.x * 0.5 + 0.5) * stage.clientWidth).toFixed(1) + "px," + ((-point.y * 0.5 + 0.5) * stage.clientHeight - 18).toFixed(1) + "px)";
 	  label.element.classList.toggle("selected", selected === label.object);
 	});
