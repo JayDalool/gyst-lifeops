@@ -138,9 +138,9 @@ async function initGalaxy(root, THREE) {
   });
 
   const pointer = new THREE.Vector2();
+	const raycaster = new THREE.Raycaster();
 	const cameraTarget = camera.position.clone();
 	const lookTarget = new THREE.Vector3();
-	const focusDirection = new THREE.Vector3();
 	const selectionHalo = new THREE.Mesh(
 	  new THREE.RingGeometry(1.12, 1.42, 64),
 	  new THREE.MeshBasicMaterial({ color: 0x6eeaff, transparent: true, opacity: 0.72, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false })
@@ -155,6 +155,8 @@ async function initGalaxy(root, THREE) {
 	let roamInputY = 0;
 	let pointerActive = false;
 	let pointerDirty = false;
+	let pendingObject;
+	let pendingSince = 0;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
 	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
@@ -175,7 +177,6 @@ async function initGalaxy(root, THREE) {
 	}
 	object.userData._baseEmissiveIntensity ??= object.material.emissiveIntensity;
 	object.material.emissiveIntensity = Math.max(0.78, object.userData._baseEmissiveIntensity);
-	focusDirection.copy(camera.position).sub(object.position).normalize();
 	selectionHalo.visible = true;
 	selectionHalo.position.copy(object.position);
 	roamInputX = 0;
@@ -192,28 +193,21 @@ async function initGalaxy(root, THREE) {
 	contextPanel.querySelector("[data-galaxy-next]").textContent = object.userData.next ? "Next mission: " + object.userData.next : "No pending mission queued.";
   }
   function planetAtPointer() {
-	let match = null;
-	let bestScore = Infinity;
-	const halfFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
-	objects.forEach((object) => {
-	  const projected = object.position.clone().project(camera);
-	  if (projected.z <= -1 || projected.z >= 1) return;
-	  const distance = camera.position.distanceTo(object.position);
-	  const worldRadius = object.geometry.parameters.radius;
-	  const radiusY = Math.max(0.022, worldRadius / (distance * Math.tan(halfFov)));
-	  const radiusX = radiusY / camera.aspect;
-	  const dx = (pointer.x - projected.x) / radiusX;
-	  const dy = (pointer.y - projected.y) / radiusY;
-	  const score = Math.hypot(dx, dy);
-	  if (score <= 1.18 && score < bestScore) {
-		match = object;
-		bestScore = score;
-	  }
-	});
-	return match;
+	raycaster.setFromCamera(pointer, camera);
+	return raycaster.intersectObjects(objects, false)[0]?.object || null;
+  }
+  function queuePreview(object) {
+	if (object === hovered) {
+	  pendingObject = undefined;
+	  return;
+	}
+	if (object !== pendingObject) {
+	  pendingObject = object;
+	  pendingSince = performance.now();
+	}
   }
   canvas.addEventListener("pointerup", () => {
-	const object = hovered || planetAtPointer();
+	const object = planetAtPointer();
 	if (object) location.href = object.userData.url;
   });
   if (matchMedia("(pointer: fine)").matches) {
@@ -231,7 +225,7 @@ async function initGalaxy(root, THREE) {
     });
   }
 	stage.addEventListener("pointerleave", () => {
-	  roamInputX = 0; roamInputY = 0; pointerActive = false; preview(null);
+	  roamInputX = 0; roamInputY = 0; pointerActive = false; pendingObject = undefined; preview(null);
 	});
 	stage.addEventListener("wheel", (event) => {
 	  event.preventDefault();
@@ -247,16 +241,12 @@ async function initGalaxy(root, THREE) {
   new ResizeObserver(resize).observe(stage); resize();
   status.textContent = "Select a planet";
   function frame() {
-	if (hovered) {
-	  const focusDistance = Math.max(13, hovered.geometry.parameters.radius * 4.8);
-	  cameraTarget.copy(hovered.position).addScaledVector(focusDirection, focusDistance);
-	  lookTarget.lerp(hovered.position, reduced ? 1 : 0.11);
-	} else {
+	if (!hovered) {
 	  orbitYaw += roamInputX * 0.0032;
 	  orbitPitch = Math.max(-1.05, Math.min(1.05, orbitPitch + roamInputY * 0.0018));
 	  updateOrbitTarget();
-	  lookTarget.lerp(scene.position, reduced ? 1 : 0.08);
 	}
+	lookTarget.lerp(scene.position, reduced ? 1 : 0.08);
 	camera.position.lerp(cameraTarget, reduced ? 1 : 0.065);
 	ship.position.copy(shipTarget);
 	if (!reduced) {
@@ -268,9 +258,18 @@ async function initGalaxy(root, THREE) {
 	 camera.updateMatrixWorld();
 	 scene.updateMatrixWorld();
 	 if (pointerActive && pointerDirty) {
-	   preview(planetAtPointer());
+	   queuePreview(planetAtPointer());
 	   pointerDirty = false;
 	 }
+	if (pendingObject !== undefined && performance.now() - pendingSince >= 65) {
+	  preview(pendingObject);
+	  pendingObject = undefined;
+	}
+	objects.forEach((object) => {
+	  const targetScale = object === hovered ? 1.14 : 1;
+	  const nextScale = reduced ? targetScale : THREE.MathUtils.lerp(object.scale.x, targetScale, 0.13);
+	  object.scale.setScalar(nextScale);
+	});
 	if (hovered) {
 	  const pulse = reduced ? 1 : 1 + Math.sin(performance.now() * 0.007) * 0.08;
 	  selectionHalo.position.copy(hovered.position);
