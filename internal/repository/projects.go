@@ -12,7 +12,7 @@ import (
 const projectColumns = `id, uuid, COALESCE(parent_project_id, 0), name, description, category, project_kind, status,
 	COALESCE(start_date, ''), COALESCE(target_date, ''), notes, unlock_notes,
 	COALESCE(depends_on_project_id, 0), auto_unlock,
-	created_at, updated_at, COALESCE(archived_at, ''), COALESCE(roadmap_id, 0), pos_x, pos_y, pos_z`
+	created_at, updated_at, COALESCE(archived_at, ''), COALESCE(roadmap_id, 0), pos_x, pos_y, pos_z, COALESCE(color, 'cyan')`
 
 func (r *Repository) ListProjects(includeArchived bool) ([]models.ProjectWithProgress, error) {
 	where := "WHERE p.archived_at IS NULL AND p.status != 'archived'"
@@ -96,6 +96,7 @@ func (r *Repository) listProjectsWhere(where string, args ...any) ([]models.Proj
 			&item.Project.PosX,
 			&item.Project.PosY,
 			&item.Project.PosZ,
+			&item.Project.Color,
 			&item.TotalItems,
 			&item.CompletedItems,
 			&item.NextDueItem,
@@ -195,11 +196,12 @@ func (r *Repository) CreateProject(project *models.Project) error {
 	project.Category = clean(project.Category, "other")
 	project.Status = cleanProjectStatus(project.Status)
 	project.ProjectKind = cleanProjectKind(project.ProjectKind)
+	project.Color = cleanProjectColor(project.Color)
 
 	res, err := r.db.Exec(`INSERT INTO projects
 		(parent_project_id, name, description, category, project_kind, status, start_date, target_date, notes,
-		 unlock_notes, depends_on_project_id, auto_unlock, roadmap_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		 unlock_notes, depends_on_project_id, auto_unlock, roadmap_id, color)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		nullableInt64(project.ParentProjectID),
 		project.Name,
 		project.Description,
@@ -213,6 +215,7 @@ func (r *Repository) CreateProject(project *models.Project) error {
 		nullableInt64(project.DependsOnProjectID),
 		boolFlag(project.AutoUnlock),
 		nullableInt64(project.RoadmapID),
+		project.Color,
 	)
 	if err != nil {
 		return err
@@ -225,6 +228,7 @@ func (r *Repository) UpdateProject(project *models.Project) error {
 	project.Category = clean(project.Category, "other")
 	project.Status = cleanProjectStatus(project.Status)
 	project.ProjectKind = cleanProjectKind(project.ProjectKind)
+	project.Color = cleanProjectColor(project.Color)
 
 	_, err := r.db.Exec(`UPDATE projects SET
 		parent_project_id = ?,
@@ -240,6 +244,7 @@ func (r *Repository) UpdateProject(project *models.Project) error {
 		depends_on_project_id = ?,
 		auto_unlock = ?,
 		roadmap_id = ?,
+		color = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
 		WHERE id = ?`,
@@ -256,6 +261,7 @@ func (r *Repository) UpdateProject(project *models.Project) error {
 		nullableInt64(project.DependsOnProjectID),
 		boolFlag(project.AutoUnlock),
 		nullableInt64(project.RoadmapID),
+		project.Color,
 		project.ID,
 	)
 	return err
@@ -560,5 +566,14 @@ func cleanProjectKind(kind string) string {
 		return strings.TrimSpace(strings.ToLower(kind))
 	default:
 		return "main"
+	}
+}
+
+func cleanProjectColor(color string) string {
+	switch strings.TrimSpace(strings.ToLower(color)) {
+	case "violet", "emerald", "amber", "rose", "blue", "orange", "magenta":
+		return strings.TrimSpace(strings.ToLower(color))
+	default:
+		return "cyan"
 	}
 }

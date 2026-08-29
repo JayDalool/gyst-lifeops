@@ -114,6 +114,7 @@ func scanProject(s scanner) (models.Project, error) {
 		&project.PosX,
 		&project.PosY,
 		&project.PosZ,
+		&project.Color,
 	)
 	project.AutoUnlock = autoUnlock == 1
 	return project, err

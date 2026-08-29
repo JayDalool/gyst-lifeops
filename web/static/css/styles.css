@@ -3961,6 +3961,16 @@ i.map-node-state {
 :root .num { font-variant-numeric: tabular-nums; }
 :root .page-body { margin-top: 28px; }
 
+:root .project-theme { --accent: #4dbfd0; --accent-text: #6eeaff; --accent-soft: rgba(77,191,208,.12); }
+:root .project-theme-violet { --accent: #8b6ee8; --accent-text: #ad99ff; --accent-soft: rgba(139,110,232,.13); }
+:root .project-theme-emerald { --accent: #43c98b; --accent-text: #6ee8ab; --accent-soft: rgba(67,201,139,.13); }
+:root .project-theme-amber { --accent: #e0aa45; --accent-text: #f3c76f; --accent-soft: rgba(224,170,69,.13); }
+:root .project-theme-rose { --accent: #e46f91; --accent-text: #f49ab4; --accent-soft: rgba(228,111,145,.13); }
+:root .project-theme-blue { --accent: #4f83e8; --accent-text: #7da5f4; --accent-soft: rgba(79,131,232,.13); }
+:root .project-theme-orange { --accent: #e88145; --accent-text: #f3a370; --accent-soft: rgba(232,129,69,.13); }
+:root .project-theme-magenta { --accent: #c85bd6; --accent-text: #e38bed; --accent-soft: rgba(200,91,214,.13); }
+:root .project-theme .page-title { color: var(--accent-text); text-shadow: 0 0 24px var(--accent-soft); }
+
 /* ---- columns -------------------------------------------------------------- */
 :root .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 :root .cols-wide {

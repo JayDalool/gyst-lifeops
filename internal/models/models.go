@@ -50,6 +50,7 @@ type Project struct {
 	Name               string
 	Description        string
 	Category           string
+	Color              string
 	ProjectKind        string
 	Status             string
 	StartDate          string
@@ -70,6 +71,7 @@ type GalaxyPlanet struct {
 	ID       int64          `json:"id"`
 	Name     string         `json:"name"`
 	Category string         `json:"category"`
+	Color    string         `json:"color"`
 	Summary  string         `json:"summary"`
 	Target   string         `json:"target,omitempty"`
 	Next     string         `json:"next,omitempty"`

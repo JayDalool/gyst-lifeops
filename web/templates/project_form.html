@@ -31,6 +31,21 @@
       </select>
     </label>
     <label class="field">
+      <span>Project color</span>
+      <select name="color">
+        <option value="cyan" {{if eq .Project.Color "cyan"}}selected{{end}}>Cyan</option>
+        <option value="violet" {{if eq .Project.Color "violet"}}selected{{end}}>Violet</option>
+        <option value="emerald" {{if eq .Project.Color "emerald"}}selected{{end}}>Emerald</option>
+        <option value="amber" {{if eq .Project.Color "amber"}}selected{{end}}>Amber</option>
+        <option value="rose" {{if eq .Project.Color "rose"}}selected{{end}}>Rose</option>
+        <option value="blue" {{if eq .Project.Color "blue"}}selected{{end}}>Blue</option>
+        <option value="orange" {{if eq .Project.Color "orange"}}selected{{end}}>Orange</option>
+        <option value="magenta" {{if eq .Project.Color "magenta"}}selected{{end}}>Magenta</option>
+      </select>
+    </label>
+  </div>
+  <div class="form-row">
+    <label class="field">
       <span>Kind</span>
       <select name="project_kind">
         <option value="main" {{if eq .Project.ProjectKind "main"}}selected{{end}}>Main project</option>

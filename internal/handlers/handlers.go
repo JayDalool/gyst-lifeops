@@ -829,6 +829,7 @@ func (h *Handler) newProject(w http.ResponseWriter, r *http.Request) {
 		}
 		newProject := models.Project{
 			Category:    "other",
+			Color:       "cyan",
 			ProjectKind: "main",
 			Status:      "active",
 			StartDate:   h.Service.TodayString(),
@@ -1930,6 +1931,7 @@ func projectFromRequest(r *http.Request) (models.Project, error) {
 		Name:               strings.TrimSpace(r.FormValue("name")),
 		Description:        strings.TrimSpace(r.FormValue("description")),
 		Category:           cleanForm(r.FormValue("category"), "other"),
+		Color:              cleanForm(r.FormValue("color"), "cyan"),
 		ProjectKind:        cleanForm(r.FormValue("project_kind"), "main"),
 		Status:             cleanForm(r.FormValue("status"), "active"),
 		StartDate:          strings.TrimSpace(r.FormValue("start_date")),

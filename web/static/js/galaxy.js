@@ -108,11 +108,11 @@ async function initGalaxy(root, THREE) {
   scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xc9ddff, size: 0.38, transparent: true, opacity: 0.48, blending: THREE.AdditiveBlending, depthWrite: false })));
 
   const colors = { active: 0x4dbfd0, current: 0x4dbfd0, done: 0x57c98b, locked: 0x596273, upcoming: 0xd9a054 };
-	const categoryColors = { career: 0x4dbfd0, learning: 0x7d8cff, health: 0x57c98b, finance: 0xd9a054, deen: 0x9b7de5, personal: 0xe47b9b, other: 0x89a2c7 };
+	const projectColors = { cyan: 0x4dbfd0, violet: 0x8b6ee8, emerald: 0x43c98b, amber: 0xe0aa45, rose: 0xe46f91, blue: 0x4f83e8, orange: 0xe88145, magenta: 0xc85bd6 };
   const objects = [];
 	const labels = [];
   planets.forEach((planet) => {
-    const planetColor = categoryColors[(planet.category || "other").toLowerCase()] || colors[planet.state] || categoryColors.other;
+	const planetColor = projectColors[(planet.color || "cyan").toLowerCase()] || colors[planet.state] || projectColors.cyan;
 	const material = new THREE.MeshStandardMaterial({ color: planetColor, roughness: 0.58, metalness: 0.18, emissive: planet.state === "done" ? planetColor : 0x07101a, emissiveIntensity: planet.state === "done" ? 0.42 : 0.18, transparent: true, opacity: planet.state === "locked" ? 0.48 : 1 });
     const mesh = new THREE.Mesh(new THREE.SphereGeometry(Math.max(1.5, planet.size * 1.35), 32, 20), material);
     mesh.position.set(planet.x, planet.y * 0.16, planet.z);
@@ -158,7 +158,6 @@ async function initGalaxy(root, THREE) {
 	let roamInputX = 0;
 	let roamInputY = 0;
 	let travelling = false;
-	let shiftFlight = false;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
 	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
@@ -228,15 +227,10 @@ async function initGalaxy(root, THREE) {
 	return match;
   }
   canvas.addEventListener("pointerup", (event) => {
-	const flightCommand = event.shiftKey || shiftFlight;
-	const object = flightCommand ? null : planetAtPointer();
-	if (!flightCommand && object) {
+	const object = planetAtPointer();
+	if (object) {
 	  if (hovered === object) location.href = object.userData.url;
 	  else preview(object);
-	  return;
-	}
-	if (!flightCommand) {
-	  preview(null);
 	  return;
 	}
 	raycaster.setFromCamera(pointer, camera);
@@ -255,33 +249,11 @@ async function initGalaxy(root, THREE) {
 	  shipTarget.x = normalizedX * shipHalfHeight * camera.aspect;
 	  shipTarget.y = normalizedY * shipHalfHeight;
 	  pointer.set(normalizedX, normalizedY);
-	  if (event.shiftKey || shiftFlight) {
-		roamInputX = deadZone(normalizedX);
-		roamInputY = deadZone(normalizedY);
-		if (hovered) preview(null);
-		status.textContent = "Flight mode · release Shift for selection";
-		return;
-	  }
-	  roamInputX = 0;
-	  roamInputY = 0;
+	  roamInputX = deadZone(normalizedX);
+	  roamInputY = deadZone(normalizedY);
     });
   }
-	window.addEventListener("keydown", (event) => {
-	  if (event.key !== "Shift" || shiftFlight) return;
-	  shiftFlight = true;
-	  travelling = false;
-	  preview(null);
-	  status.textContent = "Flight mode · move Oliver to roam";
-	});
-	window.addEventListener("keyup", (event) => {
-	  if (event.key !== "Shift") return;
-	  shiftFlight = false;
-	  roamInputX = 0;
-	  roamInputY = 0;
-	  status.textContent = "Selection mode · click a planet to focus";
-	});
 	window.addEventListener("blur", () => {
-	  shiftFlight = false;
 	  roamInputX = 0;
 	  roamInputY = 0;
 	});
@@ -300,7 +272,7 @@ async function initGalaxy(root, THREE) {
     camera.aspect = width / height; camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(stage); resize();
-  status.textContent = "Selection mode · hold Shift to free roam";
+  status.textContent = "Free roam · click a planet to focus";
   function frame() {
 	if (hovered) {
 	  const focusDistance = Math.max(15, hovered.geometry.parameters.radius * 5.2);
