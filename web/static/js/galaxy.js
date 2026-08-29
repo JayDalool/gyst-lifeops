@@ -77,6 +77,7 @@ async function initGalaxy(root, THREE) {
 	 ship.renderOrder = 20;
 	 camera.add(ship);
 	 const shipTarget = new THREE.Vector3(0, -3.5, -8);
+	 const focusedShipTarget = new THREE.Vector3(0, -3.5, -8);
   scene.add(new THREE.AmbientLight(0x65749a, 0.72));
   const sun = new THREE.PointLight(0xb9e8ff, 2600, 350);
   sun.position.set(0, 4, 0);
@@ -343,7 +344,6 @@ async function initGalaxy(root, THREE) {
 	  lookTarget.lerp(scene.position, reduced ? 1 : 0.08);
 	}
 	camera.position.lerp(cameraTarget, reduced ? 1 : hovered ? 0.022 : 0.065);
-	ship.position.copy(shipTarget);
 	if (!reduced) {
 	  const flap = Math.sin(performance.now() * 0.012);
 	  ship.scale.y = 0.465 + flap * 0.022;
@@ -352,6 +352,14 @@ async function initGalaxy(root, THREE) {
 	 camera.lookAt(lookTarget);
 	 camera.updateMatrixWorld();
 	 scene.updateMatrixWorld();
+	if (hovered) {
+	  const focusedPoint = hovered.position.clone().project(camera);
+	  const shipHalfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * 8;
+	  focusedShipTarget.set(focusedPoint.x * shipHalfHeight * camera.aspect, focusedPoint.y * shipHalfHeight, -8);
+	  ship.position.lerp(focusedShipTarget, reduced ? 1 : 0.12);
+	} else {
+	  ship.position.copy(shipTarget);
+	}
 	 if (pointerActive && pointerDirty) {
 	   queuePreview(planetAtPointer());
 	   pointerDirty = false;
