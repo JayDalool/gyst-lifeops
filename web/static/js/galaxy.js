@@ -72,7 +72,7 @@ async function initGalaxy(root, THREE) {
 	 oliverTexture.magFilter = THREE.NearestFilter;
 	 oliverTexture.minFilter = THREE.LinearMipmapLinearFilter;
 	 const ship = new THREE.Sprite(new THREE.SpriteMaterial({ map: oliverTexture, transparent: true, alphaTest: 0.08, depthTest: false, depthWrite: false }));
-	 ship.scale.set(2.9, 2.18, 1);
+	 ship.scale.set(1.35, 1.02, 1);
 	 ship.position.set(0, -3.5, -8);
 	 ship.renderOrder = 20;
 	 camera.add(ship);
@@ -139,12 +139,15 @@ async function initGalaxy(root, THREE) {
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  let selected = null;
-  let target = new THREE.Vector3(0, 4, 110);
-  function choose(object) {
-    if (!object) return;
-    if (selected === object) { location.href = object.userData.url; return; }
-    selected = object;
+  let hovered = null;
+  function preview(object) {
+    hovered = object || null;
+	if (!object) {
+	  status.textContent = "Free roam · click a planet to enter";
+	  contextPanel.hidden = true;
+	  openButton.hidden = true;
+	  return;
+	}
     status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state}`;
     openButton.href = object.userData.url;
     openButton.hidden = false;
@@ -155,32 +158,25 @@ async function initGalaxy(root, THREE) {
 	contextPanel.querySelector("[data-galaxy-progress]").style.width = object.userData.progress + "%";
 	contextPanel.querySelector("[data-galaxy-meta]").textContent = object.userData.missions + " missions · " + object.userData.progress + "% complete" + (object.userData.target ? " · target " + object.userData.target : "");
 	contextPanel.querySelector("[data-galaxy-next]").textContent = object.userData.next ? "Next mission: " + object.userData.next : "No pending mission queued.";
-    target.copy(object.position).add(new THREE.Vector3(0, 3, 18));
   }
-  function pick(event) {
+  function objectAt(event) {
     const rect = canvas.getBoundingClientRect();
     pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    choose(raycaster.intersectObjects(objects, false)[0]?.object);
+	return raycaster.intersectObjects(objects, false)[0]?.object || null;
   }
-  canvas.addEventListener("pointerup", pick);
-  if (matchMedia("(pointer: fine)").matches && !reduced) {
+  canvas.addEventListener("pointerup", (event) => {
+	const object = objectAt(event);
+	if (object) location.href = object.userData.url;
+  });
+  if (matchMedia("(pointer: fine)").matches) {
     stage.addEventListener("pointermove", (event) => {
       const rect = stage.getBoundingClientRect();
-      target.x += (((event.clientX - rect.left) / rect.width) - 0.5) * 0.08;
-      target.y += (0.5 - ((event.clientY - rect.top) / rect.height)) * 0.05;
-	  shipTarget.x = (((event.clientX - rect.left) / rect.width) - 0.5) * 10;
-	  shipTarget.y = (0.5 - ((event.clientY - rect.top) / rect.height)) * 6;
+	  shipTarget.x = (((event.clientX - rect.left) / rect.width) - 0.5) * 14;
+	  shipTarget.y = (0.5 - ((event.clientY - rect.top) / rect.height)) * 8;
+	  preview(objectAt(event));
     });
   }
-  let dragging = false, lastX = 0, lastY = 0;
-  stage.addEventListener("pointerdown", (event) => { dragging = true; lastX = event.clientX; lastY = event.clientY; });
-  stage.addEventListener("pointermove", (event) => {
-    if (!dragging || matchMedia("(pointer: fine)").matches) return;
-    target.x -= (event.clientX - lastX) * 0.08; target.y += (event.clientY - lastY) * 0.08;
-    lastX = event.clientX; lastY = event.clientY;
-  });
-  stage.addEventListener("pointerup", () => { dragging = false; });
 
   function resize() {
     const width = stage.clientWidth, height = stage.clientHeight;
@@ -190,21 +186,19 @@ async function initGalaxy(root, THREE) {
   new ResizeObserver(resize).observe(stage); resize();
   status.textContent = "Select a planet";
   function frame() {
-    if (!reduced) camera.position.lerp(target, selected ? 0.045 : 0.018);
-    else camera.position.copy(target);
+	ship.position.lerp(shipTarget, reduced ? 1 : 0.18);
 	if (!reduced) {
-	  ship.position.lerp(shipTarget, 0.09);
 	  const flap = Math.sin(performance.now() * 0.012);
-	  ship.scale.y = 2.18 + flap * 0.09;
+	  ship.scale.y = 1.02 + flap * 0.045;
 	  ship.material.rotation = flap * 0.025;
 	}
-    camera.lookAt(selected ? selected.position : scene.position);
+	 camera.lookAt(scene.position);
 	labels.forEach((label) => {
 	  const point = label.object.position.clone().project(camera);
 	  const visible = point.z < 1 && point.z > -1;
-	  label.element.hidden = !visible || selected !== label.object;
+	  label.element.hidden = !visible || hovered !== label.object;
 	  if (visible) label.element.style.transform = "translate(-50%, -50%) translate(" + ((point.x * 0.5 + 0.5) * stage.clientWidth).toFixed(1) + "px," + ((-point.y * 0.5 + 0.5) * stage.clientHeight - 18).toFixed(1) + "px)";
-	  label.element.classList.toggle("selected", selected === label.object);
+	  label.element.classList.toggle("selected", hovered === label.object);
 	});
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
