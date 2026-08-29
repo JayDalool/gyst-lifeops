@@ -141,6 +141,9 @@ async function initGalaxy(root, THREE) {
 	const raycaster = new THREE.Raycaster();
 	const cameraTarget = camera.position.clone();
 	const lookTarget = new THREE.Vector3();
+	const focusDirection = new THREE.Vector3();
+	const travelTarget = new THREE.Vector3();
+	const travelLookTarget = new THREE.Vector3();
 	const selectionHalo = new THREE.Mesh(
 	  new THREE.RingGeometry(1.12, 1.42, 64),
 	  new THREE.MeshBasicMaterial({ color: 0x6eeaff, transparent: true, opacity: 0.72, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false })
@@ -157,6 +160,7 @@ async function initGalaxy(root, THREE) {
 	let pointerDirty = false;
 	let pendingObject;
 	let pendingSince = 0;
+	let travelling = false;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
 	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
@@ -177,6 +181,8 @@ async function initGalaxy(root, THREE) {
 	}
 	object.userData._baseEmissiveIntensity ??= object.material.emissiveIntensity;
 	object.material.emissiveIntensity = Math.max(0.78, object.userData._baseEmissiveIntensity);
+	focusDirection.copy(camera.position).sub(object.position).normalize();
+	travelling = false;
 	selectionHalo.visible = true;
 	selectionHalo.position.copy(object.position);
 	roamInputX = 0;
@@ -193,8 +199,31 @@ async function initGalaxy(root, THREE) {
 	contextPanel.querySelector("[data-galaxy-next]").textContent = object.userData.next ? "Next mission: " + object.userData.next : "No pending mission queued.";
   }
   function planetAtPointer() {
-	raycaster.setFromCamera(pointer, camera);
-	return raycaster.intersectObjects(objects, false)[0]?.object || null;
+	const width = stage.clientWidth;
+	const height = stage.clientHeight;
+	const pointerX = (pointer.x * 0.5 + 0.5) * width;
+	const pointerY = (-pointer.y * 0.5 + 0.5) * height;
+	const cameraUp = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+	let match = null;
+	let bestEdge = Infinity;
+	objects.forEach((object) => {
+	  const center = object.position.clone().project(camera);
+	  if (center.z <= -1 || center.z >= 1) return;
+	  const radius = object.geometry.parameters.radius;
+	  const edge = object.position.clone().addScaledVector(cameraUp, radius).project(camera);
+	  const centerX = (center.x * 0.5 + 0.5) * width;
+	  const centerY = (-center.y * 0.5 + 0.5) * height;
+	  const edgeX = (edge.x * 0.5 + 0.5) * width;
+	  const edgeY = (-edge.y * 0.5 + 0.5) * height;
+	  const screenRadius = Math.max(5, Math.hypot(edgeX - centerX, edgeY - centerY));
+	  const contactPadding = object === hovered ? 36 : 28;
+	  const edgeDistance = Math.hypot(pointerX - centerX, pointerY - centerY) - screenRadius;
+	  if (edgeDistance <= contactPadding && edgeDistance < bestEdge) {
+		match = object;
+		bestEdge = edgeDistance;
+	  }
+	});
+	return match;
   }
   function queuePreview(object) {
 	if (object === hovered) {
@@ -208,7 +237,17 @@ async function initGalaxy(root, THREE) {
   }
   canvas.addEventListener("pointerup", () => {
 	const object = planetAtPointer();
-	if (object) location.href = object.userData.url;
+	if (object) {
+	  location.href = object.userData.url;
+	  return;
+	}
+	raycaster.setFromCamera(pointer, camera);
+	preview(null);
+	pendingObject = undefined;
+	travelTarget.copy(camera.position).addScaledVector(raycaster.ray.direction, 34);
+	travelLookTarget.copy(camera.position).addScaledVector(raycaster.ray.direction, 100);
+	travelling = true;
+	status.textContent = "Travelling through the galaxy";
   });
   if (matchMedia("(pointer: fine)").matches) {
     stage.addEventListener("pointermove", (event) => {
@@ -241,12 +280,25 @@ async function initGalaxy(root, THREE) {
   new ResizeObserver(resize).observe(stage); resize();
   status.textContent = "Select a planet";
   function frame() {
-	if (!hovered) {
+	if (hovered) {
+	  const focusDistance = Math.max(15, hovered.geometry.parameters.radius * 5.2);
+	  cameraTarget.copy(hovered.position).addScaledVector(focusDirection, focusDistance);
+	  lookTarget.lerp(hovered.position, reduced ? 1 : 0.085);
+	} else if (travelling) {
+	  cameraTarget.copy(travelTarget);
+	  lookTarget.lerp(travelLookTarget, reduced ? 1 : 0.075);
+	  if (camera.position.distanceTo(travelTarget) < 0.35) {
+		travelling = false;
+		orbitRadius = camera.position.length();
+		orbitYaw = Math.atan2(camera.position.x, camera.position.z);
+		orbitPitch = Math.asin(THREE.MathUtils.clamp(camera.position.y / orbitRadius, -1, 1));
+	  }
+	} else {
 	  orbitYaw += roamInputX * 0.0032;
 	  orbitPitch = Math.max(-1.05, Math.min(1.05, orbitPitch + roamInputY * 0.0018));
 	  updateOrbitTarget();
+	  lookTarget.lerp(scene.position, reduced ? 1 : 0.08);
 	}
-	lookTarget.lerp(scene.position, reduced ? 1 : 0.08);
 	camera.position.lerp(cameraTarget, reduced ? 1 : 0.065);
 	ship.position.copy(shipTarget);
 	if (!reduced) {
