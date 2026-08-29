@@ -1,5 +1,5 @@
-const CACHE = "lifeops-shell-v6";
-const SHELL = ["/today", "/galaxy", "/projects", "/static/css/styles.css?v=design-2", "/static/js/app.js?v=2", "/static/js/galaxy.js?v=6", "/static/js/vendor/three.module.js", "/static/js/vendor/three.core.js", "/static/images/oliver-galaxy-pixel.png", "/static/favicon.svg"];
+const CACHE = "lifeops-shell-v7";
+const SHELL = ["/today", "/galaxy", "/projects", "/static/css/styles.css?v=design-2", "/static/js/app.js?v=2", "/static/js/galaxy.js?v=7", "/static/js/vendor/three.module.js", "/static/js/vendor/three.core.js", "/static/images/oliver-galaxy-pixel.png", "/static/favicon.svg"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", event => {

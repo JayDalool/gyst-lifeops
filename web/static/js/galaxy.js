@@ -72,7 +72,7 @@ async function initGalaxy(root, THREE) {
 	 oliverTexture.magFilter = THREE.NearestFilter;
 	 oliverTexture.minFilter = THREE.LinearMipmapLinearFilter;
 	 const ship = new THREE.Sprite(new THREE.SpriteMaterial({ map: oliverTexture, transparent: true, alphaTest: 0.08, depthTest: false, depthWrite: false }));
-	 ship.scale.set(4.8, 3.6, 1);
+	 ship.scale.set(2.9, 2.18, 1);
 	 ship.position.set(0, -3.5, -8);
 	 ship.renderOrder = 20;
 	 camera.add(ship);
@@ -195,7 +195,7 @@ async function initGalaxy(root, THREE) {
 	if (!reduced) {
 	  ship.position.lerp(shipTarget, 0.09);
 	  const flap = Math.sin(performance.now() * 0.012);
-	  ship.scale.y = 3.6 + flap * 0.16;
+	  ship.scale.y = 2.18 + flap * 0.09;
 	  ship.material.rotation = flap * 0.025;
 	}
     camera.lookAt(selected ? selected.position : scene.position);
