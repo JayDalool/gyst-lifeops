@@ -160,6 +160,7 @@ async function initGalaxy(root, THREE) {
 	let pointerDirty = false;
 	let pendingObject;
 	let pendingSince = 0;
+	const selectionAnchor = new THREE.Vector2();
 	let travelling = false;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
@@ -182,6 +183,7 @@ async function initGalaxy(root, THREE) {
 	object.userData._baseEmissiveIntensity ??= object.material.emissiveIntensity;
 	object.material.emissiveIntensity = Math.max(0.78, object.userData._baseEmissiveIntensity);
 	focusDirection.copy(camera.position).sub(object.position).normalize();
+	selectionAnchor.copy(pointer);
 	travelling = false;
 	selectionHalo.visible = true;
 	selectionHalo.position.copy(object.position);
@@ -260,7 +262,10 @@ async function initGalaxy(root, THREE) {
 	  roamInputY = deadZone(normalizedY);
 	  pointer.set(normalizedX, normalizedY);
 	  pointerActive = true;
-	  pointerDirty = true;
+	  const anchorDistance = hovered
+		? Math.hypot((pointer.x - selectionAnchor.x) * rect.width * 0.5, (pointer.y - selectionAnchor.y) * rect.height * 0.5)
+		: Infinity;
+	  pointerDirty = !hovered || anchorDistance > 48;
     });
   }
 	stage.addEventListener("pointerleave", () => {
@@ -283,7 +288,7 @@ async function initGalaxy(root, THREE) {
 	if (hovered) {
 	  const focusDistance = Math.max(15, hovered.geometry.parameters.radius * 5.2);
 	  cameraTarget.copy(hovered.position).addScaledVector(focusDirection, focusDistance);
-	  lookTarget.lerp(hovered.position, reduced ? 1 : 0.085);
+	  lookTarget.lerp(hovered.position, reduced ? 1 : 0.045);
 	} else if (travelling) {
 	  cameraTarget.copy(travelTarget);
 	  lookTarget.lerp(travelLookTarget, reduced ? 1 : 0.075);
@@ -299,7 +304,7 @@ async function initGalaxy(root, THREE) {
 	  updateOrbitTarget();
 	  lookTarget.lerp(scene.position, reduced ? 1 : 0.08);
 	}
-	camera.position.lerp(cameraTarget, reduced ? 1 : 0.065);
+	camera.position.lerp(cameraTarget, reduced ? 1 : hovered ? 0.022 : 0.065);
 	ship.position.copy(shipTarget);
 	if (!reduced) {
 	  const flap = Math.sin(performance.now() * 0.012);
@@ -313,7 +318,8 @@ async function initGalaxy(root, THREE) {
 	   queuePreview(planetAtPointer());
 	   pointerDirty = false;
 	 }
-	if (pendingObject !== undefined && performance.now() - pendingSince >= 65) {
+	const selectionDelay = pendingObject ? 250 : 80;
+	if (pendingObject !== undefined && performance.now() - pendingSince >= selectionDelay) {
 	  preview(pendingObject);
 	  pendingObject = undefined;
 	}
