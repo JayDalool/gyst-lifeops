@@ -30,7 +30,7 @@ func TestQuickTaskCreatesAndReturnsToCurrentPage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tasks) != 1 || tasks[0].Title != "Ship command palette" || tasks[0].Priority != "high" {
+	if len(tasks) != 1 || tasks[0].Title != "Ship command palette" || tasks[0].Priority != "high" || tasks[0].StarsReward != 20 {
 		t.Fatalf("quick task not persisted: %#v", tasks)
 	}
 }

@@ -33,8 +33,8 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
 		t.Fatal(err)
 	}
-	if applied != 14 {
-		t.Fatalf("applied migrations = %d, want 14", applied)
+	if applied != 15 {
+		t.Fatalf("applied migrations = %d, want 15", applied)
 	}
 	var externalLinksTable int
 	if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='external_links'`).Scan(&externalLinksTable); err != nil {
@@ -84,6 +84,8 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 		"011_external_links.sql",
 		"012_galaxy_positions.sql",
 		"013_push_subscriptions.sql",
+		"014_project_colors.sql",
+		"015_recurring_task_xp.sql",
 	} {
 		copyMigration(t, sourceDir, migrationDir, name)
 	}
@@ -121,6 +123,13 @@ func TestPreQuestDatabaseUpgradesThroughLatest(t *testing.T) {
 	}
 	if starsReward != 1 || proofType != "none" {
 		t.Fatalf("legacy mission reward defaults = %d/%q, want 1/none", starsReward, proofType)
+	}
+	var recurringXPColumn int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('task_completions') WHERE name = 'stars_awarded'`).Scan(&recurringXPColumn); err != nil {
+		t.Fatal(err)
+	}
+	if recurringXPColumn != 1 {
+		t.Fatal("recurring task XP column was not added")
 	}
 	if _, err := database.Exec(`INSERT INTO external_links
 		(uuid, entity_type, entity_id, provider, external_key, url, title, summary)

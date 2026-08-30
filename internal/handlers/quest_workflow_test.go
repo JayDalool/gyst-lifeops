@@ -86,8 +86,8 @@ func TestProjectMissionCompletionHandlerDoesNotDuplicateReward(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stats.TotalStars != 11 {
-		t.Fatalf("total stars = %d, want one mission star and one 10-star quest reward", stats.TotalStars)
+	if stats.TotalStars != 120 {
+		t.Fatalf("total XP = %d, want one 20-XP mission and one 100-XP quest reward", stats.TotalStars)
 	}
 }
 
@@ -112,7 +112,7 @@ func TestProjectMissionProofHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 1 || items[0].StarsAwarded != 5 || items[0].ProofURL == "" {
+	if len(items) != 1 || items[0].StarsAwarded != 8 || items[0].ProofURL == "" {
 		t.Fatalf("proof workflow result: %#v", items)
 	}
 }

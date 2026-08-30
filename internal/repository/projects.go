@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/xp"
 )
 
 const projectColumns = `id, uuid, COALESCE(parent_project_id, 0), name, description, category, project_kind, status,
@@ -395,7 +396,7 @@ func (r *Repository) CreateProjectItem(item *models.ProjectItem) error {
 	item.Status = clean(item.Status, "pending")
 	item.ProofType = cleanProofType(item.ProofType)
 	if item.StarsReward <= 0 {
-		item.StarsReward = 1
+		item.StarsReward = xp.MissionReward(item.Priority)
 	}
 	if item.SortOrder == 0 {
 		if err := r.db.QueryRow(`SELECT COALESCE(MAX(sort_order), 0) + 1 FROM project_items WHERE project_id = ?`, item.ProjectID).Scan(&item.SortOrder); err != nil {
@@ -468,7 +469,7 @@ func (r *Repository) SetProjectItemStatus(projectID, itemID int64, status string
 		completedAt = "CURRENT_TIMESTAMP"
 		desiredAward = max(item.StarsReward, 1)
 		if validProof {
-			desiredAward += 2
+			desiredAward += xp.ProofBonus
 		}
 	}
 	tx, err := r.db.Begin()
@@ -552,7 +553,7 @@ func (r *Repository) reconcileProjectStatus(projectID int64) error {
 	if nextStatus == "done" {
 		if _, err := r.db.Exec(`INSERT OR IGNORE INTO achievements
 			(title, description, stars_bonus, trigger_type, source_project_id)
-			VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), 10, 'project_done', ?)`, projectID, projectID); err != nil {
+			VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), ?, 'project_done', ?)`, projectID, xp.ProjectCompletionBonus, projectID); err != nil {
 			return err
 		}
 		return r.AutoUnlockDependents(projectID, "upcoming")

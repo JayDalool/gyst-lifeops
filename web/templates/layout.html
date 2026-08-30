@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 	<link rel="manifest" href="/manifest.webmanifest">
 	<meta name="theme-color" content="#080d16">
-  <link rel="stylesheet" href="/static/css/styles.css?v=design-4">
+  <link rel="stylesheet" href="/static/css/styles.css?v=design-5">
   <script defer src="/static/js/charts.js?v=polish-5"></script>
   <script defer src="/static/js/app.js?v=3"></script>
 </head>
@@ -17,6 +17,12 @@
   <header class="nav">
     <div class="nav-inner">
       <a class="brand" href="/">LifeOps <span>Mission Control</span></a>
+	  {{$xp := xpStats}}
+	  <div class="xp-hud" title="{{$xp.TotalStars}} total XP · {{toNextLevel $xp.TotalStars}} XP to next level" aria-label="Level {{$xp.CurrentLevel}}, {{$xp.TotalStars}} total XP, {{toNextLevel $xp.TotalStars}} XP to next level">
+		<span class="xp-level">LVL {{$xp.CurrentLevel}}</span>
+		<span class="xp-track" aria-hidden="true"><i style="width: {{progressWidth (levelPct $xp.TotalStars)}}"></i></span>
+		<span class="xp-count num">{{levelPct $xp.TotalStars}}/100 XP</span>
+	  </div>
       <nav aria-label="Primary">
 		<button class="nav-command" type="button" data-command-open aria-keyshortcuts="Control+K Meta+K">Search <kbd>⌘K</kbd></button>
         <a href="/" {{if eq .Page "today"}}aria-current="page"{{end}}>Today</a>
@@ -69,7 +75,6 @@
 		<input type="hidden" name="return_to" data-command-return>
 		<input type="hidden" name="status" value="pending">
 		<input type="hidden" name="repeat_type" value="none">
-		<input type="hidden" name="stars_reward" value="1">
 		<input type="hidden" name="proof_type" value="none">
 		<label class="field"><span>Quick task</span><input name="title" data-quick-title required placeholder="What needs doing? Try: Call Sam tomorrow !high"></label>
 		<div class="command-capture-fields">

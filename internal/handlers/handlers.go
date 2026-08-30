@@ -17,6 +17,7 @@ import (
 
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
+	"lifeops-tracker/internal/xp"
 )
 
 type Handler struct {
@@ -611,7 +612,7 @@ func (h *Handler) newTask(w http.ResponseWriter, r *http.Request) {
 				Status:      "pending",
 				DueDate:     h.Service.TodayString(),
 				RepeatType:  "none",
-				StarsReward: 1,
+				StarsReward: xp.TaskReward("medium"),
 				ProofType:   "none",
 			},
 		})
@@ -1876,12 +1877,22 @@ func wantsJSON(r *http.Request) bool {
 }
 
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {
+	playerXP := models.PlayerStats{CurrentLevel: 1}
+	if h.Service != nil && h.Service.Repo != nil {
+		var err error
+		playerXP, err = h.Service.Repo.PlayerStats()
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+	}
 	files := []string{
 		filepath.Join(h.TemplateDir, "layout.html"),
 		filepath.Join(h.TemplateDir, "rocket_route.html"),
 		filepath.Join(h.TemplateDir, page),
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
+		"xpStats":      func() models.PlayerStats { return playerXP },
 		"join":         strings.Join,
 		"joinInts":     joinInts,
 		"niceDate":     niceDate,
@@ -1933,16 +1944,17 @@ func taskFromRequest(r *http.Request) (models.Task, error) {
 	if err := r.ParseForm(); err != nil {
 		return models.Task{}, err
 	}
+	priority := cleanForm(r.FormValue("priority"), "medium")
 	return models.Task{
 		Title:         strings.TrimSpace(r.FormValue("title")),
 		Description:   strings.TrimSpace(r.FormValue("description")),
 		Category:      cleanForm(r.FormValue("category"), "personal"),
-		Priority:      cleanForm(r.FormValue("priority"), "medium"),
+		Priority:      priority,
 		Status:        cleanForm(r.FormValue("status"), "pending"),
 		DueDate:       strings.TrimSpace(r.FormValue("due_date")),
 		RepeatType:    cleanForm(r.FormValue("repeat_type"), "none"),
 		ReminderTime:  strings.TrimSpace(r.FormValue("reminder_time")),
-		StarsReward:   parseIntForm(r.FormValue("stars_reward"), 1),
+		StarsReward:   parseIntForm(r.FormValue("stars_reward"), xp.TaskReward(priority)),
 		ProofRequired: r.FormValue("proof_required") == "on",
 		ProofType:     cleanForm(r.FormValue("proof_type"), "none"),
 		ProofURL:      strings.TrimSpace(r.FormValue("proof_url")),
@@ -1977,13 +1989,14 @@ func projectItemFromRequest(r *http.Request) (models.ProjectItem, error) {
 		return models.ProjectItem{}, err
 	}
 	sortOrder, _ := strconv.Atoi(r.FormValue("sort_order"))
+	priority := cleanForm(r.FormValue("priority"), "medium")
 	return models.ProjectItem{
 		Title:         strings.TrimSpace(r.FormValue("title")),
 		Description:   strings.TrimSpace(r.FormValue("description")),
-		Priority:      cleanForm(r.FormValue("priority"), "medium"),
+		Priority:      priority,
 		DueDate:       strings.TrimSpace(r.FormValue("due_date")),
 		SortOrder:     sortOrder,
-		StarsReward:   parseIntForm(r.FormValue("stars_reward"), 1),
+		StarsReward:   parseIntForm(r.FormValue("stars_reward"), xp.MissionReward(priority)),
 		ProofRequired: r.FormValue("proof_required") == "on",
 		ProofType:     cleanForm(r.FormValue("proof_type"), "none"),
 		ProofURL:      strings.TrimSpace(r.FormValue("proof_url")),

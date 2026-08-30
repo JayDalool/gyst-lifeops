@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/xp"
 )
 
 const taskColumns = `id, uuid, title, description, category, priority, status,
@@ -82,7 +83,7 @@ func (r *Repository) CreateTask(task *models.Task) error {
 	task.RepeatType = clean(task.RepeatType, "none")
 	task.ProofType = cleanProofType(task.ProofType)
 	if task.StarsReward <= 0 {
-		task.StarsReward = 1
+		task.StarsReward = xp.TaskReward(task.Priority)
 	}
 
 	res, err := r.db.Exec(`INSERT INTO tasks
@@ -120,7 +121,7 @@ func (r *Repository) UpdateTask(task *models.Task) error {
 	task.RepeatType = clean(task.RepeatType, "none")
 	task.ProofType = cleanProofType(task.ProofType)
 	if task.StarsReward <= 0 {
-		task.StarsReward = 1
+		task.StarsReward = xp.TaskReward(task.Priority)
 	}
 
 	_, err := r.db.Exec(`UPDATE tasks SET
@@ -200,17 +201,26 @@ func (r *Repository) SetTaskOccurrenceStatus(taskID int64, occurrenceDate, statu
 		return err
 	}
 
+	occurrenceAward := 0
+	if task.RepeatType != "none" && status == "completed" {
+		occurrenceAward = max(task.StarsReward, 1)
+	}
 	_, err = tx.Exec(`INSERT INTO task_completions
-		(task_id, occurrence_date, status, completed_at)
-		VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+		(task_id, occurrence_date, status, completed_at, stars_awarded)
+		VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
 		ON CONFLICT(task_id, occurrence_date) DO UPDATE SET
 			status = excluded.status,
 			completed_at = CURRENT_TIMESTAMP,
+			stars_awarded = CASE
+				WHEN excluded.status = 'completed' AND task_completions.stars_awarded = 0 THEN excluded.stars_awarded
+				ELSE task_completions.stars_awarded
+			END,
 			updated_at = CURRENT_TIMESTAMP,
 			sync_version = task_completions.sync_version + 1`,
 		taskID,
 		occurrenceDate,
 		status,
+		occurrenceAward,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -261,14 +271,16 @@ func (r *Repository) PlayerStats() (models.PlayerStats, error) {
 	var stats models.PlayerStats
 	if err := r.db.QueryRow(`SELECT
 		COALESCE((SELECT SUM(stars_awarded) FROM tasks), 0) +
+		COALESCE((SELECT SUM(stars_awarded) FROM task_completions), 0) +
 		COALESCE((SELECT SUM(stars_awarded) FROM project_items), 0) +
 		COALESCE((SELECT SUM(stars_bonus) FROM achievements), 0),
-		(SELECT COUNT(*) FROM tasks WHERE status = 'completed'),
+		(SELECT COUNT(*) FROM tasks WHERE status = 'completed') +
+		(SELECT COUNT(*) FROM task_completions WHERE status = 'completed' AND stars_awarded > 0),
 		(SELECT COUNT(*) FROM achievements WHERE trigger_type = 'proof_submitted')
 	`).Scan(&stats.TotalStars, &stats.TaskDoneCount, &stats.ProofCount); err != nil {
 		return models.PlayerStats{}, err
 	}
-	stats.CurrentLevel = (stats.TotalStars / 100) + 1
+	stats.CurrentLevel = (stats.TotalStars / xp.XPPerLevel) + 1
 	return stats, nil
 }
 
@@ -337,7 +349,7 @@ func proofIsValid(proofType, proofURL, proofPath string) bool {
 
 func proofBonus(task models.Task) int {
 	if task.ProofRequired || taskHasProof(task) {
-		return 2
+		return xp.ProofBonus
 	}
 	return 0
 }

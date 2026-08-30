@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/xp"
 )
 
 // ShipStats computes the Captain Stats / Ship Status bar entirely from existing
@@ -44,7 +45,7 @@ func (s *Service) ShipStats() (models.ShipStats, error) {
 	return models.ShipStats{
 		TotalFuel:         player.TotalStars,
 		Level:             player.CurrentLevel,
-		LevelProgress:     player.TotalStars % 100,
+		LevelProgress:     player.TotalStars % xp.XPPerLevel,
 		CompletedMissions: player.TaskDoneCount,
 		ActiveTrips:       activeTrips,
 		Streak:            streak,

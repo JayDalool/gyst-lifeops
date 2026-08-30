@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/xp"
 )
 
 var (
@@ -562,7 +563,7 @@ func parseRoadmapEntry(value string, today time.Time) roadmapEntry {
 	entry := roadmapEntry{
 		Status:      "pending",
 		Priority:    "medium",
-		StarsReward: 1,
+		StarsReward: xp.MissionReward("medium"),
 		ProofType:   "none",
 	}
 	value = strings.TrimSpace(value)
@@ -821,7 +822,7 @@ func starsFromText(value string) int {
 			return stars
 		}
 	}
-	return 1
+	return xp.MissionReward("medium")
 }
 
 func proofTypeFromText(value string) string {

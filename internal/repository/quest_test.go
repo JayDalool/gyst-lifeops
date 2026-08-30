@@ -130,6 +130,32 @@ func TestTaskCompletionAwardsStarsOnce(t *testing.T) {
 	}
 }
 
+func TestRecurringTaskAwardsEachOccurrenceOnce(t *testing.T) {
+	repo := testRepository(t)
+	task := models.Task{Title: "Daily mission", DueDate: "2026-06-24", RepeatType: "daily", StarsReward: 10, ProofType: "none"}
+	if err := repo.CreateTask(&task); err != nil {
+		t.Fatal(err)
+	}
+	for _, date := range []string{"2026-06-24", "2026-06-24", "2026-06-25"} {
+		if err := repo.SetTaskOccurrenceStatus(task.ID, date, "completed"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := repo.SetTaskOccurrenceStatus(task.ID, "2026-06-24", "skipped"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetTaskOccurrenceStatus(task.ID, "2026-06-24", "completed"); err != nil {
+		t.Fatal(err)
+	}
+	stats, err := repo.PlayerStats()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.TotalStars != 20 || stats.TaskDoneCount != 2 {
+		t.Fatalf("recurring stats = %#v, want 20 XP from 2 dated completions", stats)
+	}
+}
+
 func TestProofBonusAwardsExtraStars(t *testing.T) {
 	repo := testRepository(t)
 	task := models.Task{
@@ -150,8 +176,8 @@ func TestProofBonusAwardsExtraStars(t *testing.T) {
 	if err != nil {
 		t.Fatalf("player stats: %v", err)
 	}
-	if stats.TotalStars != 5 {
-		t.Fatalf("total stars = %d, want 5 (3 reward + 2 proof bonus)", stats.TotalStars)
+	if stats.TotalStars != 8 {
+		t.Fatalf("total stars = %d, want 8 (3 reward + 5 proof bonus)", stats.TotalStars)
 	}
 	if stats.ProofCount != 1 {
 		t.Fatalf("proof count = %d, want 1", stats.ProofCount)
@@ -228,8 +254,8 @@ func TestProjectCompletionRewardIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stats.TotalStars != 11 {
-		t.Fatalf("quest and mission reward stars = %d, want 11", stats.TotalStars)
+	if stats.TotalStars != 120 {
+		t.Fatalf("quest and mission reward XP = %d, want 120", stats.TotalStars)
 	}
 	var achievements int
 	if err := repo.db.QueryRow(`SELECT COUNT(*) FROM achievements WHERE trigger_type = 'project_done'`).Scan(&achievements); err != nil {
@@ -271,7 +297,7 @@ func TestProjectMissionProofRewardIsStructuredAndIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 1 || items[0].StarsAwarded != 6 || items[0].ProofType != "link" || !items[0].ProofRequired {
+	if len(items) != 1 || items[0].StarsAwarded != 9 || items[0].ProofType != "link" || !items[0].ProofRequired {
 		t.Fatalf("structured mission reward not preserved: %#v", items)
 	}
 	var proofAchievements int

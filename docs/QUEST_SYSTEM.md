@@ -38,7 +38,17 @@ are left untouched.
 ## Rewards and proof
 
 Standalone tasks and project items store their full award in `stars_awarded`
-when completed. The base XP comes from `stars_reward`; valid proof adds two XP.
+when completed. Recurring tasks store it per dated occurrence. The default XP
+economy is:
+
+- standalone tasks: low `5`, medium `10`, high `20` XP;
+- project missions: low `10`, medium `20`, high `35` XP;
+- valid proof: `+5` XP;
+- completing every mission in a project: `+100` XP once.
+
+Custom rewards remain editable on task and mission forms. Existing earned XP is
+never rewritten. Every `100 XP` advances one level; the application shell shows
+progress through the current level.
 Required proof blocks completion until a matching location is supplied:
 
 - `link` requires an absolute HTTP or HTTPS URL in `proof_url`.
@@ -50,7 +60,7 @@ project item, or project ID. Unique partial indexes prevent retries, reopens, or
 repeated completion requests from creating duplicate achievements or bonus XP.
 
 Each project mission awards its configured XP once. Project completion awards
-an additional ten XP once when all project items become complete. Reopening and
+an additional 100 XP once when all project items become complete. Reopening and
 recompleting either level does not duplicate rewards.
 
 ## Markdown import
