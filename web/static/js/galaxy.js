@@ -156,7 +156,6 @@ async function initGalaxy(root, THREE) {
 	let roamInputX = 0;
 	let roamInputY = 0;
 	let recentering = false;
-	let openTimer = 0;
 	const deadZone = (value) => Math.abs(value) < 0.12 ? 0 : Math.sign(value) * (Math.abs(value) - 0.12) / 0.88;
 	function updateOrbitTarget() {
 	  const horizontalRadius = Math.cos(orbitPitch) * orbitRadius;
@@ -170,7 +169,7 @@ async function initGalaxy(root, THREE) {
     hovered = object || null;
 	if (!object) {
 	  selectionHalo.visible = false;
-	  status.textContent = "Selection mode · hold Shift to free roam";
+	  status.textContent = "Free roam · click a planet to focus";
 	  contextPanel.hidden = true;
 	  openButton.hidden = true;
 	  return;
@@ -183,7 +182,7 @@ async function initGalaxy(root, THREE) {
 	selectionHalo.position.copy(object.position);
 	roamInputX = 0;
 	roamInputY = 0;
-    status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state} · arrows move`;
+    status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state} · click again to open · double-click space to leave`;
     openButton.href = object.userData.url;
     openButton.hidden = false;
 	contextPanel.hidden = false;
@@ -225,9 +224,14 @@ async function initGalaxy(root, THREE) {
 	});
 	return match;
   }
+	function updatePointer(event) {
+	  const rect = stage.getBoundingClientRect();
+	  pointer.set(
+		((event.clientX - rect.left) / rect.width) * 2 - 1,
+		1 - ((event.clientY - rect.top) / rect.height) * 2
+	  );
+	}
   function recenterGalaxy() {
-	window.clearTimeout(openTimer);
-	openTimer = 0;
 	preview(null);
 	orbitRadius = 125;
 	orbitYaw = 0;
@@ -260,31 +264,37 @@ async function initGalaxy(root, THREE) {
 	});
 	return match;
   }
-  canvas.addEventListener("pointerup", () => {
+	canvas.addEventListener("pointerup", (event) => {
+	updatePointer(event);
 	const object = planetAtPointer();
 	if (object) {
-	  if (hovered === object) {
-		window.clearTimeout(openTimer);
-		openTimer = window.setTimeout(() => { location.href = object.userData.url; }, 320);
-	  } else preview(object);
+	  if (hovered === object) location.href = object.userData.url;
+	  else preview(object);
 	  return;
 	}
-	recenterGalaxy();
   });
 	canvas.addEventListener("dblclick", (event) => {
-	  if (!hovered) return;
 	  event.preventDefault();
-	  recenterGalaxy();
+	  updatePointer(event);
+	  const object = planetAtPointer();
+	  if (object) location.href = object.userData.url;
+	  else if (hovered) recenterGalaxy();
+	});
+	canvas.addEventListener("contextmenu", (event) => {
+	  updatePointer(event);
+	  const object = planetAtPointer();
+	  if (!object) return;
+	  event.preventDefault();
+	  location.href = object.userData.url;
 	});
   if (matchMedia("(pointer: fine)").matches) {
     stage.addEventListener("pointermove", (event) => {
-      const rect = stage.getBoundingClientRect();
-	  const normalizedX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-	  const normalizedY = 1 - ((event.clientY - rect.top) / rect.height) * 2;
+	  updatePointer(event);
+	  const normalizedX = pointer.x;
+	  const normalizedY = pointer.y;
 	  const shipHalfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * 8;
 	  shipTarget.x = normalizedX * shipHalfHeight * camera.aspect;
 	  shipTarget.y = normalizedY * shipHalfHeight;
-	  pointer.set(normalizedX, normalizedY);
 	  recentering = false;
 	  roamInputX = deadZone(normalizedX);
 	  roamInputY = deadZone(normalizedY);
@@ -318,7 +328,7 @@ async function initGalaxy(root, THREE) {
     camera.aspect = width / height; camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(stage); resize();
-  status.textContent = "Free roam · click a planet to focus";
+  status.textContent = "Free roam · click a planet to focus · right-click to open";
   function frame() {
 	if (hovered) {
 	  const focusDistance = Math.max(15, hovered.geometry.parameters.radius * 5.2);
