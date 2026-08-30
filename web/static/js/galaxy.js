@@ -77,7 +77,6 @@ async function initGalaxy(root, THREE) {
 	 ship.renderOrder = 20;
 	 camera.add(ship);
 	 const shipTarget = new THREE.Vector3(0, -3.5, -8);
-	 const focusedShipTarget = new THREE.Vector3(0, -3.5, -8);
   scene.add(new THREE.AmbientLight(0x65749a, 0.72));
   const sun = new THREE.PointLight(0xb9e8ff, 2600, 350);
   sun.position.set(0, 4, 0);
@@ -230,6 +229,8 @@ async function initGalaxy(root, THREE) {
 		((event.clientX - rect.left) / rect.width) * 2 - 1,
 		1 - ((event.clientY - rect.top) / rect.height) * 2
 	  );
+	  const shipHalfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * 8;
+	  shipTarget.set(pointer.x * shipHalfHeight * camera.aspect, pointer.y * shipHalfHeight, -8);
 	}
   function recenterGalaxy() {
 	preview(null);
@@ -292,9 +293,6 @@ async function initGalaxy(root, THREE) {
 	  updatePointer(event);
 	  const normalizedX = pointer.x;
 	  const normalizedY = pointer.y;
-	  const shipHalfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * 8;
-	  shipTarget.x = normalizedX * shipHalfHeight * camera.aspect;
-	  shipTarget.y = normalizedY * shipHalfHeight;
 	  recentering = false;
 	  roamInputX = deadZone(normalizedX);
 	  roamInputY = deadZone(normalizedY);
@@ -353,14 +351,7 @@ async function initGalaxy(root, THREE) {
 	 camera.lookAt(lookTarget);
 	 camera.updateMatrixWorld();
 	 scene.updateMatrixWorld();
-	if (hovered) {
-	  const focusedPoint = hovered.position.clone().project(camera);
-	  const shipHalfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * 8;
-	  focusedShipTarget.set(focusedPoint.x * shipHalfHeight * camera.aspect, focusedPoint.y * shipHalfHeight, -8);
-	  ship.position.lerp(focusedShipTarget, reduced ? 1 : 0.12);
-	} else {
-	  ship.position.copy(shipTarget);
-	}
+	ship.position.copy(shipTarget);
 	objects.forEach((object) => {
 	  const targetScale = object === hovered ? 1.14 : 1;
 	  const nextScale = reduced ? targetScale : THREE.MathUtils.lerp(object.scale.x, targetScale, 0.13);
