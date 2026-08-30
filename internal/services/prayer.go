@@ -100,7 +100,7 @@ func (s *Service) PrayerConfig() (models.PrayerConfig, error) {
 		Method:      PrayerMethodISNA,
 		AsrMethod:   AsrMethodShafi,
 		Adjustments: make(map[string]int, len(prayerNames)),
-		AlertSound:  "chime",
+		AlertSound:  "athan",
 	}
 	settings := []struct {
 		key string

@@ -222,7 +222,7 @@
 		});
 	  }
 	  function playAlert() {
-		if (hero.dataset.alertSound === "athan" && audio && audio.getAttribute("src")) {
+		if (audio && audio.getAttribute("src")) {
 		  audio.currentTime = 0;
 		  audio.play().catch(function () { alertState.textContent = "Audio was blocked; use Test sound to enable it."; });
 		} else chime();
@@ -240,7 +240,7 @@
 		});
 	  }
 	  enable.addEventListener("click", function () {
-		chime();
+		playAlert();
 		if (audio && audio.getAttribute("src")) {
 		  audio.muted = true;
 		  audio.play().then(function () { audio.pause(); audio.currentTime = 0; audio.muted = false; }).catch(function () { audio.muted = false; });
@@ -314,6 +314,63 @@
     });
   }
 
+	function initCommandPalette() {
+	  var palette = document.querySelector("[data-command-palette]");
+	  if (!palette) return;
+	  var search = palette.querySelector("[data-command-search]");
+	  var title = palette.querySelector("[data-quick-title]");
+	  var date = palette.querySelector("[data-quick-date]");
+	  var priority = palette.querySelector("[data-quick-priority]");
+	  var items = Array.prototype.slice.call(palette.querySelectorAll("[data-command-item]"));
+	  var active = 0;
+	  function isoDate(offset) {
+		var value = new Date();
+		value.setDate(value.getDate() + offset);
+		return value.getFullYear() + "-" + String(value.getMonth() + 1).padStart(2, "0") + "-" + String(value.getDate()).padStart(2, "0");
+	  }
+	  function visibleItems() { return items.filter(function (item) { return !item.hidden; }); }
+	  function markActive(next) {
+		var visible = visibleItems();
+		if (!visible.length) return;
+		active = (next + visible.length) % visible.length;
+		items.forEach(function (item) { item.classList.remove("active"); });
+		visible[active].classList.add("active");
+	  }
+	  function filter() {
+		var query = search.value.trim().toLowerCase();
+		items.forEach(function (item) { item.hidden = query !== "" && (item.dataset.commandTerms + " " + item.textContent).toLowerCase().indexOf(query) === -1; });
+		title.value = search.value;
+		if (/\btomorrow\b/i.test(title.value)) { date.value = isoDate(1); title.value = title.value.replace(/\btomorrow\b/ig, "").trim(); }
+		else if (/\btoday\b/i.test(title.value)) { date.value = isoDate(0); title.value = title.value.replace(/\btoday\b/ig, "").trim(); }
+		if (/!high\b/i.test(title.value)) { priority.value = "high"; title.value = title.value.replace(/!high\b/ig, "").trim(); }
+		if (/!low\b/i.test(title.value)) { priority.value = "low"; title.value = title.value.replace(/!low\b/ig, "").trim(); }
+		active = 0; markActive(0);
+	  }
+	  function open() {
+		palette.querySelector("[data-command-return]").value = location.pathname + location.search + location.hash;
+		date.value = isoDate(0);
+		if (!palette.open) palette.showModal();
+		search.value = ""; title.value = ""; filter(); search.focus();
+	  }
+	  function close() { if (palette.open) palette.close(); }
+	  document.querySelectorAll("[data-command-open]").forEach(function (button) { button.addEventListener("click", open); });
+	  palette.querySelector("[data-command-close]").addEventListener("click", close);
+	  search.addEventListener("input", filter);
+	  search.addEventListener("keydown", function (event) {
+		if (event.key === "ArrowDown") { event.preventDefault(); markActive(active + 1); }
+		else if (event.key === "ArrowUp") { event.preventDefault(); markActive(active - 1); }
+		else if (event.key === "Enter") {
+		  var visible = visibleItems();
+		  if (visible.length) { event.preventDefault(); visible[active].click(); }
+		  else if (title.value.trim()) { event.preventDefault(); palette.querySelector("[data-quick-task]").requestSubmit(); }
+		}
+	  });
+	  document.addEventListener("keydown", function (event) {
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); palette.open ? close() : open(); }
+	  });
+	  palette.addEventListener("click", function (event) { if (event.target === palette) close(); });
+	}
+
   try {
     if (localStorage.getItem("lifeops-motion") === "reduced") {
       document.documentElement.dataset.motion = "reduced";
@@ -325,6 +382,7 @@
   function init() {
     document.querySelectorAll("[data-map-v2]").forEach(function (m) { initMap(m); });
     initMisc();
+	initCommandPalette();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

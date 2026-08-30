@@ -9,15 +9,16 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 	<link rel="manifest" href="/manifest.webmanifest">
 	<meta name="theme-color" content="#080d16">
-  <link rel="stylesheet" href="/static/css/styles.css?v=design-3">
+  <link rel="stylesheet" href="/static/css/styles.css?v=design-4">
   <script defer src="/static/js/charts.js?v=polish-5"></script>
-  <script defer src="/static/js/app.js?v=2"></script>
+  <script defer src="/static/js/app.js?v=3"></script>
 </head>
 <body>
   <header class="nav">
     <div class="nav-inner">
       <a class="brand" href="/">LifeOps <span>Mission Control</span></a>
       <nav aria-label="Primary">
+		<button class="nav-command" type="button" data-command-open aria-keyshortcuts="Control+K Meta+K">Search <kbd>⌘K</kbd></button>
         <a href="/" {{if eq .Page "today"}}aria-current="page"{{end}}>Today</a>
         <a href="/galaxy" {{if or (eq .Page "projects") (eq .Page "galaxy")}}aria-current="page"{{end}}>Galaxy</a>
 
@@ -51,6 +52,35 @@
   <main class="wrap{{if eq .Page "galaxy"}} galaxy-main{{end}}">
     {{template "content" .}}
   </main>
+	<dialog class="command-palette" data-command-palette aria-label="Command palette">
+	  <div class="command-search-row">
+		<input type="search" data-command-search placeholder="Search commands or type a task…" autocomplete="off" aria-label="Search commands">
+		<button type="button" class="btn sm quiet" data-command-close>Esc</button>
+	  </div>
+	  <div class="command-results" data-command-results>
+		<a href="/today" data-command-item data-command-terms="today home daily missions"><span>Open Today</span><kbd>Home</kbd></a>
+		<a href="/galaxy" data-command-item data-command-terms="galaxy projects planets"><span>Open Galaxy</span></a>
+		<a href="/tasks" data-command-item data-command-terms="tasks missions all"><span>Open all tasks</span></a>
+		<a href="/projects/new" data-command-item data-command-terms="new add create project"><span>Create project</span></a>
+		<a href="/courses" data-command-item data-command-terms="courses study learning"><span>Open courses</span></a>
+		<a href="/settings" data-command-item data-command-terms="settings prayer preferences"><span>Open settings</span></a>
+	  </div>
+	  <form class="command-capture" method="post" action="/tasks/quick" data-quick-task>
+		<input type="hidden" name="return_to" data-command-return>
+		<input type="hidden" name="status" value="pending">
+		<input type="hidden" name="repeat_type" value="none">
+		<input type="hidden" name="stars_reward" value="1">
+		<input type="hidden" name="proof_type" value="none">
+		<label class="field"><span>Quick task</span><input name="title" data-quick-title required placeholder="What needs doing? Try: Call Sam tomorrow !high"></label>
+		<div class="command-capture-fields">
+		  <label class="field"><span>Due</span><input type="date" name="due_date" data-quick-date></label>
+		  <label class="field"><span>Priority</span><select name="priority" data-quick-priority><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select></label>
+		  <label class="field"><span>Category</span><input name="category" value="personal"></label>
+		</div>
+		<button class="btn" type="submit">Add task</button>
+	  </form>
+	  <p class="command-help meta">↑↓ navigate · Enter open · type “tomorrow” or “!high” for quick capture</p>
+	</dialog>
   {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=22"></script>{{end}}
 </body>
 </html>

@@ -524,6 +524,10 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 		h.newTask(w, r)
 		return
 	}
+	if len(segments) == 2 && segments[1] == "quick" {
+		h.quickTask(w, r)
+		return
+	}
 
 	id, ok := parseID(segmentAt(segments, 1))
 	if !ok {
@@ -567,6 +571,30 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func (h *Handler) quickTask(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	task, err := taskFromRequest(r)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if strings.TrimSpace(task.Title) == "" {
+		http.Error(w, "task title is required", http.StatusBadRequest)
+		return
+	}
+	if task.DueDate == "" {
+		task.DueDate = h.Service.TodayString()
+	}
+	if err := h.Service.Repo.CreateTask(&task); err != nil {
+		serverError(w, err)
+		return
+	}
+	redirectAfter(w, r, "/today")
 }
 
 func (h *Handler) newTask(w http.ResponseWriter, r *http.Request) {

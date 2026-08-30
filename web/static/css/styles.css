@@ -3868,6 +3868,47 @@ i.map-node-state {
   white-space: nowrap;
   transition: color 120ms, background-color 120ms;
 }
+
+:root .nav-command {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--quiet);
+  background: transparent;
+  cursor: pointer;
+}
+:root kbd { font: inherit; font-size: 11px; color: var(--faint); }
+:root .command-palette {
+  width: min(620px, calc(100vw - 28px));
+  max-height: min(720px, calc(100dvh - 40px));
+  margin: 10vh auto 0;
+  padding: 0;
+  overflow: hidden auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--panel);
+  box-shadow: 0 28px 90px rgba(0,0,0,.48);
+}
+:root .command-palette::backdrop { background: rgba(1,5,10,.72); }
+:root .command-search-row { display: flex; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
+:root .command-search-row input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font-size: 17px; outline: 0; }
+:root .command-results { display: grid; padding: 7px; }
+:root .command-results a { display: flex; align-items: center; justify-content: space-between; padding: 10px 11px; border-radius: 7px; color: var(--muted); text-decoration: none; }
+:root .command-results a:hover, :root .command-results a.active { color: var(--text); background: var(--accent-soft); }
+:root .command-capture { display: grid; gap: 10px; padding: 14px; border-top: 1px solid var(--border); background: var(--panel-soft); }
+:root .command-capture-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
+:root .command-capture .btn { justify-self: end; }
+:root .command-help { margin: 0; padding: 0 14px 12px; background: var(--panel-soft); }
+
+@media (max-width: 640px) {
+  :root .nav-command kbd { display: none; }
+  :root .command-palette { margin-top: 12px; max-height: calc(100dvh - 24px); }
+  :root .command-capture-fields { grid-template-columns: 1fr; }
+}
 :root .nav-menu summary::-webkit-details-marker { display: none; }
 :root .nav-menu summary:hover,
 :root .nav-menu[open] summary { color: var(--text); }
