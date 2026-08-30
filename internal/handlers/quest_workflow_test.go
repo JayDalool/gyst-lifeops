@@ -41,6 +41,31 @@ func TestManualUnlockHandler(t *testing.T) {
 	}
 }
 
+func TestProjectCompletionToggleReopensPlanet(t *testing.T) {
+	h := testHandler(t)
+	project := models.Project{Name: "Returning Planet", Status: "active", ProjectKind: "main"}
+	if err := h.Service.Repo.CreateProject(&project); err != nil {
+		t.Fatal(err)
+	}
+	path := fmt.Sprintf("/projects/%d/status", project.ID)
+	postQuestForm(t, h, path, url.Values{"status": {"done"}})
+	planets, err := h.Service.GalaxyData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(planets) != 0 {
+		t.Fatalf("completed project remained in galaxy: %+v", planets)
+	}
+	postQuestForm(t, h, path, url.Values{"status": {"active"}})
+	planets, err = h.Service.GalaxyData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(planets) != 1 || planets[0].ID != project.ID {
+		t.Fatalf("reopened project did not return to galaxy: %+v", planets)
+	}
+}
+
 func TestEditProjectMovesItUnderParent(t *testing.T) {
 	h := testHandler(t)
 	parent := models.Project{Name: "Main Quest", Status: "active", ProjectKind: "main"}

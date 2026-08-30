@@ -1220,7 +1220,7 @@ func (h *Handler) projectStatus(w http.ResponseWriter, r *http.Request, id int64
 		http.Redirect(w, r, "/projects?unlocked=1", http.StatusSeeOther)
 		return
 	}
-	redirectBack(w, r, "/projects")
+	redirectAfter(w, r, "/projects")
 }
 
 func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID int64, segments []string) {

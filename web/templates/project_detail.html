@@ -168,18 +168,31 @@
       </ul>
       {{if .Project.Project.UnlockNotes}}<p class="meta mt-8">Unlock: {{.Project.Project.UnlockNotes}}</p>{{end}}
       <div class="flag-row mt-16">
+        {{if or (eq .Project.Project.Status "done") (eq .Project.Project.Status "completed")}}
         <form method="post" action="/projects/{{.Project.Project.ID}}/status">
           <input type="hidden" name="status" value="active">
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
+          <button class="btn sm ghost" type="submit">Reopen project</button>
+        </form>
+        {{else}}
+        {{if ne .Project.Project.Status "active"}}
+        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+          <input type="hidden" name="status" value="active">
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
           <button class="btn sm ghost" type="submit">Make active</button>
         </form>
+        {{end}}
         <form method="post" action="/projects/{{.Project.Project.ID}}/status">
           <input type="hidden" name="status" value="upcoming">
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
           <button class="btn sm quiet" type="submit">Move upcoming</button>
         </form>
         <form method="post" action="/projects/{{.Project.Project.ID}}/status">
           <input type="hidden" name="status" value="done">
-          <button class="btn sm" type="submit">Complete</button>
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
+          <button class="btn sm" type="submit">Complete project</button>
         </form>
+        {{end}}
       </div>
     </section>
 
