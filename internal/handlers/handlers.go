@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"math"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -73,8 +74,21 @@ type TaskFormData struct {
 type TaskDetailData struct {
 	Page          string
 	Task          models.Task
+	Checklist     []models.TaskChecklistItem
 	ShipStats     models.ShipStats
 	ExternalLinks []models.ExternalLink
+}
+
+type PlanImportData struct {
+	Page        string
+	Markdown    string
+	Template    string
+	Plan        models.AIPlan
+	Preview     bool
+	Destination string
+	TargetID    int64
+	Projects    []models.ProjectWithProgress
+	Tasks       []models.Task
 }
 
 type MonthlyData struct {
@@ -287,6 +301,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.trackers(w, r, segments)
 	case "external-links":
 		h.externalLinks(w, r, segments)
+	case "plan-import":
+		h.planImport(w, r)
 	case "api":
 		h.pushAPI(w, r, segments)
 	default:
@@ -556,7 +572,12 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 			serverError(w, err)
 			return
 		}
-		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, ShipStats: stats, ExternalLinks: links})
+		checklist, err := h.Service.Repo.TaskChecklist(id)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, Checklist: checklist, ShipStats: stats, ExternalLinks: links})
 		return
 	}
 
@@ -569,9 +590,77 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 		h.setTaskStatus(w, r, id, "skipped")
 	case "archive":
 		h.archiveTask(w, r, id)
+	case "checklist":
+		h.taskChecklist(w, r, id, segments)
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func (h *Handler) taskChecklist(w http.ResponseWriter, r *http.Request, taskID int64, segments []string) {
+	if r.Method != http.MethodPost || len(segments) != 4 {
+		methodNotAllowed(w)
+		return
+	}
+	itemID, ok := parseID(segments[3])
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	status := "pending"
+	if r.FormValue("completed") != "" {
+		status = "completed"
+	}
+	if err := h.Service.Repo.SetTaskChecklistStatus(taskID, itemID, status); err != nil {
+		notFoundOrError(w, err)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/tasks/%d", taskID), http.StatusSeeOther)
+}
+
+func (h *Handler) planImport(w http.ResponseWriter, r *http.Request) {
+	projects, err := h.Service.Repo.ListProjects(false)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	tasks, err := h.Service.Repo.ListTasks(false)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	data := PlanImportData{Page: "plan-import", Template: services.AIPlanPromptTemplate, Projects: projects, Tasks: tasks, Destination: "new"}
+	if r.Method == http.MethodGet {
+		h.render(w, "plan_import.html", data)
+		return
+	}
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		serverError(w, err)
+		return
+	}
+	data.Markdown = strings.TrimSpace(r.FormValue("markdown"))
+	data.Destination = r.FormValue("destination")
+	data.TargetID, _ = parseID(r.FormValue("target_id"))
+	if data.Markdown == "" {
+		http.Error(w, "paste a Markdown plan first", http.StatusBadRequest)
+		return
+	}
+	data.Plan = services.ParseAIPlanMarkdown(data.Markdown, h.Service.Today())
+	if r.FormValue("action") != "import" {
+		data.Preview = true
+		h.render(w, "plan_import.html", data)
+		return
+	}
+	redirect, err := h.Service.ImportAIPlan(data.Plan, data.Destination, data.TargetID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
 func (h *Handler) quickTask(w http.ResponseWriter, r *http.Request) {
@@ -680,6 +769,13 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 	if err := h.Service.Repo.SetTaskOccurrenceStatus(id, date, status); err != nil {
 		serverError(w, err)
 		return
+	}
+	if status == "completed" {
+		task, err := h.Service.Repo.TaskByID(id)
+		if err == nil {
+			redirectWithCelebration(w, r, fmt.Sprintf("/today#task-%d", id), "task", task.Title, task.StarsReward)
+			return
+		}
 	}
 	redirectAfter(w, r, fmt.Sprintf("/today#task-%d", id))
 }
@@ -1105,6 +1201,7 @@ func (h *Handler) projectStatus(w http.ResponseWriter, r *http.Request, id int64
 		return
 	}
 	status := r.FormValue("status")
+	before, _ := h.Service.Repo.ProjectByID(id)
 	// Detect whether marking this trip done will unlock a planned route, so the
 	// Navigation Deck can play the "New Destination Unlocked" cue once.
 	willUnlock := 0
@@ -1113,6 +1210,10 @@ func (h *Handler) projectStatus(w http.ResponseWriter, r *http.Request, id int64
 	}
 	if err := h.Service.Repo.SetProjectStatus(id, status); err != nil {
 		serverError(w, err)
+		return
+	}
+	if cleanForm(status, "") == "done" && before.Status != "done" && before.Status != "completed" {
+		redirectWithCelebration(w, r, "/projects", "project", before.Name, xp.ProjectCompletionBonus)
 		return
 	}
 	if willUnlock > 0 {
@@ -1152,7 +1253,19 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 		return
 	}
 
-	switch segments[4] {
+	projectBefore, _ := h.Service.Repo.ProjectByID(projectID)
+	itemTitle := "Mission complete"
+	itemReward := xp.MissionReward("medium")
+	if items, err := h.Service.Repo.ProjectItems(projectID); err == nil {
+		for _, item := range items {
+			if item.ID == itemID {
+				itemTitle, itemReward = item.Title, item.StarsReward
+				break
+			}
+		}
+	}
+	action := segments[4]
+	switch action {
 	case "complete":
 		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
 			serverError(w, err)
@@ -1185,6 +1298,15 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 		}
 	default:
 		http.NotFound(w, r)
+		return
+	}
+	if action == "complete" {
+		projectAfter, err := h.Service.Repo.ProjectByID(projectID)
+		if err == nil && projectBefore.Status != "done" && projectBefore.Status != "completed" && (projectAfter.Status == "done" || projectAfter.Status == "completed") {
+			redirectWithCelebration(w, r, fmt.Sprintf("/projects/%d", projectID), "project", projectAfter.Name, xp.ProjectCompletionBonus)
+			return
+		}
+		redirectWithCelebration(w, r, fmt.Sprintf("/projects/%d#mission-%d", projectID, itemID), "task", itemTitle, itemReward)
 		return
 	}
 	// Stay on the project detail at the acted-on mission instead of jumping to
@@ -2196,6 +2318,23 @@ func redirectAfter(w http.ResponseWriter, r *http.Request, fallback string) {
 		return
 	}
 	redirectBack(w, r, fallback)
+}
+
+func redirectWithCelebration(w http.ResponseWriter, r *http.Request, fallback, kind, title string, reward int) {
+	destination := safeReturnTo(r)
+	if destination == "" {
+		destination = fallback
+	}
+	parsed, err := url.Parse(destination)
+	if err != nil {
+		parsed, _ = url.Parse(fallback)
+	}
+	query := parsed.Query()
+	query.Set("celebrate", kind)
+	query.Set("celebrate_title", title)
+	query.Set("celebrate_xp", strconv.Itoa(reward))
+	parsed.RawQuery = query.Encode()
+	http.Redirect(w, r, parsed.String(), http.StatusSeeOther)
 }
 
 func methodNotAllowed(w http.ResponseWriter) {

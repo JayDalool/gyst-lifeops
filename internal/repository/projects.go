@@ -280,11 +280,26 @@ func (r *Repository) ArchiveProject(id int64) error {
 
 func (r *Repository) SetProjectStatus(id int64, status string) error {
 	status = cleanProjectStatus(status)
-	if _, err := r.db.Exec(`UPDATE projects SET
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`UPDATE projects SET
 		status = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
 		WHERE id = ?`, status, id); err != nil {
+		return err
+	}
+	if status == "done" {
+		if _, err := tx.Exec(`INSERT OR IGNORE INTO achievements
+			(title, description, stars_bonus, trigger_type, source_project_id)
+			VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), ?, 'project_done', ?)`, id, xp.ProjectCompletionBonus, id); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 	if status == "done" {

@@ -9,11 +9,11 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 	<link rel="manifest" href="/manifest.webmanifest">
 	<meta name="theme-color" content="#080d16">
-  <link rel="stylesheet" href="/static/css/styles.css?v=design-5">
+  <link rel="stylesheet" href="/static/css/styles.css?v=design-7">
   <script defer src="/static/js/charts.js?v=polish-5"></script>
-  <script defer src="/static/js/app.js?v=3"></script>
+	<script defer src="/static/js/app.js?v=5"></script>
 </head>
-<body>
+<body{{if eq .Page "galaxy"}} class="galaxy-page"{{end}}>
   <header class="nav">
     <div class="nav-inner">
       <a class="brand" href="/">LifeOps <span>Mission Control</span></a>
@@ -34,6 +34,7 @@
             <a href="/tasks/new">Task</a>
             <a href="/projects/new">Project</a>
             <a href="/courses/new">Course</a>
+			<a href="/plan-import">Import AI plan</a>
           </div>
         </details>
 
@@ -68,6 +69,7 @@
 		<a href="/galaxy" data-command-item data-command-terms="galaxy projects planets"><span>Open Galaxy</span></a>
 		<a href="/tasks" data-command-item data-command-terms="tasks missions all"><span>Open all tasks</span></a>
 		<a href="/projects/new" data-command-item data-command-terms="new add create project"><span>Create project</span></a>
+		<a href="/plan-import" data-command-item data-command-terms="import ai chatgpt markdown plan tasks checklist"><span>Import AI plan</span></a>
 		<a href="/courses" data-command-item data-command-terms="courses study learning"><span>Open courses</span></a>
 		<a href="/settings" data-command-item data-command-terms="settings prayer preferences"><span>Open settings</span></a>
 	  </div>
@@ -86,7 +88,7 @@
 	  </form>
 	  <p class="command-help meta">↑↓ navigate · Enter open · type “tomorrow” or “!high” for quick capture</p>
 	</dialog>
-  {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=24"></script>{{end}}
+  {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=25"></script>{{end}}
 </body>
 </html>
 {{end}}

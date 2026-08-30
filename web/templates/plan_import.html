@@ -1,0 +1,34 @@
+{{define "content"}}
+<div class="page-head">
+  <div><p class="kicker">Tools / AI planning</p><h1 class="page-title">Import an AI plan</h1><p class="page-sub">Give the template to ChatGPT, paste its Markdown reply here, preview it, then create or merge the work.</p></div>
+</div>
+
+<details class="card" open>
+  <summary class="details-summary">1. Copy this prompt into ChatGPT</summary>
+  <label class="field mt-16"><span>Reusable prompt template</span><textarea id="ai-plan-template" rows="14" readonly>{{.Template}}</textarea></label>
+  <button class="btn sm ghost" type="button" data-copy-target="ai-plan-template">Copy prompt</button>
+</details>
+
+<form class="card form-stack mt-16" method="post" action="/plan-import">
+  <h2 class="section-title card-title">2. Paste the returned Markdown</h2>
+  <label class="field"><span>Markdown plan</span><textarea name="markdown" rows="16" required placeholder="# Plan: Launch my idea&#10;&#10;## Project: MVP&#10;### Task: Define the first release&#10;#### Checklist&#10;- [ ] Write acceptance criteria">{{.Markdown}}</textarea></label>
+  <label class="field"><span>Import destination</span><select name="destination" data-plan-destination>
+    <option value="new" {{if eq .Destination "new"}}selected{{end}}>Create project(s) from the plan</option>
+    <option value="project" {{if eq .Destination "project"}}selected{{end}}>Add all tasks to an existing project</option>
+    <option value="standalone" {{if eq .Destination "standalone"}}selected{{end}}>Create standalone task(s) with checklists</option>
+    <option value="task" {{if eq .Destination "task"}}selected{{end}}>Add checklist items to an existing task</option>
+  </select></label>
+  <label class="field"><span>Existing project or task (only used for a merge)</span><select name="target_id">
+    <option value="">Choose a target</option>
+    <optgroup label="Projects">{{range .Projects}}<option value="{{.Project.ID}}" {{if eq $.TargetID .Project.ID}}selected{{end}}>{{.Project.Name}}</option>{{end}}</optgroup>
+    <optgroup label="Tasks">{{range .Tasks}}<option value="{{.ID}}" {{if eq $.TargetID .ID}}selected{{end}}>{{.Title}}</option>{{end}}</optgroup>
+  </select></label>
+  <div class="flag-row"><button class="btn ghost" name="action" value="preview" type="submit">Preview</button>{{if .Preview}}<button class="btn" name="action" value="import" type="submit">Import this plan</button>{{end}}</div>
+</form>
+
+{{if .Preview}}<section class="card mt-16"><h2 class="section-title card-title">3. Preview</h2><p class="meta">{{len .Plan.Projects}} project(s); review every task and checklist before importing.</p>
+  {{range .Plan.Projects}}<div class="mt-16"><strong>{{.Name}}</strong>{{if .Description}}<p class="meta">{{.Description}}</p>{{end}}<ul class="list">{{range .Tasks}}<li><span class="grow">{{.Title}}<small>{{.Priority}} priority{{if .DueDate}} · due {{niceDate .DueDate}}{{end}} · {{len .Checklist}} checklist item(s)</small></span></li>{{end}}</ul></div>{{end}}
+  {{if .Plan.Tasks}}<ul class="list">{{range .Plan.Tasks}}<li><span class="grow">{{.Title}}<small>{{.Priority}} priority · {{len .Checklist}} checklist item(s)</small></span></li>{{end}}</ul>{{end}}
+</section>{{end}}
+<script>document.querySelector('[data-copy-target]')?.addEventListener('click',async function(){const el=document.getElementById(this.dataset.copyTarget);await navigator.clipboard.writeText(el.value);this.textContent='Copied';});</script>
+{{end}}

@@ -36,6 +36,8 @@ The app applies SQL migrations on startup and loads `seeds/example.sql` only whe
 - Compact manual references connect tasks, projects, and missions to Jira, GitHub, Slack, Linear, Asana, Notion, or other work systems without affecting XP.
 - More holds Courses, Monthly, Analytics, Health, Archive, All Tasks, Goals, Reminders, and Settings.
 - Task CRUD with priority, status, due date, recurrence, reminder time, complete, skip, and archive actions.
+- AI plan import turns a strict Markdown plan into new projects, project missions, standalone tasks, or checklist items on an existing task, with a preview before writing.
+- Standalone tasks support persistent checklist items that can be completed independently from the task itself.
 - Today is generated from task recurrence rules plus per-date completion records, with reminders and overdue items surfaced beside the checklist.
 - `/projects` as card-based project progress, with detail pages for checklist execution.
 - `/goals` as card-based yearly/monthly/weekly progress, with habit-based health goals supported.
@@ -110,7 +112,7 @@ Asr and signed per-prayer minute adjustments. Today provides a live countdown
 and explicitly enabled open-page notification/audio alerts.
 
 Database migrations are applied in filename order and currently run through
-`013_push_subscriptions.sql`.
+`016_task_checklist.sql`.
 
 ## HTTPS and Web Push
 

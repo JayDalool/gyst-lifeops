@@ -66,6 +66,7 @@ func TestGalaxyAndSecondaryRoutesRemainReachable(t *testing.T) {
 		"/goals",
 		"/reminders",
 		"/settings",
+		"/plan-import",
 	}
 	for _, path := range paths {
 		rec := httptest.NewRecorder()

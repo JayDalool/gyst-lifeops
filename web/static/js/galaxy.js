@@ -1,8 +1,27 @@
 const root = document.querySelector("[data-galaxy]");
 if (root) {
+  initGalaxyHeader();
   import("/static/js/vendor/three.module.js")
     .then((THREE) => initGalaxy(root, THREE))
     .catch((error) => showGalaxyFallback(root, error));
+}
+
+function initGalaxyHeader() {
+  let previousY = window.scrollY;
+  let ticking = false;
+  const update = () => {
+    const currentY = window.scrollY;
+    const movingDown = currentY > previousY + 5;
+    const movingUp = currentY < previousY - 5;
+    if (currentY <= 12 || movingUp) document.body.classList.remove("galaxy-nav-hidden");
+    else if (movingDown) document.body.classList.add("galaxy-nav-hidden");
+    previousY = currentY;
+    ticking = false;
+  };
+  window.addEventListener("scroll", () => {
+    if (!ticking) requestAnimationFrame(update);
+    ticking = true;
+  }, { passive: true });
 }
 
 function showGalaxyFallback(root, error) {
@@ -84,6 +103,15 @@ async function initGalaxy(root, THREE) {
 
 	const core = new THREE.Mesh(new THREE.SphereGeometry(3.8, 32, 24), new THREE.MeshBasicMaterial({ color: 0xdff8ff }));
 	scene.add(core);
+	const hubRings = [6.2, 8.5, 11].map((radius, index) => {
+	  const ring = new THREE.Mesh(
+	    new THREE.TorusGeometry(radius, index === 1 ? 0.1 : 0.055, 8, 96),
+	    new THREE.MeshBasicMaterial({ color: index === 1 ? 0x8bddff : 0x416d91, transparent: true, opacity: index === 1 ? 0.48 : 0.24, blending: THREE.AdditiveBlending, depthWrite: false })
+	  );
+	  ring.rotation.set(Math.PI * (0.42 + index * 0.09), index * 0.55, index * 0.28);
+	  scene.add(ring);
+	  return ring;
+	});
 	const coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(THREE, [125, 218, 255]), color: 0x8bddff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
 	coreGlow.scale.set(30, 30, 1);
 	scene.add(coreGlow);
@@ -347,6 +375,7 @@ async function initGalaxy(root, THREE) {
 	  const flap = Math.sin(performance.now() * 0.012);
 	  ship.scale.y = 0.465 + flap * 0.022;
 	  ship.material.rotation = flap * 0.025;
+	  hubRings.forEach((ring, index) => { ring.rotation.z += 0.00045 * (index % 2 ? -1 : 1); });
 	}
 	 camera.lookAt(lookTarget);
 	 camera.updateMatrixWorld();

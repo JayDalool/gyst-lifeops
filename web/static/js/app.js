@@ -371,6 +371,59 @@
 	  palette.addEventListener("click", function (event) { if (event.target === palette) close(); });
 	}
 
+	function initCelebration() {
+	  var params = new URLSearchParams(location.search);
+	  var kind = params.get("celebrate");
+	  if (kind !== "task" && kind !== "project") return;
+	  var title = params.get("celebrate_title") || (kind === "project" ? "Project complete" : "Mission complete");
+	  var xp = Math.max(0, parseInt(params.get("celebrate_xp") || "0", 10) || 0);
+	  var eventName = kind === "project" ? "blackhole" : "launch";
+	  var overlay = document.createElement("div");
+	  overlay.className = "completion-event completion-event-" + eventName;
+	  overlay.setAttribute("role", "dialog");
+	  overlay.setAttribute("aria-modal", "true");
+	  overlay.setAttribute("aria-label", kind === "project" ? "Project completed" : "Task completed");
+	  overlay.innerHTML = '<div class="completion-space" aria-hidden="true"><i class="completion-black-hole"></i><i class="completion-planet"></i><i class="completion-rocket">▲</i><div class="completion-orbits"></div><div class="completion-particles"></div></div><section class="completion-card"><div class="completion-badge" aria-hidden="true">✓</div><p class="completion-kicker"></p><h2></h2><p class="completion-subtitle"></p><div class="completion-rewards"></div><div class="completion-actions"><button class="completion-continue" type="button">Continue <span>→</span></button><a class="completion-next"></a></div><p class="completion-affirmation"></p></section>';
+	  overlay.querySelector(".completion-kicker").textContent = kind === "project" ? "PROJECT COMPLETE" : "TASK COMPLETE";
+	  overlay.querySelector("h2").textContent = title;
+	  overlay.querySelector(".completion-subtitle").textContent = kind === "project" ? "You finished the project and opened the path ahead." : "Momentum gained. Your next step is already in motion.";
+	  var rewards = kind === "project"
+		? [["✦", "+" + xp + " XP", "Experience earned"], ["◎", "+1", "Project mastery"], ["↗", "100%", "Project progress"]]
+		: [["✦", "+" + xp + " XP", "Experience earned"], ["♨", "Saved", "Progress secured"], ["◯", "+1 Orbit", "Milestone reached"]];
+	  var rewardsRoot = overlay.querySelector(".completion-rewards");
+	  rewards.forEach(function (reward) {
+		var tile = document.createElement("div");
+		tile.innerHTML = "<i></i><span><strong></strong><small></small></span>";
+		tile.querySelector("i").textContent = reward[0]; tile.querySelector("strong").textContent = reward[1]; tile.querySelector("small").textContent = reward[2];
+		rewardsRoot.appendChild(tile);
+	  });
+	  var next = overlay.querySelector(".completion-next");
+	  next.href = kind === "project" ? "/analytics" : "/today";
+	  next.textContent = kind === "project" ? "View progress ↗" : "Next task 🚀";
+	  overlay.querySelector(".completion-affirmation").textContent = kind === "project" ? "✧ Every completion is a step toward your best self." : "✧ Small steps. Big orbit. You’re building something great.";
+	  var particles = overlay.querySelector(".completion-particles");
+	  for (var i = 0; i < (kind === "project" ? 54 : 22); i++) {
+		var particle = document.createElement("i");
+		particle.style.setProperty("--angle", (i * 137.5) + "deg");
+		particle.style.setProperty("--distance", (70 + Math.random() * 260) + "px");
+		particle.style.setProperty("--delay", (Math.random() * 0.45) + "s");
+		particle.style.setProperty("--size", (2 + Math.random() * 6) + "px");
+		particles.appendChild(particle);
+	  }
+	  function close() {
+		overlay.classList.add("is-leaving");
+		setTimeout(function () { overlay.remove(); }, 260);
+	  }
+	  overlay.querySelector(".completion-continue").addEventListener("click", close);
+	  overlay.addEventListener("click", function (event) { if (event.target === overlay) close(); });
+	  document.addEventListener("keydown", function dismiss(event) { if (event.key === "Escape") { close(); document.removeEventListener("keydown", dismiss); } });
+	  document.body.appendChild(overlay);
+	  requestAnimationFrame(function () { overlay.classList.add("is-playing"); overlay.querySelector(".completion-continue").focus({ preventScroll: true }); });
+	  params.delete("celebrate"); params.delete("celebrate_title"); params.delete("celebrate_xp");
+	  history.replaceState(null, "", location.pathname + (params.toString() ? "?" + params.toString() : "") + location.hash);
+	  setTimeout(close, kind === "project" ? 5200 : 2300);
+	}
+
   try {
     if (localStorage.getItem("lifeops-motion") === "reduced") {
       document.documentElement.dataset.motion = "reduced";
@@ -383,6 +436,7 @@
     document.querySelectorAll("[data-map-v2]").forEach(function (m) { initMap(m); });
     initMisc();
 	initCommandPalette();
+	initCelebration();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

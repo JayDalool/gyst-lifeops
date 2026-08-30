@@ -76,6 +76,67 @@ func (r *Repository) TaskByID(id int64) (models.Task, error) {
 	return task, err
 }
 
+func (r *Repository) TaskChecklist(taskID int64) ([]models.TaskChecklistItem, error) {
+	rows, err := r.db.Query(`SELECT id, task_id, title, status, sort_order, created_at, updated_at,
+		COALESCE(completed_at, '') FROM task_checklist_items WHERE task_id = ? ORDER BY sort_order, id`, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []models.TaskChecklistItem
+	for rows.Next() {
+		var item models.TaskChecklistItem
+		if err := rows.Scan(&item.ID, &item.TaskID, &item.Title, &item.Status, &item.SortOrder, &item.CreatedAt, &item.UpdatedAt, &item.CompletedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (r *Repository) AddTaskChecklistItems(taskID int64, items []models.TaskChecklistItem) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var offset int
+	if err := tx.QueryRow(`SELECT COALESCE(MAX(sort_order), 0) FROM task_checklist_items WHERE task_id = ?`, taskID).Scan(&offset); err != nil {
+		return err
+	}
+	for i, item := range items {
+		if strings.TrimSpace(item.Title) == "" {
+			continue
+		}
+		status := "pending"
+		if item.Status == "completed" {
+			status = "completed"
+		}
+		_, err = tx.Exec(`INSERT INTO task_checklist_items (task_id, title, status, sort_order, completed_at)
+			VALUES (?, ?, ?, ?, CASE WHEN ? = 'completed' THEN CURRENT_TIMESTAMP ELSE NULL END)`, taskID, item.Title, status, offset+i+1, status)
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (r *Repository) SetTaskChecklistStatus(taskID, itemID int64, status string) error {
+	if status != "pending" && status != "completed" {
+		return fmt.Errorf("unsupported checklist status %q", status)
+	}
+	res, err := r.db.Exec(`UPDATE task_checklist_items SET status = ?, completed_at = CASE WHEN ? = 'completed' THEN CURRENT_TIMESTAMP ELSE NULL END,
+		updated_at = CURRENT_TIMESTAMP WHERE id = ? AND task_id = ?`, status, status, itemID, taskID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err == nil && n == 0 {
+		return sql.ErrNoRows
+	}
+	return err
+}
+
 func (r *Repository) CreateTask(task *models.Task) error {
 	task.Category = clean(task.Category, "personal")
 	task.Priority = clean(task.Priority, "medium")

@@ -44,7 +44,7 @@ economy is:
 - standalone tasks: low `5`, medium `10`, high `20` XP;
 - project missions: low `10`, medium `20`, high `35` XP;
 - valid proof: `+5` XP;
-- completing every mission in a project: `+100` XP once.
+- completing a project: `+250` XP once.
 
 Custom rewards remain editable on task and mission forms. Existing earned XP is
 never rewritten. Every `100 XP` advances one level; the application shell shows
@@ -60,7 +60,8 @@ project item, or project ID. Unique partial indexes prevent retries, reopens, or
 repeated completion requests from creating duplicate achievements or bonus XP.
 
 Each project mission awards its configured XP once. Project completion awards
-an additional 100 XP once when all project items become complete. Reopening and
+an additional 250 XP once when all project items become complete or the project
+is completed manually. Reopening and
 recompleting either level does not duplicate rewards.
 
 ## Markdown import

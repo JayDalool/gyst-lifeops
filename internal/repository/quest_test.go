@@ -254,8 +254,8 @@ func TestProjectCompletionRewardIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stats.TotalStars != 120 {
-		t.Fatalf("quest and mission reward XP = %d, want 120", stats.TotalStars)
+	if stats.TotalStars != 270 {
+		t.Fatalf("quest and mission reward XP = %d, want 270", stats.TotalStars)
 	}
 	var achievements int
 	if err := repo.db.QueryRow(`SELECT COUNT(*) FROM achievements WHERE trigger_type = 'project_done'`).Scan(&achievements); err != nil {

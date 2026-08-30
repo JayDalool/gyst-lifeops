@@ -1,18 +1,17 @@
 {{define "content"}}
 <section class="galaxy-shell" data-galaxy aria-labelledby="galaxy-title">
-  <div class="galaxy-head">
-    <div>
-      <p class="kicker">Mission map</p>
-      <h1 class="page-title" id="galaxy-title">Galaxy</h1>
-      <p class="page-sub">Click to focus, use arrow keys between planets, click again to enter, or double-click to exit selection.</p>
-    </div>
-    <div class="galaxy-actions">
-      <a class="btn ghost" href="/projects">List view</a>
-      <a class="btn" data-galaxy-open hidden>Open project</a>
-    </div>
-  </div>
   <div class="galaxy-stage" data-galaxy-stage tabindex="0" aria-label="Interactive project galaxy">
     <canvas data-galaxy-canvas aria-hidden="true"></canvas>
+    <section class="galaxy-hub" aria-label="Galaxy hub">
+      <p class="kicker">Mission control / Core hub</p>
+      <h1 id="galaxy-title">Galaxy</h1>
+      <p>Explore your projects as worlds, or jump straight to a mission view.</p>
+      <div class="galaxy-actions">
+        <a class="btn sm" data-galaxy-open hidden>Open project</a>
+        <a class="btn sm ghost" href="/projects">All projects</a>
+        <a class="btn sm ghost" href="/projects/new">New project</a>
+      </div>
+    </section>
     <div class="galaxy-status" data-galaxy-status role="status">Loading galaxy&hellip;</div>
 	<aside class="galaxy-context" data-galaxy-context hidden>
 	  <p class="kicker" data-galaxy-category>Project</p>
@@ -22,10 +21,10 @@
 	  <p class="meta" data-galaxy-meta></p>
 	  <p class="meta" data-galaxy-next></p>
 	</aside>
-	<div class="galaxy-legend" aria-hidden="true"><span class="done">Complete</span><span class="active">Active</span><span class="upcoming">Upcoming</span><span class="locked">Locked</span></div>
+	<div class="galaxy-legend" aria-label="Project states"><span class="done">Complete</span><span class="active">Active</span><span class="upcoming">Upcoming</span><span class="locked">Locked</span></div>
   </div>
-  <div class="galaxy-browser">
-    <h2 class="section-title">Projects</h2>
+  <div class="galaxy-browser" id="galaxy-projects">
+    <div><p class="kicker">Accessible navigator</p><h2 class="section-title">All projects</h2></div>
     <p class="meta">Keyboard and conventional view. Press Enter on a project to open it.</p>
     <ul class="galaxy-list" data-galaxy-list></ul>
     <p class="galaxy-fallback" data-galaxy-fallback hidden>

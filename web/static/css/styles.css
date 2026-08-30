@@ -4119,14 +4119,25 @@ i.map-node-state {
 :root .tracker-dot.prayer-current { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77,191,208,.12); }
 :root .prayer-adjustments { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 
-/* ---- Galaxy: canvas is decorative; the adjacent list is the accessible map. --- */
-:root .wrap.galaxy-main { max-width: none; width: 100%; padding: 0 16px 48px; }
+/* ---- Galaxy: the canvas owns the viewport; the list below is the accessible map. --- */
+:root body.galaxy-page { background: #03050b; }
+:root body.galaxy-page > .nav {
+  position: fixed; z-index: 30; top: 0; left: 0; right: 0; margin: 0;
+  border-color: rgba(132,187,228,.16); background: linear-gradient(180deg, rgba(3,7,14,.94), rgba(3,7,14,.72));
+  backdrop-filter: blur(16px); transition: transform 220ms ease, opacity 220ms ease;
+}
+:root body.galaxy-page.galaxy-nav-hidden > .nav { opacity: 0; transform: translateY(-100%); pointer-events: none; }
+:root body.galaxy-page > .nav .nav-inner { max-width: none; }
+:root .wrap.galaxy-main { max-width: none; width: 100%; padding: 0; }
 :root .galaxy-shell { width: 100%; }
-:root .galaxy-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 16px; }
 :root .galaxy-actions { display: flex; gap: 8px; }
-:root .galaxy-stage { position: relative; height: calc(100dvh - 150px); min-height: 520px; overflow: hidden; border: 1px solid rgba(118,151,202,.22); border-radius: 14px; background: #03050b; box-shadow: inset 0 0 90px rgba(20,47,89,.22), 0 24px 70px rgba(0,0,0,.28); touch-action: none; }
-:root .galaxy-stage:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:root .galaxy-stage { position: relative; width: 100%; height: 100dvh; min-height: 520px; overflow: hidden; border: 0; border-radius: 0; background: #03050b; box-shadow: inset 0 0 120px rgba(20,47,89,.28); touch-action: none; }
+:root .galaxy-stage:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 :root .galaxy-stage canvas { display: block; width: 100%; height: 100%; cursor: none; }
+:root .galaxy-hub { position: absolute; z-index: 4; top: 76px; left: 20px; width: min(390px, calc(100% - 40px)); padding: 18px; color: #e7f2fb; background: linear-gradient(145deg, rgba(8,17,30,.88), rgba(3,8,16,.7)); border: 1px solid rgba(132,187,228,.2); border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.28); backdrop-filter: blur(14px); transition: top 220ms ease; }
+:root .galaxy-nav-hidden .galaxy-hub { top: 20px; }
+:root .galaxy-hub h1 { margin: 1px 0 7px; font-size: clamp(29px, 4vw, 48px); line-height: 1; }
+:root .galaxy-hub > p:not(.kicker) { margin: 0 0 13px; color: #9fb0c2; font-size: 13px; }
 :root .galaxy-status { position: absolute; left: 16px; bottom: 14px; max-width: calc(100% - 32px); padding: 7px 11px; color: #dce9f4; background: rgba(5, 9, 15, .78); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; font-size: 13px; pointer-events: none; }
 :root .galaxy-context { position: absolute; z-index: 3; top: 18px; right: 18px; width: min(330px, calc(100% - 36px)); padding: 18px; color: #e7f2fb; background: linear-gradient(145deg, rgba(14,23,39,.92), rgba(7,11,20,.84)); border: 1px solid rgba(132,187,228,.24); border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.35); backdrop-filter: blur(16px); }
 :root .galaxy-context h2 { margin: 3px 0 8px; font-size: 21px; }
@@ -4134,12 +4145,13 @@ i.map-node-state {
 :root .galaxy-context-progress { height: 4px; overflow: hidden; margin: 10px 0; border-radius: 4px; background: rgba(255,255,255,.1); }
 :root .galaxy-context-progress i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #4dbfd0, #8ae4ee); box-shadow: 0 0 12px rgba(77,191,208,.7); transition: width 500ms ease; }
 :root .galaxy-context .meta { margin: 6px 0 0; color: #8fa1b4; }
-:root .galaxy-legend { position: absolute; z-index: 2; left: 16px; top: 14px; display: flex; gap: 12px; padding: 6px 9px; border-radius: 8px; color: #9baabd; background: rgba(4,8,15,.58); font-size: 11px; backdrop-filter: blur(8px); }
+:root .galaxy-legend { position: absolute; z-index: 2; right: 16px; bottom: 14px; display: flex; gap: 12px; padding: 6px 9px; border-radius: 8px; color: #9baabd; background: rgba(4,8,15,.58); font-size: 11px; backdrop-filter: blur(8px); }
 :root .galaxy-legend span::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: currentColor; box-shadow: 0 0 7px currentColor; }
 :root .galaxy-legend .done { color: #57c98b; } :root .galaxy-legend .active { color: #4dbfd0; } :root .galaxy-legend .upcoming { color: #d9a054; } :root .galaxy-legend .locked { color: #697386; }
 :root .galaxy-planet-label { position: absolute; z-index: 2; left: 0; top: 0; max-width: 140px; overflow: hidden; padding: 2px 5px; color: rgba(196,214,230,.68); background: rgba(3,6,12,.34); border-radius: 5px; font-size: 10px; letter-spacing: .04em; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 5px #000, 0 0 12px #000; pointer-events: none; transition: color 120ms, background-color 120ms, transform 120ms; }
 :root .galaxy-planet-label.selected { color: #6eeaff; background: rgba(8,32,43,.88); font-size: 12px; font-weight: 700; text-shadow: 0 0 10px rgba(77,191,208,.9); }
-:root .galaxy-browser { margin-top: 18px; }
+:root .galaxy-browser { min-height: 45vh; padding: 36px max(20px, calc((100% - 960px) / 2)) 72px; color: var(--text); background: var(--bg); }
+:root .galaxy-browser > div:first-child { display: flex; align-items: end; justify-content: space-between; }
 :root .galaxy-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; padding: 0; margin: 10px 0 0; }
 :root .galaxy-list a { display: grid; grid-template-columns: auto 1fr; column-gap: 9px; align-items: center; min-height: 54px; padding: 9px 12px; color: var(--text); text-decoration: none; border: 1px solid var(--border); border-radius: 9px; background: var(--panel); }
 :root .galaxy-list a:hover, :root .galaxy-list a:focus-visible { border-color: var(--border-strong); background: var(--panel-strong); }
@@ -4882,14 +4894,70 @@ i.map-node-state {
 	:root .prayer-alert-panel { align-items: flex-start; }
 	:root .prayer-alert-panel .meta { text-align: left; }
   :root .prayer-adjustments { grid-template-columns: repeat(2, 1fr); }
-  :root .galaxy-head { align-items: flex-start; flex-direction: column; }
-  :root .wrap.galaxy-main { padding-inline: 8px; }
-  :root .galaxy-stage { height: calc(100dvh - 190px); min-height: 420px; }
-	:root .galaxy-context { top: 46px; right: 10px; padding: 14px; }
-	:root .galaxy-legend { gap: 7px; left: 10px; }
+  :root .galaxy-stage { min-height: 420px; }
+	:root .galaxy-hub { top: 68px; left: 8px; width: calc(100% - 16px); padding: 13px; }
+	:root .galaxy-nav-hidden .galaxy-hub { top: 8px; }
+	:root .galaxy-context { top: auto; right: 8px; bottom: 52px; padding: 13px; }
+	:root .galaxy-legend { gap: 7px; right: 8px; bottom: 10px; }
 	:root .galaxy-legend span { font-size: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root .galaxy-stage canvas { cursor: default; }
+}
+
+/* Full-page completion events. They are created only after a successful POST. */
+:root .completion-event { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow: auto; padding: 24px 14px; color: #eefbff; background: radial-gradient(circle at 50% 25%, rgba(9,67,105,.72), rgba(1,5,14,.96) 64%), rgba(1,5,14,.95); opacity: 0; transition: opacity 220ms ease; }
+:root .completion-event.is-playing { opacity: 1; }
+:root .completion-event.is-leaving { opacity: 0; pointer-events: none; }
+:root .completion-space { position: absolute; inset: 0; display: grid; place-items: center; transform: translateY(-24%); }
+:root .completion-planet { width: min(32vw, 330px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 31% 27%, #e4ffff 0 2%, #6eeaff 4%, #237dab 29%, #284f82 46%, #27306b 68%, #070c21 100%); box-shadow: inset -38px -30px 65px rgba(0,0,0,.7), 0 0 30px #6eeaff, 0 0 120px rgba(36,148,235,.66); }
+:root .completion-orbits { position: absolute; width: min(68vw, 720px); aspect-ratio: 2.8; border: 2px solid rgba(87,244,226,.65); border-radius: 50%; box-shadow: 0 0 12px #22dbea, inset 0 0 18px rgba(34,219,234,.35), 0 0 0 18px rgba(75,113,255,.08), 0 0 0 40px rgba(60,220,255,.05); transform: rotate(-5deg); }
+:root .completion-rocket { position: absolute; z-index: 2; top: calc(50% - min(26vw, 265px)); color: #dfffff; font-size: clamp(45px, 7vw, 82px); font-style: normal; line-height: 1; filter: drop-shadow(0 0 8px #66f4ff) drop-shadow(0 16px 12px #ffbf5c); transform: scaleX(.62); }
+:root .completion-particles { position: absolute; left: 50%; top: 50%; }
+:root .completion-particles i { position: absolute; width: var(--size); height: var(--size); margin: calc(var(--size) / -2); border-radius: 50%; background: #d9fbff; box-shadow: 0 0 9px #6eeaff; opacity: 0; }
+:root .is-playing .completion-particles i { animation: completion-burst 1.35s var(--delay) cubic-bezier(.12,.7,.18,1) both; }
+:root .completion-card { position: relative; z-index: 3; display: grid; justify-items: center; width: min(760px, calc(100% - 20px)); margin-top: min(40vh, 315px); padding: 38px 34px 20px; overflow: hidden; border: 1px solid rgba(111,239,255,.66); border-radius: 24px; text-align: center; background: linear-gradient(145deg, rgba(4,35,62,.9), rgba(8,15,54,.91)); box-shadow: 0 0 70px rgba(24,185,255,.24), inset 0 -70px 90px rgba(73,33,180,.16); backdrop-filter: blur(18px); }
+:root .completion-card::after { content: ""; position: absolute; inset: auto -10% -45% -10%; height: 70%; background: radial-gradient(circle at 20%, rgba(0,255,219,.38), transparent 42%), radial-gradient(circle at 80%, rgba(113,53,255,.42), transparent 42%); pointer-events: none; }
+:root .completion-badge { display: grid; width: 58px; aspect-ratio: 1; place-items: center; margin-top: -22px; border: 2px solid #70ffdb; border-radius: 18px; color: #eaffff; background: linear-gradient(145deg, #37dcae, #075d72); box-shadow: 0 0 22px rgba(60,255,220,.7); font-size: 30px; transform: rotate(30deg); }
+:root .completion-badge::first-letter { transform: rotate(-30deg); }
+:root .completion-kicker { margin: 14px 0 6px; color: #68f4ff; font: 800 11px/1 var(--mono); letter-spacing: .22em; }
+:root .completion-card h2 { margin: 0; max-width: 100%; font-size: clamp(30px, 5vw, 56px); line-height: 1.05; background: linear-gradient(90deg, #bfffff, #fff, #c6b9ff); -webkit-background-clip: text; color: transparent; }
+:root .completion-subtitle { margin: 10px 0 22px; color: #c6d4e2; font-size: 16px; }
+:root .completion-rewards { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; padding-top: 20px; border-top: 1px solid rgba(174,222,255,.28); }
+:root .completion-rewards > div { display: flex; min-width: 0; align-items: center; gap: 11px; padding: 14px; border: 1px solid rgba(112,186,255,.4); border-radius: 10px; text-align: left; background: rgba(18,47,91,.55); }
+:root .completion-rewards i { color: #a88cff; font-size: 28px; font-style: normal; text-shadow: 0 0 12px currentColor; }
+:root .completion-rewards span { display: grid; min-width: 0; }
+:root .completion-rewards strong { color: #fff; font-size: 17px; white-space: nowrap; }
+:root .completion-rewards small { overflow: hidden; color: #9eafc2; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+:root .completion-actions { position: relative; z-index: 1; display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; width: min(590px, 100%); margin-top: 26px; }
+:root .completion-actions button, :root .completion-actions a { display: flex; min-height: 58px; align-items: center; justify-content: center; gap: 20px; border: 1px solid rgba(121,174,255,.48); border-radius: 12px; color: #fff; font-weight: 750; cursor: pointer; }
+:root .completion-continue { border-color: #65f5ff !important; background: linear-gradient(100deg, #13d9e8, #478cff 58%, #a74eff); box-shadow: 0 0 28px rgba(30,202,255,.38); }
+:root .completion-next { background: rgba(6,19,52,.75); text-decoration: none; }
+:root .completion-affirmation { position: relative; z-index: 1; margin: 18px 0 0; color: #93a6bb; font-size: 13px; }
+:root .completion-black-hole { display: none; }
+:root .completion-event-blackhole .completion-planet { animation: planet-consumed 2.2s .25s cubic-bezier(.65,.05,.92,.35) both; }
+:root .completion-event-blackhole .completion-black-hole { display: block; position: absolute; width: min(27vw, 260px); aspect-ratio: 1; border-radius: 50%; background: #000; box-shadow: 0 0 0 9px rgba(110,234,255,.1), 0 0 35px 12px #7f68ff, 0 0 100px 32px rgba(65,185,223,.5); animation: black-hole-pulse 1.2s ease-in-out infinite alternate; }
+:root .completion-event-blackhole .completion-particles i { animation-name: completion-suck; }
+:root .completion-event-blackhole .completion-rocket { display: none; }
+:root .completion-event-blackhole .completion-orbits { border-color: rgba(151,94,255,.8); box-shadow: 0 0 18px #944cff, 0 0 0 18px rgba(35,226,255,.1), 0 0 0 45px rgba(143,55,255,.08); animation: black-hole-pulse 1.2s ease-in-out infinite alternate; }
+@keyframes completion-burst { 0% { opacity: 0; transform: rotate(var(--angle)) translateX(20px) scale(.2); } 18% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--angle)) translateX(var(--distance)) scale(.05); } }
+@keyframes completion-suck { 0% { opacity: 0; transform: rotate(var(--angle)) translateX(var(--distance)) scale(1); } 30% { opacity: 1; } 100% { opacity: 0; transform: rotate(calc(var(--angle) + 540deg)) translateX(4px) scale(.05); } }
+@keyframes planet-consumed { 0% { transform: translateX(-32vw) scale(1); opacity: 1; } 72% { opacity: 1; } 100% { transform: translateX(0) rotate(620deg) scale(.03); opacity: 0; } }
+@keyframes black-hole-pulse { to { transform: scale(1.07); filter: hue-rotate(30deg); } }
+@media (prefers-reduced-motion: reduce) {
+  :root .completion-event *, :root .completion-event *::before, :root .completion-event *::after { animation: none !important; }
+  :root .completion-event-blackhole .completion-planet { opacity: .18; }
+}
+@media (max-width: 640px) {
+  :root .completion-event { align-items: start; padding-top: 16vh; }
+  :root .completion-space { transform: translateY(-31%); }
+  :root .completion-card { margin-top: 27vh; padding: 30px 14px 16px; border-radius: 18px; }
+  :root .completion-badge { width: 48px; margin-top: -18px; }
+  :root .completion-subtitle { margin-bottom: 14px; font-size: 13px; }
+  :root .completion-rewards { grid-template-columns: 1fr; gap: 7px; }
+  :root .completion-rewards > div { padding: 8px 12px; }
+  :root .completion-actions { grid-template-columns: 1fr; gap: 8px; margin-top: 14px; }
+  :root .completion-actions button, :root .completion-actions a { min-height: 46px; }
+  :root .completion-affirmation { font-size: 11px; }
 }

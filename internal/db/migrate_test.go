@@ -33,8 +33,8 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
 		t.Fatal(err)
 	}
-	if applied != 15 {
-		t.Fatalf("applied migrations = %d, want 15", applied)
+	if applied != 16 {
+		t.Fatalf("applied migrations = %d, want 16", applied)
 	}
 	var externalLinksTable int
 	if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='external_links'`).Scan(&externalLinksTable); err != nil {
@@ -42,6 +42,13 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	}
 	if externalLinksTable != 1 {
 		t.Fatal("external_links table was not created")
+	}
+	var checklistTable int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='task_checklist_items'`).Scan(&checklistTable); err != nil {
+		t.Fatal(err)
+	}
+	if checklistTable != 1 {
+		t.Fatal("task_checklist_items table was not created")
 	}
 	assertNoForeignKeyViolations(t, database)
 }

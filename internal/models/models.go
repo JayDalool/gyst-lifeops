@@ -34,6 +34,46 @@ type TaskCompletion struct {
 	Notes          string
 }
 
+type TaskChecklistItem struct {
+	ID          int64
+	TaskID      int64
+	Title       string
+	Status      string
+	SortOrder   int
+	CreatedAt   string
+	UpdatedAt   string
+	CompletedAt string
+}
+
+// AIPlan is the deliberately small, stable Markdown interchange format used by
+// the plan importer. Projects contain tasks; standalone tasks may contain real
+// checklist items.
+type AIPlan struct {
+	Title       string
+	Description string
+	Projects    []AIPlanProject
+	Tasks       []AIPlanTask
+}
+
+type AIPlanProject struct {
+	Name        string
+	Description string
+	Category    string
+	Status      string
+	TargetDate  string
+	Tasks       []AIPlanTask
+}
+
+type AIPlanTask struct {
+	Title       string
+	Description string
+	Category    string
+	Priority    string
+	Status      string
+	DueDate     string
+	Checklist   []TaskChecklistItem
+}
+
 type TaskOccurrence struct {
 	Task          Task
 	Date          string

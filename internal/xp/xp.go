@@ -5,7 +5,7 @@ package xp
 
 const (
 	ProofBonus             = 5
-	ProjectCompletionBonus = 100
+	ProjectCompletionBonus = 250
 	XPPerLevel             = 100
 )
 

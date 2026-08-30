@@ -78,7 +78,10 @@ func TestProjectMissionCompletionHandlerDoesNotDuplicateReward(t *testing.T) {
 		t.Fatal(err)
 	}
 	base := fmt.Sprintf("/projects/%d/items/%d", project.ID, item.ID)
-	postQuestForm(t, h, base+"/complete", nil)
+	first := postQuestForm(t, h, base+"/complete", nil)
+	if location := first.Header().Get("Location"); !strings.Contains(location, "celebrate=project") || !strings.Contains(location, "celebrate_xp=250") {
+		t.Fatalf("project completion redirect = %q, want project celebration and XP", location)
+	}
 	postQuestForm(t, h, base+"/reopen", nil)
 	postQuestForm(t, h, base+"/complete", nil)
 
@@ -86,8 +89,8 @@ func TestProjectMissionCompletionHandlerDoesNotDuplicateReward(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stats.TotalStars != 120 {
-		t.Fatalf("total XP = %d, want one 20-XP mission and one 100-XP quest reward", stats.TotalStars)
+	if stats.TotalStars != 270 {
+		t.Fatalf("total XP = %d, want one 20-XP mission and one 250-XP quest reward", stats.TotalStars)
 	}
 }
 
