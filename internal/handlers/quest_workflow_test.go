@@ -94,6 +94,24 @@ func TestProjectMissionCompletionHandlerDoesNotDuplicateReward(t *testing.T) {
 	}
 }
 
+func TestRoadmapFinalMissionRedirectsToProjectCelebration(t *testing.T) {
+	h := testHandler(t)
+	project := models.Project{Name: "Roadmap Finale", Status: "active", ProjectKind: "main"}
+	if err := h.Service.Repo.CreateProject(&project); err != nil {
+		t.Fatal(err)
+	}
+	item := models.ProjectItem{ProjectID: project.ID, Title: "Final roadmap mission", StarsReward: 35}
+	if err := h.Service.Repo.CreateProjectItem(&item); err != nil {
+		t.Fatal(err)
+	}
+	path := fmt.Sprintf("/roadmap/projects/%d/items/%d/complete", project.ID, item.ID)
+	rec := postQuestForm(t, h, path, nil)
+	location := rec.Header().Get("Location")
+	if !strings.Contains(location, "celebrate=project") || !strings.Contains(location, "celebrate_xp=250") {
+		t.Fatalf("roadmap completion redirect = %q, want project celebration", location)
+	}
+}
+
 func TestProjectMissionProofHandler(t *testing.T) {
 	h := testHandler(t)
 	project := models.Project{Name: "Proof Quest", Status: "active", ProjectKind: "main"}

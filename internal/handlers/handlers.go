@@ -1212,7 +1212,7 @@ func (h *Handler) projectStatus(w http.ResponseWriter, r *http.Request, id int64
 		serverError(w, err)
 		return
 	}
-	if cleanForm(status, "") == "done" && before.Status != "done" && before.Status != "completed" {
+	if cleanForm(status, "") == "done" {
 		redirectWithCelebration(w, r, "/projects", "project", before.Name, xp.ProjectCompletionBonus)
 		return
 	}
@@ -1892,7 +1892,19 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 		http.NotFound(w, r)
 		return
 	}
-	switch segments[5] {
+	projectBefore, _ := h.Service.Repo.ProjectByID(projectID)
+	itemTitle := "Mission complete"
+	itemReward := xp.MissionReward("medium")
+	if items, err := h.Service.Repo.ProjectItems(projectID); err == nil {
+		for _, item := range items {
+			if item.ID == itemID {
+				itemTitle, itemReward = item.Title, item.StarsReward
+				break
+			}
+		}
+	}
+	action := segments[5]
+	switch action {
 	case "complete":
 		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
 			serverError(w, err)
@@ -1905,6 +1917,15 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 		}
 	default:
 		http.NotFound(w, r)
+		return
+	}
+	if action == "complete" {
+		projectAfter, err := h.Service.Repo.ProjectByID(projectID)
+		if err == nil && projectBefore.Status != "done" && projectBefore.Status != "completed" && (projectAfter.Status == "done" || projectAfter.Status == "completed") {
+			redirectWithCelebration(w, r, "/roadmap", "project", projectAfter.Name, xp.ProjectCompletionBonus)
+			return
+		}
+		redirectWithCelebration(w, r, "/roadmap", "task", itemTitle, itemReward)
 		return
 	}
 	redirectAfter(w, r, "/roadmap")
