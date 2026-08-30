@@ -85,6 +85,30 @@ func TestGalaxyDataPersistsStablePositionsAndMoons(t *testing.T) {
 	}
 }
 
+func TestGalaxyDataHidesCompletedPlanetsAndMoons(t *testing.T) {
+	svc := testService(t)
+	active := models.Project{Name: "Active Planet", ProjectKind: "main", Status: "active", AutoUnlock: true}
+	if err := svc.Repo.CreateProject(&active); err != nil {
+		t.Fatal(err)
+	}
+	doneMoon := models.Project{Name: "Completed Moon", ProjectKind: "phase", Status: "done", ParentProjectID: active.ID, AutoUnlock: true}
+	if err := svc.Repo.CreateProject(&doneMoon); err != nil {
+		t.Fatal(err)
+	}
+	done := models.Project{Name: "Completed Planet", ProjectKind: "main", Status: "done", AutoUnlock: true}
+	if err := svc.Repo.CreateProject(&done); err != nil {
+		t.Fatal(err)
+	}
+
+	planets, err := svc.GalaxyData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(planets) != 1 || planets[0].ID != active.ID || len(planets[0].Moons) != 0 {
+		t.Fatalf("completed worlds should leave the active galaxy: %+v", planets)
+	}
+}
+
 func TestProjectSolarSystemIncludesChildren(t *testing.T) {
 	svc := testService(t)
 	top := models.Project{Name: "Solar System A", ProjectKind: "main", Status: "active", AutoUnlock: true}

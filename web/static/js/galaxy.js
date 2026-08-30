@@ -67,8 +67,8 @@ async function initGalaxy(root, THREE) {
     list.appendChild(item);
   });
   if (!planets.length) {
-    status.textContent = "No projects yet.";
-    list.innerHTML = '<li><a href="/projects/new">Create your first project</a></li>';
+	status.textContent = "No active planets. Completed worlds have left the Galaxy.";
+	list.innerHTML = '<li><a href="/projects/new">Create a new project</a></li>';
     return;
   }
 

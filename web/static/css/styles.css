@@ -4907,33 +4907,34 @@ i.map-node-state {
 }
 
 /* Full-page completion events. They are created only after a successful POST. */
-:root .completion-event { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow: auto; padding: 24px 14px; color: #eefbff; background: radial-gradient(circle at 50% 25%, rgba(9,67,105,.72), rgba(1,5,14,.96) 64%), rgba(1,5,14,.95); opacity: 0; transition: opacity 220ms ease; }
+:root .completion-event { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow: auto; padding: 24px 14px; color: var(--text); background: rgba(2,6,12,.9); opacity: 0; transition: opacity 180ms ease; backdrop-filter: blur(8px); }
 :root .completion-event.is-playing { opacity: 1; }
 :root .completion-event.is-leaving { opacity: 0; pointer-events: none; }
-:root .completion-space { position: absolute; inset: 0; display: grid; place-items: center; transform: translateY(-24%); }
-:root .completion-planet { width: min(32vw, 330px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 31% 27%, #e4ffff 0 2%, #6eeaff 4%, #237dab 29%, #284f82 46%, #27306b 68%, #070c21 100%); box-shadow: inset -38px -30px 65px rgba(0,0,0,.7), 0 0 30px #6eeaff, 0 0 120px rgba(36,148,235,.66); }
-:root .completion-orbits { position: absolute; width: min(68vw, 720px); aspect-ratio: 2.8; border: 2px solid rgba(87,244,226,.65); border-radius: 50%; box-shadow: 0 0 12px #22dbea, inset 0 0 18px rgba(34,219,234,.35), 0 0 0 18px rgba(75,113,255,.08), 0 0 0 40px rgba(60,220,255,.05); transform: rotate(-5deg); }
+:root .completion-space { position: absolute; inset: 0; display: grid; place-items: center; transform: translateY(-27%); }
+:root .completion-planet { width: min(25vw, 230px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 31% 27%, #d9ffff 0 2%, #62ddea 5%, #257b9a 34%, #263d6b 66%, #070c18 100%); box-shadow: inset -30px -24px 48px rgba(0,0,0,.68), 0 0 22px rgba(110,234,255,.7), 0 0 70px rgba(36,148,235,.34); }
+:root .completion-orbits { position: absolute; width: min(52vw, 480px); aspect-ratio: 2.8; border: 1px solid rgba(87,244,226,.52); border-radius: 50%; box-shadow: 0 0 8px rgba(34,219,234,.55), 0 0 0 16px rgba(75,113,255,.035); transform: rotate(-5deg); }
 :root .completion-rocket { position: absolute; z-index: 2; top: calc(50% - min(26vw, 265px)); color: #dfffff; font-size: clamp(45px, 7vw, 82px); font-style: normal; line-height: 1; filter: drop-shadow(0 0 8px #66f4ff) drop-shadow(0 16px 12px #ffbf5c); transform: scaleX(.62); }
 :root .completion-particles { position: absolute; left: 50%; top: 50%; }
 :root .completion-particles i { position: absolute; width: var(--size); height: var(--size); margin: calc(var(--size) / -2); border-radius: 50%; background: #d9fbff; box-shadow: 0 0 9px #6eeaff; opacity: 0; }
 :root .is-playing .completion-particles i { animation: completion-burst 1.35s var(--delay) cubic-bezier(.12,.7,.18,1) both; }
-:root .completion-card { position: relative; z-index: 3; display: grid; justify-items: center; width: min(760px, calc(100% - 20px)); margin-top: min(40vh, 315px); padding: 38px 34px 20px; overflow: hidden; border: 1px solid rgba(111,239,255,.66); border-radius: 24px; text-align: center; background: linear-gradient(145deg, rgba(4,35,62,.9), rgba(8,15,54,.91)); box-shadow: 0 0 70px rgba(24,185,255,.24), inset 0 -70px 90px rgba(73,33,180,.16); backdrop-filter: blur(18px); }
-:root .completion-card::after { content: ""; position: absolute; inset: auto -10% -45% -10%; height: 70%; background: radial-gradient(circle at 20%, rgba(0,255,219,.38), transparent 42%), radial-gradient(circle at 80%, rgba(113,53,255,.42), transparent 42%); pointer-events: none; }
-:root .completion-badge { display: grid; width: 58px; aspect-ratio: 1; place-items: center; margin-top: -22px; border: 2px solid #70ffdb; border-radius: 18px; color: #eaffff; background: linear-gradient(145deg, #37dcae, #075d72); box-shadow: 0 0 22px rgba(60,255,220,.7); font-size: 30px; transform: rotate(30deg); }
+:root .completion-card { position: relative; z-index: 3; display: grid; justify-items: center; width: min(620px, calc(100% - 20px)); margin-top: min(34vh, 245px); padding: 28px; border: 1px solid var(--border-strong); border-radius: 12px; text-align: center; background: rgba(9,17,28,.96); box-shadow: 0 24px 80px rgba(0,0,0,.5); }
+:root .completion-card::after { display: none; }
+:root .completion-badge { display: grid; width: 44px; aspect-ratio: 1; place-items: center; margin: 0 0 4px; border: 1px solid rgba(110,234,255,.55); border-radius: 50%; color: var(--accent-text); background: var(--accent-soft); box-shadow: 0 0 16px rgba(110,234,255,.2); font-size: 22px; transform: none; }
 :root .completion-badge::first-letter { transform: rotate(-30deg); }
 :root .completion-kicker { margin: 14px 0 6px; color: #68f4ff; font: 800 11px/1 var(--mono); letter-spacing: .22em; }
-:root .completion-card h2 { margin: 0; max-width: 100%; font-size: clamp(30px, 5vw, 56px); line-height: 1.05; background: linear-gradient(90deg, #bfffff, #fff, #c6b9ff); -webkit-background-clip: text; color: transparent; }
-:root .completion-subtitle { margin: 10px 0 22px; color: #c6d4e2; font-size: 16px; }
+:root .completion-card h2 { margin: 0; max-width: 100%; font-size: clamp(26px, 4vw, 38px); line-height: 1.1; color: var(--text); }
+:root .completion-subtitle { margin: 8px 0 18px; color: var(--muted); font-size: 14px; }
 :root .completion-rewards { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; padding-top: 20px; border-top: 1px solid rgba(174,222,255,.28); }
-:root .completion-rewards > div { display: flex; min-width: 0; align-items: center; gap: 11px; padding: 14px; border: 1px solid rgba(112,186,255,.4); border-radius: 10px; text-align: left; background: rgba(18,47,91,.55); }
-:root .completion-rewards i { color: #a88cff; font-size: 28px; font-style: normal; text-shadow: 0 0 12px currentColor; }
+:root .completion-rewards > div { display: flex; min-width: 0; align-items: center; gap: 9px; padding: 10px 12px; border-left: 1px solid var(--border); text-align: left; background: transparent; }
+:root .completion-rewards > div:first-child { border-left: 0; }
+:root .completion-rewards i { color: var(--accent-text); font-size: 22px; font-style: normal; }
 :root .completion-rewards span { display: grid; min-width: 0; }
 :root .completion-rewards strong { color: #fff; font-size: 17px; white-space: nowrap; }
 :root .completion-rewards small { overflow: hidden; color: #9eafc2; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 :root .completion-actions { position: relative; z-index: 1; display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; width: min(590px, 100%); margin-top: 26px; }
-:root .completion-actions button, :root .completion-actions a { display: flex; min-height: 58px; align-items: center; justify-content: center; gap: 20px; border: 1px solid rgba(121,174,255,.48); border-radius: 12px; color: #fff; font-weight: 750; cursor: pointer; }
-:root .completion-continue { border-color: #65f5ff !important; background: linear-gradient(100deg, #13d9e8, #478cff 58%, #a74eff); box-shadow: 0 0 28px rgba(30,202,255,.38); }
-:root .completion-next { background: rgba(6,19,52,.75); text-decoration: none; }
+:root .completion-actions button, :root .completion-actions a { display: flex; min-height: 44px; align-items: center; justify-content: center; gap: 14px; border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-weight: 700; cursor: pointer; }
+:root .completion-continue { border-color: var(--accent) !important; color: #061016 !important; background: var(--accent); box-shadow: none; }
+:root .completion-next { background: transparent; text-decoration: none; }
 :root .completion-affirmation { position: relative; z-index: 1; margin: 18px 0 0; color: #93a6bb; font-size: 13px; }
 :root .completion-black-hole { display: none; }
 :root .completion-event-blackhole .completion-planet { animation: planet-consumed 2.2s .25s cubic-bezier(.65,.05,.92,.35) both; }
@@ -4953,7 +4954,7 @@ i.map-node-state {
   :root .completion-event { align-items: start; padding-top: 16vh; }
   :root .completion-space { transform: translateY(-31%); }
   :root .completion-card { margin-top: 27vh; padding: 30px 14px 16px; border-radius: 18px; }
-  :root .completion-badge { width: 48px; margin-top: -18px; }
+  :root .completion-badge { width: 42px; margin-top: 0; }
   :root .completion-subtitle { margin-bottom: 14px; font-size: 13px; }
   :root .completion-rewards { grid-template-columns: 1fr; gap: 7px; }
   :root .completion-rewards > div { padding: 8px 12px; }

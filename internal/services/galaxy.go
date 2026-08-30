@@ -16,13 +16,13 @@ func (s *Service) GalaxyData() ([]models.GalaxyPlanet, error) {
 	}
 	children := make(map[int64][]models.ProjectWithProgress)
 	for _, project := range projects {
-		if project.Project.ParentProjectID != 0 {
+		if project.Project.ParentProjectID != 0 && !galaxyProjectComplete(project.Project.Status) {
 			children[project.Project.ParentProjectID] = append(children[project.Project.ParentProjectID], project)
 		}
 	}
 	planets := make([]models.GalaxyPlanet, 0)
 	for _, project := range projects {
-		if project.Project.ParentProjectID != 0 {
+		if project.Project.ParentProjectID != 0 || galaxyProjectComplete(project.Project.Status) {
 			continue
 		}
 		planet, err := s.galaxyPlanet(project, children[project.Project.ID])
@@ -32,6 +32,10 @@ func (s *Service) GalaxyData() ([]models.GalaxyPlanet, error) {
 		planets = append(planets, planet)
 	}
 	return planets, nil
+}
+
+func galaxyProjectComplete(status string) bool {
+	return status == "done" || status == "completed" || status == "archived"
 }
 
 func (s *Service) galaxyPlanet(project models.ProjectWithProgress, moons []models.ProjectWithProgress) (models.GalaxyPlanet, error) {
