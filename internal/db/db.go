@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,69 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// connectionPragmas are scoped to one SQLite connection, so the driver must
+// apply them as it opens each pooled connection. Running them once against the
+// *sql.DB is not equivalent: database/sql serves each call from an arbitrary
+// connection, so a single Exec configures whichever connection happened to
+// answer it and leaves every later connection on SQLite's defaults - foreign
+// keys off and no busy timeout.
+const connectionPragmas = "_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+
+// escapeSQLiteURIPath escapes the three characters SQLite treats specially in
+// the path component of a URI filename. '?' and '#' terminate the path and '%'
+// introduces an escape sequence, so each must be percent-encoded to survive the
+// round trip. Every other byte, spaces included, is passed through untouched.
+func escapeSQLiteURIPath(path string) string {
+	var escaped strings.Builder
+	for index := 0; index < len(path); index++ {
+		switch character := path[index]; character {
+		case '%':
+			escaped.WriteString("%25")
+		case '?':
+			escaped.WriteString("%3f")
+		case '#':
+			escaped.WriteString("%23")
+		default:
+			escaped.WriteByte(character)
+		}
+	}
+	return escaped.String()
+}
+
+// sqliteDSN turns a database path into a driver DSN carrying connectionPragmas.
+//
+// The driver splits a DSN at the first '?' and, unless the DSN is prefixed
+// "file:", uses everything before that as a literal filename. Appending a query
+// directly to a path would therefore silently truncate any path containing '?'.
+// Filesystem paths are converted to a percent-encoded file: URI instead, so
+// SQLite parses the query itself and decodes the path back to its exact bytes.
+// A caller that already supplied ":memory:" or its own file: URI keeps that
+// form, with the pragmas merged into whatever query it carries.
+func sqliteDSN(path string) (string, error) {
+	if path == "" {
+		return "", errors.New("sqlite: empty database path")
+	}
+
+	if path == ":memory:" || strings.HasPrefix(path, "file:") {
+		separator := "?"
+		if strings.ContainsRune(path, '?') {
+			separator = "&"
+		}
+		return path + separator + connectionPragmas, nil
+	}
+
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	uriPath := filepath.ToSlash(absolute)
+	if !strings.HasPrefix(uriPath, "/") {
+		// Windows volume-rooted paths such as C:/gyst/lifeops.db.
+		uriPath = "/" + uriPath
+	}
+	return "file://" + escapeSQLiteURIPath(uriPath) + "?" + connectionPragmas, nil
+}
+
 func Open(path string) (*sql.DB, error) {
 	if dir := filepath.Dir(path); dir != "." && dir != "" {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -19,21 +83,22 @@ func Open(path string) (*sql.DB, error) {
 		}
 	}
 
-	database, err := sql.Open("sqlite", path)
+	dsn, err := sqliteDSN(path)
 	if err != nil {
 		return nil, err
 	}
 
-	pragmas := []string{
-		"PRAGMA foreign_keys = ON;",
-		"PRAGMA journal_mode = WAL;",
-		"PRAGMA busy_timeout = 5000;",
+	database, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, err
 	}
-	for _, pragma := range pragmas {
-		if _, err := database.Exec(pragma); err != nil {
-			database.Close()
-			return nil, err
-		}
+
+	// journal_mode is a persistent property of the database file rather than of
+	// the connection, so setting it once here is enough: every connection the
+	// pool opens afterwards reads WAL mode back out of the file.
+	if _, err := database.Exec("PRAGMA journal_mode = WAL;"); err != nil {
+		database.Close()
+		return nil, err
 	}
 
 	return database, nil
