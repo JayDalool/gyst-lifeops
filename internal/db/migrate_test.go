@@ -29,12 +29,24 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 		t.Fatalf("fresh migration path: %v", err)
 	}
 
+	// Count the migration files rather than hardcoding a number. The point of
+	// this assertion is that no migration is silently skipped; a literal has
+	// to be edited for every new migration, which invites bumping it without
+	// checking whether the extra one actually applied.
+	files, err := filepath.Glob(filepath.Join("..", "..", "migrations", "*.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) == 0 {
+		t.Fatal("no migration files found")
+	}
+
 	var applied int
 	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
 		t.Fatal(err)
 	}
-	if applied != 18 {
-		t.Fatalf("applied migrations = %d, want 18", applied)
+	if applied != len(files) {
+		t.Fatalf("applied migrations = %d, want %d (one per file in migrations/)", applied, len(files))
 	}
 	var externalLinksTable int
 	if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='external_links'`).Scan(&externalLinksTable); err != nil {
