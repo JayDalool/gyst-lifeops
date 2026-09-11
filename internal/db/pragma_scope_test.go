@@ -109,10 +109,13 @@ func TestForeignKeysAreEnforcedOnEveryConnection(t *testing.T) {
 	}
 }
 
-// TestMigratedSchemaHasNoForeignKeyViolations runs the real migrations and then
+// TestMigratedAndSeededSchemaHasNoForeignKeyViolations runs the real migrations,
+// loads the real seed through the production SeedIfEmpty path, and then applies
 // the same read-only integrity check that should be run against the deployed
-// database before this change is released.
-func TestMigratedSchemaHasNoForeignKeyViolations(t *testing.T) {
+// database before this change is released. Seeding is what gives the check
+// something to find: the seed carries rows on both sides of several foreign
+// keys, so an empty database would make this test pass vacuously.
+func TestMigratedAndSeededSchemaHasNoForeignKeyViolations(t *testing.T) {
 	database, err := Open(filepath.Join(t.TempDir(), "integrity.db"))
 	if err != nil {
 		t.Fatalf("open: %v", err)
@@ -122,13 +125,41 @@ func TestMigratedSchemaHasNoForeignKeyViolations(t *testing.T) {
 	if err := Migrate(database, "../../migrations"); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
+	if err := SeedIfEmpty(database, "../../seeds/example.sql"); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	// Prove the seed actually loaded before trusting the check below. Each of
+	// these tables holds one side of at least one foreign key in the schema.
+	for _, table := range []string{
+		"projects", "project_items", "tasks", "goals", "goal_progress_entries", "reminders",
+	} {
+		var count int
+		if err := database.QueryRow(`SELECT COUNT(*) FROM ` + table).Scan(&count); err != nil {
+			t.Fatalf("count %s: %v", table, err)
+		}
+		if count == 0 {
+			t.Fatalf("seed loaded no rows into %s, so the integrity check would be vacuous", table)
+		}
+	}
+
+	// The seed must exercise a real parent/child relationship, not just fill
+	// unrelated tables, or the check still proves nothing about enforcement.
+	var linkedItems int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM project_items
+		WHERE project_id IN (SELECT id FROM projects)`).Scan(&linkedItems); err != nil {
+		t.Fatalf("count linked project_items: %v", err)
+	}
+	if linkedItems == 0 {
+		t.Fatal("seed contains no project_items referencing a seeded project")
+	}
 
 	violations, err := foreignKeyViolations(database)
 	if err != nil {
 		t.Fatalf("foreign_key_check: %v", err)
 	}
 	if len(violations) != 0 {
-		t.Errorf("migrated schema reports %d foreign-key violations: %v", len(violations), violations)
+		t.Errorf("seeded database reports %d foreign-key violations: %v", len(violations), violations)
 	}
 }
 
@@ -232,6 +263,56 @@ func TestSQLiteDSNPreservesCallerSuppliedForms(t *testing.T) {
 
 	if _, err := sqliteDSN(""); err == nil {
 		t.Error("sqliteDSN(\"\") should reject an empty path")
+	}
+}
+
+// TestOpenAcceptsCallerSuppliedFileURI is the end-to-end counterpart to the
+// sqliteDSN unit test: it drives Open itself, so it also covers the fact that a
+// file: URI must bypass filesystem directory creation. Running filepath over
+// "file:///tmp/x/db" yields "file:/tmp/x", and creating that would leave a
+// literal "file:" directory behind in the working directory.
+func TestOpenAcceptsCallerSuppliedFileURI(t *testing.T) {
+	directory := t.TempDir()
+	path := filepath.Join(directory, "uri.db")
+	dsn := "file://" + filepath.ToSlash(path) + "?mode=rwc"
+
+	database, err := Open(dsn)
+	if err != nil {
+		t.Fatalf("open %q: %v", dsn, err)
+	}
+	defer database.Close()
+
+	if _, err := database.Exec(`CREATE TABLE probe (id INTEGER PRIMARY KEY)`); err != nil {
+		t.Fatalf("write through file: URI: %v", err)
+	}
+
+	// The URI must have opened the database the caller named, not some other file.
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("database not created at %q: %v", path, err)
+	}
+
+	// No stray directory may have been created from the URI scheme.
+	if _, err := os.Stat("file:"); !os.IsNotExist(err) {
+		t.Errorf(`a literal "file:" directory was created in the working directory (stat err: %v)`, err)
+	}
+
+	// The caller's own query parameter must survive alongside the appended
+	// pragmas, and the pragmas must still reach every pooled connection.
+	ctx := context.Background()
+	for index, connection := range openConnections(t, database, 3) {
+		var foreignKeys, busyTimeout int
+		if err := connection.QueryRowContext(ctx, "PRAGMA foreign_keys").Scan(&foreignKeys); err != nil {
+			t.Fatalf("connection %d foreign_keys: %v", index, err)
+		}
+		if err := connection.QueryRowContext(ctx, "PRAGMA busy_timeout").Scan(&busyTimeout); err != nil {
+			t.Fatalf("connection %d busy_timeout: %v", index, err)
+		}
+		if foreignKeys != 1 {
+			t.Errorf("file: URI connection %d: foreign_keys = %d, want 1", index, foreignKeys)
+		}
+		if busyTimeout != 5000 {
+			t.Errorf("file: URI connection %d: busy_timeout = %d, want 5000", index, busyTimeout)
+		}
 	}
 }
 

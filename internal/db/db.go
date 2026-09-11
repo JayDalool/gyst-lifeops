@@ -42,6 +42,14 @@ func escapeSQLiteURIPath(path string) string {
 	return escaped.String()
 }
 
+// isDSNForm reports whether path is a DSN the caller expressed directly rather
+// than an ordinary filesystem path. ":memory:" names no file at all, and a
+// file: URI names its file through SQLite's own URI resolution, so neither can
+// be taken apart with filepath or handed to directory creation.
+func isDSNForm(path string) bool {
+	return path == ":memory:" || strings.HasPrefix(path, "file:")
+}
+
 // sqliteDSN turns a database path into a driver DSN carrying connectionPragmas.
 //
 // The driver splits a DSN at the first '?' and, unless the DSN is prefixed
@@ -56,7 +64,7 @@ func sqliteDSN(path string) (string, error) {
 		return "", errors.New("sqlite: empty database path")
 	}
 
-	if path == ":memory:" || strings.HasPrefix(path, "file:") {
+	if isDSNForm(path) {
 		separator := "?"
 		if strings.ContainsRune(path, '?') {
 			separator = "&"
@@ -77,15 +85,22 @@ func sqliteDSN(path string) (string, error) {
 }
 
 func Open(path string) (*sql.DB, error) {
-	if dir := filepath.Dir(path); dir != "." && dir != "" {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return nil, err
-		}
-	}
-
 	dsn, err := sqliteDSN(path)
 	if err != nil {
 		return nil, err
+	}
+
+	// Only an ordinary filesystem path has a parent directory to create.
+	// Running filepath over a DSN form would treat the scheme as a path
+	// segment and create a literal "file:" directory, so those are left alone;
+	// a file: URI's directory must already exist, because SQLite will open a
+	// database file but never create the directory holding it.
+	if !isDSNForm(path) {
+		if dir := filepath.Dir(path); dir != "." && dir != "" {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	database, err := sql.Open("sqlite", dsn)
