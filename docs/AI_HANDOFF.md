@@ -4,8 +4,10 @@
 **Updated by:** Claude
 **Repository:** `JayDalool/gyst-lifeops`
 **Current implementation branch:** `feature/health-hardening`
-**Current implementation HEAD:** `a1dc3da9600c9c36789db5b10226880eca9cff62`
-**This document's branch:** `docs/ui-v3-standards` (documentation only, based on `a1dc3da`)
+**Current implementation HEAD:** `29adc435d63912eeea8ce5aaf3873440f9ffd469`
+**This document's branch:** `docs/ui-v3-standards` (documentation only, branched from `a1dc3da`)
+
+> **Branch divergence:** `docs/ui-v3-standards` does **not** contain `29adc43`. The two branches share `a1dc3da` and have diverged since. That is expected — this is a documentation branch — but it means the code here is one commit behind the implementation branch. Read code from `feature/health-hardening`.
 
 This file is the single shared coordination point between Claude, Codex and Jay. Read it at the start of every session. Git is the source of truth; if this file disagrees with the repository, **the repository wins** — correct this file, never rewrite history to match it.
 
@@ -48,15 +50,16 @@ All SHAs below were verified with `git ls-remote` on 2026-09-11. Do not invent S
 | `master` | `ae5e67403fac04978bc6ac7b8363955dc5d4cd58` | Mainline. Contains **no** Health work. |
 | `feature/health-dashboard-foundation` | `055f098eb047947b0ff588397f6cba43d5359523` | M1 — UI shell + Health dashboard foundation. |
 | `feature/health-core` | `3083fb91a9a03a684d59f0a1e370fdea8a906324` | M2 — Health Core. **Approved B1 baseline.** |
-| `feature/health-hardening` | `a1dc3da9600c9c36789db5b10226880eca9cff62` | M2.5 hardening. Current implementation branch. |
-| `docs/ui-v3-standards` | `da1c1e583618fe3671bbf7c36f24585fbd84a6cb` | Documentation only. Based on `a1dc3da`, so it contains all of B1. |
+| `feature/health-hardening` | `29adc435d63912eeea8ce5aaf3873440f9ffd469` | M2.5 hardening. Current implementation branch. |
+| `docs/ui-v3-standards` | *(this branch — re-verify with `git ls-remote`)* | Documentation only. Branched from `a1dc3da`; does not contain `29adc43`. A pinned SHA here would be stale the moment this file is committed. |
 
 ### B1 history on `feature/health-hardening`
 
 ```
-3083fb9  Health baseline (feature/health-core)
-fb4f1eb  B1 implementation — fix SQLite PRAGMAs on pooled connections
-a1dc3da  B1 review fix — seed the integrity audit, finish file: URI support
+3083fb91a9a03a684d59f0a1e370fdea8a906324  Health baseline (feature/health-core)
+fb4f1ebd7ce44eb784e2c0a9f1898880db3e3cd0  B1 — fix SQLite PRAGMAs on pooled connections
+a1dc3da9600c9c36789db5b10226880eca9cff62  B1 review fix — seed integrity audit, finish file: URI support
+29adc435d63912eeea8ce5aaf3873440f9ffd469  B1 findings H1/M1/M2 — harden DSN handling, fix latent test deadlock
 ```
 
 **Do not rewrite, squash, force-push or rebase the B1 commits.**
@@ -118,6 +121,16 @@ Measured before the fix: connection 0 had `foreign_keys=1`/`busy_timeout=5000`; 
 
 XP note: migration 009's duplicate-reward guard is a **partial** unique index (`WHERE source_task_id IS NOT NULL`), so a NULLed row leaves that guard. This was checked and is **benign**: `tasks`, `projects` and `project_items` all use `INTEGER PRIMARY KEY AUTOINCREMENT`, so SQLite never reuses ids and no duplicate reward can be granted. XP already earned is retained; only the source pointer clears.
 
+### B1 review findings H1 / M1 / M2 — FIXED
+
+Commit: `29adc43`. Approved by Jay and delivered as one follow-up commit.
+
+- **H1** — a caller-supplied DSN that sets `_pragma=foreign_keys` or `_pragma=busy_timeout` is now **refused** with an error naming the pragma, so a misconfiguration fails at startup instead of silently running without foreign keys. Unrelated pragmas (for example `synchronous`) still pass through and are applied.
+- **M1** — in-memory databases are now **refused** in every spelling SQLite actually treats as in-memory (`:memory:`, `file::memory:`, `?mode=memory`). Each pooled connection would otherwise get its own private empty database. Detection deliberately mirrors SQLite's own **case sensitivity**: `:MEMORY:` names an ordinary file and keeps working. Both behaviours are pinned by tests.
+- **M2** — the behavioural foreign-key test now releases its four connections before the follow-up count query, removing a deadlock that would have appeared the moment any pool maximum was configured. Verified by temporarily capping the pool at four.
+
+Still open from that review (non-blocking, not scheduled): **L1** — `TestOpenAcceptsCallerSuppliedFileURI` asserts on `os.Stat("file:")` relative to the package directory, so a failing run can leave a stray entry that makes later runs fail until it is removed by hand. The same class of issue produced a stray `internal/db/:MEMORY:` file during the `29adc43` work; it was removed and the committed tests all use `t.TempDir()`.
+
 ### UI v3 design documentation — DOCUMENTATION ONLY
 
 On `docs/ui-v3-standards`. **Design reference, not implemented.** See §7.
@@ -126,13 +139,11 @@ On `docs/ui-v3-standards`. **Design reference, not implemented.** See §7.
 
 ## 4. Currently under review
 
-**B1: code complete, independently reviewed, approved by Jay.**
+**B1: code complete, independently reviewed, approved, and all review findings fixed.**
 
-An independent review of the range `3083fb9..a1dc3da` was completed. Verdict: **PASS WITH NOTES** — no blocking findings. Three non-blocking findings were raised and are **approved to be fixed as a follow-up commit** (see §10):
+The independent review of `3083fb9..a1dc3da` returned **PASS WITH NOTES** with no blocking findings. The three non-blocking findings (H1, M1, M2) were approved and are now **fixed in `29adc43`** — see §3 for what each fix does.
 
-- **H1** — a caller-supplied `_pragma` in a `file:` URI can silently defeat enforcement. Verified: `_pragma=foreign_keys(off)`, `(false)` and `(OFF)` all beat the appended `foreign_keys(1)`, because the driver sorts pragma strings lexicographically and the last one executed wins. `foreign_keys(0)` is safe. `busy_timeout` has an inconsistent sort comparator when duplicated.
-- **M1** — `:memory:` gives **each pooled connection its own private empty database**. Verified: a table created on connection 1 is invisible to connection 2. The existing test passes only because it reads pragmas through a single implicit connection, so it gives false assurance.
-- **M2** — `TestForeignKeysAreEnforcedOnEveryConnection` holds 4 connections and then issues a 5th query. Safe only while `MaxOpenConns` is unlimited; it would deadlock if pool tuning is ever added.
+**Nothing is awaiting code review.** The remaining gate is operational, not code.
 
 ### Still required before production deployment
 
@@ -146,6 +157,8 @@ sqlite3 /path/to/data/lifeops.db "PRAGMA foreign_key_check;"
 - **If any rows are returned: STOP deployment.**
 - **Do not auto-delete or auto-repair records.** Report them.
 - Run with the application **stopped** so the WAL is checkpointed, and take a backup first.
+
+This has **not** been done yet. It is the next task (§10).
 
 ---
 
@@ -308,8 +321,8 @@ Status legend: **EXISTING** (implemented today) · **DESIGNED** (spec written, n
 If actual repository state contradicts this, **report it rather than silently changing it**.
 
 1. ~~Complete independent review of B1.~~ **Done** — PASS WITH NOTES, approved.
-2. Fix B1 review findings H1, M1, M2 as one follow-up commit. ← *approved, next*
-3. Run the real production `foreign_key_check` before deployment.
+2. ~~Fix B1 review findings H1, M1, M2 as one follow-up commit.~~ **Done** — `29adc43`.
+3. Run the real production `foreign_key_check` before deployment. ← *next*
 4. Add a CI safety gate (still absent).
 5. Continue M2.5 security/network/backup work **one commit at a time**.
 6. Complete Health provenance / timezone correctness.
@@ -326,15 +339,29 @@ If actual repository state contradicts this, **report it rather than silently ch
 
 **Exactly one task. Do not start another implementation commit until this is resolved.**
 
-> **Fix B1 review findings H1, M1 and M2 as a single follow-up commit on `feature/health-hardening`.**
+> **Run `PRAGMA foreign_key_check` against the real production database and report the result.**
 >
-> Approved by Jay on 2026-09-11. Scope:
+> This is an **operational task for Jay on the server**, not a coding task. B1 is code-complete; nothing is waiting on review.
 >
-> - **H1** — ensure GYST's own `foreign_keys`/`busy_timeout` cannot be overridden by a caller-supplied `_pragma` in a `file:` URI.
-> - **M1** — either make `:memory:` genuinely usable across pooled connections or reject/guard it, and fix the test that currently gives false assurance.
-> - **M2** — remove the latent connection-exhaustion deadlock in `TestForeignKeysAreEnforcedOnEveryConnection`.
+> Why it gates everything: before B1, foreign keys were unenforced on most pooled connections, so the live database may already contain orphaned rows that were accepted at the time. B1 does not create that problem and does not clean it up — it just means such rows now become visible. The database must be certified clean before the B1 code is deployed against it.
 >
-> Constraints: one commit; no pool tuning unless required for correctness and justified; no schema changes; no migrations; `gofmt`, `go vet`, `go test ./...`, `go test -race ./...`, `go build ./...` must all pass. Do **not** start B2/A1/auth.
+> Procedure:
+>
+> 1. Stop the application (`docker compose stop gyst-lifeops`) so the WAL is checkpointed. A check against a live database can miss or misreport rows.
+> 2. Take a backup of `data/lifeops.db` first. There is still no backup tooling in the repository, so copy it manually while the app is stopped.
+> 3. Run, on the host, against the bind-mounted file:
+>
+>    ```sh
+>    sqlite3 ./data/lifeops.db "PRAGMA foreign_key_check;"
+>    ```
+>
+>    The container image has no `sqlite3` binary, so this must run on the host.
+> 4. **Zero rows** → the database is certified; record the date here and B1 is clear to deploy.
+> 5. **Any rows** → **STOP.** Each row is `table | rowid | parent_table | fk_index`. Record them here and report to Jay. **Do not delete, repair or migrate anything.** Deciding what an orphaned row should become is a product decision, not a cleanup script.
+>
+> After it passes, the next task becomes: add the CI safety gate (§5 — there is still no `.github/`).
+>
+> Do **not** start B2/A1/auth/Health-observation/UI work in the meantime.
 
 ---
 
@@ -409,4 +436,16 @@ Append-only. Newest last.
 2026-09-11 — Claude — Added the approved consolidated UI v3 standard and created this
                       shared handoff. Documentation only; no application behaviour changed.
                       Branch: docs/ui-v3-standards
+
+2026-09-11 — Claude — Fixed B1 review findings H1, M1 and M2 in one commit.
+                      Commit: 29adc43 (feature/health-hardening)
+                      H1: DSNs setting foreign_keys/busy_timeout are refused.
+                      M1: in-memory databases refused; :MEMORY: stays an ordinary file.
+                      M2: FK test releases its connections before the follow-up query,
+                          verified under a pool capped at four.
+                      Tests: go test ./... and go test -race ./... green; vet/build/gofmt clean.
+                      No pool tuning, schema change or migration.
+
+2026-09-11 — Claude — Updated this handoff for the state above. Next task is now the
+                      operational production foreign_key_check, not a coding task.
 ```
