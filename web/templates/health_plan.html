@@ -1,0 +1,63 @@
+{{define "content"}}
+<div class="page-head">
+  <div><p class="kicker"><a href="/health">Health</a> · Plan</p><h1 class="page-title">Health plan</h1>
+    <p class="page-sub">Set your own targets for a goal period. Dates include both start and end; periods cannot overlap.</p></div>
+  <a class="btn quiet" href="/health">Back to Health</a>
+</div>
+{{if .Saved}}<p role="status">Health cycle saved.</p>{{end}}
+{{if .Error}}<p role="alert" id="plan-error">{{.Error}}</p>{{end}}
+<form class="card form-card form-stack mt-24" method="post" action="/health/plan" {{if .Error}}aria-describedby="plan-error"{{end}}>
+  <input type="hidden" name="cycle_id" value="{{.Form.ID}}">
+  <h2 class="section-title">{{if eq .Form.ID "0"}}New cycle{{else}}Edit cycle{{end}}</h2>
+  <p class="meta">A new cycle starts with zero targets. Enter your chosen values; these are configuration, not recommendations. The default period is approximately 12 weeks and can be changed.</p>
+  <label class="field"><span>Title</span>
+    <input type="text" name="title" required maxlength="200" value="{{.Form.Title}}">
+  </label>
+  <label class="field"><span>Start date</span>
+    <input type="date" name="start_date" required value="{{.Form.StartDate}}">
+  </label>
+  <label class="field"><span>End date</span>
+    <input type="date" name="end_date" required value="{{.Form.EndDate}}">
+  </label>
+  <label class="field"><span>Primary goal</span>
+    <textarea name="primary_goal" rows="3" maxlength="2000" required>{{.Form.PrimaryGoal}}</textarea>
+  </label>
+  <label class="field"><span>Daily calorie target (kcal)</span>
+    <input type="number" name="daily_calorie_target" required min="0" max="1000000000" step="any" value="{{.Form.DailyCalorieTarget}}">
+  </label>
+  <label class="field"><span>Protein target (g)</span>
+    <input type="number" name="protein_target_g" required min="0" max="1000000000" step="any" value="{{.Form.ProteinTargetG}}">
+  </label>
+  <label class="field"><span>Carbohydrate target (g)</span>
+    <input type="number" name="carbs_target_g" required min="0" max="1000000000" step="any" value="{{.Form.CarbsTargetG}}">
+  </label>
+  <label class="field"><span>Fat target (g)</span>
+    <input type="number" name="fat_target_g" required min="0" max="1000000000" step="any" value="{{.Form.FatTargetG}}">
+  </label>
+  <label class="field"><span>Fiber target (g)</span>
+    <input type="number" name="fiber_target_g" required min="0" max="1000000000" step="any" value="{{.Form.FiberTargetG}}">
+  </label>
+  <label class="field"><span>Target deficit (kcal)</span>
+    <input type="number" name="target_deficit_kcal" required min="0" max="1000000000" step="any" value="{{.Form.TargetDeficitKcal}}">
+  </label>
+  <label class="field"><span>Strength sessions / week</span>
+    <input type="number" name="strength_sessions_per_week" required min="0" max="1000000000" step="1" value="{{.Form.StrengthSessionsPerWeek}}">
+  </label>
+  <label class="field"><span>Cardio sessions / week</span>
+    <input type="number" name="cardio_sessions_per_week" required min="0" max="1000000000" step="1" value="{{.Form.CardioSessionsPerWeek}}">
+  </label>
+  <label class="field"><span>Step target</span>
+    <input type="number" name="step_target" required min="0" max="1000000000" step="1" value="{{.Form.StepTarget}}">
+  </label>
+  <label class="field"><span>Notes (optional)</span>
+    <textarea name="notes" rows="3" maxlength="10000">{{.Form.Notes}}</textarea>
+  </label>
+  <p class="meta">A deficit target is a positive magnitude. Observed energy balance is not a prediction of your final daily deficit.</p>
+  <button class="btn" type="submit">Save health cycle</button>
+</form>
+<section class="section-head"><h2 class="section-title">Your cycles</h2><a class="btn quiet" href="/health/plan?new=1">New cycle</a></section>
+<div class="card"><ul class="list">
+{{range .Cycles}}<li><a class="grow" href="/health/plan?id={{.ID}}">{{.Title}}</a><span class="meta">{{.StartDate}} – {{.EndDate}}</span></li>
+{{else}}<li>No health cycles configured yet.</li>{{end}}
+</ul></div>
+{{end}}

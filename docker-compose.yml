@@ -8,6 +8,7 @@ services:
     volumes:
       - ./data:/app/data
     environment:
+      - GYST_HEALTH_SYNC_TOKEN=${GYST_HEALTH_SYNC_TOKEN:-}
       - PORT=8080
       - DB_PATH=/app/data/lifeops.db
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}

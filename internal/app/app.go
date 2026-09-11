@@ -22,6 +22,7 @@ type Config struct {
 	// AllowPublicFeeds enables the unauthenticated plain .ics routes. Default
 	// false (production-safe); tokenized feeds are always available.
 	AllowPublicFeeds bool
+	HealthSyncToken  string
 }
 
 type App struct {
@@ -61,6 +62,7 @@ func New(config Config) (*App, error) {
 	go service.RunPushScheduler(pushContext)
 	webHandler := handlers.New(service, config.TemplateDir)
 	webHandler.AllowPublicFeeds = config.AllowPublicFeeds
+	webHandler.HealthSyncToken = config.HealthSyncToken
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(config.StaticDir))))

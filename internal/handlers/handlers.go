@@ -28,6 +28,7 @@ type Handler struct {
 	// default (production-safe); the tokenized /calendar/feed/{token} routes are
 	// unaffected. Enable in local/dev via ALLOW_PUBLIC_CALENDAR_FEEDS=true.
 	AllowPublicFeeds bool
+	HealthSyncToken  string // Server-only Health API secret; never rendered.
 }
 
 type TodayData struct {
@@ -282,7 +283,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "analytics":
 		h.analytics(w, r)
 	case "health":
-		h.health(w, r)
+		if len(segments) == 1 {
+			h.health(w, r)
+		} else if len(segments) == 2 && segments[1] == "plan" {
+			h.healthPlan(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
 	case "roadmap":
 		h.roadmap(w, r, segments)
 	case "roadmaps":
@@ -304,7 +311,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "plan-import":
 		h.planImport(w, r)
 	case "api":
-		h.pushAPI(w, r, segments)
+		if len(segments) >= 2 && segments[1] == "health" {
+			h.healthAPI(w, r, segments)
+		} else {
+			h.pushAPI(w, r, segments)
+		}
 	default:
 		http.NotFound(w, r)
 	}

@@ -160,3 +160,39 @@ static samples and empty states, with no health records or schema additions.
 `health.js` only switches presentation periods; it makes no requests and saves
 nothing. Nutrition and Training link to preview cards, Progress and Plan to
 empty-state sections. Meal and workout actions are disabled until implemented.
+Milestone 2 replaces the Plan link with `/health/plan`; Summary samples remain unchanged.
+
+## Health Core (Milestone 2)
+
+```mermaid
+flowchart TD
+    Shortcut[Apple Shortcut - future M3] --> API[POST /api/health/sync]
+    API --> Auth[Bearer authentication and JSON validation]
+    Auth --> Health[Health service]
+    Plan[Server-rendered /health/plan] --> Health
+    Health --> Repository[Health repository]
+    Repository --> SQLite[(SQLite)]
+```
+
+`internal/models/health.go`, `internal/repository/health.go`, and
+`internal/services/health.go` contain the Health domain. Migration
+`017_health_core.sql` only creates four tables and their indexes: `health_cycles`,
+`daily_health_snapshots`, `health_weight_entries`, and `health_sync_states`.
+It changes no existing application rows or tables and seeds no health records.
+
+`health_api.go` handles only `/api/health/*`; push API routing is unchanged.
+`GYST_HEALTH_SYNC_TOKEN` is injected through app configuration and required for
+both reads and writes. Fixed-length SHA-256 digests are compared in constant
+time. Tokens never enter templates. API responses use `no-store`; the service
+worker bypasses Health APIs, authenticated requests, and the plan page.
+
+Sync uses an atomic partial upsert and a transaction covering snapshot plus sync
+state. Omitted or null metrics preserve existing values; explicit zero replaces
+them. Steps from Watch and phone are stored separately. The service validates
+cycles and overlap, backed by conditional SQL writes that prevent races.
+`/health/plan` uses the existing private web-app access model, with cross-site
+browser POST rejection. It does not require or expose the API token.
+
+Observed energy is deterministic arithmetic on received metrics. No projections,
+step-to-calorie calculations, or extra workout calories are introduced. Health
+Summary remains the M1 preview. See [the contract](HEALTH_CORE.md) for details.

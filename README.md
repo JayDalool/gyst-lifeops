@@ -46,7 +46,7 @@ The app applies SQL migrations on startup and loads `seeds/example.sql` only whe
 - Native selects/options are explicitly themed for readable dark-mode dropdowns, with light-mode overrides.
 - Analytics charts use a lightweight custom canvas renderer, compact sparklines, and batched redraws instead of heavy chart re-creation.
 - Optional light mode toggle in Settings, stored locally in the browser.
-- Health metrics are presentation samples only; nutrition, workout execution, history, and health cycles are not stored or connected.
+- The Health Summary remains a presentation preview. Health Core stores configured cycles and received daily aggregates separately; the dashboard does not display those aggregates yet.
 
 ## UI Structure
 
@@ -112,7 +112,7 @@ Asr and signed per-prayer minute adjustments. Today provides a live countdown
 and explicitly enabled open-page notification/audio alerts.
 
 Database migrations are applied in filename order and currently run through
-`016_task_checklist.sql`.
+`017_health_core.sql`.
 
 ## HTTPS and Web Push
 
@@ -144,3 +144,21 @@ Future iOS reminders should use native Swift `UserNotifications` so reminders wo
 - Use UserNotifications for local reminders.
 - Sync with this Go backend through REST API endpoints.
 - Reuse server UUIDs, `sync_version`, and timestamp fields for conflict handling.
+
+## Health Core (Milestone 2)
+
+`/health/plan` creates and edits goal periods with user-chosen dates and targets.
+Daily snapshots retain missing metrics as NULL and keep Watch and phone steps
+separate. Health Summary cards remain demo values until the Live Dashboard
+milestone.
+
+Both `POST /api/health/sync` and `GET /api/health/today` require
+`Authorization: Bearer <token>`. Set `GYST_HEALTH_SYNC_TOKEN` privately in the
+server environment (or the untracked Compose `.env`); use a long randomly
+generated secret. Compose passes it to the app. Do not put it in URLs, browser
+JavaScript, source control, or logs. Both endpoints fail closed with HTTP 503
+when the secret is unset, and reject missing/incorrect credentials with 401.
+Use the existing HTTPS deployment for API access.
+
+See [Health Core](docs/HEALTH_CORE.md) for the payload contract, observed-energy
+calculations, timezone rules, and deferred milestones.

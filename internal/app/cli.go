@@ -31,6 +31,7 @@ func Run() {
 		StaticDir:        *staticDir,
 		LoadSeed:         *loadSeed,
 		AllowPublicFeeds: allowPublicFeeds,
+		HealthSyncToken:  os.Getenv("GYST_HEALTH_SYNC_TOKEN"),
 	})
 	if err != nil {
 		log.Fatal(err)
