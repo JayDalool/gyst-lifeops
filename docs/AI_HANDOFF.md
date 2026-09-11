@@ -7,7 +7,9 @@
 **Current implementation HEAD:** `29adc435d63912eeea8ce5aaf3873440f9ffd469`
 **This document's branch:** `docs/ui-v3-standards` (documentation only, branched from `a1dc3da`)
 
-> **Branch divergence:** `docs/ui-v3-standards` does **not** contain `29adc43`. The two branches share `a1dc3da` and have diverged since. That is expected — this is a documentation branch — but it means the code here is one commit behind the implementation branch. Read code from `feature/health-hardening`.
+> **Branch state:** `docs/ui-v3-standards` has had `feature/health-hardening` merged into it, so it now contains every B1 commit through `29adc43` and the code on both branches is identical. The merge was clean — the two sides touch disjoint files (`docs/` against `internal/db/`) — and the merged tree passes `gofmt`, `go vet`, `go build` and `go test ./...`.
+>
+> `feature/health-hardening` remains the implementation branch: new code goes there and is merged here, never the other way round.
 
 This file is the single shared coordination point between Claude, Codex and Jay. Read it at the start of every session. Git is the source of truth; if this file disagrees with the repository, **the repository wins** — correct this file, never rewrite history to match it.
 
@@ -51,7 +53,7 @@ All SHAs below were verified with `git ls-remote` on 2026-09-11. Do not invent S
 | `feature/health-dashboard-foundation` | `055f098eb047947b0ff588397f6cba43d5359523` | M1 — UI shell + Health dashboard foundation. |
 | `feature/health-core` | `3083fb91a9a03a684d59f0a1e370fdea8a906324` | M2 — Health Core. **Approved B1 baseline.** |
 | `feature/health-hardening` | `29adc435d63912eeea8ce5aaf3873440f9ffd469` | M2.5 hardening. Current implementation branch. |
-| `docs/ui-v3-standards` | *(this branch — re-verify with `git ls-remote`)* | Documentation only. Branched from `a1dc3da`; does not contain `29adc43`. A pinned SHA here would be stale the moment this file is committed. |
+| `docs/ui-v3-standards` | *(this branch — re-verify with `git ls-remote`)* | Documentation branch, with `feature/health-hardening` merged in, so it contains every B1 commit through `29adc43`. A pinned SHA here would be stale the moment this file is committed. |
 
 ### B1 history on `feature/health-hardening`
 
@@ -66,7 +68,9 @@ a1dc3da9600c9c36789db5b10226880eca9cff62  B1 review fix — seed integrity audit
 
 ### Branch relationship note
 
-`docs/ui-v3-standards` branches from `a1dc3da`, so documentation and B1 code currently coexist there. Keep production UI work and hardening work on separate branches, per `docs/design/v3/GYST_UI_V3_STANDARDS.md` §1 of the implementation guide.
+`docs/ui-v3-standards` carries the documentation plus a merge of `feature/health-hardening`, so both branches hold identical code. Merge in one direction only — implementation branch into docs branch — so the implementation branch never picks up documentation commits.
+
+Keep production UI work and hardening work on separate branches, per §1 of the implementation guide in `docs/design/v3/GYST_UI_V3_STANDARDS.md`. Merging hardening *code* into this branch to keep it current is not the same thing as doing UI work here.
 
 ---
 
@@ -448,4 +452,9 @@ Append-only. Newest last.
 
 2026-09-11 — Claude — Updated this handoff for the state above. Next task is now the
                       operational production foreign_key_check, not a coding task.
+
+2026-09-11 — Claude — Merged feature/health-hardening into docs/ui-v3-standards so both
+                      branches hold identical code. Clean merge; disjoint files.
+                      Merged tree verified: gofmt, go vet, go build, go test ./... green.
+                      feature/health-hardening was not modified.
 ```
