@@ -125,7 +125,7 @@ func TestExemptPathsAreReachableWithoutASession(t *testing.T) {
 		why  string
 	}{
 		{"login", "/login", "the page that issues a session"},
-		{"health api", "/api/health/today", "authenticates with its own bearer token"},
+		{"health sync", "/api/health/sync", "authenticates with its own bearer token"},
 		{"health api root", "/api/health", "same bearer-token surface"},
 		{"calendar feed", "/calendar/feed/sometoken.ics", "carries a path token; external calendar clients send no cookie"},
 	} {

@@ -152,13 +152,17 @@ Daily snapshots retain missing metrics as NULL and keep Watch and phone steps
 separate. Health Summary cards remain demo values until the Live Dashboard
 milestone.
 
-Both `POST /api/health/sync` and `GET /api/health/today` require
-`Authorization: Bearer <token>`. Set `GYST_HEALTH_SYNC_TOKEN` privately in the
-server environment (or the untracked Compose `.env`); use a long randomly
-generated secret. Compose passes it to the app. Do not put it in URLs, browser
-JavaScript, source control, or logs. Both endpoints fail closed with HTTP 503
-when the secret is unset, and reject missing/incorrect credentials with 401.
-Use the existing HTTPS deployment for API access.
+`POST /api/health/sync` is the entire Health API. It is deliberately
+write-only: there is no read endpoint, so `GYST_HEALTH_SYNC_TOKEN` is a write
+credential by construction rather than by convention, and the Apple Health
+Shortcut that holds it cannot be used to read a health history back out.
+
+It requires `Authorization: Bearer <token>`. Set `GYST_HEALTH_SYNC_TOKEN`
+privately in the server environment (or the untracked Compose `.env`); use a
+long randomly generated secret. Compose passes it to the app. Do not put it in
+URLs, browser JavaScript, source control, or logs. The endpoint fails closed
+with HTTP 503 when the secret is unset, and rejects missing or incorrect
+credentials with 401. Use the existing HTTPS deployment for API access.
 
 See [Health Core](docs/HEALTH_CORE.md) for the payload contract, observed-energy
 calculations, timezone rules, and deferred milestones.

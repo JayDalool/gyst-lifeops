@@ -27,6 +27,13 @@ func healthJSON(w http.ResponseWriter, status int, value any) {
 func healthJSONError(w http.ResponseWriter, status int, message string) {
 	healthJSON(w, status, healthAPIError{Error: message})
 }
+
+// healthAPI is deliberately write-only: POST /api/health/sync is the entire
+// surface. That makes GYST_HEALTH_SYNC_TOKEN a write credential by
+// construction rather than by convention, so the Apple Health Shortcut - which
+// lives in iCloud and is shareable from the share sheet with one tap - cannot
+// be used to read back a health history. A read API, when one is wanted, should
+// sit behind the session added in A4 rather than behind this token.
 func (h *Handler) healthAPI(w http.ResponseWriter, r *http.Request, segments []string) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Vary", "Authorization")
@@ -90,18 +97,6 @@ func (h *Handler) healthAPI(w http.ResponseWriter, r *http.Request, segments []s
 			return
 		}
 		healthJSON(w, 200, snapshot)
-	case "today":
-		if r.Method != http.MethodGet {
-			w.Header().Set("Allow", "GET")
-			healthJSONError(w, 405, "method not allowed")
-			return
-		}
-		today, err := h.Service.HealthToday()
-		if err != nil {
-			h.healthServiceError(w, err)
-			return
-		}
-		healthJSON(w, 200, today)
 	default:
 		healthJSONError(w, 404, "health endpoint not found")
 	}

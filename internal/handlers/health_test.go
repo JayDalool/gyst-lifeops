@@ -36,7 +36,7 @@ func TestHealthAPIAuthenticationAndValidation(t *testing.T) {
 	}{
 		{"missing auth", "POST", "/api/health/sync", valid, "", "application/json", 401},
 		{"wrong auth", "POST", "/api/health/sync", valid, "wrong-test-token", "application/json", 401},
-		{"get private", "GET", "/api/health/today", "", "", "", 401},
+		{"unauthenticated", "GET", "/api/health/sync", "", "", "", 401},
 		{"valid", "POST", "/api/health/sync", valid, healthTestToken, "application/json", 200},
 		{"media", "POST", "/api/health/sync", valid, healthTestToken, "text/plain", 415},
 		{"missing media", "POST", "/api/health/sync", valid, healthTestToken, "", 415},
@@ -52,7 +52,8 @@ func TestHealthAPIAuthenticationAndValidation(t *testing.T) {
 		{"oversize", "POST", "/api/health/sync", `{"date":"` + strings.Repeat("x", 17<<10) + `"}`, healthTestToken, "application/json", 413},
 		{"oversize trailing whitespace", "POST", "/api/health/sync", valid + strings.Repeat(" ", 17<<10), healthTestToken, "application/json", 413},
 		{"sync method", "GET", "/api/health/sync", "", healthTestToken, "", 405},
-		{"today method", "POST", "/api/health/today", valid, healthTestToken, "application/json", 405},
+		{"read route removed", "GET", "/api/health/today", "", healthTestToken, "", 404},
+		{"read route removed for POST", "POST", "/api/health/today", valid, healthTestToken, "application/json", 404},
 		{"unknown route", "GET", "/api/health/unknown", "", healthTestToken, "", 404},
 		{"nested route", "GET", "/api/health/today/extra", "", healthTestToken, "", 404},
 	} {
@@ -79,7 +80,7 @@ func TestHealthAPIAuthenticationAndValidation(t *testing.T) {
 		}
 	}
 	h.HealthSyncToken = ""
-	for _, path := range []string{"/api/health/sync", "/api/health/today"} {
+	for _, path := range []string{"/api/health/sync", "/api/health/unknown"} {
 		rec := healthRequest(h, "POST", path, valid, healthTestToken, "application/json")
 		if rec.Code != 503 {
 			t.Fatalf("unset token: %d", rec.Code)
@@ -90,10 +91,16 @@ func TestHealthAPIPartialSyncAndToday(t *testing.T) {
 	h := testHandler(t)
 	h.HealthSyncToken = healthTestToken
 	h.Service.Now = func() time.Time { return time.Date(2026, 9, 10, 18, 0, 0, 0, time.UTC) }
-	empty := healthRequest(h, "GET", "/api/health/today", "", healthTestToken, "")
-	var today models.HealthTodayResponse
-	if err := json.Unmarshal(empty.Body.Bytes(), &today); err != nil || today.Snapshot != nil || today.HealthCycle != nil || today.Observed.ObservedTotalBurn != nil {
-		t.Fatalf("empty: %s %v", empty.Body.String(), err)
+	// The read endpoint is gone, so the merge semantics below are asserted
+	// against the service directly - which is what the server-rendered
+	// dashboard will call in M4. The coverage this test exists for, partial
+	// merge and NULL-versus-zero, is unchanged.
+	today, err := h.Service.HealthToday()
+	if err != nil {
+		t.Fatalf("empty: %v", err)
+	}
+	if today.Snapshot != nil || today.HealthCycle != nil || today.Observed.ObservedTotalBurn != nil {
+		t.Fatalf("empty: %+v", today)
 	}
 	c := models.HealthCycle{Title: "Cycle", PrimaryGoal: "Consistency", StartDate: "2026-09-10", EndDate: "2026-12-03", DailyCalorieTarget: 2300}
 	if err := h.Service.CreateHealthCycle(&c); err != nil {
@@ -110,22 +117,16 @@ func TestHealthAPIPartialSyncAndToday(t *testing.T) {
 			}
 		}
 	}
-	rec := healthRequest(h, "GET", "/api/health/today", "", healthTestToken, "")
-	if rec.Code != 200 {
-		t.Fatalf("today: %d %s", rec.Code, rec.Body.String())
-	}
-	if err := json.Unmarshal(rec.Body.Bytes(), &today); err != nil {
-		t.Fatal(err)
+	today, err = h.Service.HealthToday()
+	if err != nil {
+		t.Fatalf("today: %v", err)
 	}
 	if today.Date != "2026-09-10" || today.Snapshot == nil || today.HealthCycle == nil {
 		t.Fatalf("today: %+v", today)
 	}
 	s := today.Snapshot
 	if *s.DietaryCalories != 130 || *s.ProteinG != 0 || s.FiberG != nil || *s.StepsWatch != 1195 || *s.StepsPhone != 1302 || *today.Observed.FoodRemaining != 2170 {
-		t.Fatalf("today data: %s", rec.Body.String())
-	}
-	if strings.Contains(rec.Body.String(), "projected") {
-		t.Fatal("invented projection")
+		t.Fatalf("today data: %+v", today)
 	}
 	// Health routing must not consume or authenticate the push routes.
 	push := healthRequest(h, "POST", "/api/push/subscribe", `{"endpoint":"https://push.example/health-test","keys":{"p256dh":"test-key","auth":"test-auth"}}`, "", "application/json")

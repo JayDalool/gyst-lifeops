@@ -47,8 +47,12 @@ func TestHealthAPIConfigAndRootMux(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer a.Close()
-			req := httptest.NewRequest(http.MethodGet, "/api/health/today", nil)
+			// The Health API is write-only, so root-mux routing is probed with
+			// the sync endpoint rather than a read.
+			req := httptest.NewRequest(http.MethodPost, "/api/health/sync",
+				strings.NewReader(`{"date":"2026-09-10","source":"apple_shortcuts","dietary_calories":130}`))
 			req.Header.Set("Authorization", "Bearer test-only-app-health-token")
+			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
 			a.Handler.ServeHTTP(rec, req)
 			want := 200

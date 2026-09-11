@@ -74,8 +74,11 @@ Storage errors do not disclose SQL or private data in API responses.
 
 ## Today and observed energy
 
-`GET /api/health/today` returns `date`, nullable `snapshot`, nullable `health_cycle`,
-and `observed`. The date uses the existing configured local timezone
+`Service.HealthToday()` returns `date`, nullable `snapshot`, nullable
+`health_cycle`, and `observed`. It is a service-layer call with no HTTP
+endpoint: the Health API is write-only, and the server-rendered dashboard will
+call this directly rather than going through an API. The date uses the existing
+configured local timezone
 (`prayer.timezone`, default America/Winnipeg). Incoming sync dates are stored
 literally, without timezone conversion. Weight timestamps include timezone and
 are normalized to UTC; weight is always stored in kilograms.
