@@ -3,7 +3,9 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,12 +26,20 @@ func openConnections(t *testing.T, database *sql.DB, count int) []*sql.Conn {
 		}
 		connections = append(connections, connection)
 	}
-	t.Cleanup(func() {
-		for _, connection := range connections {
-			connection.Close()
-		}
-	})
+	t.Cleanup(func() { releaseConnections(connections) })
 	return connections
+}
+
+// releaseConnections hands the connections back to the pool. A test that runs
+// a further query after inspecting every connection must call this first: the
+// pool is unbounded today, so asking for one more connection while N are held
+// happens to succeed, but it would block until the test timed out if a maximum
+// were ever configured. Closing twice is harmless; the second Close reports
+// sql.ErrConnDone, which the cleanup ignores.
+func releaseConnections(connections []*sql.Conn) {
+	for _, connection := range connections {
+		connection.Close()
+	}
 }
 
 // TestConnectionPragmasApplyToEveryPooledConnection fails against the previous
@@ -88,7 +98,8 @@ func TestForeignKeysAreEnforcedOnEveryConnection(t *testing.T) {
 		t.Fatalf("create schema: %v", err)
 	}
 
-	for index, connection := range openConnections(t, database, 4) {
+	connections := openConnections(t, database, 4)
+	for index, connection := range connections {
 		_, err := connection.ExecContext(ctx,
 			`INSERT INTO child (id, parent_id) VALUES (?, 999)`, index+1)
 		if err == nil {
@@ -99,6 +110,8 @@ func TestForeignKeysAreEnforcedOnEveryConnection(t *testing.T) {
 			t.Errorf("connection %d rejected the row for the wrong reason: %v", index, err)
 		}
 	}
+	// Release before the count below so it cannot be starved of a connection.
+	releaseConnections(connections)
 
 	var orphans int
 	if err := database.QueryRowContext(ctx, `SELECT COUNT(*) FROM child`).Scan(&orphans); err != nil {
@@ -246,9 +259,10 @@ func TestSQLiteDSNPreservesCallerSuppliedForms(t *testing.T) {
 		path string
 		want string
 	}{
-		{"memory", ":memory:", ":memory:?" + connectionPragmas},
 		{"file uri", "file:/tmp/x.db", "file:/tmp/x.db?" + connectionPragmas},
 		{"file uri with query", "file:/tmp/x.db?mode=ro", "file:/tmp/x.db?mode=ro&" + connectionPragmas},
+		{"unrelated pragma is allowed", "file:/tmp/x.db?_pragma=synchronous(1)",
+			"file:/tmp/x.db?_pragma=synchronous(1)&" + connectionPragmas},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			got, err := sqliteDSN(testCase.path)
@@ -316,26 +330,144 @@ func TestOpenAcceptsCallerSuppliedFileURI(t *testing.T) {
 	}
 }
 
-// TestInMemoryDatabaseGetsConnectionPragmas proves the ":memory:" form is not
-// just accepted but correctly configured.
-func TestInMemoryDatabaseGetsConnectionPragmas(t *testing.T) {
-	database, err := Open(":memory:")
+// TestOpenRejectsInMemoryDatabases covers every spelling of an in-memory
+// database. Each pooled connection to one gets its own private, empty copy, so
+// a schema created on the first connection is missing from the second. The
+// previous version of this test asked only for PRAGMA values through a single
+// implicit connection, which passed while the form remained unusable.
+func TestOpenRejectsInMemoryDatabases(t *testing.T) {
+	for _, testCase := range []struct {
+		name string
+		path string
+	}{
+		{"bare", ":memory:"},
+		{"file uri", "file::memory:"},
+		{"shared cache", "file::memory:?cache=shared"},
+		{"mode parameter", "file:/tmp/ignored.db?mode=memory"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			database, err := Open(testCase.path)
+			if err == nil {
+				database.Close()
+				t.Fatalf("Open(%q) succeeded; want rejection", testCase.path)
+			}
+			if !errors.Is(err, ErrInMemoryUnsupported) {
+				t.Errorf("Open(%q) = %v, want ErrInMemoryUnsupported", testCase.path, err)
+			}
+		})
+	}
+}
+
+// TestUppercaseMemorySpellingIsAnOrdinaryFile pins the case sensitivity the
+// rejection above deliberately mirrors. SQLite compares ":memory:" exactly, so
+// ":MEMORY:" asks for a file with that name and must keep working; rejecting it
+// would refuse a legitimate, if unusual, filename.
+func TestUppercaseMemorySpellingIsAnOrdinaryFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ":MEMORY:")
+
+	database, err := Open(path)
 	if err != nil {
-		t.Fatalf("open in-memory: %v", err)
+		t.Fatalf("Open(%q): %v", path, err)
 	}
 	defer database.Close()
 
-	var foreignKeys, busyTimeout int
+	if _, err := database.Exec(`CREATE TABLE probe (id INTEGER PRIMARY KEY)`); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Errorf("expected an ordinary file at %q: %v", path, err)
+	}
+}
+
+// TestInMemoryDatabasesWouldNotShareState documents why the rejection above
+// exists, by reproducing the defect directly against the driver: the pool hands
+// out independent databases. If SQLite or the driver ever changes so that this
+// test fails, the rejection can be revisited.
+func TestInMemoryDatabasesWouldNotShareState(t *testing.T) {
+	database, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer database.Close()
+
+	ctx := context.Background()
+	first, err := database.Conn(ctx)
+	if err != nil {
+		t.Fatalf("first connection: %v", err)
+	}
+	defer first.Close()
+	second, err := database.Conn(ctx)
+	if err != nil {
+		t.Fatalf("second connection: %v", err)
+	}
+	defer second.Close()
+
+	if _, err := first.ExecContext(ctx, `CREATE TABLE shared (id INTEGER PRIMARY KEY)`); err != nil {
+		t.Fatalf("create on first connection: %v", err)
+	}
+	var count int
+	err = second.QueryRowContext(ctx, `SELECT COUNT(*) FROM shared`).Scan(&count)
+	if err == nil {
+		t.Fatal("the second connection saw the first connection's table; in-memory isolation may no longer apply")
+	}
+	t.Logf("second connection cannot see the first connection's table: %v", err)
+}
+
+// TestOpenRejectsPragmaOverrides is the H1 guard. The driver executes every
+// _pragma in lexicographic order and the last one wins, so "foreign_keys(off)"
+// sorts after the "foreign_keys(1)" this package appends and would silently
+// disable enforcement. Verified spellings that beat it before this guard
+// existed: off, false and OFF. "foreign_keys(0)" happened to lose, but is
+// refused too rather than relying on collation.
+func TestOpenRejectsPragmaOverrides(t *testing.T) {
+	directory := t.TempDir()
+	for _, override := range []string{
+		"foreign_keys(off)",
+		"foreign_keys(false)",
+		"foreign_keys(OFF)",
+		"foreign_keys(0)",
+		"FOREIGN_KEYS(off)",
+		"foreign_keys = off",
+		"busy_timeout(0)",
+	} {
+		t.Run(override, func(t *testing.T) {
+			dsn := "file://" + filepath.ToSlash(filepath.Join(directory, "x.db")) +
+				"?_pragma=" + url.QueryEscape(override)
+			database, err := Open(dsn)
+			if err == nil {
+				database.Close()
+				t.Fatalf("Open accepted a DSN overriding %q", override)
+			}
+			if !strings.Contains(err.Error(), "_pragma=") {
+				t.Errorf("error does not explain the rejected pragma: %v", err)
+			}
+		})
+	}
+}
+
+// TestOpenAllowsUnrelatedPragmas keeps the H1 guard narrow: only the pragmas
+// this package guarantees are refused.
+func TestOpenAllowsUnrelatedPragmas(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "unrelated.db")
+	dsn := "file://" + filepath.ToSlash(path) + "?_pragma=" + url.QueryEscape("synchronous(1)")
+
+	database, err := Open(dsn)
+	if err != nil {
+		t.Fatalf("open with an unrelated pragma: %v", err)
+	}
+	defer database.Close()
+
+	var synchronous, foreignKeys int
+	if err := database.QueryRow("PRAGMA synchronous").Scan(&synchronous); err != nil {
+		t.Fatalf("synchronous: %v", err)
+	}
 	if err := database.QueryRow("PRAGMA foreign_keys").Scan(&foreignKeys); err != nil {
 		t.Fatalf("foreign_keys: %v", err)
 	}
-	if err := database.QueryRow("PRAGMA busy_timeout").Scan(&busyTimeout); err != nil {
-		t.Fatalf("busy_timeout: %v", err)
+	if synchronous != 1 {
+		t.Errorf("caller pragma not applied: synchronous = %d, want 1", synchronous)
 	}
 	if foreignKeys != 1 {
-		t.Errorf("in-memory foreign_keys = %d, want 1", foreignKeys)
-	}
-	if busyTimeout != 5000 {
-		t.Errorf("in-memory busy_timeout = %d, want 5000", busyTimeout)
+		t.Errorf("guaranteed pragma lost: foreign_keys = %d, want 1", foreignKeys)
 	}
 }
