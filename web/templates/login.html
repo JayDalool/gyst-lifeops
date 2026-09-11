@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sign in · GYST</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <meta name="theme-color" content="#080d16">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="/static/css/styles.css?v=health-1">
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <form class="login-card" method="post" action="/login" autocomplete="on">
+      <h1 class="login-brand">GYST</h1>
+      <p class="login-sub">Sign in to continue</p>
+
+      {{if .Error}}
+        <p class="login-error" role="alert">{{.Error}}</p>
+      {{end}}
+
+      <label class="login-label" for="password">Password</label>
+      <input
+        class="login-input"
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        required
+        autofocus
+        {{if .Error}}aria-describedby="login-error"{{end}}>
+
+      {{if .Next}}<input type="hidden" name="next" value="{{.Next}}">{{end}}
+
+      <button class="login-submit" type="submit">Sign in</button>
+    </form>
+  </main>
+</body>
+</html>

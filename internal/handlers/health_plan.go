@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -133,18 +132,10 @@ func (h *Handler) healthPlan(w http.ResponseWriter, r *http.Request) {
 	}
 	data := healthPlanData{Page: "health", Saved: r.URL.Query().Get("saved") == "1"}
 	if r.Method == http.MethodPost {
-		// This form follows the private app's existing access model. Reject browser
-		// cross-site writes without exposing the API bearer token to the browser.
-		if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
-			http.Error(w, "cross-site submission rejected", 403)
+		// Kept alongside the middleware guard, not replaced by it: this handler
+		// is also exercised directly, and the check is cheap.
+		if requireSameOrigin(w, r) {
 			return
-		}
-		if origin := r.Header.Get("Origin"); origin != "" {
-			u, err := url.Parse(origin)
-			if err != nil || u.Host != r.Host || (u.Scheme != "http" && u.Scheme != "https") {
-				http.Error(w, "cross-site submission rejected", 403)
-				return
-			}
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
 		if err := r.ParseForm(); err != nil {

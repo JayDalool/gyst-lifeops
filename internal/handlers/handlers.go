@@ -29,6 +29,11 @@ type Handler struct {
 	// unaffected. Enable in local/dev via ALLOW_PUBLIC_CALENDAR_FEEDS=true.
 	AllowPublicFeeds bool
 	HealthSyncToken  string // Server-only Health API secret; never rendered.
+	// Auth holds the password hash used to sign in. Never rendered or logged.
+	Auth services.AuthConfig
+	// AuthDisabled is an emergency escape hatch for a lockout. It serves every
+	// route unauthenticated and logs loudly on each request; never leave it on.
+	AuthDisabled bool
 }
 
 type TodayData struct {
@@ -282,6 +287,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.reminders(w, r)
 	case "analytics":
 		h.analytics(w, r)
+	case "login":
+		h.login(w, r)
+	case "logout":
+		h.logout(w, r)
 	case "health":
 		if len(segments) == 1 {
 			h.health(w, r)

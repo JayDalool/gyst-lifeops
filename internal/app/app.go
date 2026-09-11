@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"path/filepath"
 
@@ -23,6 +24,10 @@ type Config struct {
 	// false (production-safe); tokenized feeds are always available.
 	AllowPublicFeeds bool
 	HealthSyncToken  string
+	// PasswordHash authenticates the web UI. Empty means nobody can sign in.
+	PasswordHash string
+	// AuthDisabled bypasses session enforcement entirely. Emergency use only.
+	AuthDisabled bool
 }
 
 type App struct {
@@ -63,6 +68,19 @@ func New(config Config) (*App, error) {
 	webHandler := handlers.New(service, config.TemplateDir)
 	webHandler.AllowPublicFeeds = config.AllowPublicFeeds
 	webHandler.HealthSyncToken = config.HealthSyncToken
+	webHandler.Auth = services.AuthConfig{PasswordHash: config.PasswordHash}
+	webHandler.AuthDisabled = config.AuthDisabled
+
+	if config.AuthDisabled {
+		log.Println("=======================================================")
+		log.Println("SECURITY: GYST_AUTH_DISABLED is set.")
+		log.Println("Every route is served without authentication.")
+		log.Println("Unset it as soon as you can sign in again.")
+		log.Println("=======================================================")
+	} else if config.PasswordHash == "" {
+		log.Println("SECURITY: GYST_PASSWORD_HASH is not set; nobody can sign in.")
+		log.Println("Generate one with: go run ./cmd/passwordhash")
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(config.StaticDir))))
@@ -83,7 +101,10 @@ func New(config Config) (*App, error) {
 		w.Header().Set("Cache-Control", "public, max-age=86400")
 		http.ServeFile(w, r, faviconPath)
 	})
-	mux.Handle("/", webHandler)
+	// Everything the mux has not already claimed goes through session
+	// enforcement. Static assets, the manifest, the service worker and the
+	// favicon are matched above and so stay reachable while signed out.
+	mux.Handle("/", webHandler.Authenticated())
 
 	return &App{DB: database, Handler: mux, cancel: cancelPush}, nil
 }
