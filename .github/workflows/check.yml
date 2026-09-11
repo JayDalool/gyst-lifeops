@@ -1,0 +1,78 @@
+name: check
+
+# The safety gate. GYST is developed across parallel branches, so this is what
+# makes a branch's state legible before it is merged - the 017 migration
+# collision was caught by hand, and these checks exist so the next one is not.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go build
+        run: go build ./...
+
+      - name: go test
+        run: go test ./...
+
+      # Run separately from the plain test pass: the race detector changes
+      # scheduling and timing, so each mode can surface failures the other
+      # misses. This is the pass that matters most here, because the push
+      # scheduler already runs as a background goroutine sharing one *sql.DB
+      # and the planned Hevy sync will add another.
+      - name: go test -race
+        run: go test -race ./...
+
+      # Migrations are tracked by filename, so two branches that both claim the
+      # same numeric prefix create real ambiguity about what ran and in which
+      # order. Renaming one after it has been applied makes the migration run a
+      # second time and fail on CREATE TABLE, so the collision has to be caught
+      # before merge rather than fixed afterwards. Also covers the timestamped
+      # YYYYMMDDHHMMSS_ names new migrations are meant to use.
+      - name: migration prefixes are unique
+        run: |
+          duplicates=$(ls migrations/*.sql | xargs -n1 basename | cut -d_ -f1 | sort | uniq -d)
+          if [ -n "$duplicates" ]; then
+            echo "Two or more migrations share a prefix:"
+            echo "$duplicates"
+            echo "Give the new migration its own prefix before merging."
+            exit 1
+          fi
+
+      # The production database holds personal health data and must never be
+      # committed. .gitignore covers data/*.db today; this fails the build if
+      # one is ever added anyway, including from a path .gitignore misses.
+      - name: no database files committed
+        run: |
+          tracked=$(git ls-files '*.db' '*.db-wal' '*.db-shm')
+          if [ -n "$tracked" ]; then
+            echo "Database files are tracked in git:"
+            echo "$tracked"
+            exit 1
+          fi
