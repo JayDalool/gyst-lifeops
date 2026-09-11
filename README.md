@@ -27,32 +27,32 @@ The app applies SQL migrations on startup and loads `seeds/example.sql` only whe
 
 ## Features
 
-- Restrained, responsive command-center UI with four primary destinations: Today, Galaxy, Add, and More.
+- Restrained, responsive command-center UI with five primary destinations: Today, Projects (Galaxy), Health, Courses, and More.
 - `/` and `/today` share one prayer-first daily surface: next prayer, live countdown, five-prayer tracker, Athkar, missions, study blocks, and deadlines.
 - Prayer times are calculated locally with configurable location, method, Asr method, and signed minute adjustments.
 - Explicitly enabled open-page prayer alerts support browser notifications, an app-owned chime, or a user-supplied Athan file.
 - Installable PWA support and VAPID Web Push deliver prayer notifications when the browser is closed; mobile operating systems control the notification sound and cannot play a full Athan in the background.
 - The interactive 3D Galaxy uses stable project positions, project state/progress, and chapter moons. It includes touch controls, reduced motion, a keyboard list, and a conventional `/projects` fallback.
 - Compact manual references connect tasks, projects, and missions to Jira, GitHub, Slack, Linear, Asana, Notion, or other work systems without affecting XP.
-- More holds Courses, Monthly, Analytics, Health, Archive, All Tasks, Goals, Reminders, and Settings.
+- More holds Monthly, Analytics, Archive, All Tasks, Goals, Reminders, Settings, and project navigation shortcuts. Add and Search remain in the header.
 - Task CRUD with priority, status, due date, recurrence, reminder time, complete, skip, and archive actions.
 - AI plan import turns a strict Markdown plan into new projects, project missions, standalone tasks, or checklist items on an existing task, with a preview before writing.
 - Standalone tasks support persistent checklist items that can be completed independently from the task itself.
 - Today is generated from task recurrence rules plus per-date completion records, with reminders and overdue items surfaced beside the checklist.
 - `/projects` as card-based project progress, with detail pages for checklist execution.
 - `/goals` as card-based yearly/monthly/weekly progress, with habit-based health goals supported.
-- `/health` includes the weekly gym strip and a compact body-rhythm sparkline. The logic stays habit-based and consistency-focused.
+- `/health` includes a clearly labeled, static Health Summary preview with secondary section links and Day/Week/Month/Year presentation controls. Existing gym consistency, movement trends, health goals, and tasks remain live below it.
 - `/monthly`, `/analytics`, and `/reminders` as clean secondary views with dark-theme charts.
 - Native selects/options are explicitly themed for readable dark-mode dropdowns, with light-mode overrides.
 - Analytics charts use a lightweight custom canvas renderer, compact sparklines, and batched redraws instead of heavy chart re-creation.
 - Optional light mode toggle in Settings, stored locally in the browser.
-- Habit-based health and wellness goals only. There are no weight-loss, calorie-counting, fat-loss, or body-comparison features.
+- Health metrics are presentation samples only; nutrition, workout execution, history, and health cycles are not stored or connected.
 
 ## UI Structure
 
 - `/` and `/today` are the same daily command center.
 - `/galaxy` is the spatial project overview; `/projects` is its conventional list fallback and project detail remains checklist-based.
-- Add creates a task, project, or course from the primary navigation.
+- Add creates a task, project, or course from the header.
 - Secondary tools live under More to keep daily navigation calm.
 - `/dashboard` remains a compatibility redirect to Today.
 

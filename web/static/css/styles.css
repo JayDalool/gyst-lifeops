@@ -4962,3 +4962,81 @@ i.map-node-state {
   :root .completion-actions button, :root .completion-actions a { min-height: 46px; }
   :root .completion-affirmation { font-size: 11px; }
 }
+
+/* Milestone 1: mobile shell and presentation-only Health dashboard. */
+:root .shell-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+:root .nav-icon { display: none; }
+:root .nav-inner { max-width: 1200px; gap: 16px; }
+:root .nav-inner .brand span { display: none; }
+:root .shell-actions button, :root .shell-actions summary,
+:root .nav nav > a, :root .nav-menu summary { min-height: 44px; display: flex; align-items: center; }
+:root .shell-actions a { display: flex; align-items: center; min-height: 44px; }
+:root .health-links, :root .health-period { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--panel-strong); margin-bottom: 18px; }
+:root .health-links { overflow-x: auto; }
+:root .health-links a, :root .health-period button { flex: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; padding: 8px; border: 0; border-radius: 8px; white-space: nowrap; color: var(--muted); background: transparent; font: inherit; text-decoration: none; }
+:root .health-period button { cursor: pointer; }
+:root .health-period button[aria-pressed="true"], :root .health-links a:hover { background: var(--panel); color: var(--text); }
+:root .health-dashboard [hidden] { display: none; }
+:root .health-dashboard section { scroll-margin-top: 20px; }
+:root .health-preview { padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--muted); font-size: 13px; }
+:root .health-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+:root .health-dashboard .card { padding: 22px; margin-bottom: 16px; border-radius: 16px; min-width: 0; }
+:root .health-grid > .card { margin-bottom: 0; }
+:root .health-dashboard h2 { font-size: 18px; margin: 0 0 18px; }
+:root .health-dashboard h3 { font-size: 15px; }
+:root .health-energy-top { display: flex; align-items: center; justify-content: space-around; gap: 16px; margin: 20px 0; }
+:root .health-ring { flex-shrink: 0; width: 170px; height: 170px; border: 9px solid var(--green-text); border-right-color: var(--border); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+:root .health-ring strong, :root .health-remaining strong { font-size: 32px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+:root .health-ring span, :root .health-ring small, :root .health-remaining small { font-size: 11px; color: var(--muted); }
+:root .health-remaining { display: grid; gap: 5px; max-width: 145px; font-size: 13px; }
+:root .health-remaining strong { color: var(--green-text); }
+:root .health-metrics { padding: 14px; background: var(--panel-strong); border-radius: 10px; font-size: 13px; }
+:root .health-metrics div, :root .health-macro > div { display: flex; justify-content: space-between; gap: 12px; margin: 7px 0; }
+:root .health-metrics dd { margin: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+:root .health-macro { margin-bottom: 12px; font-size: 13px; }
+:root .health-macro span, :root .health-macro small { color: var(--muted); }
+:root .health-macro progress { display: block; width: 100%; height: 7px; border: 0; border-radius: 8px; overflow: hidden; accent-color: var(--green-text); background: var(--panel-strong); }
+:root .health-macro progress::-webkit-progress-bar { background: var(--panel-strong); }
+:root .health-macro progress::-webkit-progress-value { background: var(--green-text); border-radius: 8px; }
+:root .health-macro progress::-moz-progress-bar { background: var(--green-text); }
+:root .health-number { font-size: 26px; font-weight: 650; }
+:root .health-number small { font-size: 14px; font-weight: 400; }
+:root .health-wide { grid-column: 1 / -1; }
+:root .health-activity { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+:root .health-activity dt { color: var(--muted); font-size: 13px; }
+:root .health-activity dd { margin: 8px 0 0; font-size: 24px; font-weight: 650; }
+:root .health-activity small { font-size: 12px; }
+:root .health-chart-empty { padding: 24px; text-align: center; color: var(--quiet); border-bottom: 1px dashed var(--border); font-size: 24px; }
+:root .health-dashboard > .card, :root .health-habits { margin-top: 16px; }
+:root .health-dashboard button:disabled { opacity: .65; cursor: not-allowed; }
+@media (max-width: 1000px) and (min-width: 761px) {
+  :root .xp-track, :root .xp-count { display: none; }
+  :root .xp-hud { display: block; }
+  :root .nav-inner { gap: 8px; }
+}
+@media (max-width: 760px) {
+  :root { scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  :root .nav { margin-bottom: 24px; padding-top: env(safe-area-inset-top); }
+  :root .nav-inner { gap: 10px; padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+  :root .xp-hud { grid-template-columns: auto; }
+  :root .xp-track, :root .xp-count { display: none; }
+  :root .nav nav { position: fixed; z-index: 100; bottom: 0; left: 0; right: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; margin: 0; padding: 5px max(8px, env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); background: var(--panel); border-top: 1px solid var(--border); }
+  :root .nav nav > a, :root .nav nav > .nav-menu > summary { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 54px; padding: 4px 0; font-size: 11px; }
+  :root .nav-icon { display: block; font-size: 23px; line-height: 25px; }
+  :root .nav nav a[aria-current="page"] { color: var(--accent-text); background: var(--accent-soft); }
+  :root .nav nav .nav-menu-popover { position: fixed; top: auto; bottom: calc(70px + env(safe-area-inset-bottom)); right: max(12px, env(safe-area-inset-right)); max-height: calc(100dvh - 155px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow-y: auto; }
+  :root .nav nav .nav-menu-popover a { min-height: 44px; display: flex; align-items: center; }
+  :root .wrap { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  :root .health-grid { grid-template-columns: 1fr; }
+  :root .health-activity { grid-template-columns: repeat(2, 1fr); }
+  :root .health-dashboard .card { padding: 18px; }
+  :root .health-ring { width: 150px; height: 150px; }
+  :root body.galaxy-page .galaxy-stage { height: calc(100dvh - 70px - env(safe-area-inset-bottom)); }
+  /* A filtered/transformed header would trap its fixed bottom navigation. */
+  :root body.galaxy-page > .nav,
+  :root body.galaxy-page.galaxy-nav-hidden > .nav { transform: none; opacity: 1; pointer-events: auto; backdrop-filter: none; transition: none; }
+  :root .wrap.galaxy-main { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  :root .galaxy-nav-hidden .galaxy-hub { top: 68px; }
+}
+
+:root .health-links a:focus-visible, :root .health-period button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

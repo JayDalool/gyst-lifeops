@@ -1,13 +1,179 @@
 {{define "content"}}
 <div class="page-head">
   <div>
-    <p class="kicker">Habits</p>
+    <p class="kicker">GYST · Health</p>
     <h1 class="page-title">Health</h1>
-    <p class="page-sub">Consistency tracking &mdash; sessions, sleep, movement. Nothing medical.</p>
+    <p class="page-sub">A little more aware. A little more consistent.</p>
   </div>
   <a class="btn ghost" href="/goals/new">New health goal</a>
 </div>
-
+<nav class="health-links" aria-label="Health sections">
+  <a href="#summary">Summary</a>
+  <a href="#nutrition">Nutrition</a>
+  <a href="#training">Training</a>
+  <a href="#progress">Progress</a>
+  <a href="#plan">Plan</a>
+</nav>
+<section id="summary" class="health-dashboard" aria-label="Health summary">
+  <div class="health-period" role="group" aria-label="Summary period" hidden>
+    <button type="button" data-period="Day" aria-pressed="true">Day</button>
+    <button type="button" data-period="Week" aria-pressed="false">Week</button>
+    <button type="button" data-period="Month" aria-pressed="false">Month</button>
+    <button type="button" data-period="Year" aria-pressed="false">Year</button>
+  </div>
+  <p class="health-preview">Design preview · Sample values, not your health data. Nothing here is saved or connected.</p>
+  <div data-period-daily class="health-grid">
+    <section class="card health-energy">
+      <p class="kicker">Daily summary · Demo</p>
+      <h2>Today's energy</h2>
+      <div class="health-energy-top">
+        <div class="health-ring">
+          <strong>1,840</strong>
+          <span>kcal consumed</span>
+          <small>of 2,300 kcal target</small>
+        </div>
+        <div class="health-remaining">
+          <strong>460</strong>
+          <span>food calories remaining</span>
+          <small>Target − consumed</small>
+        </div>
+      </div>
+      <dl class="health-metrics">
+        <div>
+          <dt>Burned so far</dt>
+          <dd>2,410 kcal</dd>
+        </div>
+        <div>
+          <dt>Projected total burn</dt>
+          <dd>2,850 kcal</dd>
+        </div>
+        <div>
+          <dt>Estimated energy balance</dt>
+          <dd>−1,010 kcal</dd>
+        </div>
+        <div>
+          <dt>Configured deficit target</dt>
+          <dd>−400 kcal</dd>
+        </div>
+      </dl>
+      <p class="meta">Estimated balance = consumed − projected total burn. This estimate changes as food and activity are logged; it is separate from your food allowance.</p>
+    </section>
+    <section id="nutrition" class="card">
+      <p class="kicker">Daily nutrition · Demo</p>
+      <h2>Nutrition</h2>
+      <div class="health-macro">
+        <div>
+          <label for="macro-Calories">Calories</label>
+          <span>1,840 / 2,300 kcal</span>
+        </div>
+        <progress id="macro-Calories" value="1840" max="2300">80%</progress>
+        <small>460 kcal remaining</small>
+      </div>
+      <div class="health-macro">
+        <div>
+          <label for="macro-Protein">Protein</label>
+          <span>142 / 180 g</span>
+        </div>
+        <progress id="macro-Protein" value="142" max="180">79%</progress>
+        <small>38 g remaining</small>
+      </div>
+      <div class="health-macro">
+        <div>
+          <label for="macro-Carbohydrates">Carbohydrates</label>
+          <span>167 / 220 g</span>
+        </div>
+        <progress id="macro-Carbohydrates" value="167" max="220">76%</progress>
+        <small>53 g remaining</small>
+      </div>
+      <div class="health-macro">
+        <div>
+          <label for="macro-Fat">Fat</label>
+          <span>55 / 70 g</span>
+        </div>
+        <progress id="macro-Fat" value="55" max="70">79%</progress>
+        <small>15 g remaining</small>
+      </div>
+      <div class="health-macro">
+        <div>
+          <label for="macro-Fiber">Fiber</label>
+          <span>21 / 30 g</span>
+        </div>
+        <progress id="macro-Fiber" value="21" max="30">70%</progress>
+        <small>9 g remaining</small>
+      </div>
+    </section>
+    <section class="card">
+      <p class="kicker">Next meal · Demo</p>
+      <h2>Dinner</h2>
+      <p class="health-number">460 <small>kcal available</small></p>
+      <p class="meta">38 g protein · 53 g carbohydrates · 15 g fat remaining today.</p>
+      <button class="btn" type="button" disabled>Plan Meal</button>
+      <p class="meta">Meal planning will be available in a later milestone.</p>
+    </section>
+    <section id="training" class="card">
+      <p class="kicker">Training · Demo</p>
+      <h2>Today's planned workout</h2>
+      <p class="health-number">Upper body</p>
+      <p class="meta">~55 minutes · 6 exercises</p>
+      <button class="btn" type="button" disabled>Start Workout</button>
+      <p class="meta">Workout execution and Hevy connection are not available yet.</p>
+    </section>
+    <section class="card health-wide">
+      <p class="kicker">Movement · Demo</p>
+      <h2>Activity</h2>
+      <dl class="health-activity">
+        <div>
+          <dt>Steps</dt>
+          <dd>7,421</dd>
+        </div>
+        <div>
+          <dt>Active Energy</dt>
+          <dd>610 <small>kcal</small></dd>
+        </div>
+        <div>
+          <dt>Resting Energy</dt>
+          <dd>1,800 <small>kcal</small></dd>
+        </div>
+        <div>
+          <dt>Exercise Minutes</dt>
+          <dd>42 <small>min</small></dd>
+        </div>
+      </dl>
+    </section>
+  </div>
+  <section class="card" data-period-history hidden aria-live="polite">
+    <p class="kicker">History preview</p>
+    <h2 data-period-title></h2>
+    <p data-period-description></p>
+    <p class="meta">No historical health data is connected. Your existing consistency tracking remains below.</p>
+  </section>
+  <section id="progress" class="card">
+    <p class="kicker">Progress</p>
+    <h2>Your longer view</h2>
+    <div class="health-grid">
+      <div>
+        <h3>Weight trend</h3>
+        <div class="health-chart-empty" aria-hidden="true">— · — · —</div>
+        <p class="meta">No weight records connected.</p>
+      </div>
+      <div>
+        <h3>Strength trend</h3>
+        <div class="health-chart-empty" aria-hidden="true">— · — · —</div>
+        <p class="meta">No strength records connected.</p>
+      </div>
+    </div>
+  </section>
+  <section id="plan" class="card">
+    <p class="kicker">Plan</p>
+    <h2>Your health cycle</h2>
+    <p class="meta">A future home for 90-day cycles, nutrition targets, and training plans. No cycle is configured in this preview.</p>
+  </section>
+</section>
+<section class="health-habits" aria-label="Existing health habits">
+  <div class="section-head">
+    <h2 class="section-title">Your habits &amp; consistency</h2>
+    <span class="meta">Live app data</span>
+  </div>
 <div class="day-group page-body" aria-label="Gym week">
   <p class="group-label">This week&rsquo;s gym days &middot; <span class="num" data-mission="gym">{{.Mission.GymWeekCompletion}}%</span></p>
   <div class="gym-strip">
@@ -76,4 +242,5 @@
 {{else}}
   <p class="meta">No health tasks in the active queue.</p>
 {{end}}
+</section>
 {{end}}

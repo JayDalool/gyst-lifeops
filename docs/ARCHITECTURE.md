@@ -146,3 +146,17 @@ The data model supports a future mobile sync client. AI roadmap and quest logic
 is kept in services and repositories; a future coding-agent execution subsystem
 should remain separate from the LifeOps task/project domain and communicate
 through a provider/session boundary.
+
+## Health dashboard foundation (Milestone 1)
+
+The shared shell uses Today, Projects (linking to Galaxy), Health, Courses, and
+More. On mobile these become a persistent bottom bar with safe-area padding;
+desktop keeps header navigation. Add and command search stay in the header.
+All existing routes remain available, including project lists and roadmaps.
+
+Health is still rendered by the existing handler and repository queries for
+habits, goals, and tasks. Its new summary cards contain explicitly labeled
+static samples and empty states, with no health records or schema additions.
+`health.js` only switches presentation periods; it makes no requests and saves
+nothing. Nutrition and Training link to preview cards, Progress and Plan to
+empty-state sections. Meal and workout actions are disabled until implemented.
