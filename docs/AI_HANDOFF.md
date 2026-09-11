@@ -4,10 +4,10 @@
 **Updated by:** Claude
 **Repository:** `JayDalool/gyst-lifeops`
 **Current implementation branch:** `feature/health-hardening`
-**Current implementation HEAD:** `29adc435d63912eeea8ce5aaf3873440f9ffd469`
+**Current implementation HEAD:** `f663f3f79d18477f3cccc3fcab1c4946af30c2e1`
 **This document's branch:** `docs/ui-v3-standards` (documentation only, branched from `a1dc3da`)
 
-> **Branch state:** `docs/ui-v3-standards` has had `feature/health-hardening` merged into it, so it now contains every B1 commit through `29adc43` and the code on both branches is identical. The merge was clean — the two sides touch disjoint files (`docs/` against `internal/db/`) — and the merged tree passes `gofmt`, `go vet`, `go build` and `go test ./...`.
+> **Branch state:** `docs/ui-v3-standards` has had `feature/health-hardening` merged into it, so it now contains every commit through `f663f3f` and the code on both branches is identical. The merge was clean — the two sides touch disjoint files (`docs/` against `internal/db/`) — and the merged tree passes `gofmt`, `go vet`, `go build` and `go test ./...`.
 >
 > `feature/health-hardening` remains the implementation branch: new code goes there and is merged here, never the other way round.
 
@@ -52,8 +52,8 @@ All SHAs below were verified with `git ls-remote` on 2026-09-11. Do not invent S
 | `master` | `ae5e67403fac04978bc6ac7b8363955dc5d4cd58` | Mainline. Contains **no** Health work. |
 | `feature/health-dashboard-foundation` | `055f098eb047947b0ff588397f6cba43d5359523` | M1 — UI shell + Health dashboard foundation. |
 | `feature/health-core` | `3083fb91a9a03a684d59f0a1e370fdea8a906324` | M2 — Health Core. **Approved B1 baseline.** |
-| `feature/health-hardening` | `29adc435d63912eeea8ce5aaf3873440f9ffd469` | M2.5 hardening. Current implementation branch. |
-| `docs/ui-v3-standards` | *(this branch — re-verify with `git ls-remote`)* | Documentation branch, with `feature/health-hardening` merged in, so it contains every B1 commit through `29adc43`. A pinned SHA here would be stale the moment this file is committed. |
+| `feature/health-hardening` | `f663f3f79d18477f3cccc3fcab1c4946af30c2e1` | M2.5 hardening. Current implementation branch. |
+| `docs/ui-v3-standards` | *(this branch — re-verify with `git ls-remote`)* | Documentation branch, with `feature/health-hardening` merged in, so it contains every commit through `f663f3f`. A pinned SHA here would be stale the moment this file is committed. |
 
 ### B1 history on `feature/health-hardening`
 
@@ -62,6 +62,7 @@ All SHAs below were verified with `git ls-remote` on 2026-09-11. Do not invent S
 fb4f1ebd7ce44eb784e2c0a9f1898880db3e3cd0  B1 — fix SQLite PRAGMAs on pooled connections
 a1dc3da9600c9c36789db5b10226880eca9cff62  B1 review fix — seed integrity audit, finish file: URI support
 29adc435d63912eeea8ce5aaf3873440f9ffd469  B1 findings H1/M1/M2 — harden DSN handling, fix latent test deadlock
+f663f3f79d18477f3cccc3fcab1c4946af30c2e1  CI safety gate (B6)
 ```
 
 **Do not rewrite, squash, force-push or rebase the B1 commits.**
@@ -109,7 +110,7 @@ What was fixed:
 - WAL remains handled as **persistent database state** (set once; it lives in the database file).
 - Safe DSN construction added — filesystem paths become a percent-encoded `file:` URI, because the driver splits a DSN at the first `?` and would otherwise truncate paths containing `?`.
 - Filesystem paths with spaces, `?`, `#`, `%` and Unicode tested.
-- `:memory:` behaviour tested and preserved.
+- `:memory:` behaviour tested (later **refused** outright by M1 below — see that entry, which supersedes this line).
 - `file:` URI support fixed (directory creation is skipped for DSN forms) and covered end to end through `Open`.
 - Behavioural foreign-key enforcement tested across four simultaneous connections.
 - Seeded `PRAGMA foreign_key_check` audit added, loading `seeds/example.sql` through the production `SeedIfEmpty` path with guards so the check cannot pass vacuously.
@@ -134,6 +135,22 @@ Commit: `29adc43`. Approved by Jay and delivered as one follow-up commit.
 - **M2** — the behavioural foreign-key test now releases its four connections before the follow-up count query, removing a deadlock that would have appeared the moment any pool maximum was configured. Verified by temporarily capping the pool at four.
 
 Still open from that review (non-blocking, not scheduled): **L1** — `TestOpenAcceptsCallerSuppliedFileURI` asserts on `os.Stat("file:")` relative to the package directory, so a failing run can leave a stray entry that makes later runs fail until it is removed by hand. The same class of issue produced a stray `internal/db/:MEMORY:` file during the `29adc43` work; it was removed and the committed tests all use `t.TempDir()`.
+
+### CI safety gate — IMPLEMENTED
+
+Commit: `f663f3f79d18477f3cccc3fcab1c4946af30c2e1`. File: `.github/workflows/check.yml`.
+
+Runs on every push and pull request, in one job:
+
+`gofmt` · `go vet` · `go build` · `go test ./...` · `go test -race ./...` · migration-prefix uniqueness · no database file tracked in git
+
+The two test passes are deliberate: race instrumentation changes scheduling, so each mode can surface failures the other misses. Race matters here because the push scheduler already shares one `*sql.DB` with the request path and a Hevy sync goroutine is planned.
+
+The migration-prefix check is the one that would have caught the historical 017 collision before merge. It covers both the current `NNN_` names and the timestamped `YYYYMMDDHHMMSS_` names new migrations should use. The database-file check enforces the standing rule that the production database, which holds personal health data, is never committed.
+
+Go version comes from `go-version-file: go.mod`, so it cannot drift from the module.
+
+**First run passed: all 10 steps green in 4m12s** ([run 34642109757](https://github.com/JayDalool/gyst-lifeops/actions/runs/34642109757)). For reference when judging future timings on a cold cache: `go vet` 62s, `go build` 2s, `go test` 19s, `go test -race` 2m26s. The job cap is 15 minutes.
 
 ### UI v3 design documentation — DOCUMENTATION ONLY
 
@@ -170,7 +187,7 @@ This has **not** been done yet. It is the next task (§10).
 
 - The real deployed database has **not** been certified by `PRAGMA foreign_key_check`. Until it is, **B1 is not production-safe**, even though the code is approved.
 - No backup tooling exists in the repository. B3 (pre-migration snapshot) does not exist. Take a manual backup before any deployment.
-- **No CI exists.** There is no `.github/` directory. The safety gate is still manual.
+- ~~No CI exists.~~ **Resolved** — `.github/workflows/check.yml` runs on every push and pull request. See §3.
 - M3 must not begin before the M2.5 correctness/security gates are complete.
 - Hevy is not integrated.
 - UI v3 is **design-only** and must not be treated as implemented.
@@ -327,7 +344,7 @@ If actual repository state contradicts this, **report it rather than silently ch
 1. ~~Complete independent review of B1.~~ **Done** — PASS WITH NOTES, approved.
 2. ~~Fix B1 review findings H1, M1, M2 as one follow-up commit.~~ **Done** — `29adc43`.
 3. Run the real production `foreign_key_check` before deployment. ← *next*
-4. Add a CI safety gate (still absent).
+4. ~~Add a CI safety gate.~~ **Done** — `f663f3f`, first run green. Completed out of order; it is independent of the production audit.
 5. Continue M2.5 security/network/backup work **one commit at a time**.
 6. Complete Health provenance / timezone correctness.
 7. M3 Shortcut ingestion.
@@ -457,4 +474,12 @@ Append-only. Newest last.
                       branches hold identical code. Clean merge; disjoint files.
                       Merged tree verified: gofmt, go vet, go build, go test ./... green.
                       feature/health-hardening was not modified.
+
+2026-09-11 — Claude — Added the CI safety gate (plan item B6).
+                      Commit: f663f3f (feature/health-hardening)
+                      gofmt, go vet, go build, go test, go test -race, plus
+                      migration-prefix uniqueness and a no-database-file guard.
+                      Both guards negative-tested locally before committing.
+                      First GitHub run: all 10 steps green in 4m12s.
+                      Merged into docs/ui-v3-standards.
 ```
