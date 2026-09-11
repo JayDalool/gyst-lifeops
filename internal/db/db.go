@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -45,9 +46,64 @@ func escapeSQLiteURIPath(path string) string {
 // isDSNForm reports whether path is a DSN the caller expressed directly rather
 // than an ordinary filesystem path. ":memory:" names no file at all, and a
 // file: URI names its file through SQLite's own URI resolution, so neither can
-// be taken apart with filepath or handed to directory creation.
+// be taken apart with filepath or handed to directory creation. Such a DSN
+// still has to pass validateCallerDSN before it is used.
 func isDSNForm(path string) bool {
 	return path == ":memory:" || strings.HasPrefix(path, "file:")
+}
+
+// ErrInMemoryUnsupported rejects in-memory databases. database/sql pools
+// connections and each connection to an in-memory database gets its own
+// private, empty copy, so a table created on one connection is invisible to
+// the next. Rather than offer a form that misbehaves only once a second
+// connection appears, Open refuses it; tests use temporary files on disk.
+var ErrInMemoryUnsupported = errors.New("sqlite: in-memory databases are unsupported because each pooled connection would get a separate empty database; use a temporary file instead")
+
+// guaranteedPragmas are the connection-scoped pragmas this package applies to
+// every connection. A caller-supplied DSN may not set them itself: the driver
+// executes every _pragma it finds in lexicographic order and the last one
+// wins, so a spelling such as foreign_keys(off) sorts after foreign_keys(1)
+// and would silently disable enforcement the rest of the application relies
+// on. Refusing the DSN turns that into a startup error instead.
+var guaranteedPragmas = []string{"foreign_keys", "busy_timeout"}
+
+// validateCallerDSN checks a DSN the caller expressed directly. Ordinary
+// filesystem paths never reach it: those are percent-encoded, so they cannot
+// smuggle query parameters in.
+func validateCallerDSN(path string) error {
+	// SQLite matches these spellings case-sensitively, so mirror it exactly
+	// rather than lowercasing: ":MEMORY:" is an ordinary file named ":MEMORY:",
+	// and "mode=MEMORY" is not an access mode SQLite accepts at all.
+	if path == ":memory:" || strings.HasPrefix(path, "file::memory:") {
+		return ErrInMemoryUnsupported
+	}
+
+	query := ""
+	if index := strings.IndexRune(path, '?'); index >= 0 {
+		query = path[index+1:]
+	}
+	values, err := url.ParseQuery(query)
+	if err != nil {
+		return fmt.Errorf("sqlite: invalid DSN query %q: %w", query, err)
+	}
+	if values.Get("mode") == "memory" {
+		return ErrInMemoryUnsupported
+	}
+
+	for _, declared := range values["_pragma"] {
+		// A _pragma value looks like "foreign_keys(1)" or "foreign_keys = 1";
+		// compare only the pragma name, case-insensitively as SQLite does.
+		name := strings.ToLower(strings.TrimSpace(declared))
+		if cut := strings.IndexAny(name, "(= "); cut >= 0 {
+			name = name[:cut]
+		}
+		for _, guaranteed := range guaranteedPragmas {
+			if name == guaranteed {
+				return fmt.Errorf("sqlite: DSN must not set _pragma=%s; it is applied to every pooled connection", guaranteed)
+			}
+		}
+	}
+	return nil
 }
 
 // sqliteDSN turns a database path into a driver DSN carrying connectionPragmas.
@@ -57,14 +113,17 @@ func isDSNForm(path string) bool {
 // directly to a path would therefore silently truncate any path containing '?'.
 // Filesystem paths are converted to a percent-encoded file: URI instead, so
 // SQLite parses the query itself and decodes the path back to its exact bytes.
-// A caller that already supplied ":memory:" or its own file: URI keeps that
-// form, with the pragmas merged into whatever query it carries.
+// A caller that supplied its own file: URI keeps that form, with the pragmas
+// merged into whatever query it carries, once validateCallerDSN accepts it.
 func sqliteDSN(path string) (string, error) {
 	if path == "" {
 		return "", errors.New("sqlite: empty database path")
 	}
 
 	if isDSNForm(path) {
+		if err := validateCallerDSN(path); err != nil {
+			return "", err
+		}
 		separator := "?"
 		if strings.ContainsRune(path, '?') {
 			separator = "&"
