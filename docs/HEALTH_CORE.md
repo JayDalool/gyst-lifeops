@@ -5,6 +5,9 @@ and a server-rendered cycle form. It does not construct an Apple Shortcut or
 connect any provider. All Summary cards remain demo values; targets and received
 snapshots can be inspected through the plan form and authenticated API.
 
+Migration `018_health_core.sql` follows `017_activity_events.sql` in the combined
+migration sequence. Health SQL is unchanged by this numbering correction.
+
 ## Configuration and access
 
 Set `GYST_HEALTH_SYNC_TOKEN` to a private, randomly generated secret in the server

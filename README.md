@@ -112,7 +112,7 @@ Asr and signed per-prayer minute adjustments. Today provides a live countdown
 and explicitly enabled open-page notification/audio alerts.
 
 Database migrations are applied in filename order and currently run through
-`017_health_core.sql`.
+`018_health_core.sql`.
 
 ## HTTPS and Web Push
 

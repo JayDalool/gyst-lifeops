@@ -176,7 +176,7 @@ flowchart TD
 
 `internal/models/health.go`, `internal/repository/health.go`, and
 `internal/services/health.go` contain the Health domain. Migration
-`017_health_core.sql` only creates four tables and their indexes: `health_cycles`,
+`018_health_core.sql` only creates four tables and their indexes: `health_cycles`,
 `daily_health_snapshots`, `health_weight_entries`, and `health_sync_states`.
 It changes no existing application rows or tables and seeds no health records.
 

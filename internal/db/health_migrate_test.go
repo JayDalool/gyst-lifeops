@@ -17,7 +17,7 @@ func TestHealthMigrationPreservesExistingData(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, entry := range entries {
-		if entry.Name() != "017_health_core.sql" {
+		if entry.Name() != "018_health_core.sql" {
 			copyMigration(t, "../../migrations", dir, entry.Name())
 		}
 	}
@@ -85,7 +85,7 @@ func TestHealthMigrationPreservesExistingData(t *testing.T) {
 		return out
 	}
 	before := capture()
-	copyMigration(t, "../../migrations", dir, "017_health_core.sql")
+	copyMigration(t, "../../migrations", dir, "018_health_core.sql")
 	for i := 0; i < 2; i++ {
 		if err := Migrate(database, dir); err != nil {
 			t.Fatal(err)

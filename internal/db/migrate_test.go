@@ -33,8 +33,8 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	if err := database.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&applied); err != nil {
 		t.Fatal(err)
 	}
-	if applied != 17 {
-		t.Fatalf("applied migrations = %d, want 17", applied)
+	if applied != 18 {
+		t.Fatalf("applied migrations = %d, want 18", applied)
 	}
 	var externalLinksTable int
 	if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='external_links'`).Scan(&externalLinksTable); err != nil {
