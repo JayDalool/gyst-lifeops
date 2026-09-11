@@ -10,6 +10,9 @@ The five primary destinations are Today, Projects, Health, Courses, and More. On
 
 ## Reference documents
 
+`GYST_UI_V3_STANDARDS.md` is the canonical consolidated design reference. It is the approved high-level document and wins where it and a split document below disagree. The numbered files remain the working detail for each area.
+
+- `GYST_UI_V3_STANDARDS.md` — canonical consolidated standard: principles, tokens, components, screen specs and implementation guide in one document.
 - `01_VISUAL_SYSTEM.md` — colour, type, spacing, responsive rules, accessibility and approved libraries.
 - `02_COMPONENT_LIBRARY.md` — reusable UI components and required states.
 - `03_SCREEN_SPECS.md` — screen-by-screen reference for the whole application.
