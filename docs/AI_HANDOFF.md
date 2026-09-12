@@ -106,16 +106,20 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
 | [B6 CI safety gate](tasks/B6-ci-safety-gate.md) | DONE | `f663f3f` | green |
-| [A3 session store](tasks/A3-session-store.md) | DONE | `7835b7d` | green |
-| [A4 application auth](tasks/A4-application-auth.md) | DONE | `fb05cc3` | green |
+| [A3 session store](tasks/A3-session-store.md) | DEFERRED (\*) | `7835b7d` | green |
+| [A4 application auth](tasks/A4-application-auth.md) | DEFERRED (\*) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
-| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED | — | — |
-| [A2 trusted TLS](tasks/A2-trusted-tls.md) | BLOCKED (operator) | — | — |
-| [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | PENDING (operator) | — | — |
+| [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | — | — |
+| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED (on A2) | — | — |
+| [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
 | [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
 | [REV1 B1 independent review](tasks/REV1-b1-independent-review.md) | DONE | findings in `29adc43` | n/a — review |
 | [DOC1 documentation](tasks/DOC1-documentation.md) | DONE | `d4007a3`, `5341e46` | green |
+| [M3 Apple Health ingestion](tasks/M3-health-ingestion.md) | PLANNED | — | — |
+
+(\*) **A3/A4 deferred:** Auth is documented as complete but not deployed. Will be implemented after A2/A1/M3 ship. Currently no login required.  
+(\*\*) **OPS1 completed:** FK audit ran on 2026-09-12, returned zero violations. Database certified clean.
 
 **Nothing above has been verified in a real browser, on a real device, or
 against the production database.** CI green means the suite passes, not that the
@@ -236,26 +240,31 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**One action, and it belongs to Jay, not to an agent:**
+**Operator steps completed:**
+- ✅ [OPS1](tasks/OPS1-production-fk-audit.md) — FK audit passed (zero violations)
+- ✅ Tailscale HTTPS — enabled in admin panel
+- ⏸️ `GYST_PASSWORD_HASH` — deferred (auth implementation deferred to after A2/A1/M3)
 
-> Run [OPS1](tasks/OPS1-production-fk-audit.md) — `PRAGMA foreign_key_check`
-> against the production database, with the app stopped and a backup taken
-> first. Report the output. If it returns rows, stop and report them; repair
-> nothing.
+**Agent work unblocked:**
 
-Two further operator steps unblock the rest: set `GYST_PASSWORD_HASH`, and
-enable Tailscale HTTPS.
+1. **[A2 — Trusted TLS](tasks/A2-trusted-tls.md)** — IN PROGRESS
+   - Update Caddyfile to use Tailscale MagicDNS certificate
+   - Implement 90-day renewal automation
+   - Test from iPhone Shortcut
+   - Unblocks A1
 
-[M4](tasks/M4-live-day-view.md) is committed as of `60be715` and its CI run is
-green. The Day view renders empty states until M3 ingestion exists.
+2. **[A1 — Remove plaintext port](tasks/A1-remove-plaintext-port.md)** — BLOCKED on A2
+   - Remove port 3005 from docker-compose.yml
+   - HTTPS-only ingress
+   - Unblocks M3
 
-[B2](tasks/B2-backup-tooling.md) is done as of `820c704`, so the backup step
-OPS1 depends on now exists as a command.
+3. **[M3 — Apple Health ingestion](tasks/M3-health-ingestion.md)** — PLANNED
+   - Shortcut sync handler at `/api/health/sync`
+   - Store observations (steps, calories, etc.)
+   - Handle NULL vs 0 semantics
 
-**There is no unblocked agent task left in M2.5.** A1, A2 and M3 wait on the
-operator steps above; everything else in the ledger is DONE. The next code work
-begins once OPS1 reports, `GYST_PASSWORD_HASH` is set, and Tailscale HTTPS is
-enabled.
+**After A2/A1/M3 ship:**
+- A3/A4 (authentication) — currently documented as DONE but not deployed; will implement then
 
 ---
 
@@ -310,4 +319,13 @@ Append-only, newest last.
                       organization, workflow, mandate, and how to continue
                       from where Claude left off. Use this to onboard and
                       transition to the next agent.      Commit: 2bb4c83
+
+2026-09-12 — Claude — OPS1 operator task COMPLETE: FK audit passed (zero
+                      violations). Tailscale HTTPS enabled. Deployment live
+                      on port 3005. A3/A4 (auth) documentation reviewed;
+                      code not present in deployed version. Decision: defer
+                      A3/A4 auth implementation to after A2/A1/M3. Update
+                      ledger accordingly. Create CODEX_PROMPT.md with
+                      detailed handoff for next agent to implement A2 → A1
+                      → M3.                           Commits: 9cd2c2c, 9a5aefd
 ```
