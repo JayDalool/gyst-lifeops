@@ -1,9 +1,9 @@
 # UI-5 — Responsive Health summary
 
-- **Status:** `IN PROGRESS`
+- **Status:** `DONE`
 - **Approval:** Jay requested continuation and phone/PC sizing fixes, then identified Health as the affected screen.
-- **Implementation commit:** Pending.
-- **CI:** Pending.
+- **Implementation commit:** `a6ec19f`.
+- **CI:** [green — run 34725554881](https://github.com/JayDalool/gyst-lifeops/actions/runs/34725554881).
 
 ## Scope
 
