@@ -5103,3 +5103,10 @@ i.map-node-state {
   cursor: pointer;
 }
 .login-submit:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ---------- Health: absent data and notices ---------- */
+/* Missing observations must read as missing, never as zero. */
+.is-absent { opacity: .55; font-weight: 400; }
+.health-notice { border-left: 3px solid var(--accent, #4c8dff); }
+.health-notice.is-stale { border-left-color: var(--warning, #ff9f0a); }
+.health-notice .btn { align-self: flex-start; margin-top: 8px; }

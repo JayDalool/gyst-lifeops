@@ -228,6 +228,9 @@ type HealthData struct {
 	HealthTasks []models.Task
 	Mission     models.DailyMissionData
 	BodyRhythm  models.ChartData
+	// Today carries real observations. Absent metrics render as "No data";
+	// nothing here is projected or synthesized.
+	Today HealthTodayView
 }
 
 type ArchiveData struct {
@@ -1549,7 +1552,22 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	h.render(w, "health.html", HealthData{Page: "health", HealthGoals: healthGoals, HealthTasks: healthTasks, Mission: mission, BodyRhythm: bodyRhythm})
+	// Read through the service rather than this app's own HTTP API: an internal
+	// round-trip would buy nothing and add a second error and auth path.
+	today, err := h.Service.HealthToday()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+
+	h.render(w, "health.html", HealthData{
+		Page:        "health",
+		HealthGoals: healthGoals,
+		HealthTasks: healthTasks,
+		Mission:     mission,
+		BodyRhythm:  bodyRhythm,
+		Today:       buildHealthTodayView(today, h.Service.Now()),
+	})
 }
 
 func (h *Handler) archive(w http.ResponseWriter, r *http.Request) {

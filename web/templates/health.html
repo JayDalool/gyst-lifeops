@@ -21,124 +21,133 @@
     <button type="button" data-period="Month" aria-pressed="false">Month</button>
     <button type="button" data-period="Year" aria-pressed="false">Year</button>
   </div>
-  <p class="health-preview">Design preview · Sample values, not your health data. Nothing here is saved or connected.</p>
+  <p class="health-preview">Day shows your recorded data. Week, month and year summaries are not built yet.</p>
   <div data-period-daily class="health-grid">
+    {{if not .Today.HasCycle}}
+      <section class="card health-wide health-notice">
+        <h2>No health plan yet</h2>
+        <p class="meta">Targets come from the current 90-day cycle. Without one, intake is shown on its own and nothing can be compared against a goal.</p>
+        <a class="btn" href="/health/plan">Set up a plan</a>
+      </section>
+    {{end}}
+    {{if not .Today.HasSnapshot}}
+      <section class="card health-wide health-notice">
+        <h2>No data for {{.Today.Date}}</h2>
+        <p class="meta">Nothing has been recorded for today. Apple Health and MyFitnessPal data arrives through the GYST Health Sync Shortcut, which is not built yet.</p>
+      </section>
+    {{else if .Today.LastSyncedStale}}
+      <section class="card health-wide health-notice is-stale">
+        <h2>Data may be out of date</h2>
+        <p class="meta">Today's figures were last updated {{.Today.LastSynced}}. Values below are the last ones received, not necessarily current.</p>
+      </section>
+    {{end}}
+
     <section class="card health-energy">
-      <p class="kicker">Daily summary · Demo</p>
+      <p class="kicker">Daily summary{{if .Today.HasLastSynced}} · updated {{.Today.LastSynced}}{{end}}</p>
       <h2>Today's energy</h2>
       <div class="health-energy-top">
         <div class="health-ring">
-          <strong>1,840</strong>
-          <span>kcal consumed</span>
-          <small>of 2,300 kcal target</small>
+          {{with .Today.Calories}}
+            {{if .Consumed.Present}}<strong>{{.Consumed.Value}}</strong>{{else}}<strong class="is-absent">—</strong>{{end}}
+            <span>kcal consumed</span>
+            {{if .Target.Present}}<small>of {{.Target.Value}} kcal target</small>{{else}}<small>no target set</small>{{end}}
+          {{end}}
         </div>
         <div class="health-remaining">
-          <strong>460</strong>
-          <span>food calories remaining</span>
-          <small>Target − consumed</small>
+          {{if .Today.FoodRemaining.Present}}
+            <strong>{{.Today.FoodRemaining.Value}}</strong>
+            <span>food calories remaining</span>
+            <small>Target − consumed</small>
+          {{else if .Today.CalorieTarget.Present}}
+            <strong class="is-absent">—</strong>
+            <span>food calories remaining</span>
+            <small>Nothing logged yet · target {{.Today.CalorieTarget.Value}} kcal</small>
+          {{else}}
+            <strong class="is-absent">—</strong>
+            <span>food calories remaining</span>
+            <small>Needs a calorie target and logged intake</small>
+          {{end}}
         </div>
       </div>
       <dl class="health-metrics">
         <div>
-          <dt>Burned so far</dt>
-          <dd>2,410 kcal</dd>
+          <dt>Observed burn so far</dt>
+          <dd>{{if .Today.ObservedBurn.Present}}{{.Today.ObservedBurn.Value}} kcal{{else}}<span class="is-absent">No data</span>{{end}}</dd>
         </div>
         <div>
-          <dt>Projected total burn</dt>
-          <dd>2,850 kcal</dd>
+          <dt>Observed energy balance</dt>
+          <dd>{{if .Today.ObservedEnergy.Present}}{{.Today.ObservedEnergy.Value}} kcal{{else}}<span class="is-absent">No data</span>{{end}}</dd>
         </div>
         <div>
-          <dt>Estimated energy balance</dt>
-          <dd>−1,010 kcal</dd>
-        </div>
-        <div>
-          <dt>Configured deficit target</dt>
-          <dd>−400 kcal</dd>
+          <dt>Target energy balance</dt>
+          <dd>{{if .Today.TargetEnergy.Present}}{{.Today.TargetEnergy.Value}} kcal{{else}}<span class="is-absent">Not set</span>{{end}}</dd>
         </div>
       </dl>
-      <p class="meta">Estimated balance = consumed − projected total burn. This estimate changes as food and activity are logged; it is separate from your food allowance.</p>
+      <p class="meta">Observed balance = dietary calories − (resting + active energy). It counts only what has been measured so far today, and is a different number from the food allowance above. No end-of-day figure is projected.</p>
     </section>
+
     <section id="nutrition" class="card">
-      <p class="kicker">Daily nutrition · Demo</p>
+      <p class="kicker">Daily nutrition</p>
       <h2>Nutrition</h2>
-      <div class="health-macro">
-        <div>
-          <label for="macro-Calories">Calories</label>
-          <span>1,840 / 2,300 kcal</span>
+      {{range .Today.Macros}}
+        <div class="health-macro">
+          <div>
+            <label for="macro-{{.Label}}">{{.Label}}</label>
+            <span>
+              {{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="is-absent">—</span>{{end}}
+              {{if .Target.Present}}/ {{.Target.Value}} {{.Target.Unit}}{{end}}
+            </span>
+          </div>
+          {{if .HasBar}}
+            <progress id="macro-{{.Label}}" value="{{.Percent}}" max="100" aria-label="{{.ProgressAria}}">{{.Percent}}%</progress>
+            <small>{{.Remaining.Value}} {{.Remaining.Unit}} remaining</small>
+          {{else}}
+            <p class="meta is-absent" id="macro-{{.Label}}">{{if not .Consumed.Present}}Not logged yet{{else}}No target set{{end}}</p>
+          {{end}}
         </div>
-        <progress id="macro-Calories" value="1840" max="2300">80%</progress>
-        <small>460 kcal remaining</small>
-      </div>
-      <div class="health-macro">
-        <div>
-          <label for="macro-Protein">Protein</label>
-          <span>142 / 180 g</span>
-        </div>
-        <progress id="macro-Protein" value="142" max="180">79%</progress>
-        <small>38 g remaining</small>
-      </div>
-      <div class="health-macro">
-        <div>
-          <label for="macro-Carbohydrates">Carbohydrates</label>
-          <span>167 / 220 g</span>
-        </div>
-        <progress id="macro-Carbohydrates" value="167" max="220">76%</progress>
-        <small>53 g remaining</small>
-      </div>
-      <div class="health-macro">
-        <div>
-          <label for="macro-Fat">Fat</label>
-          <span>55 / 70 g</span>
-        </div>
-        <progress id="macro-Fat" value="55" max="70">79%</progress>
-        <small>15 g remaining</small>
-      </div>
-      <div class="health-macro">
-        <div>
-          <label for="macro-Fiber">Fiber</label>
-          <span>21 / 30 g</span>
-        </div>
-        <progress id="macro-Fiber" value="21" max="30">70%</progress>
-        <small>9 g remaining</small>
-      </div>
+      {{end}}
     </section>
+
     <section class="card">
-      <p class="kicker">Next meal · Demo</p>
-      <h2>Dinner</h2>
-      <p class="health-number">460 <small>kcal available</small></p>
-      <p class="meta">38 g protein · 53 g carbohydrates · 15 g fat remaining today.</p>
-      <button class="btn" type="button" disabled>Plan Meal</button>
-      <p class="meta">Meal planning will be available in a later milestone.</p>
+      <p class="kicker">Next meal</p>
+      <h2>Meal planning</h2>
+      <p class="meta">Recipes, food search and portion calculation are not built yet. Nothing is suggested here until they are.</p>
+      <button class="btn" type="button" disabled>Plan meal</button>
     </section>
+
     <section id="training" class="card">
-      <p class="kicker">Training · Demo</p>
-      <h2>Today's planned workout</h2>
-      <p class="health-number">Upper body</p>
-      <p class="meta">~55 minutes · 6 exercises</p>
-      <button class="btn" type="button" disabled>Start Workout</button>
-      <p class="meta">Workout execution and Hevy connection are not available yet.</p>
+      <p class="kicker">Training</p>
+      <h2>Today's workout</h2>
+      <p class="meta">Workout data will come from Hevy. That integration does not exist yet, so no workout is shown.</p>
+      <button class="btn" type="button" disabled>Start workout</button>
     </section>
+
     <section class="card health-wide">
-      <p class="kicker">Movement · Demo</p>
+      <p class="kicker">Movement</p>
       <h2>Activity</h2>
       <dl class="health-activity">
         <div>
-          <dt>Steps</dt>
-          <dd>7,421</dd>
+          <dt>Watch steps</dt>
+          <dd>{{if .Today.StepsWatch.Present}}{{.Today.StepsWatch.Value}}{{else}}<span class="is-absent">No data</span>{{end}}</dd>
         </div>
         <div>
-          <dt>Active Energy</dt>
-          <dd>610 <small>kcal</small></dd>
+          <dt>Phone steps</dt>
+          <dd>{{if .Today.StepsPhone.Present}}{{.Today.StepsPhone.Value}}{{else}}<span class="is-absent">No data</span>{{end}}</dd>
         </div>
         <div>
-          <dt>Resting Energy</dt>
-          <dd>1,800 <small>kcal</small></dd>
+          <dt>Active energy</dt>
+          <dd>{{if .Today.ActiveEnergy.Present}}{{.Today.ActiveEnergy.Value}} <small>kcal</small>{{else}}<span class="is-absent">No data</span>{{end}}</dd>
         </div>
         <div>
-          <dt>Exercise Minutes</dt>
-          <dd>42 <small>min</small></dd>
+          <dt>Resting energy</dt>
+          <dd>{{if .Today.RestingEnergy.Present}}{{.Today.RestingEnergy.Value}} <small>kcal</small>{{else}}<span class="is-absent">No data</span>{{end}}</dd>
+        </div>
+        <div>
+          <dt>Exercise minutes</dt>
+          <dd>{{if .Today.ExerciseMinutes.Present}}{{.Today.ExerciseMinutes.Value}} <small>min</small>{{else}}<span class="is-absent">No data</span>{{end}}</dd>
         </div>
       </dl>
+      <p class="meta">Watch and phone steps are recorded separately and never added together: the sources overlap, so summing them double-counts.</p>
     </section>
   </div>
   <section class="card" data-period-history hidden aria-live="polite">
@@ -167,7 +176,7 @@
     <p class="kicker">Plan</p>
     <h2>Your health cycle</h2>
     <a class="btn quiet" href="/health/plan">Manage health plan</a>
-    <p class="meta">Configure your goal period, nutrition targets, and training schedule. Summary metrics above remain demonstration values.</p>
+    <p class="meta">Configure your goal period, nutrition targets, and training schedule. Summary metrics above show real observations; anything not yet recorded reads as no data.</p>
   </section>
 </section>
 <section class="health-habits" aria-label="Existing health habits">

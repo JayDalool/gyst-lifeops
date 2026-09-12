@@ -99,7 +99,18 @@ func TestHealthFoundation(t *testing.T) {
 			t.Fatalf("health status %d", rec.Code)
 		}
 		body := rec.Body.String()
-		for _, text := range []string{"Health sections", "Summary", "Nutrition", "Training", "Progress", "Plan", "Today's energy", "food calories remaining", "Estimated energy balance", "Next meal", "Plan Meal", "Start Workout", "Activity", "Weight trend", "Strength trend", "Health goals", "Health tasks", "Gym week", "Live app data", "Sample values, not your health data", "viewport-fit=cover", "data-period=\"Year\""} {
+		// No projection is implemented, so the page must not imply one. The
+		// demo markup previously showed a "projected total burn" and an
+		// "estimated" balance derived from it.
+		// Ban the labels that presented a projection as a figure, not the word
+		// itself: the energy card explains in prose that nothing is projected,
+		// and that disclaimer is worth keeping.
+		for _, banned := range []string{"Projected total burn", "Estimated energy balance", "Projected balance"} {
+			if strings.Contains(body, banned) {
+				t.Errorf("health page shows a projection it does not compute: %q", banned)
+			}
+		}
+		for _, text := range []string{"Health sections", "Summary", "Nutrition", "Training", "Progress", "Plan", "Today's energy", "food calories remaining", "Observed energy balance", "Next meal", "Plan meal", "Start workout", "Activity", "Weight trend", "Strength trend", "Health goals", "Health tasks", "Gym week", "Live app data", "Week, month and year summaries are not built yet", "viewport-fit=cover", "data-period=\"Year\""} {
 			if !strings.Contains(body, text) {
 				t.Errorf("health missing %q", text)
 			}
