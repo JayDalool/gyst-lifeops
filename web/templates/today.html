@@ -1,117 +1,35 @@
-﻿{{define "content"}}
-<div class="page-head">
-  <div>
-    <p class="kicker">{{niceDate .Today}}</p>
-    <h1 class="page-title">Today</h1>
-    <p class="page-sub">{{len .Pending}} missions and {{len .Learning.Blocks}} study blocks left &middot; {{.Progress}}% done.</p>
-  </div>
-  <a class="btn ghost" href="/tasks/new">Add mission</a>
-</div>
-
-<div class="cols-wide page-body">
-  <div>
-    <section class="prayer-hero" data-next-prayer="{{.Prayer.NextAt}}" data-prayer-alerts data-alert-sound="{{.Prayer.Config.AlertSound}}">
-      <div>
-        <p class="group-label">Next prayer &middot; {{.Prayer.Schedule.Location}}</p>
-        <h2>{{.Prayer.Next.Prayer.Name}}</h2>
-        <p class="prayer-time num">{{.Prayer.Next.Prayer.Time}}</p>
+{{define "content"}}
+<div class="gyst-scope today-page">
+  <header class="gyst-header today-heading">
+    <div><p class="gyst-caption">{{if .Greeting}}{{.Greeting}}{{else}}Your day, at a glance{{end}}</p><h1 class="gyst-page-title">Today</h1><p class="gyst-caption">{{niceDate .Today}}</p></div>
+    <a class="gyst-button gyst-button--icon" href="/tasks/new" aria-label="Add mission">{{template "gyst.icon" "plus"}}</a>
+  </header>
+  <section class="gyst-card gyst-card--tinted today-intention" aria-label="Daily focus">
+    <span class="gyst-icon-tile">{{template "gyst.icon" "check"}}</span><div><p><strong>A focused today.</strong></p><p class="gyst-caption">Small steps build the life you want.</p></div>
+  </section>
+  <div class="today-grid">
+    <div class="gyst-stack today-main">
+    {{template "today.checklist" .}}
+      <section class="gyst-card gyst-stack today-health" aria-label="Health snapshot">
+        <header class="gyst-header"><h2 class="gyst-section-title">Health snapshot</h2><a class="today-link" href="/health">View health {{template "gyst.icon" "chevron-right"}}</a></header>
+        {{if .HealthSnapshot.Date}}<p class="gyst-caption">{{niceDate .HealthSnapshot.Date}}</p>{{end}}
+        {{template "gyst.status" .HealthSnapshot.Status}}
+        <div class="today-metrics">{{range .HealthSnapshot.Metrics}}{{template "gyst.metric" .}}{{end}}</div>
+      </section>
+      <div class="today-context">
+      <section class="gyst-card gyst-card--tinted gyst-stack" aria-label="Focus item">
+        <header class="gyst-header"><h2 class="gyst-section-title">Focus</h2>{{template "gyst.icon" "folder-heart"}}</header>
+        {{if .Pending}}{{with index .Pending 0}}<a class="today-focus-title" href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a><p class="gyst-caption">Next in your pending checklist · {{.Task.Priority}} priority</p>{{end}}{{else}}<p class="gyst-caption">No pending missions. Make room for what matters next.</p><a class="today-link" href="/tasks/new">Add a mission {{template "gyst.icon" "plus"}}</a>{{end}}
+      </section>
+      <section class="gyst-card gyst-stack" aria-label="Next reminder">
+        <header class="gyst-header"><h2 class="gyst-section-title">Next up</h2>{{template "gyst.icon" "bell"}}</header>
+        {{with .NextReminder}}<p><strong>{{.Title}}</strong></p><p class="gyst-caption">{{.ReminderTime}} · Reminder</p>{{else}}<p class="gyst-caption">No upcoming timed reminders today.</p>{{end}}
+        <a class="today-link" href="/reminders">View reminders {{template "gyst.icon" "chevron-right"}}</a>
+      </section>
       </div>
-      <div class="prayer-alert-panel">
-        <div class="prayer-countdown num" data-prayer-countdown aria-live="polite">&mdash;</div>
-        <div class="prayer-alert-actions">
-          <button class="btn sm" type="button" data-prayer-enable>Enable prayer alerts and Athan</button>
-          <button class="btn sm ghost" type="button" data-prayer-test>Test Athan</button>
-        </div>
-        <span class="meta" data-prayer-alert-state>Alerts are off in this browser.</span>
-      </div>
-    </section>
-    <audio data-prayer-audio preload="auto" {{if .Prayer.Config.AthanFile}}src="/static/audio/{{.Prayer.Config.AthanFile}}"{{end}}></audio>
-
-    <div class="day-group" aria-label="Prayer tracker">
-      <p class="group-label">Prayer &middot; <span class="num" data-mission="prayer">{{.Mission.PrayerCompletion}}%</span></p>
-      <div class="tracker-row prayer-row">
-        {{range $i, $item := .Mission.PrayerItems}}
-          <form method="post" action="/trackers/{{.Item.Key}}/toggle">
-            <input type="hidden" name="log_date" value="{{.Date}}">
-            <button class="tracker-dot status-{{.Status}}{{if eq .Item.Title $.Prayer.CurrentName}} prayer-current{{end}}" type="button" title="{{.Item.Title}}: {{.Status}}" data-prayer-name="{{.Item.Title}}" {{with index $.Prayer.Schedule.Times $i}}data-prayer-at="{{.At.Format "2006-01-02T15:04:05Z07:00"}}"{{end}}>
-              <span></span>
-              {{.Item.Title}}{{with index $.Prayer.Schedule.Times $i}} <small class="num">{{.Time}}</small>{{end}}
-            </button>
-          </form>
-        {{end}}
-      </div>
-    </div>
-
-    <div class="day-group" aria-label="Athkar tracker">
-      <p class="group-label">Athkar &middot; <span class="num" data-mission="athkar">{{.Mission.AthkarCompletion}}%</span></p>
-      <div class="tracker-row athkar-row">
-        {{range .Mission.AthkarItems}}
-          <form method="post" action="/trackers/{{.Item.Key}}/toggle">
-            <input type="hidden" name="log_date" value="{{.Date}}">
-            <button class="tracker-dot status-{{.Status}}" type="button" title="{{.Item.Title}}: {{.Status}}">
-              <span></span>
-              {{.Item.Title}}
-            </button>
-          </form>
-        {{end}}
-      </div>
-    </div>
-
-    <div class="day-group" aria-label="Today's missions">
-      <p class="group-label">Missions</p>
-      {{if or .Pending .Completed .Skipped}}
-        <ul class="tasks">
-          {{range .Pending}}
-            <li class="task" id="task-{{.Task.ID}}">
-              <form method="post" action="/tasks/{{.Task.ID}}/complete">
-                <input type="hidden" name="occurrence_date" value="{{.Date}}">
-                <input type="hidden" name="return_to" value="/today#task-{{.Task.ID}}">
-                <input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()">
-              </form>
-              <div class="task-body">
-                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
-                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}} &middot; {{.Task.Priority}}</div>
-              </div>
-              <form method="post" action="/tasks/{{.Task.ID}}/skip">
-                <input type="hidden" name="occurrence_date" value="{{.Date}}">
-                <input type="hidden" name="return_to" value="/today#task-{{.Task.ID}}">
-                <button class="btn quiet sm" type="submit">Skip</button>
-              </form>
-            </li>
-          {{end}}
-          {{range .Completed}}
-            <li class="task" id="task-{{.Task.ID}}">
-              <input type="checkbox" checked disabled aria-label="Completed: {{.Task.Title}}">
-              <div class="task-body">
-                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
-                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}}</div>
-              </div>
-              <span class="task-when num">done {{niceDateTime .CompletedAt}}</span>
-            </li>
-          {{end}}
-          {{range .Skipped}}
-            <li class="task" id="task-{{.Task.ID}}">
-              <form method="post" action="/tasks/{{.Task.ID}}/complete">
-                <input type="hidden" name="occurrence_date" value="{{.Date}}">
-                <input type="hidden" name="return_to" value="/today#task-{{.Task.ID}}">
-                <input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()">
-              </form>
-              <div class="task-body">
-                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
-                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}}</div>
-              </div>
-              <span class="task-when">skipped</span>
-            </li>
-          {{end}}
-        </ul>
-      {{else}}
-        <p class="meta">No missions in today&apos;s loop.</p>
-      {{end}}
-    </div>
-
     {{if or .Learning.Blocks .Learning.SuggestStudy}}
-      <div class="day-group" aria-label="Study blocks">
-        <p class="group-label">Study blocks</p>
+      <div class="day-group gyst-card" aria-label="Study blocks">
+        <h2 class="gyst-section-title">Study blocks</h2>
         {{if .Learning.Blocks}}
           <ul class="tasks">
             {{range .Learning.Blocks}}
@@ -119,7 +37,7 @@
                 <span class="slot-time num">{{if .StartTime}}{{.StartTime}}{{else}}&mdash;{{end}}</span>
                 <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/complete">
                   <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
-                  <input type="checkbox" aria-label="Done: {{.Title}}" onchange="this.form.requestSubmit()">
+                  <label class="today-task-check"><input type="checkbox" aria-label="Done: {{.Title}}" onchange="this.form.requestSubmit()"></label>
                 </form>
                 <div class="task-body">
                   <div class="task-title"><a href="/courses/{{.CourseID}}#block-{{.ID}}">{{.Title}}</a></div>
@@ -140,22 +58,21 @@
         {{end}}
       </div>
     {{end}}
-  </div>
-
-  <aside>
-    <section class="card">
-      <h2 class="section-title card-title">Deadlines</h2>
+    </div>
+    <aside class="gyst-stack today-side" aria-label="Daily rhythm and reminders">
+    <section class="gyst-card gyst-stack">
+      <h2 class="gyst-section-title">Reminders &amp; deadlines</h2>
       <ul class="list">
         {{range .RemindersToday}}
           <li>
-            <span class="status soon"><span class="dot"></span></span>
+            <span class="gyst-badge gyst-badge--blue">Today</span>
             <span class="grow">{{.Title}}</span>
             <span class="meta num">{{.ReminderTime}}</span>
           </li>
         {{end}}
         {{range .OverdueTasks}}
           <li>
-            <span class="status late"><span class="dot"></span></span>
+            <span class="gyst-badge gyst-badge--danger">Overdue</span>
             <span class="grow"><a href="/tasks/{{.ID}}">{{.Title}}</a></span>
             <span class="meta num">{{niceDate .DueDate}}</span>
           </li>
@@ -166,10 +83,59 @@
       </ul>
     </section>
 
-    <section class="card tight side-summary">
+    <section class="gyst-card gyst-stack">
       <p class="meta">Done today: <b class="num">{{len .Completed}}</b> &middot; skipped: <b class="num">{{len .Skipped}}</b></p>
       <p class="meta">Streak: {{.ShipStats.Streak}} days &middot; level {{.ShipStats.Level}} &middot; {{.ShipStats.TotalFuel}} XP</p>
     </section>
-  </aside>
+    <section class="prayer-hero gyst-card" data-next-prayer="{{.Prayer.NextAt}}" data-prayer-alerts data-alert-sound="{{.Prayer.Config.AlertSound}}">
+      <div>
+        <p class="group-label">Next prayer &middot; {{.Prayer.Schedule.Location}}</p>
+        <h2>{{.Prayer.Next.Prayer.Name}}</h2>
+        <p class="prayer-time num">{{.Prayer.Next.Prayer.Time}}</p>
+      </div>
+      <div class="prayer-alert-panel">
+        <div class="prayer-countdown num" data-prayer-countdown aria-live="polite">&mdash;</div>
+        <div class="prayer-alert-actions">
+          <button class="btn sm" type="button" data-prayer-enable>Enable prayer alerts and Athan</button>
+          <button class="btn sm ghost" type="button" data-prayer-test>Test Athan</button>
+        </div>
+        <span class="meta" data-prayer-alert-state>Alerts are off in this browser.</span>
+      </div>
+    </section>
+    <audio data-prayer-audio preload="auto" {{if .Prayer.Config.AthanFile}}src="/static/audio/{{.Prayer.Config.AthanFile}}"{{end}}></audio>
+
+    <div class="day-group gyst-card" aria-label="Prayer tracker">
+      <h2 class="gyst-section-title">Prayer &middot; <span class="num" data-mission="prayer">{{.Mission.PrayerCompletion}}%</span></h2>
+      <div class="tracker-row prayer-row">
+        {{range $i, $item := .Mission.PrayerItems}}
+          <form method="post" action="/trackers/{{.Item.Key}}/toggle">
+            <input type="hidden" name="log_date" value="{{.Date}}">
+            <button class="tracker-dot status-{{.Status}}{{if eq .Item.Title $.Prayer.CurrentName}} prayer-current{{end}}" type="button" title="{{.Item.Title}}: {{.Status}}" data-prayer-name="{{.Item.Title}}" {{with index $.Prayer.Schedule.Times $i}}data-prayer-at="{{.At.Format "2006-01-02T15:04:05Z07:00"}}"{{end}}>
+              <span></span>
+              <small data-tracker-status>{{if eq .Status "not_done"}}Not done{{else}}{{.Status}}{{end}}</small>
+              {{.Item.Title}}{{with index $.Prayer.Schedule.Times $i}} <small class="num">{{.Time}}</small>{{end}}
+            </button>
+          </form>
+        {{end}}
+      </div>
+    </div>
+
+    <div class="day-group gyst-card" aria-label="Athkar tracker">
+      <h2 class="gyst-section-title">Athkar &middot; <span class="num" data-mission="athkar">{{.Mission.AthkarCompletion}}%</span></h2>
+      <div class="tracker-row athkar-row">
+        {{range .Mission.AthkarItems}}
+          <form method="post" action="/trackers/{{.Item.Key}}/toggle">
+            <input type="hidden" name="log_date" value="{{.Date}}">
+            <button class="tracker-dot status-{{.Status}}" type="button" title="{{.Item.Title}}: {{.Status}}">
+              <span></span>
+              {{.Item.Title}}<small data-tracker-status>{{if eq .Status "not_done"}}Not done{{else}}{{.Status}}{{end}}</small>
+            </button>
+          </form>
+        {{end}}
+      </div>
+    </div>
+
+    </aside>
+  </div>
 </div>
 {{end}}

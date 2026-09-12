@@ -40,7 +40,7 @@ func (h *Handler) more(w http.ResponseWriter, r *http.Request) {
 	}
 	h.render(w, "more.html", moreData{Page: "more", Sections: []moreSection{
 		{Title: "Your day", Rows: []UIRow{
-			{Label: "Daily checklist", Detail: "Your tasks and routines in Today", URL: "/today", Icon: "check"},
+			{Label: "Daily checklist", Detail: "Your daily task checklist", URL: "/checklist", Icon: "check"},
 			{Label: "All tasks", URL: "/tasks", Icon: "check"},
 			{Label: "Reminders", URL: "/reminders", Icon: "bell"},
 			{Label: "Monthly", Detail: "This month’s tasks and progress", URL: "/monthly", Icon: "book-open"},

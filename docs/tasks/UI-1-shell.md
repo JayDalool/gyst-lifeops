@@ -38,4 +38,4 @@ No production database access, schema/business-logic changes or deployment.
 
 ## Next action
 
-Jay: review UI-1 on iPhone before approving UI-2 Today adoption.
+Jay approved the result and requested UI-2. See [UI-2](UI-2-today.md). Approval did not specify a physical device review.

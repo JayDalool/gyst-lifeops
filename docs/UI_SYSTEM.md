@@ -379,3 +379,29 @@ No package manager, frontend dependencies or build system was added.
 
 Verification evidence is recorded in [UI-1](tasks/UI-1-shell.md). Real-device
 Home Screen review remains Jay's next step before UI-2.
+
+## UI-2 implementation
+
+Jay approved UI-1 and requested UI-2. Today now composes UI-0 cards, headers,
+progress, metric and status components in a mobile column and bounded desktop
+main/sidebar layout. `ui-today.css` is loaded only for Today/checklist bodies;
+existing shell tokens, safe areas and 768/1024 breakpoints apply. At widths below
+375px compact paired cards stack. No new framework or page JavaScript bundle.
+
+Today previews up to four pending, two completed and two skipped tasks; the dedicated checklist renders all occurrences with identical actions.
+`today_components.html` owns the shared checklist markup for Today and
+`checklist.html`; completion/skip forms retain their actual occurrence dates
+and originating page. `today_view.go` adapts existing Health data, selects an
+existing upcoming timed reminder and supplies the checklist return path.
+`handlers.go` wires those reads/routes without modifying service calculations.
+`charts.js` keeps visible tracker status text synchronized with existing AJAX
+state and rollback. The worker cache/version list follows changed assets.
+
+No fabricated progress rings are rendered without a supported denominator.
+An entirely absent Health snapshot uses one concise empty state; present
+snapshots use compact shared metric cards with explicit missing/freshness states.
+The pending focus card does not imply a scheduled deep-work session. Existing
+prayer and Athkar controls remain below the mobile overview; on desktop they
+share the right column with deadlines and XP.
+
+See [UI-2](tasks/UI-2-today.md) for verification evidence. UI-3 awaits review.

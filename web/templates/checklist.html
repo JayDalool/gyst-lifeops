@@ -1,0 +1,6 @@
+{{define "content"}}
+<div class="gyst-scope today-page today-dedicated">
+<header class="gyst-header"><div><h1 class="gyst-page-title">Daily checklist</h1><p class="gyst-caption">{{niceDate .Today}}</p></div><a class="gyst-button gyst-button--icon" href="/tasks/new" aria-label="Add mission">{{template "gyst.icon" "plus"}}</a></header>
+{{template "today.checklist" .}}
+</div>
+{{end}}

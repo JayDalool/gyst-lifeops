@@ -14,7 +14,8 @@
   <link rel="stylesheet" href="/static/css/ui-tokens.css?v=ui-0">
   <link rel="stylesheet" href="/static/css/ui-components.css?v=ui-0">
   <link rel="stylesheet" href="/static/css/ui-shell.css?v=ui-1">
-  <script defer src="/static/js/charts.js?v=ui-1"></script>
+  {{if eq .Page "today"}}<link rel="stylesheet" href="/static/css/ui-today.css?v=ui-2">{{end}}
+  <script defer src="/static/js/charts.js?v=ui-2"></script>
 	<script defer src="/static/js/app.js?v=ui-1"></script>
 </head>
 <body class="gyst-app{{if eq .Page "galaxy"}} galaxy-page{{end}}">

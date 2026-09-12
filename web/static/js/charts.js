@@ -359,6 +359,8 @@
       button.classList.remove("status-" + name);
     });
     if (status) button.classList.add("status-" + status);
+    var statusLabel = button.querySelector("[data-tracker-status]");
+    if (statusLabel) statusLabel.textContent = status === "not_done" ? "Not done" : (status || "pending");
     var title = button.getAttribute("title");
     if (title && title.indexOf(":") !== -1) {
       button.setAttribute("title", title.slice(0, title.lastIndexOf(":") + 1) + " " + (status || ""));
