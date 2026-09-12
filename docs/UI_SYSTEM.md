@@ -1,4 +1,4 @@
-# GYST UI system — UI-1 approved
+# GYST UI system — UI-2 implemented
 
 ## Scope and visual authority
 

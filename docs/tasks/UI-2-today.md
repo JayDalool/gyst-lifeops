@@ -1,9 +1,9 @@
 # UI-2 — Today and daily checklist
 
-- **Status:** `IN PROGRESS` — implementation complete; final verification/push pending.
+- **Status:** `DONE` — implementation and automated verification complete; device review pending.
 - **Approval:** Jay approved UI-1 and requested the next task.
-- **Implementation commit(s):** Pending.
-- **CI:** Pending push.
+- **Implementation commit(s):** `3dd076d`.
+- **CI:** [Passed](https://github.com/JayDalool/gyst-lifeops/actions/runs/34671487875) — format/vet/build/unit/race, cache/theme and repository guards.
 - **Review:** Agent browser verification; physical iPhone/Home Screen review pending.
 
 ## Changes
