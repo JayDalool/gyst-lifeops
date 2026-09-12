@@ -22,6 +22,7 @@ func Run() {
 	}
 
 	addr := flag.String("addr", ":8080", "HTTP listen address")
+	passwordHashFlag := flag.Bool("passwordhash", false, "generate a bcrypt password hash")
 	dbPath := flag.String("db", "data/lifeops.db", "SQLite database path")
 	migrationsDir := flag.String("migrations", "migrations", "migrations directory")
 	seedPath := flag.String("seed-file", "seeds/example.sql", "example seed data file")
@@ -29,6 +30,12 @@ func Run() {
 	staticDir := flag.String("static", "web/static", "static assets directory")
 	loadSeed := flag.Bool("seed", true, "load example seed data when the database is empty")
 	flag.Parse()
+
+	// Check -passwordhash flag after parsing
+	if *passwordHashFlag {
+		runPasswordHashAndExit()
+		return
+	}
 
 	// Plain (unauthenticated) .ics feeds are off unless explicitly enabled, so a
 	// production deploy never exposes the schedule publicly. Tokenized feeds work
