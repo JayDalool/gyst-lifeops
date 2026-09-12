@@ -1,13 +1,189 @@
 {{define "content"}}
 <div class="page-head">
   <div>
-    <p class="kicker">Habits</p>
+    <p class="kicker">GYST · Health</p>
     <h1 class="page-title">Health</h1>
-    <p class="page-sub">Consistency tracking &mdash; sessions, sleep, movement. Nothing medical.</p>
+    <p class="page-sub">A little more aware. A little more consistent.</p>
   </div>
   <a class="btn ghost" href="/goals/new">New health goal</a>
 </div>
+<nav class="health-links" aria-label="Health sections">
+  <a href="#summary">Summary</a>
+  <a href="#nutrition">Nutrition</a>
+  <a href="#training">Training</a>
+  <a href="#progress">Progress</a>
+  <a href="/health/plan">Plan</a>
+</nav>
+<section id="summary" class="health-dashboard" aria-label="Health summary">
+  <div class="health-period" role="group" aria-label="Summary period" hidden>
+    <button type="button" data-period="Day" aria-pressed="true">Day</button>
+    <button type="button" data-period="Week" aria-pressed="false">Week</button>
+    <button type="button" data-period="Month" aria-pressed="false">Month</button>
+    <button type="button" data-period="Year" aria-pressed="false">Year</button>
+  </div>
+  <p class="health-preview">Day shows your recorded data. Week, month and year summaries are not built yet.</p>
+  <div data-period-daily class="health-grid">
+    {{if not .Today.HasCycle}}
+      <section class="card health-wide health-notice">
+        <h2>No health plan yet</h2>
+        <p class="meta">Targets come from the current 90-day cycle. Without one, intake is shown on its own and nothing can be compared against a goal.</p>
+        <a class="btn" href="/health/plan">Set up a plan</a>
+      </section>
+    {{end}}
+    {{if not .Today.HasSnapshot}}
+      <section class="card health-wide health-notice">
+        <h2>No data for {{.Today.Date}}</h2>
+        <p class="meta">Nothing has been recorded for today. Apple Health and MyFitnessPal data arrives through the GYST Health Sync Shortcut, which is not built yet.</p>
+      </section>
+    {{else if .Today.LastSyncedStale}}
+      <section class="card health-wide health-notice is-stale">
+        <h2>Data may be out of date</h2>
+        <p class="meta">Today's figures were last updated {{.Today.LastSynced}}. Values below are the last ones received, not necessarily current.</p>
+      </section>
+    {{end}}
 
+    <section class="card health-energy">
+      <p class="kicker">Daily summary{{if .Today.HasLastSynced}} · updated {{.Today.LastSynced}}{{end}}</p>
+      <h2>Today's energy</h2>
+      <div class="health-energy-top">
+        <div class="health-ring">
+          {{with .Today.Calories}}
+            {{if .Consumed.Present}}<strong>{{.Consumed.Value}}</strong>{{else}}<strong class="is-absent">—</strong>{{end}}
+            <span>kcal consumed</span>
+            {{if .Target.Present}}<small>of {{.Target.Value}} kcal target</small>{{else}}<small>no target set</small>{{end}}
+          {{end}}
+        </div>
+        <div class="health-remaining">
+          {{if .Today.FoodRemaining.Present}}
+            <strong>{{.Today.FoodRemaining.Value}}</strong>
+            <span>food calories remaining</span>
+            <small>Target − consumed</small>
+          {{else if .Today.CalorieTarget.Present}}
+            <strong class="is-absent">—</strong>
+            <span>food calories remaining</span>
+            <small>Nothing logged yet · target {{.Today.CalorieTarget.Value}} kcal</small>
+          {{else}}
+            <strong class="is-absent">—</strong>
+            <span>food calories remaining</span>
+            <small>Needs a calorie target and logged intake</small>
+          {{end}}
+        </div>
+      </div>
+      <dl class="health-metrics">
+        <div>
+          <dt>Observed burn so far</dt>
+          <dd>{{if .Today.ObservedBurn.Present}}{{.Today.ObservedBurn.Value}} kcal{{else}}<span class="is-absent">No data</span>{{end}}</dd>
+        </div>
+        <div>
+          <dt>Observed energy balance</dt>
+          <dd>{{if .Today.ObservedEnergy.Present}}{{.Today.ObservedEnergy.Value}} kcal{{else}}<span class="is-absent">No data</span>{{end}}</dd>
+        </div>
+        <div>
+          <dt>Target energy balance</dt>
+          <dd>{{if .Today.TargetEnergy.Present}}{{.Today.TargetEnergy.Value}} kcal{{else}}<span class="is-absent">Not set</span>{{end}}</dd>
+        </div>
+      </dl>
+      <p class="meta">Observed balance = dietary calories − (resting + active energy). It counts only what has been measured so far today, and is a different number from the food allowance above. No end-of-day figure is projected.</p>
+    </section>
+
+    <section id="nutrition" class="card">
+      <p class="kicker">Daily nutrition</p>
+      <h2>Nutrition</h2>
+      {{range .Today.Macros}}
+        <div class="health-macro">
+          <div>
+            <label for="macro-{{.Label}}">{{.Label}}</label>
+            <span>
+              {{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="is-absent">—</span>{{end}}
+              {{if .Target.Present}}/ {{.Target.Value}} {{.Target.Unit}}{{end}}
+            </span>
+          </div>
+          {{if .HasBar}}
+            <progress id="macro-{{.Label}}" value="{{.Percent}}" max="100" aria-label="{{.ProgressAria}}">{{.Percent}}%</progress>
+            <small>{{.Remaining.Value}} {{.Remaining.Unit}} remaining</small>
+          {{else}}
+            <p class="meta is-absent" id="macro-{{.Label}}">{{if not .Consumed.Present}}Not logged yet{{else}}No target set{{end}}</p>
+          {{end}}
+        </div>
+      {{end}}
+    </section>
+
+    <section class="card">
+      <p class="kicker">Next meal</p>
+      <h2>Meal planning</h2>
+      <p class="meta">Recipes, food search and portion calculation are not built yet. Nothing is suggested here until they are.</p>
+      <button class="btn" type="button" disabled>Plan meal</button>
+    </section>
+
+    <section id="training" class="card">
+      <p class="kicker">Training</p>
+      <h2>Today's workout</h2>
+      <p class="meta">Workout data will come from Hevy. That integration does not exist yet, so no workout is shown.</p>
+      <button class="btn" type="button" disabled>Start workout</button>
+    </section>
+
+    <section class="card health-wide">
+      <p class="kicker">Movement</p>
+      <h2>Activity</h2>
+      <dl class="health-activity">
+        <div>
+          <dt>Watch steps</dt>
+          <dd>{{if .Today.StepsWatch.Present}}{{.Today.StepsWatch.Value}}{{else}}<span class="is-absent">No data</span>{{end}}</dd>
+        </div>
+        <div>
+          <dt>Phone steps</dt>
+          <dd>{{if .Today.StepsPhone.Present}}{{.Today.StepsPhone.Value}}{{else}}<span class="is-absent">No data</span>{{end}}</dd>
+        </div>
+        <div>
+          <dt>Active energy</dt>
+          <dd>{{if .Today.ActiveEnergy.Present}}{{.Today.ActiveEnergy.Value}} <small>kcal</small>{{else}}<span class="is-absent">No data</span>{{end}}</dd>
+        </div>
+        <div>
+          <dt>Resting energy</dt>
+          <dd>{{if .Today.RestingEnergy.Present}}{{.Today.RestingEnergy.Value}} <small>kcal</small>{{else}}<span class="is-absent">No data</span>{{end}}</dd>
+        </div>
+        <div>
+          <dt>Exercise minutes</dt>
+          <dd>{{if .Today.ExerciseMinutes.Present}}{{.Today.ExerciseMinutes.Value}} <small>min</small>{{else}}<span class="is-absent">No data</span>{{end}}</dd>
+        </div>
+      </dl>
+      <p class="meta">Watch and phone steps are recorded separately and never added together: the sources overlap, so summing them double-counts.</p>
+    </section>
+  </div>
+  <section class="card" data-period-history hidden aria-live="polite">
+    <p class="kicker">History preview</p>
+    <h2 data-period-title></h2>
+    <p data-period-description></p>
+    <p class="meta">No historical health data is connected. Your existing consistency tracking remains below.</p>
+  </section>
+  <section id="progress" class="card">
+    <p class="kicker">Progress</p>
+    <h2>Your longer view</h2>
+    <div class="health-grid">
+      <div>
+        <h3>Weight trend</h3>
+        <div class="health-chart-empty" aria-hidden="true">— · — · —</div>
+        <p class="meta">No weight records connected.</p>
+      </div>
+      <div>
+        <h3>Strength trend</h3>
+        <div class="health-chart-empty" aria-hidden="true">— · — · —</div>
+        <p class="meta">No strength records connected.</p>
+      </div>
+    </div>
+  </section>
+  <section id="plan" class="card">
+    <p class="kicker">Plan</p>
+    <h2>Your health cycle</h2>
+    <a class="btn quiet" href="/health/plan">Manage health plan</a>
+    <p class="meta">Configure your goal period, nutrition targets, and training schedule. Summary metrics above show real observations; anything not yet recorded reads as no data.</p>
+  </section>
+</section>
+<section class="health-habits" aria-label="Existing health habits">
+  <div class="section-head">
+    <h2 class="section-title">Your habits &amp; consistency</h2>
+    <span class="meta">Live app data</span>
+  </div>
 <div class="day-group page-body" aria-label="Gym week">
   <p class="group-label">This week&rsquo;s gym days &middot; <span class="num" data-mission="gym">{{.Mission.GymWeekCompletion}}%</span></p>
   <div class="gym-strip">
@@ -76,4 +252,5 @@
 {{else}}
   <p class="meta">No health tasks in the active queue.</p>
 {{end}}
+</section>
 {{end}}

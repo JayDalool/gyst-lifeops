@@ -9,7 +9,20 @@ import (
 )
 
 func Run() {
+	// The subcommand is checked before any flag is defined: `lifeops backup`
+	// and `lifeops passwordhash` take their own flag sets, and the server's
+	// flags are not valid for them.
+	if backupRequested(os.Args) {
+		runBackupAndExit()
+		return
+	}
+	if passwordHashRequested(os.Args) {
+		runPasswordHashAndExit()
+		return
+	}
+
 	addr := flag.String("addr", ":8080", "HTTP listen address")
+	passwordHashFlag := flag.Bool("passwordhash", false, "generate a bcrypt password hash")
 	dbPath := flag.String("db", "data/lifeops.db", "SQLite database path")
 	migrationsDir := flag.String("migrations", "migrations", "migrations directory")
 	seedPath := flag.String("seed-file", "seeds/example.sql", "example seed data file")
@@ -17,6 +30,12 @@ func Run() {
 	staticDir := flag.String("static", "web/static", "static assets directory")
 	loadSeed := flag.Bool("seed", true, "load example seed data when the database is empty")
 	flag.Parse()
+
+	// Check -passwordhash flag after parsing
+	if *passwordHashFlag {
+		runPasswordHashAndExit()
+		return
+	}
 
 	// Plain (unauthenticated) .ics feeds are off unless explicitly enabled, so a
 	// production deploy never exposes the schedule publicly. Tokenized feeds work
@@ -31,6 +50,9 @@ func Run() {
 		StaticDir:        *staticDir,
 		LoadSeed:         *loadSeed,
 		AllowPublicFeeds: allowPublicFeeds,
+		HealthSyncToken:  os.Getenv("GYST_HEALTH_SYNC_TOKEN"),
+		PasswordHash:     os.Getenv("GYST_PASSWORD_HASH"),
+		AuthDisabled:     os.Getenv("GYST_AUTH_DISABLED") == "1",
 	})
 	if err != nil {
 		log.Fatal(err)

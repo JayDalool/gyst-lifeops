@@ -28,6 +28,12 @@ type Handler struct {
 	// default (production-safe); the tokenized /calendar/feed/{token} routes are
 	// unaffected. Enable in local/dev via ALLOW_PUBLIC_CALENDAR_FEEDS=true.
 	AllowPublicFeeds bool
+	HealthSyncToken  string // Server-only Health API secret; never rendered.
+	// Auth holds the password hash used to sign in. Never rendered or logged.
+	Auth services.AuthConfig
+	// AuthDisabled is an emergency escape hatch for a lockout. It serves every
+	// route unauthenticated and logs loudly on each request; never leave it on.
+	AuthDisabled bool
 }
 
 type TodayData struct {
@@ -222,6 +228,9 @@ type HealthData struct {
 	HealthTasks []models.Task
 	Mission     models.DailyMissionData
 	BodyRhythm  models.ChartData
+	// Today carries real observations. Absent metrics render as "No data";
+	// nothing here is projected or synthesized.
+	Today HealthTodayView
 }
 
 type ArchiveData struct {
@@ -281,8 +290,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.reminders(w, r)
 	case "analytics":
 		h.analytics(w, r)
+	case "login":
+		h.login(w, r)
+	case "logout":
+		h.logout(w, r)
 	case "health":
-		h.health(w, r)
+		if len(segments) == 1 {
+			h.health(w, r)
+		} else if len(segments) == 2 && segments[1] == "plan" {
+			h.healthPlan(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
 	case "roadmap":
 		h.roadmap(w, r, segments)
 	case "roadmaps":
@@ -304,7 +323,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "plan-import":
 		h.planImport(w, r)
 	case "api":
-		h.pushAPI(w, r, segments)
+		if len(segments) >= 2 && segments[1] == "health" {
+			h.healthAPI(w, r, segments)
+		} else {
+			h.pushAPI(w, r, segments)
+		}
 	default:
 		http.NotFound(w, r)
 	}
@@ -1529,7 +1552,22 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	h.render(w, "health.html", HealthData{Page: "health", HealthGoals: healthGoals, HealthTasks: healthTasks, Mission: mission, BodyRhythm: bodyRhythm})
+	// Read through the service rather than this app's own HTTP API: an internal
+	// round-trip would buy nothing and add a second error and auth path.
+	today, err := h.Service.HealthToday()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+
+	h.render(w, "health.html", HealthData{
+		Page:        "health",
+		HealthGoals: healthGoals,
+		HealthTasks: healthTasks,
+		Mission:     mission,
+		BodyRhythm:  bodyRhythm,
+		Today:       buildHealthTodayView(today, h.Service.Now()),
+	})
 }
 
 func (h *Handler) archive(w http.ResponseWriter, r *http.Request) {

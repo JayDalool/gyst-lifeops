@@ -3,13 +3,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>LifeOps</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 	<link rel="manifest" href="/manifest.webmanifest">
 	<meta name="theme-color" content="#080d16">
-  <link rel="stylesheet" href="/static/css/styles.css?v=design-8">
+  <link rel="stylesheet" href="/static/css/styles.css?v=health-1">
   <script defer src="/static/js/charts.js?v=polish-5"></script>
 	<script defer src="/static/js/app.js?v=5"></script>
 </head>
@@ -23,11 +23,8 @@
 		<span class="xp-track" aria-hidden="true"><i style="width: {{progressWidth (levelPct $xp.TotalStars)}}"></i></span>
 		<span class="xp-count num">{{levelPct $xp.TotalStars}}/100 XP</span>
 	  </div>
-      <nav aria-label="Primary">
+      <div class="shell-actions">
 		<button class="nav-command" type="button" data-command-open aria-keyshortcuts="Control+K Meta+K">Search <kbd>⌘K</kbd></button>
-        <a href="/" {{if eq .Page "today"}}aria-current="page"{{end}}>Today</a>
-        <a href="/galaxy" {{if or (eq .Page "projects") (eq .Page "galaxy")}}aria-current="page"{{end}}>Galaxy</a>
-
         <details class="nav-menu">
           <summary>Add</summary>
           <div class="nav-menu-popover">
@@ -38,13 +35,20 @@
           </div>
         </details>
 
-        <details class="nav-menu" {{if or (eq .Page "courses") (eq .Page "monthly") (eq .Page "analytics") (eq .Page "health") (eq .Page "archive") (eq .Page "tasks") (eq .Page "goals") (eq .Page "reminders") (eq .Page "settings")}}data-active="true"{{end}}>
-          <summary>More</summary>
+      </div>
+      <nav aria-label="Primary">
+        <a href="/today" {{if eq .Page "today"}}aria-current="page"{{end}}><span class="nav-icon" aria-hidden="true">⌂</span>Today</a>
+        <a href="/galaxy" {{if or (eq .Page "projects") (eq .Page "galaxy") (eq .Page "roadmap")}}aria-current="page"{{end}}><span class="nav-icon" aria-hidden="true">◇</span>Projects</a>
+        <a href="/health" {{if eq .Page "health"}}aria-current="page"{{end}}><span class="nav-icon" aria-hidden="true">♡</span>Health</a>
+        <a href="/courses" {{if eq .Page "courses"}}aria-current="page"{{end}}><span class="nav-icon" aria-hidden="true">▤</span>Courses</a>
+        <details class="nav-menu" {{if or (eq .Page "monthly") (eq .Page "analytics") (eq .Page "archive") (eq .Page "tasks") (eq .Page "goals") (eq .Page "reminders") (eq .Page "settings")}}data-active="true"{{end}}>
+          <summary><span class="nav-icon" aria-hidden="true">⋯</span>More</summary>
           <div class="nav-menu-popover nav-menu-more">
-            <a href="/courses">Courses</a>
+            <a href="/galaxy">Galaxy</a>
+            <a href="/projects">Project list</a>
+            <a href="/roadmap">Roadmaps</a>
             <a href="/monthly">Monthly</a>
             <a href="/analytics">Analytics</a>
-            <a href="/health">Health</a>
             <a href="/archive">Archive</a>
             <a href="/tasks">All tasks</a>
             <a href="/goals">Goals</a>
@@ -88,6 +92,7 @@
 	  </form>
 	  <p class="command-help meta">↑↓ navigate · Enter open · type “tomorrow” or “!high” for quick capture</p>
 	</dialog>
+  {{if eq .Page "health"}}<script defer src="/static/js/health.js?v=1"></script>{{end}}
   {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=26"></script>{{end}}
 </body>
 </html>
