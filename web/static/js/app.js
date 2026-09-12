@@ -294,7 +294,7 @@
       });
     }
 
-    var navMenus = Array.prototype.slice.call(document.querySelectorAll(".nav-menu"));
+    var navMenus = Array.prototype.slice.call(document.querySelectorAll(".nav-menu, .gyst-add-menu"));
     navMenus.forEach(function (menu) {
       menu.addEventListener("toggle", function () {
         if (!menu.open) return;
@@ -310,7 +310,10 @@
     });
     document.addEventListener("keydown", function (event) {
       if (event.key !== "Escape") return;
-      navMenus.forEach(function (menu) { menu.open = false; });
+      navMenus.forEach(function (menu) {
+        if (menu.open && menu.contains(document.activeElement)) menu.querySelector("summary").focus();
+        menu.open = false;
+      });
     });
   }
 
@@ -346,13 +349,16 @@
 		if (/!low\b/i.test(title.value)) { priority.value = "low"; title.value = title.value.replace(/!low\b/ig, "").trim(); }
 		active = 0; markActive(0);
 	  }
-	  function open() {
+	  var commandTrigger;
+	  function open(event) {
+        commandTrigger = event && event.currentTarget ? event.currentTarget : document.activeElement;
 		palette.querySelector("[data-command-return]").value = location.pathname + location.search + location.hash;
 		date.value = isoDate(0);
 		if (!palette.open) palette.showModal();
 		search.value = ""; title.value = ""; filter(); search.focus();
 	  }
 	  function close() { if (palette.open) palette.close(); }
+      palette.addEventListener("close", function () { if (commandTrigger && commandTrigger.isConnected) commandTrigger.focus(); });
 	  document.querySelectorAll("[data-command-open]").forEach(function (button) { button.addEventListener("click", open); });
 	  palette.querySelector("[data-command-close]").addEventListener("click", close);
 	  search.addEventListener("input", filter);
@@ -366,6 +372,7 @@
 		}
 	  });
 	  document.addEventListener("keydown", function (event) {
+		if (event.key === "Escape" && palette.open) { event.preventDefault(); close(); return; }
 		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); palette.open ? close() : open(); }
 	  });
 	  palette.addEventListener("click", function (event) { if (event.target === palette) close(); });
@@ -432,9 +439,24 @@
 
 	if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("/service-worker.js").catch(function () {}); });
 
+  // Navigation may grow with text zoom or safe-area changes. Keep content and
+  // the Galaxy inside the actual available rectangle, without fixed pixel guesses.
+  function initShellClearance() {
+    var header = document.querySelector(".gyst-topbar");
+    var nav = document.querySelector(".gyst-primary");
+    if (!header || !nav || !("ResizeObserver" in window)) return;
+    var observer = new ResizeObserver(function () {
+      document.documentElement.style.setProperty("--gyst-header-clearance", Math.ceil(header.getBoundingClientRect().height) + "px");
+      document.documentElement.style.setProperty("--gyst-nav-clearance", Math.ceil(nav.getBoundingClientRect().height) + "px");
+    });
+    observer.observe(header);
+    observer.observe(nav);
+  }
+
   function init() {
     document.querySelectorAll("[data-map-v2]").forEach(function (m) { initMap(m); });
     initMisc();
+    initShellClearance();
 	initCommandPalette();
 	initCelebration();
   }

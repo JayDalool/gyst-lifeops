@@ -278,6 +278,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			h.galaxy(w, r)
 		}
+	case "more":
+		h.more(w, r)
 	case "monthly":
 		h.monthly(w, r)
 	case "tasks":
@@ -2072,20 +2074,22 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		filepath.Join(h.TemplateDir, "rocket_route.html"),
 		filepath.Join(h.TemplateDir, "ui_icons.html"),
 		filepath.Join(h.TemplateDir, "ui_components.html"),
+		filepath.Join(h.TemplateDir, "ui_shell.html"),
 		filepath.Join(h.TemplateDir, page),
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
-		"xpStats":      func() models.PlayerStats { return playerXP },
-		"join":         strings.Join,
-		"joinInts":     joinInts,
-		"niceDate":     niceDate,
-		"niceDateTime": niceDateTime,
-		"niceNumber":   niceNumber,
-		"greeting":     greeting,
-		"nodeState":    nodeState,
-		"levelPct":     levelPct,
-		"toNextLevel":  toNextLevel,
-		"blockLabel":   services.BlockTypeLabel,
+		"primarySection": primarySection,
+		"xpStats":        func() models.PlayerStats { return playerXP },
+		"join":           strings.Join,
+		"joinInts":       joinInts,
+		"niceDate":       niceDate,
+		"niceDateTime":   niceDateTime,
+		"niceNumber":     niceNumber,
+		"greeting":       greeting,
+		"nodeState":      nodeState,
+		"levelPct":       levelPct,
+		"toNextLevel":    toNextLevel,
+		"blockLabel":     services.BlockTypeLabel,
 		"routeDone": func(nodes []models.RouteNode) int {
 			done := 0
 			for _, node := range nodes {

@@ -2,7 +2,7 @@
 
 Baseline: `feature/health-hardening` at `5c50011`. Visual references:
 [component board](Design1.png), [screen board](<Design 2.png>).
-UI-0 is implemented as an opt-in foundation and development gallery. UI-1 onward
+UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-2 onward
 remain **not started**; all screen rows below describe future adoption.
 Existing means the current source supports the route/data, not that its new UI
 is implemented or that production contains observations.
@@ -36,7 +36,7 @@ lists additional reusable patterns. Paths marked proposed do not exist yet.
 | Notes | proposed `/notes` | Needs UI empty state; Needs backend for standalone searchable/favorited notes. Existing project/course/block notes remain in their owners | NoteCard, SearchField, EmptyState | UI-11 |
 | Calendar / schedule | `/monthly` current; proposed `/schedule` | Needs UI. Reuse TaskOccurrencesBetween and existing calendar/course scheduling services. `/calendar` is the private-feed dispatcher, not a page. Unified daily timeline needs handler wiring; workouts unavailable | CalendarEventRow, SegmentedControl, ListSection | UI-11 |
 | Global analytics | `/analytics` | Existing; Needs UI. Dashboard aggregates daily/monthly task completion, streak, project and yearly-goal charts. Study/Health adherence/life-domain comparisons and arbitrary ranges need backend | AnalyticsMetricCard, MiniLineChart, MiniBarChart | UI-12 |
-| More | proposed `/more` | Needs UI; existing destinations require no new business data. Initial route in UI-1, richer sections in UI-13 | NavigationRow, ListSection | UI-1 / UI-13 |
+| More | `/more` | Existing UI-1 grouped destination; existing destinations require no new business data. Initial route in UI-1, richer sections in UI-13 | NavigationRow, ListSection | UI-1 / UI-13 |
 | Settings | `/settings` | Existing; Needs UI. Prayer/location/timezone, calendar token feed management, appearance/motion and data paths currently shown. Reorganize without losing controls; remove private technical presentation from general profile | SettingsRow, Toggle, TextField, SelectField | UI-13 |
 | Integrations | proposed `/integrations` | Needs UI and some backend wiring. HealthSyncState service exists, no status handler; Web Push browser status exists. Apple Shortcut onboarding absent; MFP is indirect via Apple Health; Hevy absent. Existing external-link providers stay available | IntegrationStatusRow, ErrorState | UI-13 |
 | Profile | proposed `/profile` | Needs UI. PlayerStats/ship progression available; name/avatar account profile fields not exposed. Use GYST identity/real XP until profile storage exists | ProfileHeader, StatCard, NavigationRow | UI-13 |
@@ -103,7 +103,7 @@ this table groups actions rather than proposing any endpoint removal.
 |---|---|---|
 | UI-PLAN (approved) | These documents plus reference boards and status ledger | Jay reviews exact UI-0/UI-1 file lists in UI_SYSTEM.md |
 | UI-0 (implemented) | Tokens, primitives, typed inputs and development gallery | Browser checked; Jay reviews on iPhone before shell |
-| UI-1 | GYST shell, five destinations, More, safe areas and PWA asset policy | All old destinations/actions reachable; offline/auth checks |
+| UI-1 (implemented) | GYST shell, five destinations, More, safe areas and PWA asset policy | Browser/CI checks recorded in task; real-device review pending |
 | UI-2 | Today and dedicated checklist | Preserve prayer/Athkar/study/XP; no fabricated categories |
 | UI-3 | Projects list/detail | Preserve hierarchy, proof, external links, milestones and unlocks |
 | UI-4 | Mobile Galaxy | Same Three.js behavior/data; category presentation, touch and desktop review |

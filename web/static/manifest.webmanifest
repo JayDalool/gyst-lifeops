@@ -1,11 +1,18 @@
 {
-  "name": "LifeOps Mission Control",
-  "short_name": "LifeOps",
-  "description": "Local-first daily command center",
+  "name": "GYST \u2014 Plan. Track. Build. Grow.",
+  "short_name": "GYST",
+  "description": "Your personal LifeOps system",
   "start_url": "/today",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#080d16",
-  "theme_color": "#080d16",
-  "icons": [{"src":"/static/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "background_color": "#f8fafc",
+  "theme_color": "#f8fafc",
+  "icons": [
+    {
+      "src": "/static/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }

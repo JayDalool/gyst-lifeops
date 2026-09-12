@@ -1,5 +1,4 @@
 (function () {
-  var THEME_KEY = "lifeops-theme";
 
   function cssVar(name) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -489,24 +488,8 @@
     });
   }
 
-  function applyTheme(theme) {
-    if (theme === "light") document.documentElement.dataset.theme = "light";
-    else delete document.documentElement.dataset.theme;
-    scheduleDrawCharts(0);
-  }
-
   function initTheme() {
-    var stored = localStorage.getItem(THEME_KEY);
-    applyTheme(stored);
-    var toggle = document.querySelector("[data-theme-toggle]");
-    if (!toggle) return;
-    toggle.checked = stored === "light";
-    toggle.addEventListener("change", function () {
-      var next = toggle.checked ? "light" : "dark";
-      if (next === "light") localStorage.setItem(THEME_KEY, "light");
-      else localStorage.removeItem(THEME_KEY);
-      applyTheme(next);
-    });
+    document.addEventListener("gyst:themechange", function () { scheduleDrawCharts(0); });
   }
 
   // Scroll memory: a no-JS POST already returns to the acted-on item via a

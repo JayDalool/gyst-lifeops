@@ -1,71 +1,30 @@
 {{define "layout"}}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light" data-gyst-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>LifeOps</title>
+  <title>GYST · Plan. Track. Build. Grow.</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 	<link rel="manifest" href="/manifest.webmanifest">
-	<meta name="theme-color" content="#080d16">
-  <link rel="stylesheet" href="/static/css/styles.css?v=health-1">
+	<meta name="theme-color" content="#f8fafc">
+  <script src="/static/js/theme.js?v=ui-1"></script>
+  <link rel="stylesheet" href="/static/css/styles.css?v=ui-1">
   <link rel="stylesheet" href="/static/css/ui-tokens.css?v=ui-0">
   <link rel="stylesheet" href="/static/css/ui-components.css?v=ui-0">
-  <script defer src="/static/js/charts.js?v=polish-5"></script>
-	<script defer src="/static/js/app.js?v=5"></script>
+  <link rel="stylesheet" href="/static/css/ui-shell.css?v=ui-1">
+  <script defer src="/static/js/charts.js?v=ui-1"></script>
+	<script defer src="/static/js/app.js?v=ui-1"></script>
 </head>
-<body{{if eq .Page "galaxy"}} class="galaxy-page"{{end}}>
-  <header class="nav">
-    <div class="nav-inner">
-      <a class="brand" href="/">LifeOps <span>Mission Control</span></a>
-	  {{$xp := xpStats}}
-	  <div class="xp-hud" title="{{$xp.TotalStars}} total XP · {{toNextLevel $xp.TotalStars}} XP to next level" aria-label="Level {{$xp.CurrentLevel}}, {{$xp.TotalStars}} total XP, {{toNextLevel $xp.TotalStars}} XP to next level">
-		<span class="xp-level">LVL {{$xp.CurrentLevel}}</span>
-		<span class="xp-track" aria-hidden="true"><i style="width: {{progressWidth (levelPct $xp.TotalStars)}}"></i></span>
-		<span class="xp-count num">{{levelPct $xp.TotalStars}}/100 XP</span>
-	  </div>
-      <div class="shell-actions">
-		<button class="nav-command" type="button" data-command-open aria-keyshortcuts="Control+K Meta+K">Search <kbd>⌘K</kbd></button>
-        <details class="nav-menu">
-          <summary>Add</summary>
-          <div class="nav-menu-popover">
-            <a href="/tasks/new">Task</a>
-            <a href="/projects/new">Project</a>
-            <a href="/courses/new">Course</a>
-			<a href="/plan-import">Import AI plan</a>
-          </div>
-        </details>
-
-      </div>
-      <nav aria-label="Primary">
-        <a href="/today" {{if eq .Page "today"}}aria-current="page"{{end}}><span class="nav-icon" aria-hidden="true">⌂</span>Today</a>
-        <a href="/galaxy" {{if or (eq .Page "projects") (eq .Page "galaxy") (eq .Page "roadmap")}}aria-current="page"{{end}}><span class="nav-icon" aria-hidden="true">◇</span>Projects</a>
-        <a href="/health" {{if eq .Page "health"}}aria-current="page"{{end}}><span class="nav-icon" aria-hidden="true">♡</span>Health</a>
-        <a href="/courses" {{if eq .Page "courses"}}aria-current="page"{{end}}><span class="nav-icon" aria-hidden="true">▤</span>Courses</a>
-        <details class="nav-menu" {{if or (eq .Page "monthly") (eq .Page "analytics") (eq .Page "archive") (eq .Page "tasks") (eq .Page "goals") (eq .Page "reminders") (eq .Page "settings")}}data-active="true"{{end}}>
-          <summary><span class="nav-icon" aria-hidden="true">⋯</span>More</summary>
-          <div class="nav-menu-popover nav-menu-more">
-            <a href="/galaxy">Galaxy</a>
-            <a href="/projects">Project list</a>
-            <a href="/roadmap">Roadmaps</a>
-            <a href="/monthly">Monthly</a>
-            <a href="/analytics">Analytics</a>
-            <a href="/archive">Archive</a>
-            <a href="/tasks">All tasks</a>
-            <a href="/goals">Goals</a>
-            <a href="/reminders">Reminders</a>
-            <a href="/settings">Settings</a>
-          </div>
-        </details>
-      </nav>
-    </div>
-  </header>
-
-  <main class="wrap{{if eq .Page "galaxy"}} galaxy-main{{end}}">
+<body class="gyst-app{{if eq .Page "galaxy"}} galaxy-page{{end}}">
+  <a class="gyst-skip" href="#main-content">Skip to content</a>
+  {{template "gyst.shell" .}}
+  <main id="main-content" tabindex="-1" class="wrap gyst-main{{if eq .Page "galaxy"}} galaxy-main{{end}}">
     {{template "content" .}}
   </main>
-	<dialog class="command-palette" data-command-palette aria-label="Command palette">
+
+	<dialog class="command-palette gyst-command" data-command-palette aria-label="Command palette">
 	  <div class="command-search-row">
 		<input type="search" data-command-search placeholder="Search commands or type a task…" autocomplete="off" aria-label="Search commands">
 		<button type="button" class="btn sm quiet" data-command-close>Esc</button>
@@ -73,6 +32,8 @@
 	  <div class="command-results" data-command-results>
 		<a href="/today" data-command-item data-command-terms="today home daily missions"><span>Open Today</span><kbd>Home</kbd></a>
 		<a href="/galaxy" data-command-item data-command-terms="galaxy projects planets"><span>Open Galaxy</span></a>
+        <a href="/projects" data-command-item data-command-terms="projects list"><span>Open projects</span></a>
+        <a href="/more" data-command-item data-command-terms="more tools reminders analytics"><span>Open More</span></a>
 		<a href="/tasks" data-command-item data-command-terms="tasks missions all"><span>Open all tasks</span></a>
 		<a href="/projects/new" data-command-item data-command-terms="new add create project"><span>Create project</span></a>
 		<a href="/plan-import" data-command-item data-command-terms="import ai chatgpt markdown plan tasks checklist"><span>Import AI plan</span></a>

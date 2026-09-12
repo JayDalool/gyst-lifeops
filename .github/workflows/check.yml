@@ -23,6 +23,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: UI shell cache and theme checks
+        run: node scripts/check-ui-shell.cjs
+
       - name: gofmt
         run: |
           unformatted=$(gofmt -l .)

@@ -104,6 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [UI-1 shell](tasks/UI-1-shell.md) | IN PROGRESS | pending | pending |
 | [UI-0 foundation](tasks/UI-0-foundation.md) | DONE | `99f5968` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34669485151) |
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
@@ -242,10 +243,10 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Jay: review the UI-0 development gallery on iPhone before approving UI-1.**
-UI-0 was explicitly approved and now implements the opt-in foundation. See
-[UI-0](tasks/UI-0-foundation.md) for export instructions and verification evidence.
-A2 remains separate operational work; UI-1 has not started.
+**Jay: review the UI-1 app shell on iPhone before approving UI-2 Today.**
+UI-0 was reviewed and UI-1 explicitly approved. See [UI-1](tasks/UI-1-shell.md)
+for implementation and verification evidence. UI-2 has not started; A2 remains
+separate operational work.
 
 Planning baseline is `5c50011`. The earlier handoff contains contradictory
 operator/auth claims: newer prose says HTTPS/OPS1 are done, older blocker sections
@@ -326,3 +327,8 @@ No runtime changes or production access. Commit: 0145c9c. CI green: run 34668589
 2026-09-11 — Codex — Jay approved UI-0. Added the opt-in component foundation,
 Lucide subset and standalone development gallery. Chromium/WebKit review passed;
 real iPhone review pending. Commit: 99f5968; CI green: run 34669485151.
+
+2026-09-11 — Codex — Jay liked UI-0 and approved UI-1. Implemented the GYST
+shell, More, five SVG navigation links, theme ownership and private-safe offline
+behavior. Verification and commit evidence recorded in UI-1 task; no production
+deployment or data access.

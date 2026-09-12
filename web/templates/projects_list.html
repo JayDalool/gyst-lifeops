@@ -5,7 +5,7 @@
     <h1 class="page-title">Projects</h1>
     <p class="page-sub">{{if .SelectedRoadmapID}}Trips on {{.SelectedRoadmap.Name}}.{{else}}Active routes, planned destinations, and completed expeditions.{{end}}</p>
   </div>
-  <a class="btn ghost" href="/projects/new">New project</a>
+  <div class="map-head-actions"><a class="btn ghost" href="/galaxy">Galaxy</a><a class="btn ghost" href="/projects/new">New project</a></div>
 </div>
 
 {{if .Unlocked}}

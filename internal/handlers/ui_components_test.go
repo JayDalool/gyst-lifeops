@@ -86,7 +86,7 @@ func TestUIFoundationDoesNotExposeGallery(t *testing.T) {
 		}
 	}
 	body := renderBody(t, "today.html", TodayData{Page: "today", Today: "2026-09-11"})
-	if strings.Contains(body, "gyst-scope") || strings.Contains(body, "fictional fixtures") {
+	if strings.Contains(body, "fictional fixtures") {
 		t.Fatal("UI-0 opted the production page into demo markup")
 	}
 	for _, asset := range []string{"ui-tokens.css?v=ui-0", "ui-components.css?v=ui-0"} {

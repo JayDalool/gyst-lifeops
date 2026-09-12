@@ -1,4 +1,4 @@
-# GYST UI system — UI-0 approved
+# GYST UI system — UI-1 approved
 
 ## Scope and visual authority
 
@@ -342,3 +342,40 @@ has been performed. Secondary labels on the inset control background use
 UI-1 still requires Jay's review of this gallery. Its routes and shell are not
 implemented by UI-0. Service-worker changes here only align existing asset
 versions and add the foundation CSS; the cache policy change stays in UI-1.
+
+## UI-1 implementation
+
+Jay reviewed the UI-0 gallery and approved proceeding with “i like it, go ahead.”
+UI-1 adopts the five-link shell and adds GET-only `/more`. Projects links directly
+to Galaxy; More and command search also retain it. The shared shell owns no
+business calculations. Existing page bodies keep their own templates/CSS.
+
+Light is the default with a no-JS HTML fallback. `theme.js` runs before styles,
+reads `lifeops-theme` defensively and saves explicit light/dark choices. It sets
+both the old theme selector and the new component selector; charts listen for a
+theme-change event. Storage denial does not stop rendering or interactions.
+The legacy theme toggle remains functional. UI-1 does not restyle the separate
+login screen or change authentication rules.
+
+The service worker caches only public `/static/` assets. Navigations always use
+the network without the HTTP cache; offline navigation returns a neutral 503 page.
+Private pages, auth decisions, APIs, HTML responses, no-store responses and
+redirected assets are excluded. Activation removes old `lifeops-shell-*` caches,
+including previously cached personal pages, while leaving unrelated cache names
+alone. Three.js/Galaxy files load only when requested, not during shell install.
+Push handlers and `/today` PWA start URL are preserved.
+
+The command palette keeps quick capture, keyboard search and submission fields;
+Escape closes it and returns focus to its trigger. Add menu outside-click/Escape
+handling uses the existing menu behavior. Safe-area padding separates the tab bar,
+content, toasts and Galaxy stage; header and tab borders are included in clearance. A ResizeObserver measures the
+actual header/navigation sizes for enlarged text and landscape; CSS provides
+fallback dimensions when JavaScript is unavailable.
+
+Small additions to the planned file list: `projects_list.html` adds the direct
+Galaxy link; `scripts/check-ui-shell.cjs` behavior-tests cache privacy and theme
+persistence using Node built-ins, and the existing CI workflow runs that check.
+No package manager, frontend dependencies or build system was added.
+
+Verification evidence is recorded in [UI-1](tasks/UI-1-shell.md). Real-device
+Home Screen review remains Jay's next step before UI-2.

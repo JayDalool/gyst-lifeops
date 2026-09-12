@@ -37,4 +37,4 @@ are review artifacts, not production pages or committed mock data.
 
 ## Next action
 
-Jay: inspect the UI-0 gallery on iPhone before approving UI-1 shell adoption.
+Continue with the approved UI-1 shell task. Jay reviewed the gallery and approved UI-1; device type was not specified.

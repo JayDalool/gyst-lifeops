@@ -1,0 +1,9 @@
+{{define "content"}}
+<div class="gyst-scope gyst-more">
+  <header class="gyst-header"><div><h1 class="gyst-page-title">More</h1><p class="gyst-caption">Make room for what matters.</p></div></header>
+  <div class="gyst-more-grid">
+    {{range .Sections}}<section class="gyst-stack"><h2 class="gyst-section-title">{{.Title}}</h2><ul class="gyst-list">{{range .Rows}}{{template "gyst.row" .}}{{end}}</ul></section>{{end}}
+  </div>
+  <form method="post" action="/logout"><button class="gyst-button gyst-button--secondary" type="submit">Sign out</button></form>
+</div>
+{{end}}
