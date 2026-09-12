@@ -1,9 +1,9 @@
 # UI-PLAN — Reference-based design system and screen inventory
 
 - **Status:** `PENDING` — specification prepared; awaiting Jay's approval.
-- **Implementation commit(s):** This planning commit; SHA recorded in the next evidence update.
+- **Implementation commit(s):** `0145c9c` (specifications and reference boards).
 - **Review status:** Source and both supplied boards inspected. No browser/iPhone review.
-- **CI:** Pending push. Local gofmt, vet, build, unit and race checks passed in Go 1.25 Docker; specification links and reference image integrity checked.
+- **CI:** [Green for 0145c9c](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837). Local gofmt, vet, build, unit and race checks passed in Go 1.25 Docker; specification links and reference image integrity checked.
 
 ## Scope
 

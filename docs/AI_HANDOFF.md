@@ -103,7 +103,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
-| [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | PENDING (approval) | planning commit; evidence update follows | pending |
+| [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | PENDING (approval) | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
 | [B6 CI safety gate](tasks/B6-ci-safety-gate.md) | DONE | `f663f3f` | green |
@@ -319,4 +319,4 @@ Append-only, newest last.
 2026-09-11 — Codex — Inspected both approved design boards and implementation
 source at 5c50011. Prepared UI_SYSTEM.md and UI_SCREEN_MAP.md with exact UI-0/UI-1
 files, data gaps and preservation requirements. UI-PLAN awaits Jay's approval.
-No runtime changes or production access. Commit/CI evidence follows after push.
+No runtime changes or production access. Commit: 0145c9c. CI green: run 34668589837. Local format/vet/build/unit/race checks passed. Approval remains pending.
