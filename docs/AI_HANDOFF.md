@@ -303,4 +303,11 @@ Append-only, newest last.
                       backup silently. OPS1's procedure updated to use it.
                                              Commits: 820c704, 12fabb6
                       CI green: runs 34665946555 and 34666017378.
+
+2026-09-12 — Claude — AGENTS.md: comprehensive handoff document for the next
+                      agent (Codex). Teaches the complete project context:
+                      architecture, rules, security guardrails, file
+                      organization, workflow, mandate, and how to continue
+                      from where Claude left off. Use this to onboard and
+                      transition to the next agent.      Commit: 2bb4c83
 ```
