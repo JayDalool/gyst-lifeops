@@ -103,6 +103,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
+| [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | PENDING (approval) | planning commit; evidence update follows | pending |
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
 | [B6 CI safety gate](tasks/B6-ci-safety-gate.md) | DONE | `f663f3f` | green |
@@ -240,31 +241,16 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Operator steps completed:**
-- ✅ [OPS1](tasks/OPS1-production-fk-audit.md) — FK audit passed (zero violations)
-- ✅ Tailscale HTTPS — enabled in admin panel
-- ⏸️ `GYST_PASSWORD_HASH` — deferred (auth implementation deferred to after A2/A1/M3)
+**Jay: review [UI_SYSTEM.md](UI_SYSTEM.md) and [UI_SCREEN_MAP.md](UI_SCREEN_MAP.md)
+and approve UI-0's foundation scope.** This is the latest user-requested task;
+no UI implementation starts before approval. A2 remains separate operational work.
 
-**Agent work unblocked:**
-
-1. **[A2 — Trusted TLS](tasks/A2-trusted-tls.md)** — IN PROGRESS
-   - Update Caddyfile to use Tailscale MagicDNS certificate
-   - Implement 90-day renewal automation
-   - Test from iPhone Shortcut
-   - Unblocks A1
-
-2. **[A1 — Remove plaintext port](tasks/A1-remove-plaintext-port.md)** — BLOCKED on A2
-   - Remove port 3005 from docker-compose.yml
-   - HTTPS-only ingress
-   - Unblocks M3
-
-3. **[M3 — Apple Health ingestion](tasks/M3-health-ingestion.md)** — PLANNED
-   - Shortcut sync handler at `/api/health/sync`
-   - Store observations (steps, calories, etc.)
-   - Handle NULL vs 0 semantics
-
-**After A2/A1/M3 ship:**
-- A3/A4 (authentication) — currently documented as DONE but not deployed; will implement then
+Planning baseline is `5c50011`. The earlier handoff contains contradictory
+operator/auth claims: newer prose says HTTPS/OPS1 are done, older blocker sections
+say otherwise, and auth code exists despite being called unimplemented. These
+historical claims have not been reverified in this planning task. Consult the
+screen map's discrepancy notes before resuming A2; do not redeploy or reimplement
+auth based only on the stale prose.
 
 ---
 
@@ -329,3 +315,8 @@ Append-only, newest last.
                       detailed handoff for next agent to implement A2 → A1
                       → M3.                           Commits: 9cd2c2c, 9a5aefd
 ```
+
+2026-09-11 — Codex — Inspected both approved design boards and implementation
+source at 5c50011. Prepared UI_SYSTEM.md and UI_SCREEN_MAP.md with exact UI-0/UI-1
+files, data gaps and preservation requirements. UI-PLAN awaits Jay's approval.
+No runtime changes or production access. Commit/CI evidence follows after push.

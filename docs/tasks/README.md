@@ -39,6 +39,7 @@ go test -race, migration-prefix uniqueness, no-database-file-committed.
 
 | Task | Status |
 |---|---|
+| [UI-PLAN — UI design system and screen map](UI-PLAN-design-system.md) | PENDING (approval) |
 | [B1 — SQLite PRAGMA correctness](B1-sqlite-pragma-correctness.md) | DONE |
 | [B1-FIX — B1 review fixes](B1-FIX-review-fixes.md) | DONE |
 | [B6 — CI safety gate](B6-ci-safety-gate.md) | DONE |
