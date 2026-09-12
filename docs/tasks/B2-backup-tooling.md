@@ -5,9 +5,11 @@
 - **Status:** `DONE`
 - **Owner:** Claude
 - **Implementation commit(s):** `820c704`
-- **Review status:** CI — see the run for `820c704`. Human or independent-agent
-  review: **UNKNOWN**. Exercised end-to-end against a live server in a scratch
-  directory; **never run against the production database** by an agent.
+- **Review status:** CI green —
+  [run 34665946555](https://github.com/JayDalool/gyst-lifeops/actions/runs/34665946555).
+  Human or independent-agent review: **UNKNOWN**. Exercised end-to-end against a
+  live server in a scratch directory; **never run against the production
+  database** by an agent.
 
 ## Why it was needed
 
@@ -68,8 +70,10 @@ verified against the production schema shape rather than a toy one.
 - the source cannot be its own destination
 - a missing source fails and is **not created**
 - a DSN source is rejected
-- an unwritable destination directory leaves no partial file (skipped when the
-  test runs as root, where permission bits are not enforced)
+- an unwritable destination directory leaves no partial file. This one skips
+  when the test runs as root, where permission bits are not enforced — which is
+  the case in this container but **not** in CI: the runner's workspace is
+  `/home/runner/work/...`, so the job runs unprivileged and the test executes
 - a file that is not a database fails verification
 - `DefaultBackupPath` is UTC, sortable, and beside the database
 
@@ -81,7 +85,7 @@ verified against the production schema shape rather than a toy one.
 - [x] Copy verified with `integrity_check` before success is reported
 - [x] Tests cover the concurrent-write case
 - [x] gofmt, go vet, go build, go test, go test -race pass
-- [ ] CI green — check the run for `820c704`
+- [x] CI green — [run 34665946555](https://github.com/JayDalool/gyst-lifeops/actions/runs/34665946555)
 - [x] Documented so Jay can run it before OPS1
 
 ## Observed while building this, not fixed

@@ -4,7 +4,7 @@
 **Updated by:** Claude
 **Repository:** `JayDalool/gyst-lifeops`
 **Implementation branch:** `feature/health-hardening`
-**Implementation HEAD at time of writing:** `820c704` (see the log below)
+**Implementation HEAD at time of writing:** `12fabb6` (see the log below)
 
 Read this at the start of every session, then read the task ledger. **Git is the
 source of truth.** If this file disagrees with the repository, the repository
@@ -73,7 +73,7 @@ Verified with `git ls-remote` on 2026-09-12.
 | `master` | `ae5e674` | Mainline. Contains **no** Health work. |
 | `feature/health-dashboard-foundation` | `055f098` | M1 — UI shell. |
 | `feature/health-core` | `3083fb9` | M2 — Health Core. B1 baseline. |
-| `feature/health-hardening` | `820c704` | **Current implementation branch.** |
+| `feature/health-hardening` | `12fabb6` | **Current implementation branch.** |
 | `docs/ui-v3-standards` | `b7f4492` | UI v3 design reference. Carries a superseded copy of this file. |
 
 ```
@@ -90,6 +90,7 @@ d4007a3  docs — task ledger and handoff moved onto this branch
 5341e46  docs — ledger corrected after M4 was committed
 ccec84a  docs — working rules, REV1/DOC1/B2 task files, M4 CI result
 820c704  B2 — lifeops backup, using VACUUM INTO
+12fabb6  docs — B2 recorded; cp-based backup advice replaced
 ```
 
 **Do not rewrite, squash, force-push or rebase these commits.**
@@ -111,7 +112,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED | — | — |
 | [A2 trusted TLS](tasks/A2-trusted-tls.md) | BLOCKED (operator) | — | — |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | PENDING (operator) | — | — |
-| [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | see run |
+| [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
 | [REV1 B1 independent review](tasks/REV1-b1-independent-review.md) | DONE | findings in `29adc43` | n/a — review |
 | [DOC1 documentation](tasks/DOC1-documentation.md) | DONE | `d4007a3`, `5341e46` | green |
@@ -300,5 +301,6 @@ Append-only, newest last.
                       live database whose main file was 4 KB while its -wal
                       held 1.28 MB, so cp would have produced a near-empty
                       backup silently. OPS1's procedure updated to use it.
-                                                           Commit: 820c704
+                                             Commits: 820c704, 12fabb6
+                      CI green: runs 34665946555 and 34666017378.
 ```

@@ -46,3 +46,11 @@ None.
 
 None. Completed out of sequence — it is independent of
 [OPS1](OPS1-production-fk-audit.md).
+
+## Observed, not fixed
+
+Every run now warns that `actions/checkout@v4` and `actions/setup-go@v5` target
+Node 20, which is deprecated; the runner forces them onto Node 24 and they work.
+It is a warning, not a failure, and bumping the action versions is a change to
+CI that deserves its own commit rather than being slipped into an unrelated one.
+Recorded so it is not rediscovered from scratch when the forcing stops.
