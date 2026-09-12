@@ -103,7 +103,8 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
-| [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | PENDING (approval) | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [UI-0 foundation](tasks/UI-0-foundation.md) | IN PROGRESS | pending commit | pending |
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
 | [B6 CI safety gate](tasks/B6-ci-safety-gate.md) | DONE | `f663f3f` | green |
@@ -241,9 +242,10 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Jay: review [UI_SYSTEM.md](UI_SYSTEM.md) and [UI_SCREEN_MAP.md](UI_SCREEN_MAP.md)
-and approve UI-0's foundation scope.** This is the latest user-requested task;
-no UI implementation starts before approval. A2 remains separate operational work.
+**Jay: review the UI-0 development gallery on iPhone before approving UI-1.**
+UI-0 was explicitly approved and now implements the opt-in foundation. See
+[UI-0](tasks/UI-0-foundation.md) for export instructions and verification evidence.
+A2 remains separate operational work; UI-1 has not started.
 
 Planning baseline is `5c50011`. The earlier handoff contains contradictory
 operator/auth claims: newer prose says HTTPS/OPS1 are done, older blocker sections
@@ -320,3 +322,7 @@ Append-only, newest last.
 source at 5c50011. Prepared UI_SYSTEM.md and UI_SCREEN_MAP.md with exact UI-0/UI-1
 files, data gaps and preservation requirements. UI-PLAN awaits Jay's approval.
 No runtime changes or production access. Commit: 0145c9c. CI green: run 34668589837. Local format/vet/build/unit/race checks passed. Approval remains pending.
+
+2026-09-11 — Codex — Jay approved UI-0. Added the opt-in component foundation,
+Lucide subset and standalone development gallery. Chromium/WebKit review passed;
+real iPhone review pending. Commit and final CI evidence follow after push.

@@ -1,6 +1,6 @@
 # UI-PLAN — Reference-based design system and screen inventory
 
-- **Status:** `PENDING` — specification prepared; awaiting Jay's approval.
+- **Status:** `DONE` — Jay approved UI-0 after reviewing the plan.
 - **Implementation commit(s):** `0145c9c` (specifications and reference boards).
 - **Review status:** Source and both supplied boards inspected. No browser/iPhone review.
 - **CI:** [Green for 0145c9c](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837). Local gofmt, vet, build, unit and race checks passed in Go 1.25 Docker; specification links and reference image integrity checked.
@@ -19,13 +19,13 @@ instruction takes precedence over the earlier A2-start instruction for this task
 - [x] Document visual tokens, reusable contracts, states, accessibility and safe areas.
 - [x] Distinguish existing data from missing backend capabilities.
 - [x] Specify concrete files and approval boundaries for UI-0 and UI-1.
-- [ ] Jay approves the plan.
+- [x] Jay approves the plan (follow-up: “yes i appove”).
 
 ## Blockers
 
-UI implementation awaits the explicit design approval requested by Jay. A2 is
+UI-0 approval received; UI-1 still requires review of the foundation. A2 is
 separate; contradictory handoff/operator status is recorded in UI_SCREEN_MAP.md.
 
 ## Next action
 
-Jay: review the two specifications and approve UI-0's foundation scope.
+Review UI-0 gallery before proceeding to UI-1.

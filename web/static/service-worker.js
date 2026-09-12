@@ -1,5 +1,5 @@
-const CACHE = "lifeops-shell-v28";
-const SHELL = ["/today", "/galaxy", "/projects", "/static/css/styles.css?v=design-5", "/static/js/app.js?v=3", "/static/js/galaxy.js?v=24", "/static/js/vendor/three.module.js", "/static/js/vendor/three.core.js", "/static/images/oliver-galaxy-pixel.png", "/static/favicon.svg"];
+const CACHE = "lifeops-shell-v29-ui-0";
+const SHELL = ["/today", "/galaxy", "/projects", "/static/css/styles.css?v=health-1", "/static/js/app.js?v=5", "/static/js/galaxy.js?v=26", "/static/js/vendor/three.module.js", "/static/js/vendor/three.core.js", "/static/images/oliver-galaxy-pixel.png", "/static/favicon.svg", "/static/css/ui-tokens.css?v=ui-0", "/static/css/ui-components.css?v=ui-0", "/static/js/charts.js?v=polish-5", "/static/js/health.js?v=1"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", event => {

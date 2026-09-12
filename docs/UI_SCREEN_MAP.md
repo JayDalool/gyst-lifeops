@@ -2,7 +2,8 @@
 
 Baseline: `feature/health-hardening` at `5c50011`. Visual references:
 [component board](Design1.png), [screen board](<Design 2.png>).
-All redesign phases below are **not started**; this task supplies specifications.
+UI-0 is implemented as an opt-in foundation and development gallery. UI-1 onward
+remain **not started**; all screen rows below describe future adoption.
 Existing means the current source supports the route/data, not that its new UI
 is implemented or that production contains observations.
 
@@ -100,8 +101,8 @@ this table groups actions rather than proposing any endpoint removal.
 
 | Phase | Reviewable outcome | Gate / limitation |
 |---|---|---|
-| UI-PLAN (this task) | These documents plus reference boards and status ledger | Jay reviews exact UI-0/UI-1 file lists in UI_SYSTEM.md |
-| UI-0 | Tokens, primitives, typed inputs and development gallery | Compare with component board; approve on iPhone before shell |
+| UI-PLAN (approved) | These documents plus reference boards and status ledger | Jay reviews exact UI-0/UI-1 file lists in UI_SYSTEM.md |
+| UI-0 (implemented) | Tokens, primitives, typed inputs and development gallery | Browser checked; Jay reviews on iPhone before shell |
 | UI-1 | GYST shell, five destinations, More, safe areas and PWA asset policy | All old destinations/actions reachable; offline/auth checks |
 | UI-2 | Today and dedicated checklist | Preserve prayer/Athkar/study/XP; no fabricated categories |
 | UI-3 | Projects list/detail | Preserve hierarchy, proof, external links, milestones and unlocks |

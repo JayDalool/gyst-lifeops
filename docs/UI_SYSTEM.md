@@ -1,10 +1,9 @@
-# GYST UI system — approval draft
+# GYST UI system — UI-0 approved
 
 ## Scope and visual authority
 
-Planning baseline: `feature/health-hardening` at `5c50011`. This document is a
-proposal, not an implemented UI. No business logic, schema, deployment or
-production data changes belong to this task. Jay approves UI-0 before it starts;
+Planning baseline: `feature/health-hardening` at `5c50011`. Jay approved UI-0 in the follow-up to the planning review. UI-0 now supplies
+the opt-in foundation; later phases remain proposals. No business logic, schema, deployment or production data changes belong to UI-0. Jay approves UI-0 before it starts;
 review the result on iPhone before approving UI-1 and subsequent phases.
 
 Primary references, in complementary roles:
@@ -46,6 +45,7 @@ are implementation proposals requiring visual review, not sampled pixel claims.
 | `--gyst-text` | `#0f172a` | Navy headings and primary text |
 | `--gyst-text-secondary` | `#6b7280` | Supporting text |
 | `--gyst-border` | `#e5e7eb` | Decorative separators |
+| `--gyst-control-text` | `#626b7a` | Muted control labels on inset backgrounds (contrast refinement) |
 | `--gyst-control-border` | `#64748b` | Identifiable input boundaries where needed |
 | `--gyst-blue` | `#2563eb` | Primary action and selected navigation |
 | `--gyst-green` | `#10b981` | Positive graphics and progress |
@@ -301,3 +301,44 @@ positions, so a GET against production is not a read-only visual inspection.
 Planning verification is source inspection plus both boards. No browser/device
 verification is claimed for this document. Approval request: approve these two
 phase boundaries and files, starting with UI-0 only.
+
+## UI-0 implementation and review
+
+UI-0 now provides namespaced CSS primitives, typed Go presentation inputs,
+shared escaped partials, and a pinned local Lucide 0.468.0 subset with license.
+Production loads the CSS and shared definitions but does not opt into
+`gyst-scope`. Existing shell, page markup and business behavior remain intact.
+Dark overrides use `data-gyst-theme="dark"` inside the new scope; the legacy
+appearance setting is unchanged until UI-1.
+
+The standalone development gallery is `web/templates/ui_gallery.html`. It is
+not included by the production renderer and has no public app route. Fixture
+values live only in `ui_gallery_test.go` and clearly marked gallery examples.
+Chart previews illustrate the contract; actual chart data wiring and reusable
+trend rendering remain with their planned screen phases. Containers, badges,
+buttons, dialogs, sheets and toast use semantic HTML plus reusable CSS. Dialog
+preview interaction is confined to the gallery; production palette adoption is UI-1.
+
+Export a self-contained HTML review artifact without starting the app or opening
+a database:
+
+```sh
+GYST_UI_GALLERY_OUT=/tmp/gyst-ui0-review go test ./internal/handlers -run TestExportUIGallery -count=1
+```
+
+The resulting `index.html` embeds CSS and SVGs and can be opened independently.
+No CDN, frontend build or runtime gallery route is required. The existing
+`render_test.go` already exercises the real shared renderer, so it needed no
+helper change. Additional isolation/escaping/presence tests live in
+`ui_components_test.go`.
+
+Browser review: Chromium and WebKit at 375, 390, 430, 768 and 1280 px passed
+horizontal overflow checks; dialog Escape/focus return, bottom-sheet dismissal,
+period selection, dark theme, 200% text and reduced motion passed. Screenshots
+were visually inspected. No real iPhone/Home Screen or software-keyboard check
+has been performed. Secondary labels on the inset control background use
+`--gyst-control-text` because the board's muted text pairing measured 4.41:1.
+
+UI-1 still requires Jay's review of this gallery. Its routes and shell are not
+implemented by UI-0. Service-worker changes here only align existing asset
+versions and add the foundation CSS; the cache policy change stays in UI-1.

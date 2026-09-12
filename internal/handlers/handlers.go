@@ -2070,6 +2070,8 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	files := []string{
 		filepath.Join(h.TemplateDir, "layout.html"),
 		filepath.Join(h.TemplateDir, "rocket_route.html"),
+		filepath.Join(h.TemplateDir, "ui_icons.html"),
+		filepath.Join(h.TemplateDir, "ui_components.html"),
 		filepath.Join(h.TemplateDir, page),
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
