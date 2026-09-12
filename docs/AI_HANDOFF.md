@@ -14,6 +14,9 @@ wins: correct the file, never rewrite history to match it.
 with commits, review status, acceptance criteria and next action. Per-task
 detail lives there; this file is the map.
 
+→ **[Working rules: `docs/RULES.md`](RULES.md)** — the rules every agent follows
+and the failure that produced each one. Read it before committing anything.
+
 ---
 
 ## Why this file moved to the implementation branch
@@ -36,8 +39,8 @@ working on the implementation branch, including Codex, could not see the handoff
 at all**, which defeats the file's entire purpose. `docs/tasks/` had never
 existed on any branch.
 
-**The rule is now inverted for these two paths:** `docs/AI_HANDOFF.md` and
-`docs/tasks/` live on the implementation branch, because that is where work
+**The rule is now inverted for these paths:** `docs/AI_HANDOFF.md`,
+`docs/tasks/` and `docs/RULES.md` live on the implementation branch, because that is where work
 happens and where an agent will look. `docs/design/v3/` remains on
 `docs/ui-v3-standards`. The copy of this file on that branch is superseded.
 
@@ -105,7 +108,10 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED | — | — |
 | [A2 trusted TLS](tasks/A2-trusted-tls.md) | BLOCKED (operator) | — | — |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | PENDING (operator) | — | — |
-| [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | pending |
+| [B2 backup tooling](tasks/B2-backup-tooling.md) | NOT STARTED | — | — |
+| [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
+| [REV1 B1 independent review](tasks/REV1-b1-independent-review.md) | DONE | findings in `29adc43` | n/a — review |
+| [DOC1 documentation](tasks/DOC1-documentation.md) | DONE | `d4007a3`, `5341e46` | green |
 
 **Nothing above has been verified in a real browser, on a real device, or
 against the production database.** CI green means the suite passes, not that the
@@ -126,8 +132,8 @@ see sync status.
 - **The production database has not been certified** by `PRAGMA
   foreign_key_check`. Until it is, B1 is not production-safe even though the code
   is done. See [OPS1](tasks/OPS1-production-fk-audit.md).
-- **No backup tooling exists** in the repository. B2 is not built. Back up by
-  hand before any deployment or migration.
+- **No backup tooling exists** in the repository. [B2](tasks/B2-backup-tooling.md)
+  is not built. Back up by hand before any deployment or migration.
 - **`GYST_PASSWORD_HASH` must be set** or nobody can sign in after A4 deploys.
 - **Tailscale HTTPS is not enabled**, which blocks A2, therefore A1, therefore M3.
 - **M3 must not begin** before the M2.5 correctness and security gates close.
@@ -188,14 +194,19 @@ calorie or macronutrient arithmetic.
 
 ## 6. Working rules for Claude and Codex
 
-**Before every task:** read this file and [`docs/tasks/`](tasks/README.md);
-verify branch and HEAD; confirm the task is not already done; check `git status`.
-Do not rely on chat history, and do not rely on an agent's internal task list —
-neither is visible to the other agent or to Jay.
+The rules live in **[`docs/RULES.md`](RULES.md)**, with the failure that
+produced each one recorded next to it. The two that govern every session:
 
-**After every task:** update the task file and this file's table; record the
-commit SHA and CI result; record blockers; set exactly one next action. **Do not
-claim work is complete unless Git proves it.**
+**Before every task:** read this file, [`RULES.md`](RULES.md) and
+[`docs/tasks/`](tasks/README.md); verify branch and HEAD; confirm the task is
+not already done; check `git status`. Do not rely on chat history, and do not
+rely on an agent's internal task list — neither is visible to the other agent or
+to Jay.
+
+**After every task:** update the task file and this file's table in the same
+commit as the work or the one immediately after; record the commit SHA and CI
+result; record blockers; set exactly one next action. **Do not claim work is
+complete unless Git proves it.**
 
 **Never** put secrets, tokens, API keys, passwords or bearer tokens in these files.
 
@@ -229,9 +240,13 @@ claim work is complete unless Git proves it.**
 Two further operator steps unblock the rest: set `GYST_PASSWORD_HASH`, and
 enable Tailscale HTTPS.
 
-[M4](tasks/M4-live-day-view.md) is committed as of `60be715`; its CI run was
-still pending when this was written. The Day view renders empty states until M3
-ingestion exists.
+[M4](tasks/M4-live-day-view.md) is committed as of `60be715` and its CI run is
+green. The Day view renders empty states until M3 ingestion exists.
+
+**The next agent task is [B2 — backup tooling](tasks/B2-backup-tooling.md)**: a
+`lifeops backup` subcommand using `VACUUM INTO`. It is the only unblocked
+implementable item, and it is a prerequisite for doing anything to the
+production database safely — including OPS1.
 
 ---
 
@@ -264,4 +279,10 @@ Append-only, newest last.
                       suite following a stash cycle. Ledger corrected: M4 was
                       recorded as uncommitted an hour earlier and that is no
                       longer true.                        Commit: 60be715
+
+2026-09-12 — Claude — Audited every commit since 3083fb9 against the ledger.
+                      Two had no task file (REV1, DOC1); both written. M4 CI
+                      confirmed green (run 34665218837) and its PENDING status
+                      corrected. Added docs/RULES.md. B2 opened as the next
+                      agent task. Documentation only.
 ```
