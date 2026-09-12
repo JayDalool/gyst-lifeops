@@ -3,32 +3,40 @@
   <div class="galaxy-stage" data-galaxy-stage tabindex="0" aria-label="Interactive project galaxy">
     <canvas data-galaxy-canvas aria-hidden="true"></canvas>
     <section class="galaxy-hub" aria-label="Galaxy hub">
-      <p class="kicker">Mission control / Core hub</p>
+      <p class="kicker">Your project worlds</p>
       <h1 id="galaxy-title">Galaxy</h1>
-      <p>Explore your projects as worlds, or jump straight to a mission view.</p>
+      <p>Drag to explore. Pinch or use the zoom controls. Tap a world to preview it.</p>
       <div class="galaxy-actions">
-        <a class="btn sm" data-galaxy-open hidden>Open project</a>
+        <a class="btn sm ghost" href="#galaxy-projects">Browse worlds</a>
         <a class="btn sm ghost" href="/projects">All projects</a>
         <a class="btn sm ghost" href="/projects/new">New project</a>
       </div>
     </section>
+    <div class="galaxy-controls" aria-label="Galaxy camera">
+      <button type="button" data-galaxy-zoom="in" aria-label="Zoom in" disabled>+</button>
+      <button type="button" data-galaxy-zoom="out" aria-label="Zoom out" disabled>−</button>
+      <button type="button" data-galaxy-reset disabled>Reset view</button>
+    </div>
     <div class="galaxy-status" data-galaxy-status role="status">Loading galaxy&hellip;</div>
-	<aside class="galaxy-context" data-galaxy-context hidden>
+	<aside class="galaxy-context" data-galaxy-context aria-label="Selected project" hidden>
+      <button type="button" class="galaxy-close" data-galaxy-close aria-label="Close project preview">×</button>
 	  <p class="kicker" data-galaxy-category>Project</p>
 	  <h2 data-galaxy-name></h2>
 	  <p class="galaxy-context-summary" data-galaxy-summary></p>
 	  <div class="galaxy-context-progress"><i data-galaxy-progress></i></div>
 	  <p class="meta" data-galaxy-meta></p>
 	  <p class="meta" data-galaxy-next></p>
+      <a class="btn" data-galaxy-open hidden>Open project</a>
 	</aside>
 	<div class="galaxy-legend" aria-label="Project states"><span class="active">Active</span><span class="upcoming">Upcoming</span><span class="locked">Locked</span></div>
   </div>
-  <div class="galaxy-browser" id="galaxy-projects">
+  <div class="galaxy-browser gyst-scope" id="galaxy-projects">
     <div><p class="kicker">Accessible navigator</p><h2 class="section-title">All projects</h2></div>
-    <p class="meta">Keyboard and conventional view. Press Enter on a project to open it.</p>
+    <p class="meta">Open a project directly, or preview its world in the Galaxy.</p>
+    <label class="galaxy-category-filter">Category <select data-galaxy-filter><option value="">All categories</option></select></label>
     <ul class="galaxy-list" data-galaxy-list></ul>
     <p class="galaxy-fallback" data-galaxy-fallback hidden>
-      3D is unavailable in this browser. <a href="/projects">Open the full project list.</a>
+      3D is unavailable in this browser. <a href="/galaxy">Retry Galaxy.</a> <a href="/projects">Open the full project list.</a>
     </p>
   </div>
 </section>

@@ -1,0 +1,47 @@
+/* UI-4: retain the scene; scope gesture capture to the canvas. */
+:root body.galaxy-page .galaxy-stage { touch-action: auto; min-height: 480px; }
+:root body.galaxy-page .galaxy-stage canvas { touch-action: none; cursor: grab; }
+:root body.galaxy-page .galaxy-stage canvas:active { cursor: grabbing; }
+:root body.galaxy-page .galaxy-hub { top: 16px; left: max(16px,var(--gyst-safe-left)); width: min(360px,calc(100% - 32px)); padding: 16px; }
+:root body.galaxy-page .galaxy-hub h1 { font-size: 1.75rem; line-height: 1.2; }
+:root body.galaxy-page .galaxy-actions { flex-wrap: wrap; }
+:root body.galaxy-page .galaxy-stage :is(button,.btn) { min-height: 44px; min-width: 44px; border: 1px solid #64748b; border-radius: 12px; padding: 8px 12px; background: #18263b; color: #e7f2fb; font: inherit; font-size: .875rem; cursor: pointer; }
+:root body.galaxy-page .galaxy-stage :is(button,a):focus-visible { outline: 2px solid #8bdcff; outline-offset: 3px; }
+:root body.galaxy-page .galaxy-stage button:disabled { opacity: .5; cursor: default; }
+:root body.galaxy-page .galaxy-controls { position: absolute; z-index: 4; right: max(16px,var(--gyst-safe-right)); top: 16px; display: flex; gap: 8px; }
+:root body.galaxy-page .galaxy-context { top: 76px; bottom: auto; right: max(16px,var(--gyst-safe-right)); max-height: calc(100% - 150px); overflow: auto; overscroll-behavior: contain; border-radius: 20px; padding: 16px; }
+:root body.galaxy-page .galaxy-context h2 { padding-right: 48px; overflow-wrap: anywhere; }
+:root body.galaxy-page .galaxy-context .galaxy-close { position: absolute; right: 8px; top: 8px; font-size: 1.5rem; }
+:root body.galaxy-page .galaxy-context [data-galaxy-open] { display: inline-flex; align-items: center; margin-top: 12px; }
+:root body.galaxy-page .galaxy-context [hidden] { display: none; }
+:root body.galaxy-page .galaxy-context :is(.meta,.galaxy-context-summary) { color: #b5c0d0; overflow-wrap: anywhere; }
+:root body.galaxy-page .galaxy-status { bottom: 44px; font-size: .8125rem; }
+:root body.galaxy-page .galaxy-legend { bottom: 12px; }
+:root body.galaxy-page .galaxy-legend span { font-size: .75rem; }
+:root body.galaxy-page .galaxy-legend .locked { color: #a6b4c5; }
+:root body.galaxy-page .galaxy-browser { background: var(--gyst-bg); color: var(--gyst-text); padding: 24px max(16px,calc((100% - 1168px)/2)) 32px; }
+:root body.galaxy-page .galaxy-browser :is(.meta,.kicker) { color: var(--gyst-text-secondary); }
+:root body.galaxy-page .galaxy-category-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-block: 16px; }
+:root body.galaxy-page .galaxy-category-filter select { max-width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--gyst-control-border); border-radius: 12px; background: var(--gyst-surface); color: var(--gyst-text); font: inherit; }
+:root body.galaxy-page .galaxy-list { grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 12px; }
+:root body.galaxy-page .galaxy-list > li { padding: 12px; border: 1px solid var(--gyst-border); border-radius: 16px; background: var(--gyst-surface); min-width: 0; }
+:root body.galaxy-page .galaxy-list a { color: var(--gyst-text); background: var(--gyst-surface); border: 0; overflow-wrap: anywhere; }
+:root body.galaxy-page .galaxy-list small { color: var(--gyst-text-secondary); }
+:root body.galaxy-page .galaxy-list button { min-height: 44px; padding: 8px 12px; background: var(--gyst-blue-soft); color: var(--gyst-blue); border: 1px solid var(--gyst-border); border-radius: 12px; cursor: pointer; }
+:root body.galaxy-page .galaxy-list button:disabled { display: none; }
+:root body.galaxy-page .galaxy-list ul { padding-left: 16px; }
+:root body.galaxy-page .galaxy-list [hidden] { display: none; }
+@media (max-width: 767px) {
+  :root body.galaxy-page .galaxy-hub { top: 12px; padding: 12px; }
+  :root body.galaxy-page .galaxy-hub .kicker { display: none; }
+  :root body.galaxy-page .galaxy-controls { top: auto; bottom: 80px; right: 16px; }
+  :root body.galaxy-page .galaxy-context { inset: auto 8px 8px; width: auto; max-height: 48%; z-index: 5; border-radius: 20px; }
+  :root body.galaxy-page .galaxy-context [data-galaxy-open] { width: 100%; justify-content: center; }
+}
+@media (max-height: 550px) and (min-width: 768px) { :root body.galaxy-page .galaxy-stage { min-height: 440px; } }
+@media (prefers-reduced-motion: reduce) { :root body.galaxy-page .galaxy-planet-label, :root body.galaxy-page .galaxy-context-progress i { transition: none; } }
+
+:root body.galaxy-page .galaxy-context { background: #101c2e; }
+@media (max-width: 767px) {
+  :root body.galaxy-page .galaxy-has-selection :is(.galaxy-controls,.galaxy-status,.galaxy-legend) { visibility: hidden; }
+}

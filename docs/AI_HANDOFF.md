@@ -104,6 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [UI-4 Mobile Galaxy](tasks/UI-4-galaxy.md) | IN PROGRESS | pending | pending |
 | [UI-3 Projects](tasks/UI-3-projects.md) | DONE | `6c86252` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34708681737) |
 | [UI-2 Today](tasks/UI-2-today.md) | DONE | `3dd076d` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34671487875) |
 | [UI-1 shell](tasks/UI-1-shell.md) | DONE | `a8f9105` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34670549071) |
@@ -245,7 +246,7 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Jay: review UI-3 Projects before approving UI-4 Mobile Galaxy.**
+**Jay: review UI-4 Mobile Galaxy before approving UI-5 Health summary.**
 Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
 for scope and verification evidence. A2 remains separate operational work.
 

@@ -1,3 +1,4 @@
+import { bindGalaxyGestures } from "/static/js/galaxy-gestures.js?v=ui-4";
 const root = document.querySelector("[data-galaxy]");
 if (root) {
   initGalaxyHeader();
@@ -55,6 +56,13 @@ async function initGalaxy(root, THREE) {
     return;
   }
 
+  const categoryFilter = root.querySelector("[data-galaxy-filter]");
+  [...new Set(planets.map(planet => planet.category || "Other"))].sort().forEach(category => {
+    const option = document.createElement("option"); option.value = category; option.textContent = category; categoryFilter.appendChild(option);
+  });
+  categoryFilter.addEventListener("change", () => {
+    [...list.children].forEach(item => { item.hidden = !!categoryFilter.value && item.dataset.category !== categoryFilter.value; });
+  });
   planets.forEach((planet) => {
     const item = document.createElement("li");
     const link = document.createElement("a");
@@ -63,7 +71,17 @@ async function initGalaxy(root, THREE) {
     link.querySelector("span").className = `galaxy-state state-${planet.state}`;
     link.querySelector("b").textContent = planet.name;
     link.querySelector("small").textContent = `${planet.progress}% · ${planet.state}`;
+    item.dataset.category = planet.category || "Other";
+    link.querySelector("small").textContent += " · " + item.dataset.category;
     item.appendChild(link);
+    const focus = document.createElement("button"); focus.type = "button"; focus.textContent = "Preview";
+    focus.setAttribute("aria-label", "Preview " + planet.name); focus.dataset.galaxyFocus = planet.id; focus.disabled = true;
+    item.appendChild(focus);
+    if (planet.moons?.length) {
+      const children = document.createElement("ul");
+      planet.moons.forEach(moon => { const child = document.createElement("li"); const a = document.createElement("a"); a.href = moon.url; a.textContent = moon.name + " · " + moon.progress + "%"; child.appendChild(a); children.appendChild(child); });
+      item.appendChild(children);
+    }
     list.appendChild(item);
   });
   if (!planets.length) {
@@ -194,9 +212,10 @@ async function initGalaxy(root, THREE) {
 	if (hovered === object) return;
 	if (hovered) hovered.material.emissiveIntensity = hovered.userData._baseEmissiveIntensity;
     hovered = object || null;
+    root.classList.toggle("galaxy-has-selection", !!hovered);
 	if (!object) {
 	  selectionHalo.visible = false;
-	  status.textContent = "Free roam · click a planet to focus";
+	  status.textContent = "Drag to explore · tap a world to preview";
 	  contextPanel.hidden = true;
 	  openButton.hidden = true;
 	  return;
@@ -209,7 +228,7 @@ async function initGalaxy(root, THREE) {
 	selectionHalo.position.copy(object.position);
 	roamInputX = 0;
 	roamInputY = 0;
-    status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state} · click again to open · double-click space to leave`;
+    status.textContent = `${object.userData.name} · ${object.userData.progress}% · ${object.userData.state} · use Open project to enter`;
     openButton.href = object.userData.url;
     openButton.hidden = false;
 	contextPanel.hidden = false;
@@ -293,14 +312,36 @@ async function initGalaxy(root, THREE) {
 	});
 	return match;
   }
-	canvas.addEventListener("pointerup", (event) => {
-	updatePointer(event);
-	const object = planetAtPointer();
-	if (object) {
-	  if (hovered === object) location.href = object.userData.url;
-	  else preview(object);
-	  return;
-	}
+  bindGalaxyGestures(canvas, {
+    tap(event) {
+      updatePointer(event); const object = planetAtPointer();
+      if (object) {
+        if (hovered === object && event.pointerType === "mouse") location.href = object.userData.url;
+        else preview(object);
+      }
+    },
+    drag(dx, dy) {
+      preview(null); recentering = false; roamInputX = 0; roamInputY = 0;
+      orbitYaw -= dx * 0.006;
+      orbitPitch = Math.max(-1.05, Math.min(1.05, orbitPitch + dy * 0.006)); updateOrbitTarget();
+    },
+    zoom(factor) { zoomGalaxy(factor); }
+  });
+  function zoomGalaxy(factor) {
+    preview(null); orbitRadius = Math.max(58, Math.min(175, orbitRadius * factor)); updateOrbitTarget();
+  }
+  root.querySelectorAll("[data-galaxy-zoom]").forEach(button => {
+    button.disabled = false; button.addEventListener("click", () => zoomGalaxy(button.dataset.galaxyZoom === "in" ? 0.85 : 1.15));
+  });
+  const resetButton = root.querySelector("[data-galaxy-reset]"); resetButton.disabled = false;
+  resetButton.addEventListener("click", recenterGalaxy);
+  root.querySelector("[data-galaxy-close]").addEventListener("click", () => { recenterGalaxy(); stage.focus({preventScroll: true}); });
+  root.querySelectorAll("[data-galaxy-focus]").forEach(button => {
+    button.disabled = false; button.addEventListener("click", () => {
+      preview(objects.find(object => String(object.userData.id) === button.dataset.galaxyFocus));
+      stage.scrollIntoView({behavior: "instant", block: "start"});
+      openButton.focus({preventScroll: true});
+    });
   });
 	canvas.addEventListener("dblclick", (event) => {
 	  event.preventDefault();
@@ -317,7 +358,8 @@ async function initGalaxy(root, THREE) {
 	  location.href = object.userData.url;
 	});
   if (matchMedia("(pointer: fine)").matches) {
-    stage.addEventListener("pointermove", (event) => {
+    canvas.addEventListener("pointermove", (event) => {
+      if (event.pointerType !== "mouse" || event.buttons) return;
 	  updatePointer(event);
 	  const normalizedX = pointer.x;
 	  const normalizedY = pointer.y;
@@ -330,8 +372,9 @@ async function initGalaxy(root, THREE) {
 	  roamInputX = 0;
 	  roamInputY = 0;
 	});
-	window.addEventListener("keydown", (event) => {
-	  if (!hovered) return;
+	stage.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") { recenterGalaxy(); stage.focus({preventScroll: true}); return; }
+      if (event.target !== stage || !hovered) return;
 	  const directions = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
 	  const direction = directions[event.key];
 	  if (!direction) return;
@@ -342,10 +385,9 @@ async function initGalaxy(root, THREE) {
 	stage.addEventListener("pointerleave", () => {
 	  roamInputX = 0; roamInputY = 0;
 	});
-	stage.addEventListener("wheel", (event) => {
+	canvas.addEventListener("wheel", (event) => {
 	  event.preventDefault();
-	  orbitRadius = Math.max(58, Math.min(175, orbitRadius + event.deltaY * 0.08));
-	  updateOrbitTarget();
+	  zoomGalaxy(Math.exp(event.deltaY * 0.001));
 	}, { passive: false });
 
   function resize() {
@@ -354,7 +396,7 @@ async function initGalaxy(root, THREE) {
     camera.aspect = width / height; camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(stage); resize();
-  status.textContent = "Free roam · click a planet to focus · right-click to open";
+  status.textContent = "Drag to explore · tap a world to preview";
   function frame() {
 	if (hovered) {
 	  const focusDistance = Math.max(15, hovered.geometry.parameters.radius * 5.2);

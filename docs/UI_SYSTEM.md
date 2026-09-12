@@ -1,4 +1,4 @@
-# GYST UI system — UI-3 implemented
+# GYST UI system — UI-4 implemented
 
 ## Scope and visual authority
 
@@ -424,3 +424,20 @@ The existing route overview remains in a disclosure and Galaxy remains a direct
 navigation card. No heavy visual assets or new JavaScript dependencies are added.
 
 See [UI-3](tasks/UI-3-projects.md) for verification. UI-4 awaits review.
+
+## UI-4 implementation
+
+Jay authorized Mobile Galaxy while testing UI-3. The existing Three.js scene,
+positions, project planets and child moons remain. `galaxy-gestures.js` isolates
+canvas pointer capture, movement thresholds, pinch zoom and cancelled gestures.
+Desktop mouse roaming/right-click remain; touch uses preview followed by an
+explicit Open project link. Camera buttons and Escape provide alternatives.
+
+`ui-galaxy.css` styles the dark scene controls, opaque scrollable mobile selection
+panel and shared-token navigator. The panel stays within the scene above the
+primary navigation; underlying mobile controls hide while selected. Categories
+come from the API and filter the navigator only. Child project links remain
+available there. No domain graph, position changes or service changes are added.
+
+Node gesture regression checks run in CI. Browser evidence and limitations live
+in [UI-4](tasks/UI-4-galaxy.md). Next phase is UI-5 Health summary after review.

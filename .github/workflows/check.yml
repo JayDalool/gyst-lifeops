@@ -26,6 +26,9 @@ jobs:
       - name: UI shell cache and theme checks
         run: node scripts/check-ui-shell.cjs
 
+      - name: Galaxy gesture checks
+        run: node scripts/check-galaxy.cjs
+
       - name: gofmt
         run: |
           unformatted=$(gofmt -l .)
