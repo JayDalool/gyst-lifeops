@@ -104,7 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
-| [UI-1 shell](tasks/UI-1-shell.md) | IN PROGRESS | pending | pending |
+| [UI-1 shell](tasks/UI-1-shell.md) | DONE | `a8f9105` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34670549071) |
 | [UI-0 foundation](tasks/UI-0-foundation.md) | DONE | `99f5968` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34669485151) |
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |

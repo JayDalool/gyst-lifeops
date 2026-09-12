@@ -1,9 +1,9 @@
 # UI-1 — GYST app shell and five destinations
 
-- **Status:** `IN PROGRESS` — implemented; final verification/commit pending.
+- **Status:** `DONE` — implementation and automated verification complete; device review pending.
 - **Approval:** Jay reviewed UI-0 and said “i like it, go ahead.”
-- **Implementation commit(s):** Pending.
-- **CI:** Pending push.
+- **Implementation commit(s):** `a8f9105`.
+- **CI:** [Passed](https://github.com/JayDalool/gyst-lifeops/actions/runs/34670549071) — format, vet, build, unit/race, UI shell checks and repository guards.
 - **Review:** Chromium/WebKit browser checks passed, including final responsive refinements. Physical iPhone review remains pending.
 
 ## Changes

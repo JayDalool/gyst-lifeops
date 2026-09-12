@@ -40,7 +40,7 @@ go test -race, migration-prefix uniqueness, no-database-file-committed.
 | Task | Status |
 |---|---|
 | [UI-PLAN — UI design system and screen map](UI-PLAN-design-system.md) | DONE |
-| [UI-1 — App shell and navigation](UI-1-shell.md) | IN PROGRESS |
+| [UI-1 — App shell and navigation](UI-1-shell.md) | DONE |
 | [UI-0 — Reusable foundation](UI-0-foundation.md) | DONE |
 | [B1 — SQLite PRAGMA correctness](B1-sqlite-pragma-correctness.md) | DONE |
 | [B1-FIX — B1 review fixes](B1-FIX-review-fixes.md) | DONE |
