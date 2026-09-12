@@ -2,14 +2,15 @@
 
 - **ID:** M4
 - **Title:** Replace Health Day-view demo values with real observations
-- **Status:** `IN PROGRESS` — **implemented and locally green, but NOT COMMITTED**
+- **Status:** `DONE`
 - **Owner:** Claude
-- **Implementation commit(s):** **None.** The work exists only in a working-tree
-  stash on the session machine. Git does not prove any of it, and it will be
-  lost if that machine is reclaimed.
-- **Review status:** `UNKNOWN` — no commit, therefore no CI run and nothing to review.
+- **Implementation commit(s):** `60be715ebc01234080adafdbdee00dbc003d8e32`
+- **Review status:** CI result **PENDING** at the time of writing — the run was
+  triggered by the push but had not completed. Human or independent-agent
+  review: **UNKNOWN**. **Not verified in a real browser** — no artifact records
+  the page being loaded.
 
-## Scope as built (uncommitted)
+## Scope as built
 
 The Day view reads `Service.HealthToday()` directly rather than through an HTTP
 round-trip, and renders real observations through a view model that does all
@@ -38,16 +39,23 @@ Watch and phone steps render separately and are never summed.
 - [x] Empty state, missing-cycle state and stale-data state all render
 - [x] Existing Health goals/tasks content preserved
 - [x] gofmt, go vet, go build, go test, go test -race pass locally
-- [ ] **Committed — NO**
-- [ ] **CI verified — NO**
+- [x] Committed
+- [ ] **CI verified — PENDING**
+- [ ] **Loaded in a real browser — NOT DONE**
+
+## Bug found while testing
+
+Reaching into the macro slice by index broke the page outright on a zero-valued
+view: a template `index out of range` aborts execution and silently drops
+everything after it, including the existing health goals and tasks. Calories is
+now an explicit field. Worth remembering — the failure mode is a partial page,
+not an error.
 
 ## Blockers
 
-None technical. It is uncommitted because the current instruction is a
-documentation-only commit.
+None.
 
 ## Next action
 
-Decide whether to commit it. Until then this task is not DONE and must not be
-described as shipped. Recovery: `git stash list` on the session machine —
-`M4 day view: complete and green, awaiting decision`.
+Confirm the CI run for `60be715` is green. The page renders empty states until
+M3 ingestion exists, so there is nothing to see on it yet beyond those states.

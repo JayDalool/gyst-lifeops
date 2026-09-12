@@ -4,7 +4,7 @@
 **Updated by:** Claude
 **Repository:** `JayDalool/gyst-lifeops`
 **Implementation branch:** `feature/health-hardening`
-**Implementation HEAD at time of writing:** `18196e9b4357034c2a3d3308efc391e0e00ad16f`
+**Implementation HEAD at time of writing:** `60be715ebc01234080adafdbdee00dbc003d8e32`
 
 Read this at the start of every session, then read the task ledger. **Git is the
 source of truth.** If this file disagrees with the repository, the repository
@@ -70,7 +70,7 @@ Verified with `git ls-remote` on 2026-09-12.
 | `master` | `ae5e674` | Mainline. Contains **no** Health work. |
 | `feature/health-dashboard-foundation` | `055f098` | M1 — UI shell. |
 | `feature/health-core` | `3083fb9` | M2 — Health Core. B1 baseline. |
-| `feature/health-hardening` | `18196e9` | **Current implementation branch.** |
+| `feature/health-hardening` | `60be715` | **Current implementation branch.** |
 | `docs/ui-v3-standards` | `b7f4492` | UI v3 design reference. Carries a superseded copy of this file. |
 
 ```
@@ -82,6 +82,8 @@ f663f3f  CI safety gate
 7835b7d  A3 — session store and auth service
 fb05cc3  A4 — application authentication
 18196e9  A5 — Health API write-only
+d4007a3  docs — task ledger and handoff moved onto this branch
+60be715  M4 — Health Day view reads real observations
 ```
 
 **Do not rewrite, squash, force-push or rebase these commits.**
@@ -103,7 +105,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED | — | — |
 | [A2 trusted TLS](tasks/A2-trusted-tls.md) | BLOCKED (operator) | — | — |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | PENDING (operator) | — | — |
-| [M4 live Day view](tasks/M4-live-day-view.md) | IN PROGRESS — **uncommitted** | none | none |
+| [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | pending |
 
 **Nothing above has been verified in a real browser, on a real device, or
 against the production database.** CI green means the suite passes, not that the
@@ -227,9 +229,9 @@ claim work is complete unless Git proves it.**
 Two further operator steps unblock the rest: set `GYST_PASSWORD_HASH`, and
 enable Tailscale HTTPS.
 
-The one open agent decision is whether to commit
-[M4](tasks/M4-live-day-view.md), which is implemented and locally green but
-uncommitted, and therefore not proven by Git.
+[M4](tasks/M4-live-day-view.md) is committed as of `60be715`; its CI run was
+still pending when this was written. The Day view renders empty states until M3
+ingestion exists.
 
 ---
 
@@ -250,10 +252,16 @@ Append-only, newest last.
 2026-09-11 — Claude — A3 session store and auth service.   Commit: 7835b7d
 2026-09-11 — Claude — A4 application authentication.       Commit: fb05cc3
 2026-09-11 — Claude — A5 Health API write-only.            Commit: 18196e9
-2026-09-11 — Claude — M4 Day view implemented and locally green. NOT COMMITTED.
+2026-09-11 — Claude — M4 Day view implemented and locally green.
 
 2026-09-12 — Claude — Established docs/tasks/ and moved this handoff onto the
                       implementation branch, after verifying from Git that
                       neither had ever been present there. Backfilled ten task
                       files from Git and CI evidence only. Documentation only.
+                      Commit: d4007a3
+
+2026-09-12 — Claude — M4 committed after re-running the full suite and race
+                      suite following a stash cycle. Ledger corrected: M4 was
+                      recorded as uncommitted an hour earlier and that is no
+                      longer true.                        Commit: 60be715
 ```
