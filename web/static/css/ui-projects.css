@@ -1,0 +1,72 @@
+/* UI-3 Projects: shared tokens/components, native links and existing forms. */
+.projects-ui { display: grid; gap: 20px; }
+.projects-ui .gyst-header { flex-wrap: wrap; gap: 12px; }
+.projects-ui .gyst-header > div { min-width: 0; }
+.projects-ui .gyst-page-title { overflow-wrap: anywhere; }
+.projects-ui .group-label { margin: 4px 0 0; color: var(--gyst-text-secondary); font-size: .875rem; line-height: 1.5; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.projects-ui .projects-roadmaps { display: flex; flex-wrap: wrap; gap: 8px; }
+.projects-roadmaps a { display: flex; align-items: center; min-height: 44px; padding: 8px 12px; border: 1px solid var(--gyst-border); border-radius: var(--gyst-radius-pill); color: var(--gyst-text-secondary); background: var(--gyst-surface); font-size: .875rem; text-decoration: none; overflow-wrap: anywhere; }
+.projects-roadmaps a[aria-current="page"] { color: var(--gyst-blue); background: var(--gyst-blue-soft); border-color: var(--gyst-blue); }
+.projects-ui .project-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.projects-ui .project-list > li { min-width: 0; border: 0; margin: 0; }
+.gyst-project-card { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; align-items: center; gap: 8px 12px; padding: 16px; border: 1px solid var(--gyst-border); border-radius: var(--gyst-radius-md); background: var(--gyst-surface); color: var(--gyst-text); text-decoration: none; box-shadow: var(--gyst-shadow-card); overflow-wrap: anywhere; }
+.gyst-project-card:hover { border-color: var(--gyst-blue); }
+.gyst-project-copy { display: grid; gap: 2px; min-width: 0; }
+.gyst-project-copy strong { font-size: 1rem; line-height: 1.4; }
+.gyst-project-card .gyst-badge { text-transform: capitalize; }
+.gyst-project-summary { grid-column: 2 / -1; font-size: .875rem; color: var(--gyst-text-secondary); }
+.gyst-project-progress { grid-column: 2 / -1; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px 12px; align-items: center; }
+.gyst-project-progress > p { grid-column: 1; grid-row: 2; }
+.gyst-project-progress > span { grid-column: 2; grid-row: 1; }
+.projects-ui .subprojects { display: grid; gap: 8px; margin: 8px 0 0 20px; padding: 0 0 0 12px; border-left: 2px solid var(--gyst-border); list-style: none; }
+.projects-ui .subprojects > li { display: block; padding: 0; border: 0; }
+.projects-ui .subprojects .gyst-project-card { padding: 12px; }
+.gyst-galaxy-entry { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: var(--gyst-radius-lg); color: #f8fafc; background: #0b1831; text-decoration: none; }
+.gyst-galaxy-entry > span:nth-child(2) { display: grid; gap: 4px; flex: 1; }
+.gyst-galaxy-entry > span:nth-child(2) > span { font-size: .875rem; color: #cbd5e1; }
+.projects-ui summary { min-height: 44px; padding-block: 10px; cursor: pointer; color: var(--gyst-blue); }
+.projects-route { overflow: auto; }
+.project-detail-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 24px; align-items: start; }
+.project-detail-grid > div { display: grid; gap: 16px; min-width: 0; }
+.projects-ui :is(#overview,#tasks,#roadmap,#notes) { scroll-margin-top: 16px; }
+.projects-ui .section-head { margin: 0; }
+.projects-ui .gyst-section-title, .projects-ui .section-title { font-size: 1.125rem; color: var(--gyst-text); margin: 0 0 12px; }
+.projects-ui .meta, .projects-ui .task-meta, .projects-ui .task-when { color: var(--gyst-text-secondary); font-size: .8125rem; line-height: 1.5; }
+.projects-ui .kicker { color: var(--gyst-text-secondary); font-size: .875rem; margin: 0 0 8px; }
+.projects-ui .body-text { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--gyst-text); }
+.projects-ui .tasks { list-style: none; padding: 0; margin: 0; }
+.projects-ui .task { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--gyst-border); }
+.projects-ui .task:first-child { padding-top: 0; }
+.projects-ui .task:last-child { border: 0; }
+.projects-ui .task-body { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
+.projects-ui .task-title { color: var(--gyst-text); font-size: 1rem; line-height: 1.4; }
+.projects-ui form { margin: 0; }
+.project-task-check { display: grid; place-items: center; width: 44px; min-height: 44px; cursor: pointer; }
+.projects-ui input[type="checkbox"] { width: 22px; height: 22px; accent-color: #2563eb; flex-shrink: 0; }
+.projects-ui .project-task-check input { margin: 0; }
+.projects-ui .btn { display: inline-flex; justify-content: center; align-items: center; min-height: 44px; min-width: 44px; padding: 10px 14px; border: 1px solid var(--gyst-border); border-radius: var(--gyst-radius-sm); color: var(--gyst-blue); background: var(--gyst-surface); font-size: .875rem; white-space: normal; }
+.projects-ui .btn:hover { background: var(--gyst-blue-soft); }
+.projects-ui .btn.danger { color: var(--gyst-danger-text); }
+.projects-ui .list { padding: 0; list-style: none; margin: 0; }
+.projects-ui .list li { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-block: 12px; border-bottom: 1px solid var(--gyst-border); }
+.projects-ui .list li:last-child { border: 0; }
+.projects-ui .flag-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.projects-ui .flag-row label, .projects-ui label.flag-row { align-items: center; min-height: 44px; }
+.projects-ui .form-row { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.projects-ui .field { min-width: 0; }
+.projects-ui .field :is(input,select,textarea) { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--gyst-control-border); border-radius: var(--gyst-radius-sm); color: var(--gyst-text); background: var(--gyst-surface); font-size: 1rem; }
+.projects-ui .external-link-row { flex-wrap: wrap; }
+.projects-ui .external-link-chip { min-width: 0; max-width: 100%; flex-wrap: wrap; color: var(--gyst-blue); }
+.projects-ui .external-link-actions[open] { width: 100%; }
+.projects-ui .external-link-actions .form-stack { width: 100%; min-width: 0; }
+.project-roadmap-link { border: 1px solid var(--gyst-border); border-radius: 12px; }
+.project-text-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--gyst-blue); }
+.project-form-ui { max-width: 800px; margin-inline: auto; }
+.projects-ui .form-card { background: var(--gyst-surface); border: 1px solid var(--gyst-border); border-radius: 16px; padding: 20px; margin-top: 0; }
+@media (max-width: 374px) { .gyst-project-card { grid-template-columns: 32px minmax(0,1fr); } .gyst-project-card .gyst-badge { grid-column: 2; justify-self: start; } .gyst-project-card .gyst-icon-tile { width: 32px; height: 32px; } .projects-ui .form-row { grid-template-columns: minmax(0,1fr); } }
+@media (min-width: 768px) { .projects-ui > section > .project-list { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; } }
+@media (min-width: 1024px) { .project-detail-grid { grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); } }
+.gyst-project-card[data-color="violet"] .gyst-icon-tile, .gyst-project-card[data-color="magenta"] .gyst-icon-tile { color: var(--gyst-purple); }
+.gyst-project-card[data-color="emerald"] .gyst-icon-tile { color: var(--gyst-positive-text); }
+.gyst-project-card[data-color="amber"] .gyst-icon-tile, .gyst-project-card[data-color="orange"] .gyst-icon-tile { color: var(--gyst-warning-text); }
+.gyst-project-card[data-color="rose"] .gyst-icon-tile { color: var(--gyst-danger-text); }

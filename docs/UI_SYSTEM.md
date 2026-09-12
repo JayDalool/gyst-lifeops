@@ -1,4 +1,4 @@
-# GYST UI system — UI-2 implemented
+# GYST UI system — UI-3 implemented
 
 ## Scope and visual authority
 
@@ -405,3 +405,22 @@ prayer and Athkar controls remain below the mobile overview; on desktop they
 share the right column with deadlines and XP.
 
 See [UI-2](tasks/UI-2-today.md) for verification evidence. UI-3 awaits review.
+
+## UI-3 implementation
+
+Jay approved continuation after UI-2. `project_components.html` supplies one
+project card/progress pattern for top-level projects, nested subprojects and
+detail stops. `projects_view.go` prepares view-only filters and typed progress
+inputs; actual project status controls filtering, never an inferred 100% bar.
+Both query filters persist in ordinary server-rendered links. All remains the
+default; a context parent keeps its true badge if a child matches another state.
+
+`ui-projects.css` applies only to Projects page bodies, including create/edit
+forms. It uses shared tokens and 768/1024 breakpoints, bounded desktop columns,
+44px controls and wrapping cards/forms. Detail sections use native anchor links
+so content and return fragments work without a tab script. Notes and roadmap
+empty states lead to existing edit functionality; no milestone database is added.
+The existing route overview remains in a disclosure and Galaxy remains a direct
+navigation card. No heavy visual assets or new JavaScript dependencies are added.
+
+See [UI-3](tasks/UI-3-projects.md) for verification. UI-4 awaits review.

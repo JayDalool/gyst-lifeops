@@ -44,4 +44,4 @@ stored categories, business calculations, migrations or integration changes.
 
 ## Next action
 
-Jay: review UI-2 before approving UI-3 Projects and project detail.
+Jay approved continuation to UI-3. See [UI-3](UI-3-projects.md); no physical device review was claimed.

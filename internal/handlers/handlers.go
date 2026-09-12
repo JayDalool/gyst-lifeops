@@ -871,7 +871,7 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 			serverError(w, err)
 			return
 		}
-		statusFilter := cleanForm(r.URL.Query().Get("status"), "current")
+		statusFilter := projectFilter(r.URL.Query().Get("status"))
 		unlocked := r.URL.Query().Get("unlocked") == "1"
 
 		// A specific roadmap is selected → single filtered deck (radio tabs).
@@ -2110,10 +2110,12 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		filepath.Join(h.TemplateDir, "ui_components.html"),
 		filepath.Join(h.TemplateDir, "ui_shell.html"),
 		filepath.Join(h.TemplateDir, "today_components.html"),
+		filepath.Join(h.TemplateDir, "project_components.html"),
 		filepath.Join(h.TemplateDir, page),
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
 		"primarySection": primarySection,
+		"projectCard":    projectCard,
 		"xpStats":        func() models.PlayerStats { return playerXP },
 		"join":           strings.Join,
 		"joinInts":       joinInts,

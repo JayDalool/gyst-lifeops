@@ -2,7 +2,7 @@
 
 Baseline: `feature/health-hardening` at `5c50011`. Visual references:
 [component board](Design1.png), [screen board](<Design 2.png>).
-UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-3 onward
+UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-4 onward
 remain **not started**; all screen rows below describe future adoption.
 Existing means the current source supports the route/data, not that its new UI
 is implemented or that production contains observations.
@@ -19,9 +19,9 @@ lists additional reusable patterns. Paths marked proposed do not exist yet.
 |---|---|---|---|---|
 | Today dashboard | `/`, `/today`; `/dashboard` redirects | Implemented UI-2. Task occurrences, reminders, overdue tasks, prayer schedule/trackers, study blocks, ship stats and existing HealthToday read. Focus uses the first pending task; no focus scheduler invented | StatCard, ProgressCard, ListRow, HealthSummaryCard, CalendarEventRow | UI-2 |
 | Daily checklist | `/checklist` and Today shared partial | Implemented UI-2. Shared occurrence actions/progress; dedicated task list, prayer/Athkar remain on Today. No invented Morning/Work/Evening stored categories | ListSection, Checkbox, ProgressBar | UI-2 |
-| Projects home | `/projects`, `?roadmap={id}` | Existing; Needs UI. Roadmap groups, main/child projects, progress, next due item, upcoming/locked states. Use Active/Completed/Upcoming with explicit paused/blocked handling; no separate Ideas model | ProjectCard, ProjectProgressRow, SegmentedControl | UI-3 |
+| Projects home | `/projects`, `?roadmap={id}` | Implemented UI-3. Roadmap groups, main/child cards, progress, next due item and All/Active/Completed/Upcoming filters preserving actual paused/blocked/locked state; no Ideas model | ProjectCard, ProjectProgressRow, SegmentedControl | UI-3 |
 | Galaxy | `/galaxy`, data at `/galaxy/data` | Existing; Needs UI. Projects/child moons with categories, positions, progress and links. Life-domain grouping is proposed presentation derived from categories, not a stored domain graph | GalaxyDomainNode, BottomSheet, NavigationRow, ErrorState | UI-4 |
-| Project detail | `/projects/{id}` | Existing; Needs UI. Items/proof, children/stops, notes, roadmap metadata, external work, dates/status. Milestones belong to roadmap features; expose only actual associations | ProjectProgressRow, SubNavigationTabs, ListRow | UI-3 |
+| Project detail | `/projects/{id}` | Implemented UI-3. Overview/Tasks/Roadmap/Notes anchors; items/proof, shared stop cards, notes, external work and actual dates/status. Milestones link to the associated roadmap | ProjectProgressRow, SubNavigationTabs, ListRow | UI-3 |
 | Health summary | `/health` | Existing; Needs UI. HealthToday, nullable daily snapshot, cycle and observed energy; existing gym consistency/goals/tasks retained | HealthSummaryCard, MetricRingCard, MacroProgressBar, StatCard | UI-5 |
 | Nutrition | `/health#nutrition`; proposed `/health/nutrition` | Needs UI for totals/macros from snapshot/cycle. Needs backend for individual meals, next-meal plan, recipes, portion engine and nutrition insights | NutritionCard, CalorieRing, MacroCard, MealCard | UI-6 |
 | Training | `/health#training`; proposed `/health/training` | Empty placeholder exists; Needs UI and backend for provider-neutral Hevy sessions, history, sets/reps/weights/PRs and sync status. Gym tracker is not a Hevy workout | WorkoutCard, TrainingProgressCard, IntegrationStatusRow | UI-7 |
@@ -105,7 +105,7 @@ this table groups actions rather than proposing any endpoint removal.
 | UI-0 (implemented) | Tokens, primitives, typed inputs and development gallery | Browser checked; Jay reviews on iPhone before shell |
 | UI-1 (implemented) | GYST shell, five destinations, More, safe areas and PWA asset policy | Browser/CI checks recorded in task; real-device review pending |
 | UI-2 (implemented) | Today and dedicated checklist | Existing actions retained; Health null/freshness states and browser checks recorded in task |
-| UI-3 | Projects list/detail | Preserve hierarchy, proof, external links, milestones and unlocks |
+| UI-3 (implemented) | Projects list/detail/forms | Preserves hierarchy, proof, external links, roadmap access and unlock rules; evidence in task |
 | UI-4 | Mobile Galaxy | Same Three.js behavior/data; category presentation, touch and desktop review |
 | UI-5 | Health shell/summary | Missing/zero/partial/stale states and separated energy concepts |
 | UI-6 | Nutrition | Real aggregate macros first; meal/recipe features remain honest empty states |

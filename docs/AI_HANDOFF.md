@@ -104,6 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [UI-3 Projects](tasks/UI-3-projects.md) | IN PROGRESS | pending | pending |
 | [UI-2 Today](tasks/UI-2-today.md) | DONE | `3dd076d` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34671487875) |
 | [UI-1 shell](tasks/UI-1-shell.md) | DONE | `a8f9105` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34670549071) |
 | [UI-0 foundation](tasks/UI-0-foundation.md) | DONE | `99f5968` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34669485151) |
@@ -244,9 +245,9 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Jay: review UI-2 Today before approving UI-3 Projects and project detail.**
-Jay approved UI-1 and requested UI-2. See [UI-2](tasks/UI-2-today.md) for scope
-and verification evidence. A2 remains separate operational work.
+**Jay: review UI-3 Projects before approving UI-4 Mobile Galaxy.**
+Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
+for scope and verification evidence. A2 remains separate operational work.
 
 Planning baseline is `5c50011`. The earlier handoff contains contradictory
 operator/auth claims: newer prose says HTTPS/OPS1 are done, older blocker sections
@@ -337,3 +338,8 @@ deployment or data access.
 adopts Today and adds the shared daily checklist route. Existing task/study,
 prayer/Athan/trackers and XP actions remain. Health uses existing read services;
 no business logic/schema/production data changes. Evidence: UI-2 task file.
+
+2026-09-11 — Codex — Jay requested continuation after UI-2. UI-3 adopts Projects
+cards, status/roadmap filters, detail sections and forms while preserving
+hierarchy, proof, external work and action guards. Evidence: UI-3 task file.
+No production access or deployment.

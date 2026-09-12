@@ -1,26 +1,24 @@
 {{define "content"}}
-<div class="project-theme project-theme-{{.Project.Project.Color}}">
-<div class="page-head">
+<div class="gyst-scope projects-ui project-detail-ui">
+<div class="gyst-header project-heading">
   <div>
     <p class="kicker">
       {{if .HasRoadmap}}<a href="/roadmap?roadmap={{.Roadmap.ID}}">{{.Roadmap.Name}}</a>{{else}}<a href="/projects">Projects</a>{{end}}
       {{- if .HasParent}} / <a href="/projects/{{.Parent.ID}}">{{.Parent.Name}}</a>{{end}} / {{.Project.Project.Category}}
     </p>
-    <h1 class="page-title">{{.Project.Project.Name}}</h1>
-    <p class="page-sub">
+    <h1 class="gyst-page-title">{{.Project.Project.Name}}</h1>
+    <p class="gyst-caption">
       {{.Project.CompletedItems}} of {{.Project.TotalItems}} missions done
       {{- if .Project.Project.TargetDate}} &middot; target {{niceDate .Project.Project.TargetDate}}{{end}} &middot; {{.Project.Project.Status}}.
     </p>
-    {{if .Project.Project.Description}}<p class="page-sub">{{.Project.Project.Description}}</p>{{end}}
+    {{if .Project.Project.Description}}<p class="gyst-caption">{{.Project.Project.Description}}</p>{{end}}
   </div>
-  <a class="btn ghost" href="/projects/{{.Project.Project.ID}}/edit">Edit trip</a>
+  <a class="btn ghost" href="/projects/{{.Project.Project.ID}}/edit">Edit project</a>
 </div>
 
-<div class="card tight mt-24">
-  <div class="progress-row">
-    <div class="progress{{if or (eq .Project.Project.Status "done") (eq .Project.Project.Status "completed")}} done{{end}}"><span style="width: {{progressWidth .Project.Progress}}"></span></div>
-    <span class="num meta">{{.Project.Progress}}%</span>
-  </div>
+<div class="gyst-card gyst-stack">
+  <div class="gyst-header"><span class="gyst-badge">{{.Project.Project.Status}}</span><strong>{{.Project.Progress}}% complete</strong></div>
+  {{with projectCard .Project}}{{template "gyst.progress" .ProgressView}}{{end}}
   {{if .Stops}}
     <div class="phase-strip mt-16" aria-label="Stops on this trip">
       {{range .Stops}}<i class="{{template "phaseClass" (nodeState .Project.Status .Progress)}}"></i>{{end}}
@@ -29,12 +27,57 @@
   {{end}}
 </div>
 
-<div class="cols-wide mt-16">
+<nav class="gyst-segments project-sections" aria-label="Project sections"><a class="gyst-segment" href="#overview">Overview</a><a class="gyst-segment" href="#tasks">Tasks</a><a class="gyst-segment" href="#roadmap">Roadmap</a><a class="gyst-segment" href="#notes">Notes</a></nav>
+<div class="project-detail-grid">
   <div>
-    <section class="section-head">
-      <h2 class="section-title">Missions</h2>
+    <section class="gyst-card" id="overview">
+      <h2 class="gyst-section-title">Overview</h2>
+      <ul class="list">
+        <li><span class="grow meta">Status</span><span class="status {{template "detailStatusClass" (nodeState .Project.Project.Status .Project.Progress)}}"><span class="dot"></span>{{.Project.Project.Status}}</span></li>
+        <li><span class="grow meta">Missions</span><span class="num">{{.Project.CompletedItems}} / {{.Project.TotalItems}}</span></li>
+        {{if .Project.Project.TargetDate}}<li><span class="grow meta">Target</span><span class="num">{{niceDate .Project.Project.TargetDate}}</span></li>{{end}}
+        {{if .Project.NextDueItem}}<li><span class="grow meta">Next</span><span>{{.Project.NextDueItem}}</span></li>{{end}}
+        {{if eq .Project.Project.Status "locked"}}
+          <li>
+            <span class="grow meta">Locked</span>
+            <span class="meta">{{if .Project.Project.DependsOnProjectID}}depends on trip #{{.Project.Project.DependsOnProjectID}} &middot; {{end}}auto-unlock {{if .Project.Project.AutoUnlock}}on{{else}}off{{end}}</span>
+          </li>
+        {{end}}
+      </ul>
+      {{if .Project.Project.UnlockNotes}}<p class="meta mt-8">Unlock: {{.Project.Project.UnlockNotes}}</p>{{end}}
+      <div class="flag-row mt-16">
+        {{if or (eq .Project.Project.Status "done") (eq .Project.Project.Status "completed")}}
+        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+          <input type="hidden" name="status" value="active">
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
+          <button class="btn sm ghost" type="submit">Reopen project</button>
+        </form>
+        {{else}}
+        {{if ne .Project.Project.Status "active"}}
+        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+          <input type="hidden" name="status" value="active">
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
+          <button class="btn sm ghost" type="submit">Make active</button>
+        </form>
+        {{end}}
+        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+          <input type="hidden" name="status" value="upcoming">
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
+          <button class="btn sm quiet" type="submit">Move upcoming</button>
+        </form>
+        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
+          <input type="hidden" name="status" value="done">
+          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
+          <button class="btn sm" type="submit">Complete project</button>
+        </form>
+        {{end}}
+      </div>
     </section>
-    <div class="card tight">
+
+    <section class="section-head" id="tasks">
+      <h2 class="section-title">Tasks</h2>
+    </section>
+    <div class="gyst-card">
       {{if .Items}}
         <ul class="tasks">
           {{range .Items}}
@@ -44,12 +87,12 @@
               {{else if eq .Status "completed"}}
                 <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/reopen">
                   <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
-                  <input type="checkbox" checked aria-label="Reopen: {{.Title}}" onchange="this.form.requestSubmit()">
+                  <label class="project-task-check"><input type="checkbox" checked aria-label="Reopen: {{.Title}}" onchange="this.form.requestSubmit()"></label>
                 </form>
               {{else}}
                 <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/complete">
                   <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
-                  <input type="checkbox" aria-label="Complete: {{.Title}}" onchange="this.form.requestSubmit()">
+                  <label class="project-task-check"><input type="checkbox" aria-label="Complete: {{.Title}}" onchange="this.form.requestSubmit()"></label>
                 </form>
               {{end}}
               <div class="task-body">
@@ -118,86 +161,26 @@
           {{end}}
         </ul>
       {{else}}
-        <p class="meta">No missions yet &mdash; add one on the right.</p>
+        <p class="meta">No missions yet. Use the Add mission form to plan your first task.</p>
       {{end}}
     </div>
 
-    {{if .Stops}}
-      <section class="section-head">
-        <h2 class="section-title">Stops</h2>
-      </section>
-      <ul class="project-list">
-        {{range .Stops}}
-          <li>
-            <a class="project-row" href="/projects/{{.Project.ID}}">
-              <span class="status {{template "detailStatusClass" (nodeState .Project.Status .Progress)}}"><span class="dot"></span></span>
-              <span class="grow">
-                <h3>{{.Project.Name}}</h3>
-                <p class="meta">{{.Project.ProjectKind}}{{if .Project.UnlockNotes}} &middot; {{.Project.UnlockNotes}}{{end}}</p>
-              </span>
-              <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-              <span class="meta num">{{.Progress}}%</span>
-            </a>
-          </li>
-        {{end}}
-      </ul>
-    {{end}}
-
-    {{if .Project.Project.Notes}}
-      <section class="card mt-16">
-        <h2 class="section-title card-title">Notes</h2>
-        <p class="body-text">{{.Project.Project.Notes}}</p>
-      </section>
-    {{end}}
-  </div>
-
-  <aside>
-    <section class="card tight">
-      <h2 class="section-title card-title">About this trip</h2>
-      <ul class="list">
-        <li><span class="grow meta">Status</span><span class="status {{template "detailStatusClass" (nodeState .Project.Project.Status .Project.Progress)}}"><span class="dot"></span>{{.Project.Project.Status}}</span></li>
-        <li><span class="grow meta">Missions</span><span class="num">{{.Project.CompletedItems}} / {{.Project.TotalItems}}</span></li>
-        {{if .Project.Project.TargetDate}}<li><span class="grow meta">Target</span><span class="num">{{niceDate .Project.Project.TargetDate}}</span></li>{{end}}
-        {{if .Project.NextDueItem}}<li><span class="grow meta">Next</span><span>{{.Project.NextDueItem}}</span></li>{{end}}
-        {{if eq .Project.Project.Status "locked"}}
-          <li>
-            <span class="grow meta">Locked</span>
-            <span class="meta">{{if .Project.Project.DependsOnProjectID}}depends on trip #{{.Project.Project.DependsOnProjectID}} &middot; {{end}}auto-unlock {{if .Project.Project.AutoUnlock}}on{{else}}off{{end}}</span>
-          </li>
-        {{end}}
-      </ul>
-      {{if .Project.Project.UnlockNotes}}<p class="meta mt-8">Unlock: {{.Project.Project.UnlockNotes}}</p>{{end}}
-      <div class="flag-row mt-16">
-        {{if or (eq .Project.Project.Status "done") (eq .Project.Project.Status "completed")}}
-        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
-          <input type="hidden" name="status" value="active">
-          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
-          <button class="btn sm ghost" type="submit">Reopen project</button>
-        </form>
-        {{else}}
-        {{if ne .Project.Project.Status "active"}}
-        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
-          <input type="hidden" name="status" value="active">
-          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
-          <button class="btn sm ghost" type="submit">Make active</button>
-        </form>
-        {{end}}
-        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
-          <input type="hidden" name="status" value="upcoming">
-          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
-          <button class="btn sm quiet" type="submit">Move upcoming</button>
-        </form>
-        <form method="post" action="/projects/{{.Project.Project.ID}}/status">
-          <input type="hidden" name="status" value="done">
-          <input type="hidden" name="return_to" value="/projects/{{.Project.Project.ID}}">
-          <button class="btn sm" type="submit">Complete project</button>
-        </form>
-        {{end}}
-      </div>
+    <section class="gyst-card gyst-stack" id="roadmap">
+      <h2 class="gyst-section-title">Roadmap</h2>
+      {{if .HasRoadmap}}<a class="gyst-row project-roadmap-link" href="/roadmap?roadmap={{.Roadmap.ID}}"><span class="gyst-icon-tile">{{template "gyst.icon" "folder-heart"}}</span><span class="gyst-row-copy"><strong>{{.Roadmap.Name}}</strong><span class="gyst-caption">Open roadmap and milestones</span></span>{{template "gyst.icon" "chevron-right"}}</a>{{else}}<p class="gyst-caption">No roadmap assigned. <a href="/projects/{{.Project.Project.ID}}/edit">Edit project</a> to choose one.</p>{{end}}
+      {{if .Stops}}<h3 class="gyst-section-title">Stops</h3><ul class="project-list">{{range .Stops}}<li>{{template "gyst.project-card" (projectCard .)}}</li>{{end}}</ul>{{else}}<p class="gyst-caption">No subprojects or stops yet.</p>{{end}}
     </section>
 
-    <section class="card tight mt-16">
-      <h2 class="section-title card-title">External work</h2>
+      <section class="gyst-card gyst-stack" id="notes">
+        <h2 class="gyst-section-title">Notes</h2>
+        {{if .Project.Project.Notes}}<p class="body-text">{{.Project.Project.Notes}}</p>{{else}}<p class="gyst-caption">No notes yet.</p>{{end}}
+        <a class="project-text-link" href="/projects/{{.Project.Project.ID}}/edit">Edit notes</a>
+      </section>
+  </div>
+
+  <aside class="gyst-stack" aria-label="Project tools">
+    <section class="gyst-card">
+      <h2 class="gyst-section-title">External work</h2>
       {{if .ExternalLinks}}
         <div class="external-links">
           {{range .ExternalLinks}}
@@ -235,8 +218,8 @@
       </details>
     </section>
 
-    <section class="card tight mt-16">
-      <h2 class="section-title card-title">Add mission</h2>
+    <section class="gyst-card">
+      <h2 class="gyst-section-title">Add mission</h2>
       <form class="form-stack" method="post" action="/projects/{{.Project.Project.ID}}/items">
         <label class="field">
           <span>Title</span>
@@ -282,8 +265,8 @@
     </section>
 
     {{if .NextDestinations}}
-      <section class="card tight mt-16">
-        <h2 class="section-title card-title">Next destination</h2>
+      <section class="gyst-card">
+        <h2 class="gyst-section-title">Next destination</h2>
         <ul class="list">
           {{range .NextDestinations}}
             <li>
