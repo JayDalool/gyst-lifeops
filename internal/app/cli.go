@@ -9,6 +9,13 @@ import (
 )
 
 func Run() {
+	// The subcommand is checked before any flag is defined: `lifeops backup`
+	// takes its own flag set, and the server's flags are not valid for it.
+	if backupRequested(os.Args) {
+		runBackupAndExit()
+		return
+	}
+
 	addr := flag.String("addr", ":8080", "HTTP listen address")
 	dbPath := flag.String("db", "data/lifeops.db", "SQLite database path")
 	migrationsDir := flag.String("migrations", "migrations", "migrations directory")
