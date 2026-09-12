@@ -1,9 +1,9 @@
 # UI-4 — Mobile Galaxy
 
-- **Status:** `IN PROGRESS`
+- **Status:** `DONE`
 - **Approval:** Jay requested the next task while testing UI-3 on 2026-09-12.
-- **Implementation commit:** Pending.
-- **CI:** Pending.
+- **Implementation commit:** `0fea4fe`.
+- **CI:** [green — run 34709626557](https://github.com/JayDalool/gyst-lifeops/actions/runs/34709626557).
 
 ## Scope
 

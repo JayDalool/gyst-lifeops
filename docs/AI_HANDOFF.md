@@ -104,7 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
-| [UI-4 Mobile Galaxy](tasks/UI-4-galaxy.md) | IN PROGRESS | pending | pending |
+| [UI-4 Mobile Galaxy](tasks/UI-4-galaxy.md) | DONE | `0fea4fe` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34709626557) |
 | [UI-3 Projects](tasks/UI-3-projects.md) | DONE | `6c86252` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34708681737) |
 | [UI-2 Today](tasks/UI-2-today.md) | DONE | `3dd076d` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34671487875) |
 | [UI-1 shell](tasks/UI-1-shell.md) | DONE | `a8f9105` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34670549071) |
@@ -349,3 +349,9 @@ No production access or deployment.
 as 6c86252; CI green: run 34708681737. Local format/vet/build/unit/race and
 Chromium/WebKit checks passed. Physical iPhone review remains pending.
 Next action: Jay reviews UI-3 before approving UI-4. No production deployment.
+
+2026-09-12 — Codex — Jay authorized UI-4 while testing UI-3. Mobile Galaxy
+gestures, selection panel and category navigator committed as 0fea4fe. CI green:
+run 34709626557. Chromium/WebKit and local Go/Node checks passed; real iPhone
+review pending. No production access or deployment. Next: Jay reviews UI-4
+before approving UI-5 Health summary.
