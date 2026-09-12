@@ -1,0 +1,70 @@
+/* UI-5 Health summary: responsive presentation, existing observation semantics. */
+:root .health-ui { display: grid; gap: 20px; min-width: 0; }
+:root .health-ui .gyst-header { flex-wrap: wrap; gap: 12px; }
+:root .health-ui .gyst-header > div { min-width: 0; }
+:root .health-ui :is(h1,h2,h3,p,a,dt,dd) { overflow-wrap: anywhere; }
+:root .health-ui .health-links { display: flex; flex-wrap: wrap; margin: 0; background: var(--gyst-control-bg); overflow: visible; gap: 4px; }
+:root .health-ui .health-links a { flex: 1 1 auto; min-height: 44px; color: var(--gyst-control-text); font-size: .875rem; }
+:root .health-ui .health-links a:hover { color: var(--gyst-blue); background: var(--gyst-surface); }
+:root .health-ui :is(.card,.day-group) { padding: 16px; margin: 0; border: 1px solid var(--gyst-border); border-radius: 16px; background: var(--gyst-surface); box-shadow: var(--gyst-shadow-card); min-width: 0; }
+:root .health-ui :is(.health-dashboard,.health-habits) { display: grid; gap: 16px; margin: 0; }
+:root .health-ui .health-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; }
+:root .health-ui h2, :root .health-ui .section-title { font-size: 1.125rem; line-height: 1.4; margin: 0 0 12px; color: var(--gyst-text); }
+:root .health-ui h3 { font-size: 1rem; line-height: 1.5; }
+:root .health-ui :is(.meta,.kicker,.group-label) { font-size: .875rem; line-height: 1.5; color: var(--gyst-text-secondary); }
+:root .health-ui .health-preview { display: grid; gap: 4px; margin: 0; padding: 12px 16px; border: 0; border-radius: 12px; color: var(--gyst-text-secondary); background: var(--gyst-control-bg); font-size: .875rem; }
+:root .health-ui .health-preview strong { color: var(--gyst-text); }
+:root .health-ui .health-notice { background: var(--gyst-blue-soft); }
+:root .health-ui .health-notice.is-stale { border-left: 4px solid var(--gyst-warning-text); }
+:root .health-ui .health-energy-top { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; margin: 16px 0 0; }
+:root .health-ui :is(.health-intake,.health-remaining) { display: grid; align-content: start; gap: 8px; max-width: none; min-width: 0; padding: 16px; background: var(--gyst-bg); border-radius: 12px; }
+:root .health-ui :is(.health-intake,.health-remaining) strong { font-size: 2rem; line-height: 1.2; color: var(--gyst-text); font-variant-numeric: tabular-nums; }
+:root .health-ui :is(.health-intake,.health-remaining) span { font-size: .875rem; }
+:root .health-ui :is(.health-intake,.health-remaining) small { font-size: .8125rem; color: var(--gyst-text-secondary); }
+:root .health-ui .health-metrics { margin: 0; padding: 0; background: transparent; font-size: .875rem; }
+:root .health-ui .health-metrics > div { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 12px 0; margin: 0; border-bottom: 1px solid var(--gyst-border); }
+:root .health-ui .health-metrics dt { flex: 1 1 160px; color: var(--gyst-text-secondary); }
+:root .health-ui .health-metrics dd { margin: 0; white-space: normal; color: var(--gyst-text); }
+:root .health-ui .health-macro { font-size: .875rem; margin-bottom: 16px; }
+:root .health-ui .health-macro > div { flex-wrap: wrap; gap: 4px 12px; }
+:root .health-ui .health-macro :is(span,small) { color: var(--gyst-text-secondary); }
+:root .health-ui progress { display: block; width: 100%; height: 8px; border: 0; border-radius: 8px; overflow: hidden; accent-color: var(--gyst-positive-text); background: var(--gyst-control-bg); }
+:root .health-ui progress::-webkit-progress-bar { background: var(--gyst-control-bg); }
+:root .health-ui progress::-webkit-progress-value { background: var(--gyst-positive-text); }
+:root .health-ui progress::-moz-progress-bar { background: var(--gyst-positive-text); }
+:root .health-ui .health-activity { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; margin: 0; }
+:root .health-ui .health-activity > div { min-width: 0; padding: 12px; border-radius: 12px; background: var(--gyst-bg); }
+:root .health-ui .health-activity dt { color: var(--gyst-text-secondary); font-size: .875rem; }
+:root .health-ui .health-activity dd { font-size: 1.5rem; line-height: 1.4; color: var(--gyst-text); }
+:root .health-ui .health-activity .is-absent { font-size: 1rem; font-weight: 400; }
+:root .health-ui .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 14px; white-space: normal; color: var(--gyst-blue); background: var(--gyst-surface); border: 1px solid var(--gyst-border); border-radius: 12px; }
+:root .health-ui .gym-strip { display: grid; grid-template-columns: repeat(auto-fit,minmax(60px,1fr)); gap: 8px; }
+:root .health-ui .gym-strip form { margin: 0; min-width: 0; }
+:root .health-ui .gym-day { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 64px; height: auto; gap: 4px; padding: 8px; border-radius: 12px; color: var(--gyst-text); background: var(--gyst-bg); }
+:root .health-ui .gym-day small { font-size: .6875rem; }
+:root .health-ui .gym-day.status-done { color: var(--gyst-positive-text); }
+:root .health-ui .gym-day.status-skipped { color: var(--gyst-warning-text); }
+:root .health-ui .project-list { padding: 0; margin: 0; list-style: none; }
+:root .health-ui .project-row { display: flex; flex-wrap: wrap; gap: 12px; min-height: 64px; padding: 16px; background: var(--gyst-surface); border-radius: 12px; color: var(--gyst-text); }
+:root .health-ui .project-row .grow { min-width: 0; flex: 1 1 160px; }
+:root .health-ui .project-row .progress { flex: 1 1 100px; }
+:root .health-ui .list { list-style: none; padding: 0; }
+:root .health-ui .list li { display: flex; flex-wrap: wrap; gap: 12px; }
+:root .health-ui .list .grow { min-width: 0; flex: 1 1 160px; }
+:root .health-ui :is(a,button):focus-visible { outline: 2px solid var(--gyst-blue); outline-offset: 3px; }
+@media (min-width: 375px) { :root .health-ui .health-activity { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (min-width: 600px) { :root .health-ui .health-energy-top { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (min-width: 768px) {
+  :root .health-ui .health-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+  :root .health-ui .health-energy-top { grid-template-columns: minmax(0,1fr); }
+  :root .health-ui .health-activity { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  :root .health-ui .card { padding: 24px; }
+}
+@media (min-width: 1024px) { :root .health-ui .health-energy-top { grid-template-columns: repeat(2,minmax(0,1fr)); } :root .health-ui .health-activity { grid-template-columns: repeat(5,minmax(0,1fr)); } }
+
+:root .health-ui .health-period { margin: 0; flex-wrap: wrap; background: var(--gyst-control-bg); }
+:root .health-ui .health-period button { color: var(--gyst-control-text); font-size: .875rem; }
+:root .health-ui .health-period button[aria-pressed="true"] { color: var(--gyst-blue); background: var(--gyst-surface); }
+:root .health-ui .health-planned { margin-top: 16px; }
+:root .health-ui .health-planned summary { min-height: 44px; padding-block: 12px; cursor: pointer; color: var(--gyst-blue); }
+:root .health-ui .health-planned-actions { display: flex; flex-wrap: wrap; gap: 8px; }

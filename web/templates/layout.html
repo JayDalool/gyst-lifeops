@@ -17,6 +17,7 @@
   {{if eq .Page "today"}}<link rel="stylesheet" href="/static/css/ui-today.css?v=ui-2">{{end}}
   {{if eq .Page "projects"}}<link rel="stylesheet" href="/static/css/ui-projects.css?v=ui-3">{{end}}
   {{if eq .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-galaxy.css?v=ui-4">{{end}}
+  {{if eq .Page "health"}}<link rel="stylesheet" href="/static/css/ui-health.css?v=ui-5">{{end}}
   <script defer src="/static/js/charts.js?v=ui-2"></script>
 	<script defer src="/static/js/app.js?v=ui-1"></script>
 </head>
@@ -58,7 +59,7 @@
 	  </form>
 	  <p class="command-help meta">↑↓ navigate · Enter open · type “tomorrow” or “!high” for quick capture</p>
 	</dialog>
-  {{if eq .Page "health"}}<script defer src="/static/js/health.js?v=1"></script>{{end}}
+
   {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=ui-4"></script>{{end}}
 </body>
 </html>

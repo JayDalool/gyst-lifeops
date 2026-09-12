@@ -1,4 +1,4 @@
-# GYST UI system — UI-4 implemented
+# GYST UI system — UI-5 implemented
 
 ## Scope and visual authority
 
@@ -441,3 +441,15 @@ available there. No domain graph, position changes or service changes are added.
 
 Node gesture regression checks run in CI. Browser evidence and limitations live
 in [UI-4](tasks/UI-4-galaxy.md). Next phase is UI-5 Health summary after review.
+
+## UI-5 implementation
+
+Jay requested continuation and specifically Health sizing fixes. `ui-health.css`
+uses the shared palette/type scale with wrapping navigation and responsive
+energy/activity cards. The static ring is removed; native calorie progress
+requires the existing HasBar contract. Food allowance and observed energy are
+separate cards. The existing model retains all null/zero/source distinctions.
+History controls are visibly unavailable; the old period script is no longer
+loaded. Gym controls retain their handlers and show text statuses. Supported
+plan/goals/tasks remain reachable; planned tools are a compact disclosure.
+No service/schema changes. Evidence: [UI-5](tasks/UI-5-health.md).

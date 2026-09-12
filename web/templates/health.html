@@ -1,9 +1,10 @@
 {{define "content"}}
-<div class="page-head">
+<div class="gyst-scope health-ui">
+<div class="gyst-header">
   <div>
     <p class="kicker">GYST · Health</p>
-    <h1 class="page-title">Health</h1>
-    <p class="page-sub">A little more aware. A little more consistent.</p>
+    <h1 class="gyst-page-title">Health</h1>
+    <p class="gyst-caption">A little more aware. A little more consistent.</p>
   </div>
   <a class="btn ghost" href="/goals/new">New health goal</a>
 </div>
@@ -15,18 +16,18 @@
   <a href="/health/plan">Plan</a>
 </nav>
 <section id="summary" class="health-dashboard" aria-label="Health summary">
-  <div class="health-period" role="group" aria-label="Summary period" hidden>
+  <p class="health-preview"><strong>Today · {{.Today.Date}}</strong><span>Week, month and year summaries are not built yet.</span></p>
+  <div class="health-period" role="group" aria-label="Summary period">
     <button type="button" data-period="Day" aria-pressed="true">Day</button>
-    <button type="button" data-period="Week" aria-pressed="false">Week</button>
-    <button type="button" data-period="Month" aria-pressed="false">Month</button>
-    <button type="button" data-period="Year" aria-pressed="false">Year</button>
+    <button type="button" data-period="Week" disabled title="Weekly summaries are not available yet">Week</button>
+    <button type="button" data-period="Month" disabled title="Monthly summaries are not available yet">Month</button>
+    <button type="button" data-period="Year" disabled title="Yearly summaries are not available yet">Year</button>
   </div>
-  <p class="health-preview">Day shows your recorded data. Week, month and year summaries are not built yet.</p>
   <div data-period-daily class="health-grid">
     {{if not .Today.HasCycle}}
       <section class="card health-wide health-notice">
         <h2>No health plan yet</h2>
-        <p class="meta">Targets come from the current 90-day cycle. Without one, intake is shown on its own and nothing can be compared against a goal.</p>
+        <p class="meta">Targets come from your current health plan. Without one, intake is shown on its own and nothing can be compared against a goal.</p>
         <a class="btn" href="/health/plan">Set up a plan</a>
       </section>
     {{end}}
@@ -46,11 +47,12 @@
       <p class="kicker">Daily summary{{if .Today.HasLastSynced}} · updated {{.Today.LastSynced}}{{end}}</p>
       <h2>Today's energy</h2>
       <div class="health-energy-top">
-        <div class="health-ring">
+        <div class="health-intake">
           {{with .Today.Calories}}
             {{if .Consumed.Present}}<strong>{{.Consumed.Value}}</strong>{{else}}<strong class="is-absent">—</strong>{{end}}
             <span>kcal consumed</span>
             {{if .Target.Present}}<small>of {{.Target.Value}} kcal target</small>{{else}}<small>no target set</small>{{end}}
+            {{if .HasBar}}<progress class="health-intake-progress" value="{{.Percent}}" max="100" aria-label="{{.ProgressAria}}">{{.Percent}}%</progress>{{end}}
           {{end}}
         </div>
         <div class="health-remaining">
@@ -69,6 +71,10 @@
           {{end}}
         </div>
       </div>
+    </section>
+    <section class="card health-observed">
+      <p class="kicker">Measured so far</p>
+      <h2>Observed energy</h2>
       <dl class="health-metrics">
         <div>
           <dt>Observed burn so far</dt>
@@ -108,20 +114,16 @@
       {{end}}
     </section>
 
-    <section class="card">
-      <p class="kicker">Next meal</p>
-      <h2>Meal planning</h2>
-      <p class="meta">Recipes, food search and portion calculation are not built yet. Nothing is suggested here until they are.</p>
-      <button class="btn" type="button" disabled>Plan meal</button>
-    </section>
-
-    <section id="training" class="card">
+    <section id="training" class="card health-training">
       <p class="kicker">Training</p>
-      <h2>Today's workout</h2>
-      <p class="meta">Workout data will come from Hevy. That integration does not exist yet, so no workout is shown.</p>
-      <button class="btn" type="button" disabled>Start workout</button>
+      <h2>Workout history</h2>
+      <p class="meta">Hevy workouts are not connected yet. You can track your gym consistency below.</p>
+      <a class="btn" href="#health-habits">View gym days</a>
+      <details class="health-planned"><summary>Planned tools</summary>
+        <h3>Next meal</h3><p class="meta">Meal planning and workout sessions are not available yet.</p>
+        <div class="health-planned-actions"><button class="btn" type="button" disabled>Plan meal</button><button class="btn" type="button" disabled>Start workout</button></div>
+      </details>
     </section>
-
     <section class="card health-wide">
       <p class="kicker">Movement</p>
       <h2>Activity</h2>
@@ -150,36 +152,30 @@
       <p class="meta">Watch and phone steps are recorded separately and never added together: the sources overlap, so summing them double-counts.</p>
     </section>
   </div>
-  <section class="card" data-period-history hidden aria-live="polite">
-    <p class="kicker">History preview</p>
-    <h2 data-period-title></h2>
-    <p data-period-description></p>
-    <p class="meta">No historical health data is connected. Your existing consistency tracking remains below.</p>
-  </section>
   <section id="progress" class="card">
     <p class="kicker">Progress</p>
     <h2>Your longer view</h2>
     <div class="health-grid">
       <div>
         <h3>Weight trend</h3>
-        <div class="health-chart-empty" aria-hidden="true">— · — · —</div>
+
         <p class="meta">No weight records connected.</p>
       </div>
       <div>
         <h3>Strength trend</h3>
-        <div class="health-chart-empty" aria-hidden="true">— · — · —</div>
+
         <p class="meta">No strength records connected.</p>
       </div>
     </div>
   </section>
   <section id="plan" class="card">
     <p class="kicker">Plan</p>
-    <h2>Your health cycle</h2>
+    <h2>{{if .Today.CycleTitle}}{{.Today.CycleTitle}}{{else}}Your health plan{{end}}</h2>
     <a class="btn quiet" href="/health/plan">Manage health plan</a>
     <p class="meta">Configure your goal period, nutrition targets, and training schedule. Summary metrics above show real observations; anything not yet recorded reads as no data.</p>
   </section>
 </section>
-<section class="health-habits" aria-label="Existing health habits">
+<section id="health-habits" class="health-habits" aria-label="Existing health habits">
   <div class="section-head">
     <h2 class="section-title">Your habits &amp; consistency</h2>
     <span class="meta">Live app data</span>
@@ -191,7 +187,7 @@
       <form method="post" action="/trackers/gym/toggle">
         <input type="hidden" name="log_date" value="{{.Date}}">
         <button class="gym-day status-{{.Status}}" type="button" title="{{.Label}} {{.Date}}: {{.Status}}">
-          <span>{{.Label}}</span>
+          <span>{{.Label}}</span><small data-tracker-status>{{if eq .Status "not_done"}}Not done{{else}}{{.Status}}{{end}}</small>
         </button>
       </form>
     {{end}}
@@ -199,7 +195,7 @@
 </div>
 
 <section class="section-head">
-  <h2 class="section-title">Movement trend</h2>
+  <h2 class="section-title">Gym consistency trend</h2>
 </section>
 <div class="card">
   <canvas class="chart" data-chart="line" data-max="100"
@@ -253,4 +249,5 @@
   <p class="meta">No health tasks in the active queue.</p>
 {{end}}
 </section>
+</div>
 {{end}}
