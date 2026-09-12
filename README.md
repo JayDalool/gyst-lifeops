@@ -25,6 +25,29 @@ go run . -seed=false
 
 The app applies SQL migrations on startup and loads `seeds/example.sql` only when the database has no tasks, projects, or goals.
 
+## Back up the database
+
+```powershell
+go run . backup
+go run . backup -db data/lifeops.db -out backups/before-migration.db
+```
+
+In Docker, where the same binary is already present:
+
+```sh
+docker compose exec gyst-lifeops /app/lifeops backup
+```
+
+The backup is written with `VACUUM INTO`, so the server can keep running. The
+source is opened read-only and is never modified, and the copy is verified with
+`PRAGMA integrity_check` before the command reports success. The default
+destination is `backups/` beside the database — inside the mounted volume — named
+with a sortable UTC timestamp. An existing destination is never overwritten.
+
+**Do not back up with `cp data/lifeops.db`.** The database runs in WAL mode, so
+recently committed data lives in `data/lifeops.db-wal` until a checkpoint. The
+main file on its own can be almost empty, and the copy gives no sign of it.
+
 ## Features
 
 - Restrained, responsive command-center UI with five primary destinations: Today, Projects (Galaxy), Health, Courses, and More.

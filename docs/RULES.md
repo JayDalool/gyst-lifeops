@@ -113,7 +113,12 @@ committed. Tests use `t.TempDir()`.
 
 `data/lifeops.db` is never reset, reseeded, migrated ad hoc, or committed. Do
 not auto-repair foreign-key violations found in production — report them and
-stop. Only Jay runs anything against it, with the app stopped and a backup taken.
+stop. Only Jay runs anything against it, with the app stopped and a backup taken:
+`docker compose exec gyst-lifeops /app/lifeops backup`
+([B2](tasks/B2-backup-tooling.md)).
+
+**Never back up with `cp`.** WAL mode means the main file alone can be
+near-empty while the real data sits in `-wal`, and the copy looks fine.
 
 ### 3.2 `NULL` is not `0`
 

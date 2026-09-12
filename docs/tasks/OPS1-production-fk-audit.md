@@ -21,13 +21,25 @@ The database must be certified clean before the B1 code is deployed against it.
 ## Procedure
 
 ```sh
-docker compose stop gyst-lifeops          # so the WAL checkpoints
-cp data/lifeops.db data/lifeops.db.backup-$(date +%F)
+# 1. Back up first, while the container is still running.
+docker compose exec gyst-lifeops /app/lifeops backup
+
+# 2. Then stop the app, so the check cannot miss or misreport rows.
+docker compose stop gyst-lifeops
+
+# 3. Run the audit on the host - the image has no sqlite3 binary.
 sqlite3 ./data/lifeops.db "PRAGMA foreign_key_check;"
 ```
 
-Run on the **host** — the container image has no `sqlite3` binary. Stop the app
-first, or the check can miss or misreport rows.
+Step 1 uses [B2](B2-backup-tooling.md) and writes to `data/backups/`, inside
+the mounted volume. It reports the size, table count and applied-migration
+count, and verifies the copy with `integrity_check` before claiming success.
+
+**Do not back up with `cp data/lifeops.db`.** The database runs in WAL mode, so
+committed data sits in `data/lifeops.db-wal` until a checkpoint moves it. A
+measured example: the main file was 4,096 bytes while its `-wal` held
+1,285,472. Copying the main file alone would have produced a 4 KB near-empty
+database, with nothing to indicate the backup was worthless.
 
 - **Zero rows** → certified; B1 is clear to deploy. Record the date here.
 - **Any rows** → **STOP.** Each row is `table | rowid | parent_table | fk_index`.

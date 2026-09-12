@@ -2,71 +2,96 @@
 
 - **ID:** B2
 - **Title:** `lifeops backup` — a consistent on-line database copy
-- **Status:** `NOT STARTED`
-- **Owner:** Claude (next agent task)
-- **Implementation commit(s):** none
-- **Review status:** n/a
+- **Status:** `DONE`
+- **Owner:** Claude
+- **Implementation commit(s):** `820c704`
+- **Review status:** CI — see the run for `820c704`. Human or independent-agent
+  review: **UNKNOWN**. Exercised end-to-end against a live server in a scratch
+  directory; **never run against the production database** by an agent.
 
-## Why this is next
+## Why it was needed
 
-It is the only unblocked implementable item, and it gates the operator work.
-[OPS1](OPS1-production-fk-audit.md) says "take a backup first", and today that
-means copying a file by hand while hoping the app is not mid-write. Every other
-open item — A1, A2, M3 — waits on Jay.
+[OPS1](OPS1-production-fk-audit.md) tells the operator to take a backup before
+running `foreign_key_check` against production, and the only available method
+was copying `data/lifeops.db` by hand.
 
-Copying `data/lifeops.db` with `cp` while the server runs can produce a torn
-copy: WAL mode means committed data lives in `-wal` until a checkpoint, so the
-main file alone may be stale, inconsistent, or both.
+**That method is unsound here, and silently so.** The database runs in WAL
+mode, so committed transactions live in the `-wal` file until a checkpoint
+moves them into the main file. Measured against a freshly started server:
 
-## Scope
+```
+lifeops.db        4,096 bytes
+lifeops.db-wal    1,285,472 bytes
+```
 
-A `backup` subcommand alongside the existing `cmd/` binaries, using SQLite's
-`VACUUM INTO`. `VACUUM INTO` takes its own read transaction, so it produces a
-single consistent file without stopping the server and without touching the
-source database.
+A `cp data/lifeops.db` at that moment produces a 4 KB near-empty database and
+gives no sign that anything is wrong. The `lifeops backup` output for the same
+database was 487 KB, 32 tables, 19 applied migrations.
 
-- New `cmd/lifeops-backup/` (or a `backup` argument to `cmd/lifeops`, chosen at
-  implementation time and stated in the commit message).
-- Destination path from an argument; default to a timestamped file under a
-  `backups/` directory.
-- **Read-only with respect to the source.** No checkpoint forced, no PRAGMA
-  changed, nothing written to `data/lifeops.db`. `VACUUM INTO` does not require
-  it and the rule in [`../RULES.md` §3.1](../RULES.md) forbids it.
-- Refuse to overwrite an existing destination rather than clobbering a backup.
-- Verify the result before reporting success: open the copy and run
-  `PRAGMA integrity_check`, and report the row count of one known table.
-- Print the destination path and byte size on success; exit non-zero on failure
-  with the SQLite error intact.
+## What was built
 
-## Out of scope
+```
+lifeops backup
+lifeops backup -db data/lifeops.db -out backups/before-migration.db
+```
 
-Scheduling, rotation, retention, off-site copying, encryption. Those are
-operator concerns and can be a cron line around this command. Do not build a
-daemon.
+- `internal/db/backup.go` — `Backup`, `DefaultBackupPath`, `BackupResult`.
+- `internal/app/backup_cmd.go` — the subcommand and its flag set.
+- `internal/app/cli.go` — dispatches `backup` before any server flag is defined.
+
+Decisions, each with the reason it was made:
+
+| Decision | Why |
+|---|---|
+| `VACUUM INTO`, not a file copy | Takes its own read transaction; writes one complete compacted file; writers continue throughout |
+| Source opened `mode=ro` | Structural, not a promise: SQLite refuses writes, and a mistyped path cannot create an empty database |
+| Destination as a bound parameter | The `INTO` clause takes an expression, so the path is never hand-quoted |
+| Existing destination refused | The likeliest thing at a backup path is an earlier backup |
+| Copy verified before success | `integrity_check`, table count, migration count. A copy that fails is deleted — an untrustworthy backup is worse than none |
+| Default is `backups/` **beside the database** | Only `./data` is a mounted volume; a backup relative to the working directory would vanish with the container |
+| A subcommand, not a second binary | The image builds only `./cmd/lifeops`, so a separate tool would not exist inside the container holding the database |
+
+Scheduling, rotation, off-site copying and encryption are deliberately absent.
+They are a cron line around this command.
 
 ## Tests
 
-`internal/db` or a `cmd` test, against a temporary database from `t.TempDir()`:
+`internal/db/backup_test.go`, `internal/app/backup_cmd_test.go`. The source
+databases are built from the **real** `migrations/` directory, so the copy is
+verified against the production schema shape rather than a toy one.
 
-- a populated source produces a copy whose rows match;
-- the copy passes `PRAGMA integrity_check`;
-- concurrent writes to the source during the backup do not corrupt the copy and
-  do not fail the backup;
-- an existing destination is refused, and the existing file is left untouched;
-- an unwritable destination directory returns an error, not a partial file.
-
-**No test may point at `data/lifeops.db`.**
+- every row copied; table and migration counts correct
+- the copy is self-contained — no `-wal`/`-shm` left beside it
+- **the source is unchanged**: size, mtime and `journal_mode` identical after
+- **backup succeeds under continuous concurrent writes**, and blocks no writer
+- an existing destination is refused and left byte-identical
+- the source cannot be its own destination
+- a missing source fails and is **not created**
+- a DSN source is rejected
+- an unwritable destination directory leaves no partial file (skipped when the
+  test runs as root, where permission bits are not enforced)
+- a file that is not a database fails verification
+- `DefaultBackupPath` is UTC, sortable, and beside the database
 
 ## Acceptance criteria
 
-- [ ] `VACUUM INTO`, not a file copy
-- [ ] Source database never written to
-- [ ] Existing destination refused
-- [ ] Copy verified with `integrity_check` before success is reported
-- [ ] Tests cover the concurrent-write case
-- [ ] gofmt, go vet, go build, go test, go test -race pass
-- [ ] CI green
-- [ ] Documented in the handoff so Jay can run it before OPS1
+- [x] `VACUUM INTO`, not a file copy
+- [x] Source database never written to
+- [x] Existing destination refused
+- [x] Copy verified with `integrity_check` before success is reported
+- [x] Tests cover the concurrent-write case
+- [x] gofmt, go vet, go build, go test, go test -race pass
+- [ ] CI green — check the run for `820c704`
+- [x] Documented so Jay can run it before OPS1
+
+## Observed while building this, not fixed
+
+`docker-compose.yml` sets `DB_PATH=/app/data/lifeops.db`, but nothing reads
+`DB_PATH` — the path comes from the `-db` flag, which defaults to
+`data/lifeops.db`. The container's working directory is `/app`, so both resolve
+to the same file and the discrepancy is harmless today. It is a trap for anyone
+who changes `DB_PATH` and expects it to take effect. **Not in scope for B2**;
+recorded rather than silently fixed.
 
 ## Blockers
 
@@ -74,4 +99,6 @@ None.
 
 ## Next action
 
-Implement it. One commit.
+None for B2. The operator can now run
+`docker compose exec gyst-lifeops /app/lifeops backup` before
+[OPS1](OPS1-production-fk-audit.md).
