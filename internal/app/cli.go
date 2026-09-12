@@ -10,9 +10,14 @@ import (
 
 func Run() {
 	// The subcommand is checked before any flag is defined: `lifeops backup`
-	// takes its own flag set, and the server's flags are not valid for it.
+	// and `lifeops passwordhash` take their own flag sets, and the server's
+	// flags are not valid for them.
 	if backupRequested(os.Args) {
 		runBackupAndExit()
+		return
+	}
+	if passwordHashRequested(os.Args) {
+		runPasswordHashAndExit()
 		return
 	}
 
