@@ -104,7 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
-| [UI-0 foundation](tasks/UI-0-foundation.md) | IN PROGRESS | pending commit | pending |
+| [UI-0 foundation](tasks/UI-0-foundation.md) | DONE | `99f5968` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34669485151) |
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
 | [B6 CI safety gate](tasks/B6-ci-safety-gate.md) | DONE | `f663f3f` | green |
@@ -325,4 +325,4 @@ No runtime changes or production access. Commit: 0145c9c. CI green: run 34668589
 
 2026-09-11 — Codex — Jay approved UI-0. Added the opt-in component foundation,
 Lucide subset and standalone development gallery. Chromium/WebKit review passed;
-real iPhone review pending. Commit and final CI evidence follow after push.
+real iPhone review pending. Commit: 99f5968; CI green: run 34669485151.

@@ -1,10 +1,10 @@
 # UI-0 — Design tokens and reusable foundation
 
-- **Status:** `IN PROGRESS` — implementation complete locally; commit/CI evidence follows.
+- **Status:** `DONE` — implementation committed and CI green; iPhone visual review remains pending.
 - **Scope:** Approved by Jay in response to UI-PLAN. UI-0 only.
-- **Implementation commit(s):** Pending commit.
+- **Implementation commit(s):** `99f5968`.
 - **Review:** Chromium and WebKit; no real iPhone/Home Screen verification.
-- **CI:** Pending push. Local gofmt, vet, build, unit and race checks passed after final refinements.
+- **CI:** [Green for 99f5968](https://github.com/JayDalool/gyst-lifeops/actions/runs/34669485151). Local gofmt, vet, build, unit and race checks passed after final refinements.
 
 ## Implemented
 
