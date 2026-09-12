@@ -1,9 +1,9 @@
 # UI-3 — Projects and project detail
 
-- **Status:** `IN PROGRESS` — implementation and local verification complete; commit/CI pending.
+- **Status:** `DONE` — implementation committed; CI green.
 - **Approval:** Jay reviewed UI-2 and requested continuation to the next phase.
-- **Implementation commit(s):** Pending.
-- **CI:** Pending push.
+- **Implementation commit(s):** `6c86252`.
+- **CI:** [green — run 34708681737](https://github.com/JayDalool/gyst-lifeops/actions/runs/34708681737).
 - **Review:** Agent verification; physical iPhone/Home Screen review pending.
 
 ## Scope

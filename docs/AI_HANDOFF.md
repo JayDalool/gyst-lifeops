@@ -104,7 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
-| [UI-3 Projects](tasks/UI-3-projects.md) | IN PROGRESS | pending | pending |
+| [UI-3 Projects](tasks/UI-3-projects.md) | DONE | `6c86252` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34708681737) |
 | [UI-2 Today](tasks/UI-2-today.md) | DONE | `3dd076d` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34671487875) |
 | [UI-1 shell](tasks/UI-1-shell.md) | DONE | `a8f9105` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34670549071) |
 | [UI-0 foundation](tasks/UI-0-foundation.md) | DONE | `99f5968` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34669485151) |
@@ -343,3 +343,8 @@ no business logic/schema/production data changes. Evidence: UI-2 task file.
 cards, status/roadmap filters, detail sections and forms while preserving
 hierarchy, proof, external work and action guards. Evidence: UI-3 task file.
 No production access or deployment.
+
+2026-09-12 — Codex — Resumed UI-3 with Jay’s approval. Implementation committed
+as 6c86252; CI green: run 34708681737. Local format/vet/build/unit/race and
+Chromium/WebKit checks passed. Physical iPhone review remains pending.
+Next action: Jay reviews UI-3 before approving UI-4. No production deployment.
