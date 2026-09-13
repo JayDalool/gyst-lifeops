@@ -309,6 +309,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "health":
 		if len(segments) == 1 {
 			h.health(w, r)
+		} else if len(segments) == 2 && segments[1] == "training" {
+			h.training(w, r)
 		} else if len(segments) == 2 && segments[1] == "nutrition" {
 			h.nutrition(w, r)
 		} else if len(segments) == 2 && segments[1] == "plan" {
@@ -2113,6 +2115,7 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		filepath.Join(h.TemplateDir, "ui_shell.html"),
 		filepath.Join(h.TemplateDir, "today_components.html"),
 		filepath.Join(h.TemplateDir, "project_components.html"),
+		filepath.Join(h.TemplateDir, "health_components.html"),
 		filepath.Join(h.TemplateDir, page),
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{

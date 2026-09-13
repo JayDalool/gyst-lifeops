@@ -118,7 +118,7 @@
       <p class="kicker">Training</p>
       <h2>Workout history</h2>
       <p class="meta">Hevy workouts are not connected yet. You can track your gym consistency below.</p>
-      <a class="btn" href="#health-habits">View gym days</a>
+      <a class="btn" href="/health/training">Training details</a>
       <details class="health-planned"><summary>Planned tools</summary>
         <h3>Next meal</h3><p class="meta">Meal planning and workout sessions are not available yet.</p>
         <div class="health-planned-actions"><button class="btn" type="button" disabled>Plan meal</button><button class="btn" type="button" disabled>Start workout</button></div>
@@ -180,19 +180,7 @@
     <h2 class="section-title">Your habits &amp; consistency</h2>
     <span class="meta">Live app data</span>
   </div>
-<div class="day-group page-body" aria-label="Gym week">
-  <p class="group-label">This week&rsquo;s gym days &middot; <span class="num" data-mission="gym">{{.Mission.GymWeekCompletion}}%</span></p>
-  <div class="gym-strip">
-    {{range .Mission.GymWeek}}
-      <form method="post" action="/trackers/gym/toggle">
-        <input type="hidden" name="log_date" value="{{.Date}}">
-        <button class="gym-day status-{{.Status}}" type="button" title="{{.Label}} {{.Date}}: {{.Status}}">
-          <span>{{.Label}}</span><small data-tracker-status>{{if eq .Status "not_done"}}Not done{{else}}{{.Status}}{{end}}</small>
-        </button>
-      </form>
-    {{end}}
-  </div>
-</div>
+{{template "health.gymWeek" .}}
 
 <section class="section-head">
   <h2 class="section-title">Gym consistency trend</h2>
