@@ -1,7 +1,7 @@
 {{define "content"}}
 <div class="gyst-scope health-ui training-ui">
   <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Training</h1><p class="gyst-caption">Build consistency, one gym day at a time.</p></div><a class="btn" href="/health/plan">Manage health plan</a></header>
-  <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training" aria-current="page">Training</a><a href="/health#progress">Progress</a><a href="/health/plan">Plan</a></nav>
+  <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training" aria-current="page">Training</a><a href="/health/progress">Progress</a><a href="/health/plan">Plan</a></nav>
   <section class="card"><p class="kicker">Manual tracking</p><h2>Your gym week</h2><p class="meta">Tap a day to change its status between done, not done and rest. These are gym-day check-ins; they do not record exercises or workout sessions.</p>
   {{template "health.gymWeek" .}}
   <noscript><p class="meta">Enable JavaScript to update gym days.</p></noscript></section>

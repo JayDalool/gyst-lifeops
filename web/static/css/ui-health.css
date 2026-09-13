@@ -83,3 +83,19 @@
 :root .nutrition-context .nutrition-stale { color: var(--gyst-warning-text); }
 @media (min-width: 600px) { :root .nutrition-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (min-width: 1024px) { :root .nutrition-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; } }
+
+/* UI-8: observed weight points and an accessible exact-value table. */
+:root .weight-latest { display: grid; gap: 4px; }
+:root .weight-latest strong { font-size: 1.75rem; overflow-wrap: anywhere; }
+:root .weight-latest span { font-size: .875rem; color: var(--gyst-text-secondary); }
+:root .weight-plot { margin: 24px 0; }
+:root .weight-plot svg { display: block; width: 100%; height: auto; }
+:root .weight-axis { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: .8125rem; color: var(--gyst-text-secondary); }
+:root .weight-axis-line { fill: none; stroke: var(--gyst-border); stroke-width: 1; }
+:root .weight-dot { fill: var(--gyst-blue); }
+:root .weight-table-wrap { overflow-x: auto; max-width: 100%; }
+:root .weight-table-wrap:focus-visible { outline: 2px solid var(--gyst-blue); outline-offset: 2px; }
+:root .weight-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+:root .weight-table :is(th,td) { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--gyst-border); overflow-wrap: anywhere; }
+:root .weight-table tbody th { font-weight: 400; }
+:root .weight-table caption { text-align: left; padding-block: 12px; color: var(--gyst-text-secondary); }

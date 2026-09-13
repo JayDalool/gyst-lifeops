@@ -309,6 +309,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "health":
 		if len(segments) == 1 {
 			h.health(w, r)
+		} else if len(segments) == 2 && segments[1] == "progress" {
+			h.healthProgress(w, r)
 		} else if len(segments) == 2 && segments[1] == "training" {
 			h.training(w, r)
 		} else if len(segments) == 2 && segments[1] == "nutrition" {

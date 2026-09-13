@@ -1,0 +1,23 @@
+{{define "content"}}
+<div class="gyst-scope health-ui">
+ <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Progress</h1><p class="gyst-caption">Your recorded measurements over time.</p></div><a class="btn" href="/health/plan">Manage health plan</a></header>
+ <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training">Training</a><a href="/health/progress" aria-current="page">Progress</a><a href="/health/plan">Plan</a></nav>
+ <section class="card">
+  <h2>Weight history</h2>
+  <nav class="health-links" aria-label="Weight history range"><a href="?range=30" {{if eq .Range "30"}}aria-current="page"{{end}}>30 days</a><a href="?range=90" {{if eq .Range "90"}}aria-current="page"{{end}}>90 days</a><a href="?range=all" {{if eq .Range "all"}}aria-current="page"{{end}}>All time</a></nav>
+  <p class="meta">{{if ne .Range "all"}}Includes today and the preceding {{if eq .Range "30"}}29{{else}}89{{end}} calendar days. {{end}}Dates use {{.Timezone}}.</p>
+  {{if .Points}}
+  <p class="weight-latest"><strong>{{.Latest}} kg</strong><span>Latest reading in this range · {{.LastDate}}</span></p>
+  <figure class="weight-plot">
+   <div class="weight-axis"><span>{{.Maximum}} kg · highest</span><span>{{.Minimum}} kg · lowest</span></div>
+   <svg viewBox="0 0 600 200" role="img" aria-labelledby="weight-chart-title weight-chart-description"><title id="weight-chart-title">Recorded weight measurements</title><desc id="weight-chart-description">{{len .Points}} readings from {{.FirstDate}} to {{.LastDate}}. Each dot is an observation. Exact measurements follow in the table.</desc><path d="M20 10V180H590" class="weight-axis-line"/>{{range .Points}}<circle cx="{{.X}}" cy="{{.Y}}" r="4" class="weight-dot"><title>{{.Date}}: {{.Value}} kg</title></circle>{{end}}</svg>
+   <div class="weight-axis"><span>{{.FirstDate}}</span><span>{{.LastDate}}</span></div>
+   <figcaption class="meta">Dots show recorded readings only. Gaps are not filled, and the vertical scale follows the recorded minimum and maximum.</figcaption>
+  </figure>
+  <div class="weight-table-wrap" tabindex="0" role="region" aria-label="Weight measurements table"><table class="weight-table"><caption>Recorded measurements · oldest first</caption><thead><tr><th scope="col">Measured</th><th scope="col">Weight (kg)</th><th scope="col">Source</th></tr></thead><tbody>{{range .Points}}<tr><th scope="row"><time datetime="{{.Timestamp}}">{{.Date}}</time></th><td>{{.Value}}</td><td>{{.Source}}</td></tr>{{end}}</tbody></table></div>
+  {{else}}<h3>No weight readings in this range</h3><p class="meta">No measurements have been recorded for this period. Missing readings are not shown as zero.</p>{{if ne .Range "all"}}<a class="btn" href="?range=all">Check all time</a>{{end}}{{end}}
+  <p class="meta">Weight entry and weight import setup are not available in GYST yet.</p>
+ </section>
+ <div class="health-grid"><section class="card"><h2>Nutrition &amp; activity trends</h2><p class="meta">Historical summaries and plan adherence are not available yet. <a href="/health">View today's observations</a>.</p></section><section class="card"><h2>Strength trend</h2><p class="meta">Workout history is not connected yet. <a href="/health/training">Track your gym days</a> while strength trends remain unavailable.</p></section></div>
+</div>
+{{end}}
