@@ -99,3 +99,24 @@
 :root .weight-table :is(th,td) { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--gyst-border); overflow-wrap: anywhere; }
 :root .weight-table tbody th { font-weight: 400; }
 :root .weight-table caption { text-align: left; padding-block: 12px; color: var(--gyst-text-secondary); }
+
+/* UI-9: bounded cycle editor and saved plans. */
+:root .health-plan-layout { display: grid; gap: 24px; min-width: 0; align-items: start; }
+:root .health-plan-form { margin: 0; min-width: 0; }
+:root .health-plan-ui .health-plan-section { min-inline-size: 0; padding-top: 12px; }
+:root .health-plan-section legend { padding: 0 8px; font-size: 1.125rem; font-weight: 600; color: var(--gyst-text); max-width: 100%; }
+:root .health-plan-fields { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; margin-top: 16px; }
+:root .health-plan-ui .gyst-field { font-size: .875rem; color: var(--gyst-text); }
+:root .health-plan-ui .gyst-input { min-width: 0; max-width: 100%; width: 100%; min-height: 44px; font-size: 1rem; color: var(--gyst-text); background: var(--gyst-surface); border: 1px solid var(--gyst-control-border); border-radius: 12px; padding: 10px 12px; }
+:root .health-plan-ui textarea { resize: vertical; }
+:root .health-plan-actions { gap: 12px; }
+:root .health-plan-actions .gyst-button { white-space: normal; }
+:root .health-plan-error { border-left: 4px solid var(--gyst-danger-text); }
+:root .health-plan-success { border-left: 4px solid var(--gyst-positive-text); }
+:root .health-cycle-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 12px; }
+:root .health-cycle-list a { display: grid; gap: 6px; padding: 12px; min-height: 44px; border: 1px solid var(--gyst-border); border-radius: 12px; text-decoration: none; color: var(--gyst-text); }
+:root .health-cycle-list a[aria-current] { border-color: var(--gyst-blue); background: var(--gyst-blue-soft); }
+:root .health-cycle-list span { font-size: .875rem; color: var(--gyst-text-secondary); }
+:root .health-cycle-list .health-cycle-selected { color: var(--gyst-blue); }
+@media (min-width: 600px) { :root .health-plan-fields { grid-template-columns: repeat(2,minmax(0,1fr)); } :root .health-plan-wide { grid-column: 1 / -1; } }
+@media (min-width: 1024px) { :root .health-plan-layout { grid-template-columns: minmax(0,640px) minmax(0,1fr); } }

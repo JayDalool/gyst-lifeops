@@ -104,6 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [UI-9 Health Plan](tasks/UI-9-plan.md) | IN PROGRESS | — | — |
 | [UI-8 Progress](tasks/UI-8-progress.md) | DONE | `17c227b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34774519741) |
 | [UI-7 Training](tasks/UI-7-training.md) | DONE | `63d33f5` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34739294360) |
 | [UI-6 Nutrition](tasks/UI-6-nutrition.md) | DONE | `f3a18f7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34738919673) |
@@ -250,7 +251,7 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Jay: review UI-8 Progress before UI-9 Plan.**
+**Finish UI-9 browser validation and CI, then Jay reviews before UI-10 Courses.**
 Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
 for scope and verification evidence. A2 remains separate operational work.
 

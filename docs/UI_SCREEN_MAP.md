@@ -2,7 +2,7 @@
 
 Baseline: `feature/health-hardening` at `5c50011`. Visual references:
 [component board](Design1.png), [screen board](<Design 2.png>).
-UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-9 onward
+UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-10 onward
 remain **not started**; all screen rows below describe future adoption.
 Existing means the current source supports the route/data, not that its new UI
 is implemented or that production contains observations.
@@ -27,7 +27,7 @@ lists additional reusable patterns. Paths marked proposed do not exist yet.
 | Training | `/health#training`; `/health/training` | UI-7 onboarding and manual gym tracker implemented; provider-neutral sessions, history, sets/reps/weights/PRs and sync status still need a backend. Gym tracker is not a Hevy workout | WorkoutCard, TrainingProgressCard, IntegrationStatusRow | UI-7 |
 | Workout detail | proposed `/health/training/workouts/{id}` | Future; Needs backend. No normalized workout model or handler; do not show a functioning Start Workout action | WorkoutCard, ListRow, MetricCard | Future after Hevy |
 | Health progress | `/health#progress`; `/health/progress` | UI-8 displays recorded weight with 30/90/all-time ranges, an observation chart and exact-value table. Weight entry/import setup remains unavailable. Needs backend queries/wiring for historical nutrition/activity ranges and adherence; strength requires Hevy | TrendCard, MiniLineChart, MiniBarChart, SegmentedControl | UI-8 |
-| Current health plan / edit | `/health/plan`, `?id={id}`, `?new=1` | Existing; Needs UI. HealthCycle title/dates/goal, nutrition/energy/training/steps targets and notes. Adherence requires backend. Cycles allow any duration; never force real records to 90 days | HealthPlanCard, MetricCard, ProgressBar, labelled fields | UI-9 |
+| Current health plan / edit | `/health/plan`, `?id={id}`, `?new=1` | UI-9 adopts grouped fields and saved-cycle cards for real title/dates/goal, nutrition/energy/training/steps targets and notes. Adherence requires backend. Cycles allow any duration; never force real records to 90 days | HealthPlanCard, MetricCard, ProgressBar, labelled fields | UI-9 |
 | Activity options | proposed `/health/activity-options` | Future; Needs UI for option list, backend/specification for duration/energy recommendations. No manufactured calorie estimates | ActivityOptionRow, EmptyState | Future |
 | Courses list | `/courses` | Existing; Needs UI. Course status/provider/instructor/progress, next learning block/deadline, site URL. No cover asset pipeline; use SVG fallback | CourseCard, ProgressBar, SegmentedControl | UI-10 |
 | Course detail | `/courses/{id}` | Existing; Needs UI. Learning blocks, catch-ups, course/block notes and URLs, dates/repetition, progress. Preserve completion/reopen/postpone/delete/archive/status/forms | LessonRow, SubNavigationTabs, ProgressCard | UI-10 |
@@ -111,7 +111,7 @@ this table groups actions rather than proposing any endpoint removal.
 | UI-6 (implemented) | Nutrition | Real aggregate macros first; meal/recipe features remain honest empty states |
 | UI-7 | Training | Empty/onboarding UI until separately approved Hevy backend exists |
 | UI-8 | Progress | Real accessible charts only for supported data/ranges; record backend prerequisites |
-| UI-9 | Plan | Existing cycle editor and real dates/targets; no fictional adherence |
+| UI-9 (implemented) | Plan | Existing cycle editor and real dates/targets; no fictional adherence |
 | UI-10 | Courses | Existing learning blocks and catch-ups; no invented locking |
 | UI-11 | Reminders/calendar/notes | Existing data first; new capabilities are separate backend tasks |
 | UI-12 | Analytics | Global LifeOps metrics, supported ranges only |
