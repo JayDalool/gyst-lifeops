@@ -68,3 +68,18 @@
 :root .health-ui .health-planned { margin-top: 16px; }
 :root .health-ui .health-planned summary { min-height: 44px; padding-block: 12px; cursor: pointer; color: var(--gyst-blue); }
 :root .health-ui .health-planned-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* UI-6: nutrition totals reuse Health tokens with a dedicated responsive deck. */
+:root .health-ui .health-links a[aria-current="page"] { background: var(--gyst-surface); color: var(--gyst-blue); }
+:root .nutrition-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; }
+:root .nutrition-metric { display: grid; align-content: start; gap: 12px; }
+:root .nutrition-metric :is(h2,p) { margin: 0; }
+:root .nutrition-value strong, :root .nutrition-ring strong { font-size: 2rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+:root .nutrition-value span, :root .nutrition-ring span { font-size: .875rem; color: var(--gyst-text-secondary); }
+:root .nutrition-ring { margin-inline: auto; max-width: 100%; }
+:root .nutrition-ring .gyst-ring-copy { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
+:root .nutrition-ring strong { font-size: 1.5rem; overflow-wrap: anywhere; }
+:root .nutrition-difference { font-size: .875rem; color: var(--gyst-text); }
+:root .nutrition-context .nutrition-stale { color: var(--gyst-warning-text); }
+@media (min-width: 600px) { :root .nutrition-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (min-width: 1024px) { :root .nutrition-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; } }

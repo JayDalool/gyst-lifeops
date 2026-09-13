@@ -2,7 +2,7 @@
 
 Baseline: `feature/health-hardening` at `5c50011`. Visual references:
 [component board](Design1.png), [screen board](<Design 2.png>).
-UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-6 onward
+UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-7 onward
 remain **not started**; all screen rows below describe future adoption.
 Existing means the current source supports the route/data, not that its new UI
 is implemented or that production contains observations.
@@ -23,7 +23,7 @@ lists additional reusable patterns. Paths marked proposed do not exist yet.
 | Galaxy | `/galaxy`, data at `/galaxy/data` | Implemented UI-4. Projects/child moons with categories, positions, progress and links. Category filtering in the navigator uses existing categories; no stored domain graph | GalaxyDomainNode, BottomSheet, NavigationRow, ErrorState | UI-4 |
 | Project detail | `/projects/{id}` | Implemented UI-3. Overview/Tasks/Roadmap/Notes anchors; items/proof, shared stop cards, notes, external work and actual dates/status. Milestones link to the associated roadmap | ProjectProgressRow, SubNavigationTabs, ListRow | UI-3 |
 | Health summary | `/health` | Implemented UI-5. HealthToday, nullable daily snapshot, cycle and observed energy; existing gym consistency/goals/tasks retained | HealthSummaryCard, MetricRingCard, MacroProgressBar, StatCard | UI-5 |
-| Nutrition | `/health#nutrition`; proposed `/health/nutrition` | Needs UI for totals/macros from snapshot/cycle. Needs backend for individual meals, next-meal plan, recipes, portion engine and nutrition insights | NutritionCard, CalorieRing, MacroCard, MealCard | UI-6 |
+| Nutrition | `/health#nutrition`; `/health/nutrition` | Implemented UI-6 for totals/macros from snapshot/cycle. Needs backend for individual meals, next-meal plan, recipes, portion engine and nutrition insights | NutritionCard, CalorieRing, MacroCard, MealCard | UI-6 |
 | Training | `/health#training`; proposed `/health/training` | Empty placeholder exists; Needs UI and backend for provider-neutral Hevy sessions, history, sets/reps/weights/PRs and sync status. Gym tracker is not a Hevy workout | WorkoutCard, TrainingProgressCard, IntegrationStatusRow | UI-7 |
 | Workout detail | proposed `/health/training/workouts/{id}` | Future; Needs backend. No normalized workout model or handler; do not show a functioning Start Workout action | WorkoutCard, ListRow, MetricCard | Future after Hevy |
 | Health progress | `/health#progress`; proposed `/health/progress` | Needs UI; weight entry model/repository/service exist but have no UI. Needs backend queries/wiring for historical nutrition/activity ranges and adherence; strength requires Hevy | TrendCard, MiniLineChart, MiniBarChart, SegmentedControl | UI-8 |
@@ -108,7 +108,7 @@ this table groups actions rather than proposing any endpoint removal.
 | UI-3 (implemented) | Projects list/detail/forms | Preserves hierarchy, proof, external links, roadmap access and unlock rules; evidence in task |
 | UI-4 (implemented) | Mobile Galaxy | Same Three.js scene/data; canvas drag/pinch, selection panel, category navigator and desktop controls; physical device review pending |
 | UI-5 (implemented) | Health shell/summary | Missing/zero/partial/stale states and separated energy concepts |
-| UI-6 | Nutrition | Real aggregate macros first; meal/recipe features remain honest empty states |
+| UI-6 (implemented) | Nutrition | Real aggregate macros first; meal/recipe features remain honest empty states |
 | UI-7 | Training | Empty/onboarding UI until separately approved Hevy backend exists |
 | UI-8 | Progress | Real accessible charts only for supported data/ranges; record backend prerequisites |
 | UI-9 | Plan | Existing cycle editor and real dates/targets; no fictional adherence |

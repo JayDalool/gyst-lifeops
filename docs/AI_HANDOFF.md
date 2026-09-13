@@ -104,6 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [UI-6 Nutrition](tasks/UI-6-nutrition.md) | IN PROGRESS | pending | pending |
 | [UI-5 Health summary](tasks/UI-5-health.md) | DONE | `a6ec19f` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34725554881) |
 | [UI-4 Mobile Galaxy](tasks/UI-4-galaxy.md) | DONE | `0fea4fe` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34709626557) |
 | [UI-3 Projects](tasks/UI-3-projects.md) | DONE | `6c86252` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34708681737) |
@@ -247,7 +248,7 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Jay: review UI-5 Health phone/desktop sizing before UI-6 Nutrition.**
+**Jay: review UI-6 Nutrition before UI-7 Training.**
 Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
 for scope and verification evidence. A2 remains separate operational work.
 

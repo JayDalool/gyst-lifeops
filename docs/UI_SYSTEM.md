@@ -1,4 +1,4 @@
-# GYST UI system — UI-5 implemented
+# GYST UI system — UI-6 implemented
 
 ## Scope and visual authority
 
@@ -453,3 +453,14 @@ History controls are visibly unavailable; the old period script is no longer
 loaded. Gym controls retain their handlers and show text statuses. Supported
 plan/goals/tasks remain reachable; planned tools are a compact disclosure.
 No service/schema changes. Evidence: [UI-5](tasks/UI-5-health.md).
+
+## UI-6 implementation
+
+Nutrition detail at `/health/nutrition` uses the existing HealthToday read and
+presentation values. Typed adapters supply clamped graphic fill and signed
+remaining/over-target wording without changing service calculations. Calories
+use the shared ring styles; macro cards use shared progress with explicit
+absence and target states. The deck is one column on phones, two on tablet and
+three on desktop. Health summary retains its inline macros and links to detail.
+Snapshot freshness is not attributed to each nutrient. Meal-level features stay
+unavailable. Evidence: [UI-6](tasks/UI-6-nutrition.md).
