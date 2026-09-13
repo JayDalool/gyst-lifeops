@@ -1,8 +1,9 @@
 # UI-9 — Health Plan
 
-- **Status:** IN PROGRESS.
+- **Status:** DONE.
 - **Approval:** Jay requested the next phase after UI-8.
-- **Implementation commit / CI:** Pending.
+- **Implementation commit:** `694e5b7`.
+- **CI:** [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34778983272).
 
 ## Scope and acceptance
 
@@ -23,4 +24,4 @@ Chromium and WebKit passed create/edit/reload, exact decimal and zero targets, a
 
 ## Next action
 
-Finish browser validation and CI; then Jay reviews UI-9 before UI-10 Courses.
+Jay: review UI-9 before UI-10 Courses.
