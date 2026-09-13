@@ -104,7 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
-| [UI-6 Nutrition](tasks/UI-6-nutrition.md) | IN PROGRESS | pending | pending |
+| [UI-6 Nutrition](tasks/UI-6-nutrition.md) | DONE | `f3a18f7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34738919673) |
 | [UI-5 Health summary](tasks/UI-5-health.md) | DONE | `a6ec19f` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34725554881) |
 | [UI-4 Mobile Galaxy](tasks/UI-4-galaxy.md) | DONE | `0fea4fe` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34709626557) |
 | [UI-3 Projects](tasks/UI-3-projects.md) | DONE | `6c86252` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34708681737) |
@@ -363,3 +363,10 @@ UI-5 committed as a6ec19f, CI green: run 34725554881. Phone/landscape/desktop,
 200% text, dark theme and gym interaction checks passed in Chromium/WebKit.
 Local Go and Node suites passed. No production deployment; physical device
 review pending. Next: Jay reviews Health sizing before UI-6 Nutrition.
+
+2026-09-12 — Codex — UI-6 Nutrition detail committed as f3a18f7; CI green:
+run 34738919673. Local Go/Node suites and Chromium/WebKit empty/populated
+responsive checks passed. No production deployment. Physical device review
+pending. Next: Jay reviews UI-6 before UI-7 Training. Shortcut setup remains
+with Jay’s other conversation; authenticated connection test was user-reported,
+not evidence that actual health measurements have synced.

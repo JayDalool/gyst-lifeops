@@ -1,9 +1,9 @@
 # UI-6 — Nutrition detail
 
-- **Status:** `IN PROGRESS`
+- **Status:** `DONE`
 - **Approval:** Jay requested continuation after UI-5 and handed Shortcut setup to another conversation.
-- **Implementation commit:** Pending.
-- **CI:** Pending.
+- **Implementation commit:** `f3a18f7`.
+- **CI:** [green — run 34738919673](https://github.com/JayDalool/gyst-lifeops/actions/runs/34738919673).
 
 ## Scope
 
