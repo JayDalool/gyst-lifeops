@@ -104,7 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
-| [UI-8 Progress](tasks/UI-8-progress.md) | IN PROGRESS | — | — |
+| [UI-8 Progress](tasks/UI-8-progress.md) | DONE | `17c227b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34774519741) |
 | [UI-7 Training](tasks/UI-7-training.md) | DONE | `63d33f5` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34739294360) |
 | [UI-6 Nutrition](tasks/UI-6-nutrition.md) | DONE | `f3a18f7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34738919673) |
 | [UI-5 Health summary](tasks/UI-5-health.md) | DONE | `a6ec19f` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34725554881) |
@@ -250,7 +250,7 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Finish UI-8 Progress validation and commit; then Jay reviews before UI-9 Plan.**
+**Jay: review UI-8 Progress before UI-9 Plan.**
 Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
 for scope and verification evidence. A2 remains separate operational work.
 
@@ -378,3 +378,9 @@ check-ins committed as 63d33f5; CI green: run 34739294360. Local Go/Node and
 Chromium/WebKit responsive, large-text, dark-mode and persistent tracker checks
 passed. No production deployment. Physical device review pending. Next: Jay
 reviews UI-7 before UI-8 Progress. Hevy remains unimplemented.
+
+2026-09-13 — Codex — Continued the unfinished UI-8 Progress work. Recorded weight
+history, date ranges and accessible chart/table committed as 17c227b. CI green:
+run 34774519741. Local Go/Node checks and Chromium/WebKit responsive checks
+passed using a temporary fixture database. Physical iPhone review pending.
+No production deployment. Next: Jay reviews UI-8 before UI-9 Plan.

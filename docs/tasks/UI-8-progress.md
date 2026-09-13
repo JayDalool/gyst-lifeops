@@ -1,8 +1,9 @@
 # UI-8 — Progress
 
-- **Status:** IN PROGRESS; implementation and validation underway.
+- **Status:** DONE.
 - **Approval:** Jay requested continuation of the unfinished task.
-- **Implementation commit / CI:** Pending.
+- **Implementation commit:** `17c227b`.
+- **CI:** [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34774519741).
 
 ## Scope and acceptance
 
@@ -23,4 +24,4 @@ Local gofmt, vet, build, unit and race checks passed. Node shell/cache and Galax
 
 ## Next action
 
-Finish validation, commit and check CI; then Jay reviews UI-8 before UI-9 Plan.
+Jay: review UI-8 before UI-9 Plan.
