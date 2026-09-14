@@ -104,7 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
-| [UI-10 Courses](tasks/UI-10-courses.md) | IN PROGRESS | — | — |
+| [UI-10 Courses](tasks/UI-10-courses.md) | DONE | `612da7b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34794115995) |
 | [UI-9 Health Plan](tasks/UI-9-plan.md) | DONE | `694e5b7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34778983272) |
 | [UI-8 Progress](tasks/UI-8-progress.md) | DONE | `17c227b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34774519741) |
 | [UI-7 Training](tasks/UI-7-training.md) | DONE | `63d33f5` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34739294360) |
@@ -252,7 +252,7 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Finish UI-10 verification and CI, then Jay reviews before UI-11.**
+**Jay: review UI-10 Courses before UI-11 Reminders/calendar/notes.**
 Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
 for scope and verification evidence. A2 remains separate operational work.
 
@@ -392,3 +392,10 @@ cycle cards committed as 694e5b7. CI green: run 34778983272. Local Go/Node
 checks and Chromium/WebKit responsive create/edit/error-recovery checks passed
 using a temporary fixture database. No production deployment. Physical iPhone
 and software-keyboard review pending. Next: Jay reviews UI-9 before UI-10 Courses.
+
+2026-09-13 — Codex — Jay requested UI-10. Courses cards, detail sections and
+forms committed as 612da7b. CI green: run 34794115995. Local Go/Node and
+Chromium/WebKit responsive/action checks passed with temporary fixture data.
+Fixed WebKit select overflow at enlarged text and duplicate catch-up anchors.
+No production deployment; physical iPhone review pending. Next: UI-10 review
+before UI-11. Remaining phase detail lives in docs/UI_SCREEN_MAP.md.

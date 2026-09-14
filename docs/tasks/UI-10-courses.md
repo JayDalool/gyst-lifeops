@@ -1,8 +1,9 @@
 # UI-10 — Courses
 
-- **Status:** IN PROGRESS.
+- **Status:** DONE.
 - **Approval:** Jay requested the next phase after UI-9.
-- **Implementation commit / CI:** Pending.
+- **Implementation commit:** `612da7b`.
+- **CI:** [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34794115995).
 
 ## Scope and acceptance
 
@@ -20,4 +21,4 @@ Local format, vet, build, unit and race checks passed, plus Node shell/cache and
 
 ## Next action
 
-Finish local/browser/CI verification; then Jay reviews before UI-11.
+Jay: review UI-10 before UI-11 Reminders/calendar/notes.
