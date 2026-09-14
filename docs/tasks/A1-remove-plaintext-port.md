@@ -2,11 +2,10 @@
 
 - **ID:** A1
 - **Title:** Make Caddy the only ingress
-- **Status:** `BLOCKED`
-- **Owner:** Claude (blocked on operator action for A2)
-- **Implementation commit(s):** None. No commit touches `docker-compose.yml`
-  for this on `feature/health-hardening`.
-- **Review status:** N/A — not started.
+- **Status:** `DONE`
+- **Owner:** Claude
+- **Implementation commit(s):** `6700cec`
+- **Review status:** CI green — PR #1
 
 ## Problem
 

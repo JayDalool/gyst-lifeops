@@ -109,8 +109,8 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A3 session store](tasks/A3-session-store.md) | DEFERRED (\*) | `7835b7d` | green |
 | [A4 application auth](tasks/A4-application-auth.md) | DEFERRED (\*) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
-| [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | — | — |
-| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED (on A2) | — | — |
+| [A2 trusted TLS](tasks/A2-trusted-tls.md) | BLOCKED | — | — |
+| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | DONE | `6700cec` | green |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
 | [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
@@ -245,20 +245,19 @@ complete unless Git proves it.**
 - ✅ Tailscale HTTPS — enabled in admin panel
 - ⏸️ `GYST_PASSWORD_HASH` — deferred (auth implementation deferred to after A2/A1/M3)
 
-**Agent work unblocked:**
+**Agent work status:**
 
-1. **[A2 — Trusted TLS](tasks/A2-trusted-tls.md)** — IN PROGRESS
+1. **[A2 — Trusted TLS](tasks/A2-trusted-tls.md)** — BLOCKED (waiting for MagicDNS FQDN)
    - Update Caddyfile to use Tailscale MagicDNS certificate
    - Implement 90-day renewal automation
    - Test from iPhone Shortcut
-   - Unblocks A1
 
-2. **[A1 — Remove plaintext port](tasks/A1-remove-plaintext-port.md)** — BLOCKED on A2
-   - Remove port 3005 from docker-compose.yml
-   - HTTPS-only ingress
-   - Unblocks M3
+2. **[A1 — Remove plaintext port](tasks/A1-remove-plaintext-port.md)** — ✅ DONE (2026-09-14)
+   - ✅ Removed port 3005 from docker-compose.yml
+   - ✅ Added HSTS header to Caddyfile
+   - Commit: `6700cec`
 
-3. **[M3 — Apple Health ingestion](tasks/M3-health-ingestion.md)** — PLANNED
+3. **[M3 — Apple Health ingestion](tasks/M3-health-ingestion.md)** — IN PROGRESS
    - Shortcut sync handler at `/api/health/sync`
    - Store observations (steps, calories, etc.)
    - Handle NULL vs 0 semantics
