@@ -1,0 +1,15 @@
+{{define "health.gymWeek"}}
+<div class="day-group page-body" aria-label="Gym week">
+  <p class="group-label">This week&rsquo;s gym days &middot; <span class="num" data-mission="gym">{{.Mission.GymWeekCompletion}}%</span></p>
+  <div class="gym-strip">
+    {{range .Mission.GymWeek}}
+      <form method="post" action="/trackers/gym/toggle">
+        <input type="hidden" name="log_date" value="{{.Date}}">
+        <button class="gym-day status-{{.Status}}" type="button" title="{{.Label}} {{.Date}}: {{.Status}}">
+          <span>{{.Label}}</span><small data-tracker-status>{{if eq .Status "not_done"}}Not done{{else}}{{.Status}}{{end}}</small>
+        </button>
+      </form>
+    {{end}}
+  </div>
+</div>
+{{end}}

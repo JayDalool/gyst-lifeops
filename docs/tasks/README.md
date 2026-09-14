@@ -39,6 +39,19 @@ go test -race, migration-prefix uniqueness, no-database-file-committed.
 
 | Task | Status |
 |---|---|
+| [UI-PLAN — UI design system and screen map](UI-PLAN-design-system.md) | DONE |
+| [NAV1 — Navigation cleanup](NAV1-navigation-cleanup.md) | IN PROGRESS |
+| [UI-10 — Courses](UI-10-courses.md) | DONE |
+| [UI-9 — Health Plan](UI-9-plan.md) | DONE |
+| [UI-8 — Progress](UI-8-progress.md) | DONE |
+| [UI-7 — Training](UI-7-training.md) | DONE |
+| [UI-6 — Nutrition detail](UI-6-nutrition.md) | DONE |
+| [UI-5 — Responsive Health summary](UI-5-health.md) | DONE |
+| [UI-4 — Mobile Galaxy](UI-4-galaxy.md) | DONE |
+| [UI-3 — Projects and detail](UI-3-projects.md) | DONE |
+| [UI-2 — Today and checklist](UI-2-today.md) | DONE |
+| [UI-1 — App shell and navigation](UI-1-shell.md) | DONE |
+| [UI-0 — Reusable foundation](UI-0-foundation.md) | DONE |
 | [B1 — SQLite PRAGMA correctness](B1-sqlite-pragma-correctness.md) | DONE |
 | [B1-FIX — B1 review fixes](B1-FIX-review-fixes.md) | DONE |
 | [B6 — CI safety gate](B6-ci-safety-gate.md) | DONE |

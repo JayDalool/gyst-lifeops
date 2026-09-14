@@ -103,14 +103,27 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
+| [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [NAV1 Navigation cleanup](tasks/NAV1-navigation-cleanup.md) | IN PROGRESS | — | — |
+| [UI-10 Courses](tasks/UI-10-courses.md) | DONE | `612da7b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34794115995) |
+| [UI-9 Health Plan](tasks/UI-9-plan.md) | DONE | `694e5b7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34778983272) |
+| [UI-8 Progress](tasks/UI-8-progress.md) | DONE | `17c227b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34774519741) |
+| [UI-7 Training](tasks/UI-7-training.md) | DONE | `63d33f5` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34739294360) |
+| [UI-6 Nutrition](tasks/UI-6-nutrition.md) | DONE | `f3a18f7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34738919673) |
+| [UI-5 Health summary](tasks/UI-5-health.md) | DONE | `a6ec19f` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34725554881) |
+| [UI-4 Mobile Galaxy](tasks/UI-4-galaxy.md) | DONE | `0fea4fe` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34709626557) |
+| [UI-3 Projects](tasks/UI-3-projects.md) | DONE | `6c86252` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34708681737) |
+| [UI-2 Today](tasks/UI-2-today.md) | DONE | `3dd076d` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34671487875) |
+| [UI-1 shell](tasks/UI-1-shell.md) | DONE | `a8f9105` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34670549071) |
+| [UI-0 foundation](tasks/UI-0-foundation.md) | DONE | `99f5968` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34669485151) |
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
 | [B6 CI safety gate](tasks/B6-ci-safety-gate.md) | DONE | `f663f3f` | green |
 | [A3 session store](tasks/A3-session-store.md) | DEFERRED (\*) | `7835b7d` | green |
 | [A4 application auth](tasks/A4-application-auth.md) | DEFERRED (\*) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
-| [A2 trusted TLS](tasks/A2-trusted-tls.md) | BLOCKED | — | — |
-| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | DONE | `6700cec` | green |
+| [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | — | — |
+| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED (on A2) | — | — |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
 | [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
@@ -240,30 +253,16 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Operator steps completed:**
-- ✅ [OPS1](tasks/OPS1-production-fk-audit.md) — FK audit passed (zero violations)
-- ✅ Tailscale HTTPS — enabled in admin panel
-- ⏸️ `GYST_PASSWORD_HASH` — deferred (auth implementation deferred to after A2/A1/M3)
+**Finish NAV1 navigation cleanup; Jay reviews before UI-11.**
+Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
+for scope and verification evidence. A2 remains separate operational work.
 
-**Agent work status:**
-
-1. **[A2 — Trusted TLS](tasks/A2-trusted-tls.md)** — BLOCKED (waiting for MagicDNS FQDN)
-   - Update Caddyfile to use Tailscale MagicDNS certificate
-   - Implement 90-day renewal automation
-   - Test from iPhone Shortcut
-
-2. **[A1 — Remove plaintext port](tasks/A1-remove-plaintext-port.md)** — ✅ DONE (2026-09-14)
-   - ✅ Removed port 3005 from docker-compose.yml
-   - ✅ Added HSTS header to Caddyfile
-   - Commit: `6700cec`
-
-3. **[M3 — Apple Health ingestion](tasks/M3-health-ingestion.md)** — IN PROGRESS
-   - Shortcut sync handler at `/api/health/sync`
-   - Store observations (steps, calories, etc.)
-   - Handle NULL vs 0 semantics
-
-**After A2/A1/M3 ship:**
-- A3/A4 (authentication) — currently documented as DONE but not deployed; will implement then
+Planning baseline is `5c50011`. The earlier handoff contains contradictory
+operator/auth claims: newer prose says HTTPS/OPS1 are done, older blocker sections
+say otherwise, and auth code exists despite being called unimplemented. These
+historical claims have not been reverified in this planning task. Consult the
+screen map's discrepancy notes before resuming A2; do not redeploy or reimplement
+auth based only on the stale prose.
 
 ---
 
@@ -328,3 +327,76 @@ Append-only, newest last.
                       detailed handoff for next agent to implement A2 → A1
                       → M3.                           Commits: 9cd2c2c, 9a5aefd
 ```
+
+2026-09-11 — Codex — Inspected both approved design boards and implementation
+source at 5c50011. Prepared UI_SYSTEM.md and UI_SCREEN_MAP.md with exact UI-0/UI-1
+files, data gaps and preservation requirements. UI-PLAN awaits Jay's approval.
+No runtime changes or production access. Commit: 0145c9c. CI green: run 34668589837. Local format/vet/build/unit/race checks passed. Approval remains pending.
+
+2026-09-11 — Codex — Jay approved UI-0. Added the opt-in component foundation,
+Lucide subset and standalone development gallery. Chromium/WebKit review passed;
+real iPhone review pending. Commit: 99f5968; CI green: run 34669485151.
+
+2026-09-11 — Codex — Jay liked UI-0 and approved UI-1. Implemented the GYST
+shell, More, five SVG navigation links, theme ownership and private-safe offline
+behavior. Verification and commit evidence recorded in UI-1 task; no production
+deployment or data access.
+
+2026-09-11 — Codex — Jay approved UI-1 and requested the next phase. UI-2
+adopts Today and adds the shared daily checklist route. Existing task/study,
+prayer/Athan/trackers and XP actions remain. Health uses existing read services;
+no business logic/schema/production data changes. Evidence: UI-2 task file.
+
+2026-09-11 — Codex — Jay requested continuation after UI-2. UI-3 adopts Projects
+cards, status/roadmap filters, detail sections and forms while preserving
+hierarchy, proof, external work and action guards. Evidence: UI-3 task file.
+No production access or deployment.
+
+2026-09-12 — Codex — Resumed UI-3 with Jay’s approval. Implementation committed
+as 6c86252; CI green: run 34708681737. Local format/vet/build/unit/race and
+Chromium/WebKit checks passed. Physical iPhone review remains pending.
+Next action: Jay reviews UI-3 before approving UI-4. No production deployment.
+
+2026-09-12 — Codex — Jay authorized UI-4 while testing UI-3. Mobile Galaxy
+gestures, selection panel and category navigator committed as 0fea4fe. CI green:
+run 34709626557. Chromium/WebKit and local Go/Node checks passed; real iPhone
+review pending. No production access or deployment. Next: Jay reviews UI-4
+before approving UI-5 Health summary.
+
+2026-09-12 — Codex — Jay requested continuation and identified Health sizing.
+UI-5 committed as a6ec19f, CI green: run 34725554881. Phone/landscape/desktop,
+200% text, dark theme and gym interaction checks passed in Chromium/WebKit.
+Local Go and Node suites passed. No production deployment; physical device
+review pending. Next: Jay reviews Health sizing before UI-6 Nutrition.
+
+2026-09-12 — Codex — UI-6 Nutrition detail committed as f3a18f7; CI green:
+run 34738919673. Local Go/Node suites and Chromium/WebKit empty/populated
+responsive checks passed. No production deployment. Physical device review
+pending. Next: Jay reviews UI-6 before UI-7 Training. Shortcut setup remains
+with Jay’s other conversation; authenticated connection test was user-reported,
+not evidence that actual health measurements have synced.
+
+2026-09-13 — Codex — Jay requested UI-7. Training onboarding and shared gym
+check-ins committed as 63d33f5; CI green: run 34739294360. Local Go/Node and
+Chromium/WebKit responsive, large-text, dark-mode and persistent tracker checks
+passed. No production deployment. Physical device review pending. Next: Jay
+reviews UI-7 before UI-8 Progress. Hevy remains unimplemented.
+
+2026-09-13 — Codex — Continued the unfinished UI-8 Progress work. Recorded weight
+history, date ranges and accessible chart/table committed as 17c227b. CI green:
+run 34774519741. Local Go/Node checks and Chromium/WebKit responsive checks
+passed using a temporary fixture database. Physical iPhone review pending.
+No production deployment. Next: Jay reviews UI-8 before UI-9 Plan.
+
+2026-09-13 — Codex — Jay requested UI-9. Grouped Health Plan editor and saved
+cycle cards committed as 694e5b7. CI green: run 34778983272. Local Go/Node
+checks and Chromium/WebKit responsive create/edit/error-recovery checks passed
+using a temporary fixture database. No production deployment. Physical iPhone
+and software-keyboard review pending. Next: Jay reviews UI-9 before UI-10 Courses.
+
+2026-09-13 — Codex — Jay requested UI-10. Courses cards, detail sections and
+forms committed as 612da7b. CI green: run 34794115995. Local Go/Node and
+Chromium/WebKit responsive/action checks passed with temporary fixture data.
+Fixed WebKit select overflow at enlarged text and duplicate catch-up anchors.
+No production deployment; physical iPhone review pending. Next: UI-10 review
+before UI-11. Remaining phase detail lives in docs/UI_SCREEN_MAP.md.

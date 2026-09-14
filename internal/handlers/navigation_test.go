@@ -29,7 +29,7 @@ func TestRootAndTodayRenderSamePage(t *testing.T) {
 
 func TestPrimaryNavigationHasFiveDestinations(t *testing.T) {
 	body := renderBody(t, "today.html", TodayData{Page: "today", Today: "2026-08-28"})
-	start := strings.Index(body, `<nav aria-label="Primary">`)
+	start := strings.Index(body, `<nav aria-label="Primary"`)
 	if start < 0 {
 		t.Fatal("primary navigation not found")
 	}
@@ -38,7 +38,7 @@ func TestPrimaryNavigationHasFiveDestinations(t *testing.T) {
 		t.Fatal("primary navigation end not found")
 	}
 	nav := body[start : start+end]
-	for _, label := range []string{"Today", "Projects", "Health", "Courses", "More"} {
+	for _, label := range []string{"Today", "Projects", "Health", "Courses", "Menu"} {
 		if !strings.Contains(nav, label) {
 			t.Fatalf("primary navigation missing %q", label)
 		}
@@ -60,6 +60,7 @@ func TestGalaxyAndSecondaryRoutesRemainReachable(t *testing.T) {
 	h := testHandler(t)
 	paths := []string{
 		"/today",
+		"/more",
 		"/galaxy",
 		"/projects",
 		"/roadmap",
@@ -99,6 +100,13 @@ func TestHealthFoundation(t *testing.T) {
 			t.Fatalf("health status %d", rec.Code)
 		}
 		body := rec.Body.String()
+		more := httptest.NewRecorder()
+		h.ServeHTTP(more, httptest.NewRequest(http.MethodGet, "/more", nil))
+		for _, path := range []string{"/roadmap", "/monthly", "/analytics", "/archive", "/goals", "/reminders"} {
+			if !strings.Contains(more.Body.String(), `href="`+path+`"`) {
+				t.Errorf("secondary route unreachable via More: %s", path)
+			}
+		}
 		// No projection is implemented, so the page must not imply one. The
 		// demo markup previously showed a "projected total burn" and an
 		// "estimated" balance derived from it.
@@ -115,7 +123,7 @@ func TestHealthFoundation(t *testing.T) {
 				t.Errorf("health missing %q", text)
 			}
 		}
-		for _, path := range []string{"/today", "/galaxy", "/projects", "/roadmap", "/health", "/courses", "/monthly", "/analytics", "/archive", "/tasks", "/goals", "/reminders", "/settings", "/tasks/new", "/plan-import"} {
+		for _, path := range []string{"/today", "/galaxy", "/projects", "/health", "/courses", "/more", "/tasks", "/settings", "/plan-import"} {
 			if !strings.Contains(body, `href="`+path+`"`) {
 				t.Errorf("missing navigation %s", path)
 			}

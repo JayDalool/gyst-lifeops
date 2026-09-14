@@ -1,0 +1,19 @@
+{{define "gyst.shell"}}
+<header class="gyst-scope gyst-topbar">
+  <div class="gyst-topbar-inner">
+    <a class="gyst-brand" href="/today" aria-label="GYST Today">GYST</a>
+    <div class="gyst-topbar-actions">
+      <button class="gyst-button gyst-button--secondary gyst-button--icon" type="button" data-command-open aria-label="Search and quick capture" aria-keyshortcuts="Control+K Meta+K">{{template "gyst.icon" "search"}}</button>
+
+    </div>
+  </div>
+</header>
+{{$section := primarySection .Page}}
+<nav aria-label="Primary" class="gyst-scope gyst-primary">
+  <a href="/today" {{if eq $section "today"}}aria-current="page"{{end}}>{{template "gyst.icon" "house"}}<span>Today</span></a>
+  <a href="/projects" {{if eq $section "projects"}}aria-current="page"{{end}}>{{template "gyst.icon" "folder-heart"}}<span>Projects</span></a>
+  <a href="/health" {{if eq $section "health"}}aria-current="page"{{end}}>{{template "gyst.icon" "heart"}}<span>Health</span></a>
+  <a href="/courses" {{if eq $section "courses"}}aria-current="page"{{end}}>{{template "gyst.icon" "book-open"}}<span>Courses</span></a>
+  <a href="/more" {{if eq $section "more"}}aria-current="page"{{end}}>{{template "gyst.icon" "ellipsis"}}<span>Menu</span></a>
+</nav>
+{{end}}

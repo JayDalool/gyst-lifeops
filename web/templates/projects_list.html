@@ -1,101 +1,21 @@
 {{define "content"}}
-<div class="page-head">
-  <div>
-    <p class="kicker">Navigation deck</p>
-    <h1 class="page-title">Projects</h1>
-    <p class="page-sub">{{if .SelectedRoadmapID}}Trips on {{.SelectedRoadmap.Name}}.{{else}}Active routes, planned destinations, and completed expeditions.{{end}}</p>
-  </div>
-  <a class="btn ghost" href="/projects/new">New project</a>
-</div>
-
-{{if .Unlocked}}
-  <p class="notice mt-16" role="status">New destination unlocked &mdash; a planned route below is now open.</p>
-{{end}}
-
-{{if .ShipRoute.Nodes}}
-  <div class="card map-card mt-24">{{template "routeMapV2" .ShipRoute}}</div>
-{{end}}
-
+<div class="gyst-scope projects-ui">
+<header class="gyst-header"><div><h1 class="gyst-page-title">Projects</h1><p class="gyst-caption">{{if .SelectedRoadmapID}}{{.SelectedRoadmap.Name}}{{else}}Make room for what you want to build.{{end}}</p></div><a class="gyst-button gyst-button--icon" href="/projects/new" aria-label="New project">{{template "gyst.icon" "plus"}}</a></header>
+{{if .Unlocked}}<p class="gyst-card gyst-card--tinted" role="status">New destination unlocked — a planned route below is now open.</p>{{end}}
+{{template "gyst.segments" .Filters}}
+{{if eq .StatusFilter "active"}}<p class="gyst-caption">Includes active, paused and blocked projects; each retains its actual status.</p>{{end}}
+{{if ne .StatusFilter "all"}}<p class="gyst-caption">Parent projects remain visible when a matching subproject needs context.</p>{{end}}
 {{if .Roadmaps}}
-  <nav class="pill-row" aria-label="Filter by roadmap">
-    <a href="/projects" {{if eq .SelectedRoadmapID 0}}aria-current="true"{{end}}>All roadmaps</a>
-    {{range .Roadmaps}}
-      <a href="/projects?roadmap={{.ID}}" {{if eq .ID $.SelectedRoadmapID}}aria-current="true"{{end}}>{{.Name}}{{if .Featured}} &#9733;{{end}}</a>
-    {{end}}
-  </nav>
+<nav class="projects-roadmaps" aria-label="Filter by roadmap">
+<a href="{{.FilterURL .StatusFilter 0}}" {{if eq .SelectedRoadmapID 0}}aria-current="page"{{end}}>All roadmaps</a>
+{{range .Roadmaps}}<a href="{{$.FilterURL $.StatusFilter .ID}}" {{if eq .ID $.SelectedRoadmapID}}aria-current="page"{{end}}>{{.Name}}{{if .Featured}} · dashboard{{end}}</a>{{end}}
+</nav>
 {{end}}
-
 {{if .Grouped}}
-  {{if .AnyProjects}}
-    {{range .Groups}}
-      <p class="group-label">{{.Roadmap.Name}}{{if .Roadmap.Featured}} &middot; dashboard{{end}}{{if ne .Roadmap.Privacy "public"}} &middot; {{.Roadmap.Privacy}}{{end}}</p>
-      {{if .Count}}
-        {{template "projectRowsV2" .Tree}}
-      {{else}}
-        <p class="meta">No trips on this roadmap yet. <a href="/projects/new">Add one</a>.</p>
-      {{end}}
-    {{end}}
-  {{else}}
-    <p class="meta mt-24">No trips yet. <a href="/projects/new">Plot your first trip</a>.</p>
-  {{end}}
-{{else}}
-  <div class="mt-24">
-    {{template "projectRowsV2" .Tree}}
-  </div>
+  {{if .AnyProjects}}{{range .Groups}}<section class="gyst-stack"><h2 class="group-label">{{.Roadmap.Name}}{{if .Roadmap.Featured}} · dashboard{{end}}{{if ne .Roadmap.Privacy "public"}} · {{.Roadmap.Privacy}}{{end}}</h2>{{template "projectRowsV2" ($.VisibleTree .Tree)}}</section>{{end}}
+  {{else}}<section class="gyst-card gyst-state"><span class="gyst-icon-tile">{{template "gyst.icon" "folder-heart"}}</span><h2 class="gyst-section-title">Your next project starts here</h2><p class="gyst-caption">No projects yet.</p><a class="gyst-button" href="/projects/new">Plot your first trip</a></section>{{end}}
+{{else}}{{template "projectRowsV2" (.VisibleTree .Tree)}}{{end}}
+<a class="gyst-galaxy-entry" href="/galaxy"><span class="gyst-icon-tile">{{template "gyst.icon" "folder-heart"}}</span><span><strong>Explore your Galaxy</strong><span>See how your projects connect.</span></span>{{template "gyst.icon" "chevron-right"}}</a>
+{{if .ShipRoute.Nodes}}<details class="gyst-card projects-route"><summary>Roadmap route overview</summary>{{template "routeMapV2" .ShipRoute}}</details>{{end}}
+</div>
 {{end}}
-{{end}}
-
-{{/* One roadmap's trips as calm rows. Context (.) is a models.ProjectTree.
-     Order: in-flight and completed main trips (status dot tells them apart),
-     then locked/upcoming. Subprojects nest under their parent. */}}
-{{define "projectRowsV2"}}
-{{$tree := .}}
-<ul class="project-list">
-  {{range .Main}}
-    <li>
-      <a class="project-row" href="/projects/{{.Project.ID}}">
-        <span class="status {{template "rowStatusClass" (nodeState .Project.Status .Progress)}}"><span class="dot"></span></span>
-        <span class="grow">
-          <h3>{{.Project.Name}}</h3>
-          <p class="meta">
-            {{- if .NextDueItem}}Next: {{.NextDueItem}}
-            {{- else if .Project.Description}}{{.Project.Description}}
-            {{- else}}{{.CompletedItems}} of {{.TotalItems}} missions done{{end -}}
-          </p>
-        </span>
-        <div class="progress{{if eq (nodeState .Project.Status .Progress) "done"}} done{{end}}"><span style="width: {{progressWidth .Progress}}"></span></div>
-        <span class="meta num">{{.Progress}}%</span>
-      </a>
-      {{with index $tree.Children .Project.ID}}
-        <ul class="subprojects">
-          {{range .}}
-            <li>
-              <span class="status {{template "rowStatusClass" (nodeState .Project.Status .Progress)}}"><span class="dot"></span></span>
-              <a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a>
-              <span class="meta num">{{.Progress}}%</span>
-            </li>
-          {{end}}
-        </ul>
-      {{end}}
-    </li>
-  {{end}}
-  {{range .Upcoming}}
-    <li>
-      <a class="project-row is-locked" href="/projects/{{.Project.ID}}">
-        <span class="status locked"><span class="dot"></span></span>
-        <span class="grow">
-          <h3>{{.Project.Name}}</h3>
-          <p class="meta">
-            {{- if .Project.UnlockNotes}}{{.Project.UnlockNotes}}
-            {{- else if .Project.AutoUnlock}}Unlocks automatically
-            {{- else}}Manual unlock{{end -}}
-          </p>
-        </span>
-      </a>
-    </li>
-  {{end}}
-</ul>
-{{end}}
-
-{{/* nodeState (done|active|locked|pending) -> v2 status class */}}
-{{define "rowStatusClass"}}{{if eq . "done"}}done{{else if eq . "active"}}current{{else if eq . "locked"}}locked{{else}}pending{{end}}{{end}}

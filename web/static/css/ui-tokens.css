@@ -1,0 +1,44 @@
+/* UI-0: independent tokens; no legacy aliases or global visual changes. */
+:root {
+  --gyst-bg: #f8fafc;
+  --gyst-surface: #fff;
+  --gyst-text: #0f172a;
+  --gyst-text-secondary: #6b7280;
+  --gyst-control-text: #626b7a;
+  --gyst-border: #e5e7eb;
+  --gyst-control-border: #64748b;
+  --gyst-blue: #2563eb;
+  --gyst-green: #10b981;
+  --gyst-orange: #f59e0b;
+  --gyst-purple: #8b5cf6;
+  --gyst-red: #ef4444;
+  --gyst-positive-text: #047857;
+  --gyst-warning-text: #92400e;
+  --gyst-danger-text: #b91c1c;
+  --gyst-blue-soft: #eff6ff;
+  --gyst-control-bg: #f1f5f9;
+  --gyst-galaxy-bg: #03050b;
+  --gyst-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
+  --gyst-space-1: 4px; --gyst-space-2: 8px; --gyst-space-3: 12px;
+  --gyst-space-4: 16px; --gyst-space-6: 24px; --gyst-space-8: 32px;
+  --gyst-radius-sm: 12px; --gyst-radius-md: 16px;
+  --gyst-radius-lg: 20px; --gyst-radius-xl: 24px; --gyst-radius-pill: 999px;
+  --gyst-shadow-card: 0 1px 2px rgb(15 23 42 / 5%);
+  --gyst-shadow-raised: 0 4px 12px rgb(15 23 42 / 8%);
+  --gyst-shadow-floating: 0 8px 24px rgb(15 23 42 / 12%);
+  --gyst-duration: 180ms;
+  --gyst-safe-top: env(safe-area-inset-top, 0px);
+  --gyst-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --gyst-safe-left: env(safe-area-inset-left, 0px);
+  --gyst-safe-right: env(safe-area-inset-right, 0px);
+  --gyst-tab-height: 56px;
+}
+/* Explicit opt-in dark theme. The legacy absence-of-theme behavior is untouched. */
+[data-gyst-theme="dark"] {
+  --gyst-bg: #0f172a; --gyst-surface: #182235; --gyst-text: #f8fafc;
+  --gyst-text-secondary: #b5c0d0; --gyst-control-text: #b5c0d0; --gyst-border: #344155;
+  --gyst-control-border: #94a3b8; --gyst-control-bg: #253247;
+  --gyst-blue: #93c5fd; --gyst-blue-soft: #203553;
+  --gyst-positive-text: #6ee7b7; --gyst-warning-text: #fcd34d;
+  --gyst-danger-text: #fca5a5;
+}

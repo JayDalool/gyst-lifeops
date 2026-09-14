@@ -1,0 +1,54 @@
+{{define "today.checklist"}}
+<section class="gyst-card today-checklist" id="checklist" aria-label="Today's checklist">
+      <header class="gyst-header"><h2 class="gyst-section-title">Today’s checklist</h2><span class="gyst-caption">{{len .Completed}} done · {{len .Pending}} left</span><a class="today-link" href="{{if .ChecklistOnly}}/today{{else}}/checklist{{end}}">{{if .ChecklistOnly}}Back to Today{{else}}Open checklist{{end}}</a></header>
+      {{if or .Pending .Completed .Skipped}}<progress class="gyst-progress" value="{{.Progress}}" max="100" aria-label="Today’s task completion">{{.Progress}}%</progress><p class="gyst-caption">{{.Progress}}% complete{{if .Skipped}} · {{len .Skipped}} skipped{{end}}</p>{{end}}
+      {{if or .Pending .Completed .Skipped}}
+        <ul class="tasks">
+          {{range .ChecklistItems .Pending 4}}
+            <li class="task" id="task-{{.Task.ID}}">
+              <form method="post" action="/tasks/{{.Task.ID}}/complete">
+                <input type="hidden" name="occurrence_date" value="{{.Date}}">
+                <input type="hidden" name="return_to" value="{{$.ChecklistReturnPath}}#task-{{.Task.ID}}">
+                <label class="today-task-check"><input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()"></label>
+              </form>
+              <div class="task-body">
+                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
+                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}} &middot; {{.Task.Priority}}</div>
+              </div>
+              <form method="post" action="/tasks/{{.Task.ID}}/skip">
+                <input type="hidden" name="occurrence_date" value="{{.Date}}">
+                <input type="hidden" name="return_to" value="{{$.ChecklistReturnPath}}#task-{{.Task.ID}}">
+                <button class="btn quiet sm" type="submit">Skip</button>
+              </form>
+            </li>
+          {{end}}
+          {{range .ChecklistItems .Completed 2}}
+            <li class="task" id="task-{{.Task.ID}}">
+              <label class="today-task-check"><input type="checkbox" checked disabled aria-label="Completed: {{.Task.Title}}"></label>
+              <div class="task-body">
+                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
+                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}}</div>
+              </div>
+              <span class="task-when num">done {{niceDateTime .CompletedAt}}</span>
+            </li>
+          {{end}}
+          {{range .ChecklistItems .Skipped 2}}
+            <li class="task" id="task-{{.Task.ID}}">
+              <form method="post" action="/tasks/{{.Task.ID}}/complete">
+                <input type="hidden" name="occurrence_date" value="{{.Date}}">
+                <input type="hidden" name="return_to" value="{{$.ChecklistReturnPath}}#task-{{.Task.ID}}">
+                <label class="today-task-check"><input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()"></label>
+              </form>
+              <div class="task-body">
+                <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
+                <div class="task-meta">{{.Task.Category}} &middot; {{.Task.RepeatType}}</div>
+              </div>
+              <span class="task-when">skipped</span>
+            </li>
+          {{end}}
+        </ul>
+      {{else}}
+        <p class="meta">Your day is open. Add a mission to get started.</p>
+      {{end}}
+    </section>
+{{end}}
