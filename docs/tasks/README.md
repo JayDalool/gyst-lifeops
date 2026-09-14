@@ -40,6 +40,7 @@ go test -race, migration-prefix uniqueness, no-database-file-committed.
 | Task | Status |
 |---|---|
 | [UI-PLAN — UI design system and screen map](UI-PLAN-design-system.md) | DONE |
+| [UI-10 — Courses](UI-10-courses.md) | IN PROGRESS |
 | [UI-9 — Health Plan](UI-9-plan.md) | DONE |
 | [UI-8 — Progress](UI-8-progress.md) | DONE |
 | [UI-7 — Training](UI-7-training.md) | DONE |

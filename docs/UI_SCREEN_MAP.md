@@ -2,7 +2,7 @@
 
 Baseline: `feature/health-hardening` at `5c50011`. Visual references:
 [component board](Design1.png), [screen board](<Design 2.png>).
-UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-10 onward
+UI-0 is implemented as an opt-in foundation and development gallery. UI-1 now adopts the shared shell and More; UI-11 onward
 remain **not started**; all screen rows below describe future adoption.
 Existing means the current source supports the route/data, not that its new UI
 is implemented or that production contains observations.
@@ -29,8 +29,8 @@ lists additional reusable patterns. Paths marked proposed do not exist yet.
 | Health progress | `/health#progress`; `/health/progress` | UI-8 displays recorded weight with 30/90/all-time ranges, an observation chart and exact-value table. Weight entry/import setup remains unavailable. Needs backend queries/wiring for historical nutrition/activity ranges and adherence; strength requires Hevy | TrendCard, MiniLineChart, MiniBarChart, SegmentedControl | UI-8 |
 | Current health plan / edit | `/health/plan`, `?id={id}`, `?new=1` | UI-9 adopts grouped fields and saved-cycle cards for real title/dates/goal, nutrition/energy/training/steps targets and notes. Adherence requires backend. Cycles allow any duration; never force real records to 90 days | HealthPlanCard, MetricCard, ProgressBar, labelled fields | UI-9 |
 | Activity options | proposed `/health/activity-options` | Future; Needs UI for option list, backend/specification for duration/energy recommendations. No manufactured calorie estimates | ActivityOptionRow, EmptyState | Future |
-| Courses list | `/courses` | Existing; Needs UI. Course status/provider/instructor/progress, next learning block/deadline, site URL. No cover asset pipeline; use SVG fallback | CourseCard, ProgressBar, SegmentedControl | UI-10 |
-| Course detail | `/courses/{id}` | Existing; Needs UI. Learning blocks, catch-ups, course/block notes and URLs, dates/repetition, progress. Preserve completion/reopen/postpone/delete/archive/status/forms | LessonRow, SubNavigationTabs, ProgressCard | UI-10 |
+| Courses list | `/courses` | UI-10 responsive cards show course status/provider/instructor/progress, next learning block/deadline and site URL. No cover asset pipeline; use SVG fallback | CourseCard, ProgressBar, SegmentedControl | UI-10 |
+| Course detail | `/courses/{id}` | UI-10 adopts detail sections, learning blocks, catch-ups, course/block notes and URLs, dates/repetition, progress. Preserve completion/reopen/postpone/delete/archive/status/forms | LessonRow, SubNavigationTabs, ProgressCard | UI-10 |
 | Lesson / block detail | currently inline `/courses/{id}#block-{id}` | Existing inline; standalone screen Future. Blocks contain notes/URLs and status; no new locking engine, lesson player or resources database | LessonRow, ListSection | UI-10 inline; standalone future |
 | Reminders | `/reminders` | Existing today/overdue read view; Needs UI. ReminderViews and reminder repository. All/Scheduled/Completed queries/actions are not exposed by this handler; require separate backend scope | ReminderRow, ListSection, SegmentedControl | UI-11 |
 | Notes | proposed `/notes` | Needs UI empty state; Needs backend for standalone searchable/favorited notes. Existing project/course/block notes remain in their owners | NoteCard, SearchField, EmptyState | UI-11 |
@@ -112,7 +112,7 @@ this table groups actions rather than proposing any endpoint removal.
 | UI-7 | Training | Empty/onboarding UI until separately approved Hevy backend exists |
 | UI-8 | Progress | Real accessible charts only for supported data/ranges; record backend prerequisites |
 | UI-9 (implemented) | Plan | Existing cycle editor and real dates/targets; no fictional adherence |
-| UI-10 | Courses | Existing learning blocks and catch-ups; no invented locking |
+| UI-10 (implemented) | Courses | Existing learning blocks and catch-ups; no invented locking |
 | UI-11 | Reminders/calendar/notes | Existing data first; new capabilities are separate backend tasks |
 | UI-12 | Analytics | Global LifeOps metrics, supported ranges only |
 | UI-13 | More/settings/integrations/profile | Real status, no private technical information in profile |
