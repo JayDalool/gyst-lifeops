@@ -36,7 +36,7 @@ lists additional reusable patterns. Paths marked proposed do not exist yet.
 | Notes | proposed `/notes` | Needs UI empty state; Needs backend for standalone searchable/favorited notes. Existing project/course/block notes remain in their owners | NoteCard, SearchField, EmptyState | UI-11 |
 | Calendar / schedule | `/monthly` current; proposed `/schedule` | Needs UI. Reuse TaskOccurrencesBetween and existing calendar/course scheduling services. `/calendar` is the private-feed dispatcher, not a page. Unified daily timeline needs handler wiring; workouts unavailable | CalendarEventRow, SegmentedControl, ListSection | UI-11 |
 | Global analytics | `/analytics` | Existing; Needs UI. Dashboard aggregates daily/monthly task completion, streak, project and yearly-goal charts. Study/Health adherence/life-domain comparisons and arbitrary ranges need backend | AnalyticsMetricCard, MiniLineChart, MiniBarChart | UI-12 |
-| More | `/more` | Existing UI-1 grouped destination; existing destinations require no new business data. Initial route in UI-1, richer sections in UI-13 | NavigationRow, ListSection | UI-1 / UI-13 |
+| Menu | `/more` | NAV1 purpose-grouped directory of existing pages; existing destinations require no new business data. Initial route in UI-1, richer sections in UI-13 | NavigationRow, ListSection | UI-1 / UI-13 |
 | Settings | `/settings` | Existing; Needs UI. Prayer/location/timezone, calendar token feed management, appearance/motion and data paths currently shown. Reorganize without losing controls; remove private technical presentation from general profile | SettingsRow, Toggle, TextField, SelectField | UI-13 |
 | Integrations | proposed `/integrations` | Needs UI and some backend wiring. HealthSyncState service exists, no status handler; Web Push browser status exists. Apple Shortcut onboarding absent; MFP is indirect via Apple Health; Hevy absent. Existing external-link providers stay available | IntegrationStatusRow, ErrorState | UI-13 |
 | Profile | proposed `/profile` | Needs UI. PlayerStats/ship progression available; name/avatar account profile fields not exposed. Use GYST identity/real XP until profile storage exists | ProfileHeader, StatCard, NavigationRow | UI-13 |
@@ -138,3 +138,6 @@ Inspection used source and both supplied boards. No live production database or
 browser was opened. Original workspace was `master` with a user Compose edit;
 planning work uses an isolated `/tmp/gyst-ui-plan` worktree on the requested
 branch. No runtime code or schema changes are included.
+
+NAV1 is the approved shell cleanup before UI-11: desktop sidebar, phone/tablet
+bottom links, GYST/Search top bar and grouped Menu. See tasks/NAV1-navigation-cleanup.md.

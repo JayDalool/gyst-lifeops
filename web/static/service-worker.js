@@ -1,7 +1,7 @@
 // Cache only public static assets. Private pages, API responses and redirects
 // never enter CacheStorage, including pages viewed before signing out.
-const CACHE = "lifeops-shell-v39-ui-10";
-const SHELL = ["/static/css/styles.css?v=ui-1", "/static/css/ui-tokens.css?v=ui-0", "/static/css/ui-components.css?v=ui-0", "/static/css/ui-shell.css?v=ui-1", "/static/css/ui-today.css?v=ui-2", "/static/css/ui-projects.css?v=ui-3", "/static/css/ui-galaxy.css?v=ui-4", "/static/css/ui-health.css?v=ui-9", "/static/css/ui-courses.css?v=ui-10", "/static/js/theme.js?v=ui-1", "/static/js/charts.js?v=ui-2", "/static/js/app.js?v=ui-1", "/static/favicon.svg"];
+const CACHE = "lifeops-shell-v40-nav-1";
+const SHELL = ["/static/css/styles.css?v=ui-1", "/static/css/ui-tokens.css?v=ui-0", "/static/css/ui-components.css?v=ui-0", "/static/css/ui-shell.css?v=nav-1", "/static/css/ui-today.css?v=ui-2", "/static/css/ui-projects.css?v=ui-3", "/static/css/ui-galaxy.css?v=nav-1", "/static/css/ui-health.css?v=ui-9", "/static/css/ui-courses.css?v=ui-10", "/static/js/theme.js?v=ui-1", "/static/js/charts.js?v=ui-2", "/static/js/app.js?v=nav-1", "/static/favicon.svg"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("lifeops-shell-") && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 const OFFLINE = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GYST · Offline</title><body><main><h1>You’re offline</h1><p>Connect to the internet to view your GYST data.</p><p><a href="">Try again</a></p></main></body></html>';

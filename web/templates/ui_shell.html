@@ -2,18 +2,9 @@
 <header class="gyst-scope gyst-topbar">
   <div class="gyst-topbar-inner">
     <a class="gyst-brand" href="/today" aria-label="GYST Today">GYST</a>
-    {{$xp := xpStats}}
-    <div class="gyst-xp" aria-label="Level {{$xp.CurrentLevel}}, {{$xp.TotalStars}} total XP, {{toNextLevel $xp.TotalStars}} XP to next level">
-      <span>Level {{$xp.CurrentLevel}}</span><progress max="100" value="{{levelPct $xp.TotalStars}}" aria-label="Progress to next level">{{levelPct $xp.TotalStars}}%</progress><span class="gyst-xp-detail">{{levelPct $xp.TotalStars}} / 100 XP</span>
-    </div>
     <div class="gyst-topbar-actions">
       <button class="gyst-button gyst-button--secondary gyst-button--icon" type="button" data-command-open aria-label="Search and quick capture" aria-keyshortcuts="Control+K Meta+K">{{template "gyst.icon" "search"}}</button>
-      <details class="gyst-add-menu">
-        <summary aria-label="Add">{{template "gyst.icon" "plus"}}<span class="gyst-add-label">Add</span></summary>
-        <div class="gyst-add-popover">
-          <a href="/tasks/new">New task</a><a href="/projects/new">New project</a><a href="/courses/new">New course</a><a href="/plan-import">Import a plan</a>
-        </div>
-      </details>
+
     </div>
   </div>
 </header>
@@ -23,6 +14,6 @@
   <a href="/projects" {{if eq $section "projects"}}aria-current="page"{{end}}>{{template "gyst.icon" "folder-heart"}}<span>Projects</span></a>
   <a href="/health" {{if eq $section "health"}}aria-current="page"{{end}}>{{template "gyst.icon" "heart"}}<span>Health</span></a>
   <a href="/courses" {{if eq $section "courses"}}aria-current="page"{{end}}>{{template "gyst.icon" "book-open"}}<span>Courses</span></a>
-  <a href="/more" {{if eq $section "more"}}aria-current="page"{{end}}>{{template "gyst.icon" "ellipsis"}}<span>More</span></a>
+  <a href="/more" {{if eq $section "more"}}aria-current="page"{{end}}>{{template "gyst.icon" "ellipsis"}}<span>Menu</span></a>
 </nav>
 {{end}}

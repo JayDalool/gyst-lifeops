@@ -38,7 +38,7 @@ func TestPrimaryNavigationHasFiveDestinations(t *testing.T) {
 		t.Fatal("primary navigation end not found")
 	}
 	nav := body[start : start+end]
-	for _, label := range []string{"Today", "Projects", "Health", "Courses", "More"} {
+	for _, label := range []string{"Today", "Projects", "Health", "Courses", "Menu"} {
 		if !strings.Contains(nav, label) {
 			t.Fatalf("primary navigation missing %q", label)
 		}
@@ -123,7 +123,7 @@ func TestHealthFoundation(t *testing.T) {
 				t.Errorf("health missing %q", text)
 			}
 		}
-		for _, path := range []string{"/today", "/galaxy", "/projects", "/health", "/courses", "/more", "/tasks", "/settings", "/tasks/new", "/plan-import"} {
+		for _, path := range []string{"/today", "/galaxy", "/projects", "/health", "/courses", "/more", "/tasks", "/settings", "/plan-import"} {
 			if !strings.Contains(body, `href="`+path+`"`) {
 				t.Errorf("missing navigation %s", path)
 			}

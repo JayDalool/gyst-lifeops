@@ -104,6 +104,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | Task | Status | Commit(s) | CI |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [NAV1 Navigation cleanup](tasks/NAV1-navigation-cleanup.md) | IN PROGRESS | — | — |
 | [UI-10 Courses](tasks/UI-10-courses.md) | DONE | `612da7b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34794115995) |
 | [UI-9 Health Plan](tasks/UI-9-plan.md) | DONE | `694e5b7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34778983272) |
 | [UI-8 Progress](tasks/UI-8-progress.md) | DONE | `17c227b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34774519741) |
@@ -252,7 +253,7 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Jay: review UI-10 Courses before UI-11 Reminders/calendar/notes.**
+**Finish NAV1 navigation cleanup; Jay reviews before UI-11.**
 Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
 for scope and verification evidence. A2 remains separate operational work.
 

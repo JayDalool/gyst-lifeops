@@ -2,7 +2,7 @@
 <div class="gyst-scope today-page">
   <header class="gyst-header today-heading">
     <div><p class="gyst-caption">{{if .Greeting}}{{.Greeting}}{{else}}Your day, at a glance{{end}}</p><h1 class="gyst-page-title">Today</h1><p class="gyst-caption">{{niceDate .Today}}</p></div>
-    <a class="gyst-button gyst-button--icon" href="/tasks/new" aria-label="Add mission">{{template "gyst.icon" "plus"}}</a>
+    <a class="gyst-button" href="/tasks/new">{{template "gyst.icon" "plus"}} Add task</a>
   </header>
   <section class="gyst-card gyst-card--tinted today-intention" aria-label="Daily focus">
     <span class="gyst-icon-tile">{{template "gyst.icon" "check"}}</span><div><p><strong>A focused today.</strong></p><p class="gyst-caption">Small steps build the life you want.</p></div>

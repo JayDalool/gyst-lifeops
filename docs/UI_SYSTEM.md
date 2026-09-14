@@ -464,3 +464,13 @@ absence and target states. The deck is one column on phones, two on tablet and
 three on desktop. Health summary retains its inline macros and links to detail.
 Snapshot freshness is not attributed to each nutrient. Meal-level features stay
 unavailable. Evidence: [UI-6](tasks/UI-6-nutrition.md).
+
+## NAV1 — Approved navigation revision
+
+Jay approved simplifying the shell after UI-10. This supersedes UI-1 shell
+placement: desktop (>=1024 px) has a left sidebar, phone/tablet have five bottom
+links: Today, Projects, Health, Courses, Menu. The top bar has GYST and Search.
+The global Add dropdown is removed; creation actions belong to owner pages,
+and XP stays on Today. Menu retains `/more` and groups all 19 existing main
+destinations. Future screens join their group when implemented. Search and
+quick capture remain optional shortcuts. Galaxy clearance excludes sidebar height.

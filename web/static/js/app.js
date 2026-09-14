@@ -294,7 +294,7 @@
       });
     }
 
-    var navMenus = Array.prototype.slice.call(document.querySelectorAll(".nav-menu, .gyst-add-menu"));
+    var navMenus = Array.prototype.slice.call(document.querySelectorAll(".nav-menu"));
     navMenus.forEach(function (menu) {
       menu.addEventListener("toggle", function () {
         if (!menu.open) return;
@@ -447,7 +447,7 @@
     if (!header || !nav || !("ResizeObserver" in window)) return;
     var observer = new ResizeObserver(function () {
       document.documentElement.style.setProperty("--gyst-header-clearance", Math.ceil(header.getBoundingClientRect().height) + "px");
-      document.documentElement.style.setProperty("--gyst-nav-clearance", Math.ceil(nav.getBoundingClientRect().height) + "px");
+      document.documentElement.style.setProperty("--gyst-nav-clearance", (window.matchMedia("(min-width: 1024px)").matches ? 0 : Math.ceil(nav.getBoundingClientRect().height)) + "px");
     });
     observer.observe(header);
     observer.observe(nav);
