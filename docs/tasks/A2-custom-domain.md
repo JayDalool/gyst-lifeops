@@ -1,6 +1,7 @@
 # A2-DOMAIN — gyst.zaylolabs.com
 
 - **Status:** IN PROGRESS — internal origin deployed; dashboard route update pending
+- **Implementation:** `04cf28e`; [CI pending](https://github.com/JayDalool/gyst-lifeops/actions/runs/35821849995).
 - **Scope:** Jay explicitly requested the public domain instead of the Tailscale
   hostname, plus step-by-step nutrition Shortcut setup.
 
@@ -29,7 +30,7 @@ to public HTTPS. The Tailscale HTTPS listener remains available.
   unauthenticated sync POST 401, public-HTTP redirect 301 to HTTPS.
 - Existing Tailscale HTTPS login 200, certificate verification result 0.
 - Neither 3005 nor 8081 has a host listener.
-- Go formatting/vet/build/unit/race checks: see implementation commit evidence.
+- Go formatting/vet/build/unit/race checks passed locally.
 - Public DNS resolves, but external HTTPS request timed out during inspection.
   Public success must be verified after the dashboard route update.
 

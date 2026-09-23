@@ -122,7 +122,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A3 session store](tasks/A3-session-store.md) | DONE (deployed) | `7835b7d` | green |
 | [A4 application auth](tasks/A4-application-auth.md) | DONE (deployed) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
-| [A2-DOMAIN public domain](tasks/A2-custom-domain.md) | IN PROGRESS | pending commit | public route pending |
+| [A2-DOMAIN public domain](tasks/A2-custom-domain.md) | IN PROGRESS | `04cf28e` | [CI pending](https://github.com/JayDalool/gyst-lifeops/actions/runs/35821849995); public route pending |
 | [A2 trusted TLS](tasks/A2-trusted-tls.md) | DONE | `ac9ae82` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763) |
 | [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | DONE (deployed) | `6700cec`, `ac9ae82` | server checks passed |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
