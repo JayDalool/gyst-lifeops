@@ -1,7 +1,7 @@
 # A2 — Trusted TLS for Apple Shortcuts
 
 - **ID:** A2
-- **Status:** IN PROGRESS — deployed and server-verified; physical phone verification pending
+- **Status:** IN PROGRESS — deployed and server-verified; iPhone browser/login confirmed; Shortcuts request pending
 - **Implementation commit(s):** `ac9ae82`.
 - **Review status:** Local format/vet/build/unit/race checks passed; [CI green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763).
 
@@ -77,9 +77,10 @@ References:
 
 ## Next action
 
-Jay: verify the new HTTPS URL and existing-password login on iPhone with
-Tailscale connected, then verify a Shortcuts request. M3 remains gated on this
-physical-phone check.
+Inspect the existing iPhone Shortcut, update its URL to the deployed HTTPS
+endpoint and verify a Shortcuts request. Jay confirmed real iPhone browser
+access and existing-password login without a certificate warning. Do not send
+fixed connection-test metrics into production.
 
 ## Approved rollout preparation
 
@@ -108,7 +109,15 @@ The existing data mount is unchanged. Production auth remains enabled.
 - Actual MagicDNS hostname POST `/api/health/sync`: 401 without a bearer token.
 - Port 3005: no host listener and no published Docker mapping.
 - Containers running; no application startup errors.
-- Real password login and iPhone/Shortcuts checks still await Jay.
+- Jay confirmed real iPhone browser access and existing-password login without
+  a certificate warning in this session. The Shortcuts-specific check is pending.
 
 The temporary TLS probe was stopped and removed. Automated renewal is
 configured by the integration; a future renewal event has not been observed.
+
+## Phone confirmation
+
+Jay reported successful iPhone login without a certificate warning and confirmed
+an existing GYST health-sync Shortcut. Its contents are not yet inspected: it
+may read real Health samples or contain earlier fixed test values. The next
+check is its actual request and source values, not another browser login.

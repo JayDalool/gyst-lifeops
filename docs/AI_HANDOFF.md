@@ -119,8 +119,8 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
 | [B6 CI safety gate](tasks/B6-ci-safety-gate.md) | DONE | `f663f3f` | green |
-| [A3 session store](tasks/A3-session-store.md) | DEFERRED (\*) | `7835b7d` | green |
-| [A4 application auth](tasks/A4-application-auth.md) | DEFERRED (\*) | `fb05cc3` | green |
+| [A3 session store](tasks/A3-session-store.md) | DONE (deployed) | `7835b7d` | green |
+| [A4 application auth](tasks/A4-application-auth.md) | DONE (deployed) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
 | [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | `ac9ae82` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763) |
 | [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | DONE (deployed) | `6700cec`, `ac9ae82` | server checks passed |
@@ -131,7 +131,8 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [DOC1 documentation](tasks/DOC1-documentation.md) | DONE | `d4007a3`, `5341e46` | green |
 | [M3 Apple Health ingestion](tasks/M3-health-ingestion.md) | PLANNED | — | — |
 
-(\*) **A3/A4 deferred:** Auth is documented as complete but not deployed. Will be implemented after A2/A1/M3 ship. Currently no login required.  
+(*) **A3/A4 deployed:** Authentication is enabled; Jay confirmed iPhone login
+without a certificate warning after the approved HTTPS rollout.  
 (\*\*) **OPS1 completed:** FK audit ran on 2026-09-12, returned zero violations. Database certified clean.
 
 **Nothing above has been verified in a real browser, on a real device, or
@@ -160,7 +161,8 @@ see sync status.
 - **`GYST_PASSWORD_HASH` must be set** or nobody can sign in after A4 deploys.
 - **Tailscale HTTPS eligibility is enabled** (verified 2026-09-22). A2 trusted
   certificate retrieval passes an isolated probe; production deployment passed server checks;
-  iPhone verification remains pending. M3 remains gated on that rollout.
+  Jay confirmed iPhone browser login without a warning. The Shortcuts request
+  remains unverified.
 - **M3 must not begin** before the M2.5 correctness and security gates close.
 - **UI v3 is design-only.** Not implemented.
 
@@ -255,7 +257,7 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Jay verifies iPhone HTTPS/login and Shortcuts access; then resume M3.**
+**Inspect Jay’s existing health-sync Shortcut and verify its HTTPS request.**
 
 Jay requested continuing phone sync; MyFitnessPal scope is calories and macros
 from logged foods/recipes only, not a recipe library. M3 remains gated on the
@@ -424,3 +426,10 @@ production data mount. Trusted HTTPS login 200, HSTS present, Health 303 to logi
 and unauthenticated sync POST 401. Port 3005 no longer published/listening.
 A1 DONE; A2 awaits real iPhone login/Shortcuts verification. Automatic renewal
 is configured, not empirically observed across expiry. Next: Jay phone check.
+
+2026-09-22 — Codex — Jay confirmed real iPhone HTTPS access and successful
+existing-password login without a certificate warning. He already has a GYST
+Shortcut. Inspect whether it reads real samples or sends fixed test values before
+running it. The existing API already supports nutrition totals and idempotent
+daily replacement; do not reimplement ingestion based on older handoff prose.
+A2 remains open only for the Shortcuts-specific request check. No runtime edits.
