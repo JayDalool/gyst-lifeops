@@ -2,8 +2,8 @@
 
 - **ID:** A2
 - **Status:** IN PROGRESS — configuration verified in isolation; deployment and phone verification pending
-- **Implementation commit(s):** See the A2 implementation commit in Git history.
-- **Review status:** Local format/vet/build/unit/race checks passed; CI pending.
+- **Implementation commit(s):** `ac9ae82`.
+- **Review status:** Local format/vet/build/unit/race checks passed; [CI green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763).
 
 ## Implementation
 
@@ -79,3 +79,18 @@ References:
 
 Operator backup and authentication readiness confirmation, then deploy and
 verify the reviewed A1/A2 configuration on the phone.
+
+## Approved rollout preparation
+
+Jay explicitly authorized backup, non-secret authentication checks and deployment.
+B2 backup `lifeops-20260923T044036Z.db` passed integrity_check (32 tables, 19
+migrations); read-only foreign_key_check on that backup returned zero rows.
+This is snapshot evidence, not a stopped-app live OPS1 audit. Existing runtime
+authentication is enabled, password hash and health bearer token are configured.
+No migration files differ between the old checkout and the new branch.
+
+The build was interrupted after discovering no Docker ignore file. Added
+`.dockerignore` to exclude environment files, Git metadata, live databases and
+backups from subsequent build contexts. The clean-context production image built
+successfully. Existing local Compose edits and design images are preserved in
+two named Git stashes; the deployment checkout is now on the feature branch.

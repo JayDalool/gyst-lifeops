@@ -122,7 +122,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A3 session store](tasks/A3-session-store.md) | DEFERRED (\*) | `7835b7d` | green |
 | [A4 application auth](tasks/A4-application-auth.md) | DEFERRED (\*) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
-| [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | — | — |
+| [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | `ac9ae82` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763) |
 | [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | IN PROGRESS (deployment pending) | `6700cec` | rollout unverified |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
 | [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
@@ -412,3 +412,9 @@ disposable backend; wrong hostname rejected. Local Go format/vet/build/unit/race
 checks passed. Production still publishes 3005; A1 corrected to rollout pending.
 Phone verification, operator backup/auth readiness and deployment remain open.
 MyFitnessPal scope confirmed: logged calories/macros only, no recipe library.
+
+2026-09-22 — Codex — Jay authorized production backup and deployment. B2 backup
+passed integrity_check; the backup has zero FK violations. Live auth enabled,
+password and health token configured (values not exposed). A2 CI green at
+35819079763, implementation ac9ae82. Added Docker context exclusions before
+building the production image. Rollout and phone checks follow.

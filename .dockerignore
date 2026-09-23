@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+data
+backups
+*.db
+*.db-wal
+*.db-shm
+node_modules
