@@ -129,10 +129,10 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
 | [REV1 B1 independent review](tasks/REV1-b1-independent-review.md) | DONE | findings in `29adc43` | n/a — review |
 | [DOC1 documentation](tasks/DOC1-documentation.md) | DONE | `d4007a3`, `5341e46` | green |
-| [M3 Apple Health ingestion](tasks/M3-health-ingestion.md) | PLANNED | — | — |
+| [M3 Apple Health ingestion](tasks/M3-health-ingestion.md) | PENDING (phone validation) | existing Health Core/API | end-to-end pending |
 
 (*) **A3/A4 deployed:** Authentication is enabled; Jay confirmed iPhone login
-without a certificate warning after the approved HTTPS rollout.  
+without a certificate warning after the approved HTTPS rollout.
 (\*\*) **OPS1 completed:** FK audit ran on 2026-09-12, returned zero violations. Database certified clean.
 
 **Nothing above has been verified in a real browser, on a real device, or
@@ -433,3 +433,9 @@ Shortcut. Inspect whether it reads real samples or sends fixed test values befor
 running it. The existing API already supports nutrition totals and idempotent
 daily replacement; do not reimplement ingestion based on older handoff prose.
 A2 remains open only for the Shortcuts-specific request check. No runtime edits.
+
+2026-09-23 — Codex — Jay confirmed the existing Shortcut reads real Health
+samples. Requested one run using the new HTTPS sync URL with its existing
+Bearer token. Created M3 acceptance checklist around the existing API, including
+MyFitnessPal source filtering, day totals, units and missing-versus-zero. No
+server code or production data changes. Await phone result before claiming sync.

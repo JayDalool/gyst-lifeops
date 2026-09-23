@@ -62,6 +62,7 @@ go test -race, migration-prefix uniqueness, no-database-file-committed.
 | [A2 — Trusted TLS for Shortcuts](A2-trusted-tls.md) | IN PROGRESS |
 | [OPS1 — Production foreign_key_check](OPS1-production-fk-audit.md) | PENDING |
 | [B2 — Backup tooling](B2-backup-tooling.md) | DONE |
+| [M3 — Apple Health ingestion](M3-health-ingestion.md) | PENDING |
 | [M4 — Live Health Day view](M4-live-day-view.md) | DONE |
 | [REV1 — Independent review of the B1 range](REV1-b1-independent-review.md) | DONE |
 | [DOC1 — Project documentation](DOC1-documentation.md) | DONE |
