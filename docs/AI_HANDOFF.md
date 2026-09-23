@@ -123,7 +123,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A4 application auth](tasks/A4-application-auth.md) | DEFERRED (\*) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
 | [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | `ac9ae82` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763) |
-| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | IN PROGRESS (deployment pending) | `6700cec` | rollout unverified |
+| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | DONE (deployed) | `6700cec`, `ac9ae82` | server checks passed |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
 | [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
@@ -159,8 +159,8 @@ see sync status.
   database is in WAL mode and the main file alone can be near-empty.
 - **`GYST_PASSWORD_HASH` must be set** or nobody can sign in after A4 deploys.
 - **Tailscale HTTPS eligibility is enabled** (verified 2026-09-22). A2 trusted
-  certificate retrieval passes an isolated probe; production deployment and
-  iPhone verification remain pending. M3 remains gated on that rollout.
+  certificate retrieval passes an isolated probe; production deployment passed server checks;
+  iPhone verification remains pending. M3 remains gated on that rollout.
 - **M3 must not begin** before the M2.5 correctness and security gates close.
 - **UI v3 is design-only.** Not implemented.
 
@@ -255,17 +255,17 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Deploy and verify A1/A2 after the operator backup/authentication gate.**
+**Jay verifies iPhone HTTPS/login and Shortcuts access; then resume M3.**
 
 Jay requested continuing phone sync; MyFitnessPal scope is calories and macros
 from logged foods/recipes only, not a recipe library. M3 remains gated on the
 secure ingress rollout. See [A2](tasks/A2-trusted-tls.md) for the reviewed setup,
 local evidence, deployment sequence and outstanding physical-phone checks.
 
-The active checkout is `/tmp/gyst-health-resume` on `feature/health-hardening`.
-The original deployment checkout remains on older `master` with local Compose
-edits and design files preserved. Do not deploy using the worktree's empty data
-path. Historical sections contain contradictory operator/auth claims: auth code
+The persistent deployment checkout is `/srv/server/repos/gyst-lifeops` on
+`feature/health-hardening`; `/tmp/gyst-health-resume` is detached. Local Compose
+edits and design images are preserved in named Git stashes. A verified B2 backup
+preceded the approved rollout, and production authentication is enabled. Historical sections contain contradictory operator/auth claims: auth code
 exists, and an old record reports OPS1 passed, but production authentication and
 the audit evidence were not reverified in this task. No production DB access.
 
@@ -418,3 +418,9 @@ passed integrity_check; the backup has zero FK violations. Live auth enabled,
 password and health token configured (values not exposed). A2 CI green at
 35819079763, implementation ac9ae82. Added Docker context exclusions before
 building the production image. Rollout and phone checks follow.
+
+2026-09-22 — Codex — Approved A1/A2 deployment completed using the existing
+production data mount. Trusted HTTPS login 200, HSTS present, Health 303 to login
+and unauthenticated sync POST 401. Port 3005 no longer published/listening.
+A1 DONE; A2 awaits real iPhone login/Shortcuts verification. Automatic renewal
+is configured, not empirically observed across expiry. Next: Jay phone check.

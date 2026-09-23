@@ -2,10 +2,10 @@
 
 - **ID:** A1
 - **Title:** Make Caddy the only ingress
-- **Status:** `IN PROGRESS` — source committed, production rollout pending
+- **Status:** `DONE` — deployed and server-verified 2026-09-22
 - **Owner:** Claude
 - **Implementation commit(s):** `6700cec`
-- **Review status:** Implementation exists in `6700cec`; production acceptance not met.
+- **Review status:** Implementation `6700cec`, trusted TLS `ac9ae82`; production checks passed.
 
 ## Problem
 
@@ -23,8 +23,8 @@ action first.
 ## Acceptance criteria
 
 - [x] `ports:` removed from the `gyst-lifeops` service
-- [ ] Port 3005 not listening on any host interface
-- [ ] Application still reachable through Caddy
+- [x] Port 3005 not listening on any host interface
+- [x] Application still reachable through Caddy
 - [x] HSTS header added
 
 ## Blockers
@@ -33,6 +33,7 @@ action first.
 
 ## Next action
 
-Deploy together with A2 after the operator backup and auth readiness check.
-The 2026-09-22 inspection found production still publishing port 3005; the
-earlier DONE label did not establish deployment. See A2 for verification.
+Phone verification for A2, then M3. The approved rollout removed the live
+3005 mapping: `docker ps` shows only container port 8080 and `ss` shows no
+3005 listener. Trusted HTTPS login returns 200 with HSTS; unauthenticated
+Health redirects to login and Health sync returns 401. See A2 for backup evidence.

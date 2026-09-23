@@ -58,7 +58,7 @@ go test -race, migration-prefix uniqueness, no-database-file-committed.
 | [A3 — Session store and auth service](A3-session-store.md) | DONE |
 | [A4 — Application authentication](A4-application-auth.md) | DONE |
 | [A5 — Health API write-only](A5-health-api-write-only.md) | DONE |
-| [A1 — Remove plaintext port](A1-remove-plaintext-port.md) | IN PROGRESS |
+| [A1 — Remove plaintext port](A1-remove-plaintext-port.md) | DONE |
 | [A2 — Trusted TLS for Shortcuts](A2-trusted-tls.md) | IN PROGRESS |
 | [OPS1 — Production foreign_key_check](OPS1-production-fk-audit.md) | PENDING |
 | [B2 — Backup tooling](B2-backup-tooling.md) | DONE |
