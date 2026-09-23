@@ -1,6 +1,6 @@
 # GYST — Claude / Codex shared handoff
 
-**Last updated:** 2026-09-12
+**Last updated:** 2026-09-22
 **Updated by:** Claude
 **Repository:** `JayDalool/gyst-lifeops`
 **Implementation branch:** `feature/health-hardening`
@@ -123,7 +123,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A4 application auth](tasks/A4-application-auth.md) | DEFERRED (\*) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
 | [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | — | — |
-| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED (on A2) | — | — |
+| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | IN PROGRESS (deployment pending) | `6700cec` | rollout unverified |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
 | [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
@@ -158,7 +158,9 @@ see sync status.
   before any deployment or migration. **Do not back up with `cp` —** the
   database is in WAL mode and the main file alone can be near-empty.
 - **`GYST_PASSWORD_HASH` must be set** or nobody can sign in after A4 deploys.
-- **Tailscale HTTPS is not enabled**, which blocks A2, therefore A1, therefore M3.
+- **Tailscale HTTPS eligibility is enabled** (verified 2026-09-22). A2 trusted
+  certificate retrieval passes an isolated probe; production deployment and
+  iPhone verification remain pending. M3 remains gated on that rollout.
 - **M3 must not begin** before the M2.5 correctness and security gates close.
 - **UI v3 is design-only.** Not implemented.
 
@@ -253,16 +255,19 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Finish NAV1 navigation cleanup; Jay reviews before UI-11.**
-Jay approved UI-2 and requested continuation. See [UI-3](tasks/UI-3-projects.md)
-for scope and verification evidence. A2 remains separate operational work.
+**Deploy and verify A1/A2 after the operator backup/authentication gate.**
 
-Planning baseline is `5c50011`. The earlier handoff contains contradictory
-operator/auth claims: newer prose says HTTPS/OPS1 are done, older blocker sections
-say otherwise, and auth code exists despite being called unimplemented. These
-historical claims have not been reverified in this planning task. Consult the
-screen map's discrepancy notes before resuming A2; do not redeploy or reimplement
-auth based only on the stale prose.
+Jay requested continuing phone sync; MyFitnessPal scope is calories and macros
+from logged foods/recipes only, not a recipe library. M3 remains gated on the
+secure ingress rollout. See [A2](tasks/A2-trusted-tls.md) for the reviewed setup,
+local evidence, deployment sequence and outstanding physical-phone checks.
+
+The active checkout is `/tmp/gyst-health-resume` on `feature/health-hardening`.
+The original deployment checkout remains on older `master` with local Compose
+edits and design files preserved. Do not deploy using the worktree's empty data
+path. Historical sections contain contradictory operator/auth claims: auth code
+exists, and an old record reports OPS1 passed, but production authentication and
+the audit evidence were not reverified in this task. No production DB access.
 
 ---
 
@@ -400,3 +405,10 @@ Chromium/WebKit responsive/action checks passed with temporary fixture data.
 Fixed WebKit select overflow at enlarged text and duplicate catch-up anchors.
 No production deployment; physical iPhone review pending. Next: UI-10 review
 before UI-11. Remaining phase detail lives in docs/UI_SCREEN_MAP.md.
+
+2026-09-22 — Codex — Resumed A2 in an isolated feature checkout. Caddy's
+Tailscale certificate integration passed a trusted TLS/proxy probe against a
+disposable backend; wrong hostname rejected. Local Go format/vet/build/unit/race
+checks passed. Production still publishes 3005; A1 corrected to rollout pending.
+Phone verification, operator backup/auth readiness and deployment remain open.
+MyFitnessPal scope confirmed: logged calories/macros only, no recipe library.

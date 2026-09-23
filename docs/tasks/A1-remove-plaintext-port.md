@@ -2,10 +2,10 @@
 
 - **ID:** A1
 - **Title:** Make Caddy the only ingress
-- **Status:** `DONE`
+- **Status:** `IN PROGRESS` — source committed, production rollout pending
 - **Owner:** Claude
 - **Implementation commit(s):** `6700cec`
-- **Review status:** CI green — PR #1
+- **Review status:** Implementation exists in `6700cec`; production acceptance not met.
 
 ## Problem
 
@@ -22,10 +22,10 @@ action first.
 
 ## Acceptance criteria
 
-- [ ] `ports:` removed from the `gyst-lifeops` service
+- [x] `ports:` removed from the `gyst-lifeops` service
 - [ ] Port 3005 not listening on any host interface
 - [ ] Application still reachable through Caddy
-- [ ] HSTS header added
+- [x] HSTS header added
 
 ## Blockers
 
@@ -33,4 +33,6 @@ action first.
 
 ## Next action
 
-Wait for A2. Nothing to implement until then.
+Deploy together with A2 after the operator backup and auth readiness check.
+The 2026-09-22 inspection found production still publishing port 3005; the
+earlier DONE label did not establish deployment. See A2 for verification.
