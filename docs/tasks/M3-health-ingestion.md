@@ -1,6 +1,6 @@
 # M3 — Apple Health Shortcut ingestion
 
-- **Status:** PENDING — existing phone Shortcut; HTTPS request and nutrition validation pending
+- **Status:** IN PROGRESS — successful phone sync reported; nutrition totals and automation pending
 - **Scope:** Jay requested calories and macros from MyFitnessPal, including logged
   recipe servings. A recipe library is explicitly out of scope.
 - **Backend:** Already implemented by Health Core and A5; do not create a second
@@ -11,8 +11,9 @@
 Trusted HTTPS is deployed, application authentication is enabled, and Jay
 confirmed iPhone login without a certificate warning. Jay also confirmed an
 existing GYST Shortcut that reads real Health samples rather than fixed test
-numbers. The agent has not inspected that Shortcut or observed its response.
-A2's Shortcuts-specific check remains open until its HTTPS request succeeds.
+numbers. Jay reported a successful run returning `last_synced_at` on 2026-09-23,
+closing A2. The agent has not inspected the Shortcut or its full response;
+nutrient presence, source filtering and numerical agreement remain unverified.
 
 ## Existing contract to match
 
@@ -68,7 +69,7 @@ Source: [MyFitnessPal Apple Health connection and syncing](https://support.myfit
 
 - [x] Trusted HTTPS deployed; real iPhone browser login reported successful
 - [x] Existing Shortcut reported to read real Health samples
-- [ ] Existing Shortcut successfully POSTs to the new HTTPS URL (closes A2)
+- [x] Existing Shortcut successfully POSTs to the new HTTPS URL (closes A2)
 - [ ] Date, source filter and numeric units inspected/verified on phone
 - [ ] Calories, protein, carbs and fat actually arrive and match Apple Health
 - [ ] Logged MyFitnessPal recipe serving contributes its nutrition once
@@ -90,6 +91,6 @@ Sources: [Apple Shortcuts automations](https://support.apple.com/guide/shortcuts
 
 ## Next action
 
-Jay updates the existing Shortcut's URL, runs it unlocked with Tailscale
-connected, and reports success (`last_synced_at`) or the error without sharing
-the Bearer token. Then verify nutrient presence and totals in `/health/nutrition`.
+Jay compares today’s calories, protein, carbs and fat at `/health/nutrition`
+with his MyFitnessPal diary and reports any absent or mismatched values.
+A successful request alone does not establish complete nutrition ingestion.

@@ -1,6 +1,6 @@
 # GYST — Claude / Codex shared handoff
 
-**Last updated:** 2026-09-22
+**Last updated:** 2026-09-23
 **Updated by:** Claude
 **Repository:** `JayDalool/gyst-lifeops`
 **Implementation branch:** `feature/health-hardening`
@@ -122,14 +122,14 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A3 session store](tasks/A3-session-store.md) | DONE (deployed) | `7835b7d` | green |
 | [A4 application auth](tasks/A4-application-auth.md) | DONE (deployed) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
-| [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | `ac9ae82` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763) |
+| [A2 trusted TLS](tasks/A2-trusted-tls.md) | DONE | `ac9ae82` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763) |
 | [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | DONE (deployed) | `6700cec`, `ac9ae82` | server checks passed |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
 | [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
 | [REV1 B1 independent review](tasks/REV1-b1-independent-review.md) | DONE | findings in `29adc43` | n/a — review |
 | [DOC1 documentation](tasks/DOC1-documentation.md) | DONE | `d4007a3`, `5341e46` | green |
-| [M3 Apple Health ingestion](tasks/M3-health-ingestion.md) | PENDING (phone validation) | existing Health Core/API | end-to-end pending |
+| [M3 Apple Health ingestion](tasks/M3-health-ingestion.md) | IN PROGRESS (nutrition validation) | existing Health Core/API | end-to-end pending |
 
 (*) **A3/A4 deployed:** Authentication is enabled; Jay confirmed iPhone login
 without a certificate warning after the approved HTTPS rollout.
@@ -161,8 +161,8 @@ see sync status.
 - **`GYST_PASSWORD_HASH` must be set** or nobody can sign in after A4 deploys.
 - **Tailscale HTTPS eligibility is enabled** (verified 2026-09-22). A2 trusted
   certificate retrieval passes an isolated probe; production deployment passed server checks;
-  Jay confirmed iPhone browser login without a warning. The Shortcuts request
-  remains unverified.
+  Jay confirmed iPhone browser login without a warning and successful Shortcut
+  sync returning `last_synced_at` (2026-09-23). A2 is complete.
 - **M3 must not begin** before the M2.5 correctness and security gates close.
 - **UI v3 is design-only.** Not implemented.
 
@@ -257,11 +257,11 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Inspect Jay’s existing health-sync Shortcut and verify its HTTPS request.**
+**Compare synced calories/macros with MyFitnessPal; then verify automation.**
 
 Jay requested continuing phone sync; MyFitnessPal scope is calories and macros
-from logged foods/recipes only, not a recipe library. M3 remains gated on the
-secure ingress rollout. See [A2](tasks/A2-trusted-tls.md) for the reviewed setup,
+from logged foods/recipes only, not a recipe library. Jay reported a successful real-sample Shortcut sync on 2026-09-23.
+The secure ingress gate is closed; nutrition completeness remains unverified. See [A2](tasks/A2-trusted-tls.md) for the reviewed setup,
 local evidence, deployment sequence and outstanding physical-phone checks.
 
 The persistent deployment checkout is `/srv/server/repos/gyst-lifeops` on
@@ -439,3 +439,8 @@ samples. Requested one run using the new HTTPS sync URL with its existing
 Bearer token. Created M3 acceptance checklist around the existing API, including
 MyFitnessPal source filtering, day totals, units and missing-versus-zero. No
 server code or production data changes. Await phone result before claiming sync.
+
+2026-09-23 — Codex — Jay reported `last_synced_at` returned from his real-sample
+Shortcut on the new HTTPS endpoint. A2 DONE. M3 IN PROGRESS: awaiting comparison
+of calories, protein, carbs and fat with MyFitnessPal; automation not yet
+verified. Confirmation is user-reported, not independent inspection of payload.

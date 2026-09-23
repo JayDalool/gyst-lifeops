@@ -59,10 +59,10 @@ go test -race, migration-prefix uniqueness, no-database-file-committed.
 | [A4 — Application authentication](A4-application-auth.md) | DONE |
 | [A5 — Health API write-only](A5-health-api-write-only.md) | DONE |
 | [A1 — Remove plaintext port](A1-remove-plaintext-port.md) | DONE |
-| [A2 — Trusted TLS for Shortcuts](A2-trusted-tls.md) | IN PROGRESS |
+| [A2 — Trusted TLS for Shortcuts](A2-trusted-tls.md) | DONE |
 | [OPS1 — Production foreign_key_check](OPS1-production-fk-audit.md) | PENDING |
 | [B2 — Backup tooling](B2-backup-tooling.md) | DONE |
-| [M3 — Apple Health ingestion](M3-health-ingestion.md) | PENDING |
+| [M3 — Apple Health ingestion](M3-health-ingestion.md) | IN PROGRESS |
 | [M4 — Live Health Day view](M4-live-day-view.md) | DONE |
 | [REV1 — Independent review of the B1 range](REV1-b1-independent-review.md) | DONE |
 | [DOC1 — Project documentation](DOC1-documentation.md) | DONE |

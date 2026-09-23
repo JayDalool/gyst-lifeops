@@ -1,7 +1,7 @@
 # A2 — Trusted TLS for Apple Shortcuts
 
 - **ID:** A2
-- **Status:** IN PROGRESS — deployed and server-verified; iPhone browser/login confirmed; Shortcuts request pending
+- **Status:** DONE — deployed; iPhone login and successful Shortcut sync reported by Jay
 - **Implementation commit(s):** `ac9ae82`.
 - **Review status:** Local format/vet/build/unit/race checks passed; [CI green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763).
 
@@ -55,7 +55,7 @@ References:
 - [x] Trusted certificate retrieval verified in an isolated container
 - [x] Automatic certificate renewal configured through the official integration
 - [x] Production deployment after operator backup and authentication check
-- [ ] Real iPhone Shortcut successfully reaches the trusted HTTPS endpoint
+- [x] Real iPhone Shortcut successfully reaches the trusted HTTPS endpoint (Jay reported `last_synced_at` on 2026-09-23)
 
 ## Deployment procedure (operator gate)
 
@@ -77,10 +77,7 @@ References:
 
 ## Next action
 
-Inspect the existing iPhone Shortcut, update its URL to the deployed HTTPS
-endpoint and verify a Shortcuts request. Jay confirmed real iPhone browser
-access and existing-password login without a certificate warning. Do not send
-fixed connection-test metrics into production.
+Verify MyFitnessPal calorie and macro totals in M3.
 
 ## Approved rollout preparation
 
@@ -121,3 +118,7 @@ Jay reported successful iPhone login without a certificate warning and confirmed
 an existing GYST health-sync Shortcut. Its contents are not yet inspected: it
 may read real Health samples or contain earlier fixed test values. The next
 check is its actual request and source values, not another browser login.
+
+2026-09-23 — Jay reported a successful run of his real-sample Shortcut against
+the new HTTPS sync endpoint, returning `last_synced_at`. This closes A2’s
+phone request check. Nutrition field presence and automation remain M3 work.
