@@ -1,6 +1,6 @@
 # A2-DOMAIN — gyst.zaylolabs.com
 
-- **Status:** IN PROGRESS — internal origin deployed; dashboard route update pending
+- **Status:** DONE — origin deployed, route saved by Jay, public HTTPS/auth checks passed
 - **Implementation:** `04cf28e`; [CI pending](https://github.com/JayDalool/gyst-lifeops/actions/runs/35821849995).
 - **Scope:** Jay explicitly requested the public domain instead of the Tailscale
   hostname, plus step-by-step nutrition Shortcut setup.
@@ -34,7 +34,7 @@ to public HTTPS. The Tailscale HTTPS listener remains available.
 - Public DNS resolves, but external HTTPS request timed out during inspection.
   Public success must be verified after the dashboard route update.
 
-## Remaining Cloudflare step
+## Cloudflare configuration (saved by Jay)
 
 In the existing tunnel's published application route for `gyst.zaylolabs.com`:
 
@@ -43,14 +43,22 @@ In the existing tunnel's published application route for `gyst.zaylolabs.com`:
 - HTTP Host Header: `gyst.zaylolabs.com`
 
 No authenticated Cloudflare management API/dashboard is available in this
-session. The operator was given this exact change after the server side was
-prepared and tested. Keep any existing access controls in place; do not disable
+session. Jay saved this change after the server side was prepared and tested. Keep any existing access controls in place; do not disable
 security settings as a shortcut. If a browser challenge interferes with Apple
 Shortcuts, diagnose the actual response before changing policy.
 
 ## Next action
 
-Jay saves the existing tunnel route, then verify public login and API denial
-through `https://gyst.zaylolabs.com`. Do not claim the public domain works yet.
+Follow the nutrition Shortcut guide using the public URL; compare all four
+nutrients with MyFitnessPal.
+
+## Public verification
+
+After Jay saved the route, HTTPS `/login` returned 200 with certificate verify
+result 0 from both host and proxy network. Responses came through Cloudflare
+and retained no-store. `/health` returned 303 to login; POST `/api/health/sync`
+without credentials returned 401. Public password login and an authenticated
+phone sync on this hostname remain user checks; the previous Tailscale-hostname
+phone login/sync were already confirmed.
 
 Phone guide: [HEALTH_SHORTCUT_SETUP.md](../HEALTH_SHORTCUT_SETUP.md).

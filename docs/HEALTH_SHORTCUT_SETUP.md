@@ -1,8 +1,7 @@
 # GYST nutrition Shortcut: phone setup
 
-The requested public address is `https://gyst.zaylolabs.com`. The server origin
-is ready; do not use that address for sync until its Cloudflare route has been
-updated and the login page works. Keep the existing working Shortcut until the
+The requested public address is `https://gyst.zaylolabs.com`. The Cloudflare route is saved and the public login page passes trusted HTTPS
+checks. Keep the existing working Shortcut until the
 new setup has been checked. This guide syncs calories/macros, not recipe text.
 
 ## 1. Finish the domain route
