@@ -122,6 +122,7 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 | [A3 session store](tasks/A3-session-store.md) | DONE (deployed) | `7835b7d` | green |
 | [A4 application auth](tasks/A4-application-auth.md) | DONE (deployed) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
+| [A2-DOMAIN public domain](tasks/A2-custom-domain.md) | IN PROGRESS | pending commit | public route pending |
 | [A2 trusted TLS](tasks/A2-trusted-tls.md) | DONE | `ac9ae82` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763) |
 | [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | DONE (deployed) | `6700cec`, `ac9ae82` | server checks passed |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
@@ -257,7 +258,7 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Compare synced calories/macros with MyFitnessPal; then verify automation.**
+**Jay updates the existing Cloudflare route; verify the public GYST domain.**
 
 Jay requested continuing phone sync; MyFitnessPal scope is calories and macros
 from logged foods/recipes only, not a recipe library. Jay reported a successful real-sample Shortcut sync on 2026-09-23.
@@ -444,3 +445,12 @@ server code or production data changes. Await phone result before claiming sync.
 Shortcut on the new HTTPS endpoint. A2 DONE. M3 IN PROGRESS: awaiting comparison
 of calories, protein, carbs and fat with MyFitnessPal; automation not yet
 verified. Confirmation is user-reported, not independent inspection of payload.
+
+2026-09-23 — Codex — Jay reported missing nutrition fields and requested a
+step-by-step Shortcut rebuild plus gyst.zaylolabs.com. Found the existing
+Cloudflare route still points to removed port 3005, a dependency missed in the
+prior rollout. Prepared/deployed Caddy origin on the existing proxy Docker
+network at gyst-caddy:8081, with no published HTTP port. Backup verified first.
+Internal login/auth/redirect checks and existing trusted HTTPS passed. Public
+route awaits Jay’s Cloudflare dashboard update. Added phone setup guide; no
+claim that missing nutrition is fixed.

@@ -94,3 +94,12 @@ Sources: [Apple Shortcuts automations](https://support.apple.com/guide/shortcuts
 Jay compares today’s calories, protein, carbs and fat at `/health/nutrition`
 with his MyFitnessPal diary and reports any absent or mismatched values.
 A successful request alone does not establish complete nutrition ingestion.
+
+## Latest user result and revised setup
+
+Jay reported that some nutrition fields still show No data. The exact missing
+fields and upstream Health samples have not been inspected. He requested full
+step-by-step setup and the public domain. Follow
+[HEALTH_SHORTCUT_SETUP.md](../HEALTH_SHORTCUT_SETUP.md) after the custom-domain
+route is confirmed. A timestamp-only success did not establish complete
+MyFitnessPal ingestion.

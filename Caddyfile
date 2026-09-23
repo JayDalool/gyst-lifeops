@@ -8,3 +8,18 @@ https://{$GYST_TLS_HOSTNAME} {
 	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy gyst-lifeops:8080
 }
+
+# Cloudflare terminates public HTTPS; this origin is Docker-network-only.
+# Do not publish 8081 on the host. Preserve the public host for CSRF checks.
+http://gyst.zaylolabs.com:8081 {
+	@plainHTTP header X-Forwarded-Proto http
+	redir @plainHTTP https://gyst.zaylolabs.com{uri} permanent
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		Cache-Control "no-store"
+	}
+	reverse_proxy gyst-lifeops:8080 {
+		header_up X-Forwarded-Proto https
+	}
+}

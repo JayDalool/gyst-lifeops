@@ -24,6 +24,9 @@ services:
     restart: unless-stopped
     environment:
       - GYST_TLS_HOSTNAME=${GYST_TLS_HOSTNAME:?Set the full Tailscale MagicDNS hostname}
+    networks:
+      - default
+      - proxy
     depends_on:
       - gyst-lifeops
     ports:
@@ -43,3 +46,8 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  proxy:
+    external: true
+    name: proxy
