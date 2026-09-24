@@ -58,7 +58,7 @@ The Health architecture combines GYST with Apple Health, Apple Watch,
 MyFitnessPal (routed through Apple Health), Apple Shortcuts ingestion, and Hevy
 Pro for strength training.
 
-> **Hevy is PLANNED, not implemented.** No Hevy code, tables or provider exists.
+> **Hevy implementation authorized 2026-09-24.** See TRAIN1 for current evidence.
 
 External apps are **providers**, not the source of truth for architecture.
 
@@ -102,6 +102,7 @@ ccec84a  docs — working rules, REV1/DOC1/B2 task files, M4 CI result
 Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 
 | Task | Status | Commit(s) | CI |
+| [TRAIN1 Hevy and mobile UI](tasks/TRAIN1-hevy.md) | IN PROGRESS | — | local validation in progress |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
 | [NAV1 Navigation cleanup](tasks/NAV1-navigation-cleanup.md) | IN PROGRESS | — | — |
@@ -242,7 +243,7 @@ complete unless Git proves it.**
 
 ## 7. Do not do yet
 
-- Do not implement Hevy.
+- Hevy implementation is authorized by Jay (2026-09-24); see TRAIN1.
 - Do not redesign the production UI while hardening is mid-flight, unless asked.
 - Do not implement several plan commits in one batch — one reviewable commit at a time.
 - Do not edit applied migrations.
@@ -460,3 +461,5 @@ https://gyst.zaylolabs.com/login returned 200 with trusted TLS from host and
 proxy network; protected Health returned 303 and unauthenticated sync POST 401.
 A2-DOMAIN DONE; phone guide updated. Nutrition values and automation remain
 unverified; next is the step-by-step Shortcut setup and comparison.
+
+2026-09-24 — Codex — Jay authorized Hevy import, Training muscle map, mobile Galaxy fixes and deployment. Implementation plan: tasks/TRAIN1-hevy.md. No Hevy key configured; real-provider verification remains pending.

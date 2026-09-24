@@ -12,8 +12,9 @@ import (
 )
 
 type Service struct {
-	Repo *repository.Repository
-	Now  func() time.Time
+	Training *TrainingSync
+	Repo     *repository.Repository
+	Now      func() time.Time
 }
 
 type DailyStat struct {

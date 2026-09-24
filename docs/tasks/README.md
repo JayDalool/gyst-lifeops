@@ -38,6 +38,7 @@ go test -race, migration-prefix uniqueness, no-database-file-committed.
 ## Files
 
 | Task | Status |
+| [TRAIN1 — Hevy and mobile UI](TRAIN1-hevy.md) | IN PROGRESS |
 |---|---|
 | [UI-PLAN — UI design system and screen map](UI-PLAN-design-system.md) | DONE |
 | [NAV1 — Navigation cleanup](NAV1-navigation-cleanup.md) | IN PROGRESS |
