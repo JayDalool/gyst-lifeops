@@ -11,6 +11,8 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 COPY --from=builder /app/lifeops /app/lifeops
+# Outbound provider HTTPS must validate the public certificate chain.
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY web /app/web
 COPY migrations /app/migrations
 COPY seeds /app/seeds

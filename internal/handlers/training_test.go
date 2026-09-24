@@ -31,3 +31,25 @@ func TestTrainingRoute(t *testing.T) {
 		t.Fatal("training must require a session")
 	}
 }
+
+func TestTrainingSyncRequiresSessionAndSameOrigin(t *testing.T) {
+	h := testHandler(t)
+	r := httptest.NewRecorder()
+	h.Authenticated().ServeHTTP(r, httptest.NewRequest("POST", "/health/training/sync", nil))
+	if r.Code == 200 || r.Code == 503 {
+		t.Fatalf("unauthenticated sync reached handler: %d", r.Code)
+	}
+	request := httptest.NewRequest("POST", "/health/training/sync", nil)
+	request.Header.Set("Origin", "https://attacker.example")
+	request.Header.Set("Sec-Fetch-Site", "cross-site")
+	r = httptest.NewRecorder()
+	h.ServeHTTP(r, request)
+	if r.Code != 403 {
+		t.Fatalf("cross-site sync: %d", r.Code)
+	}
+	r = httptest.NewRecorder()
+	h.ServeHTTP(r, httptest.NewRequest("GET", "/health/training/sync", nil))
+	if r.Code != 405 {
+		t.Fatal("GET can sync")
+	}
+}

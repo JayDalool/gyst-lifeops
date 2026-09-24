@@ -1,0 +1,31 @@
+.training-ui .training-connection { margin-block:16px; }
+.training-ui details summary { cursor:pointer; min-height:44px; padding-block:12px; font-weight:650; overflow-wrap:anywhere; }
+.training-ui .training-filters { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-block:20px; }
+.training-ui .training-filters label { display:grid; gap:6px; flex:1 1 190px; min-width:0; font-size:.85rem; color:var(--gyst-text-secondary); }
+.training-ui .training-filters select { width:100%; min-width:0; min-height:44px; padding:10px; border:1px solid var(--gyst-control-border); border-radius:12px; background:var(--gyst-surface); color:var(--gyst-text); font:inherit; }
+.training-ui .training-focus-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; align-items:start; }
+.training-ui .training-map { max-width:460px; width:100%; margin:auto; }
+.training-ui .training-map svg { display:block; width:100%; height:auto; }
+.training-ui .body-outline { fill:var(--gyst-surface-muted,#e2e8f0); stroke:var(--gyst-control-border); stroke-width:1.5; }
+.training-ui .body-muscle { stroke:var(--gyst-surface); stroke-width:1.8; }
+.training-ui .heat-0 { fill:#cbd5e1; background:#cbd5e1; }
+.training-ui .heat-1 { fill:#93c5fd; background:#93c5fd; }
+.training-ui .heat-2 { fill:#3b82f6; background:#3b82f6; }
+.training-ui .heat-3 { fill:#1d4ed8; background:#1d4ed8; }
+.training-ui .body-label { fill:var(--gyst-text-secondary); font:13px system-ui,sans-serif; text-anchor:middle; }
+.training-ui .training-legend { display:flex; justify-content:center; gap:5px; align-items:center; font-size:.7rem; color:var(--gyst-text-secondary); }
+.training-ui .training-legend i { width:14px; height:10px; border-radius:3px; }
+.training-ui .training-muscles { width:100%; border-collapse:collapse; font-size:.85rem; }
+.training-ui .training-muscles caption { text-align:left; font-weight:650; padding-bottom:12px; }
+.training-ui .training-muscles :is(th,td) { padding:10px 4px; border-bottom:1px solid var(--gyst-border); text-align:right; }
+.training-ui .training-muscles :is(th,td):first-child { text-align:left; }
+.training-ui .training-muscles thead { font-size:.75rem; color:var(--gyst-text-secondary); }
+.training-ui .training-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+.training-ui .training-entry { border-bottom:1px solid var(--gyst-border); }
+.training-ui .training-entry summary span { display:block; font-weight:400; margin-top:4px; }
+.training-ui .training-exercises { padding-left:22px; }
+.training-ui .training-exercises > li { margin-block:16px; overflow-wrap:anywhere; }
+.training-ui .training-exercises small { display:block; color:var(--gyst-text-secondary); margin-block:4px; }
+.training-ui .training-exercises ul { padding-left:18px; font-size:.85rem; line-height:1.8; }
+.training-ui .training-library { margin-block:20px; align-items:start; }
+@media(max-width:650px) { .training-ui .training-focus-grid { grid-template-columns:minmax(0,1fr); gap:16px; } .training-ui .training-map { max-width:350px; } }

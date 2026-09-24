@@ -27,3 +27,13 @@ wiring. Local gofmt/vet/build/unit/race and Node checks passed. Provider tests
 cover pagination, rep ranges, absent versus zero, API failures and redirect/key
 protection. Service test proves failed refresh retains the successful snapshot.
 No production changes yet. Self-reviewed; no independent review.
+
+Backend commit `c5e32bc`; [CI green](https://github.com/JayDalool/gyst-lifeops/actions/runs/36070399889).
+Training UI implemented: routine selection, rolling 7/30-day logged set counts,
+front/back primary-muscle map, secondary count table, expandable routines and
+30 most recent sessions, authenticated same-origin POST refresh, cached/empty/
+stale states. Manual check-ins preserved. Docker now includes trusted CA roots
+for outbound HTTPS. Browser validation: Chromium and WebKit at 320, 390, 844,
+1440px; filters/details and 200% text passed with isolated synthetic fixtures.
+No JavaScript errors. Physical iPhone and live Hevy account remain unverified.
+Next action: finish mobile Galaxy framing and overlays.
