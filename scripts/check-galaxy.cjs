@@ -15,3 +15,15 @@ const fs = require('node:fs');
   send('pointerdown', 1, 50, 50); send('pointerup', 1, 50, 50); assert.deepEqual(calls, ['tap']);
   console.log('Galaxy gestures: tap, drag, pinch, cancellation and recovery passed');
 })();
+
+(async () => {
+ const source = fs.readFileSync('web/static/js/galaxy-camera.js','utf8');
+ const {galaxyCameraFit} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+ for (const [width,height] of [[320,568],[390,600],[844,280],[1440,800]]) {
+  const radius=90, distance=galaxyCameraFit(radius,width,height);
+  const vertical=55*Math.PI/360, horizontal=Math.atan(Math.tan(vertical)*width/height);
+  assert.ok(distance*Math.sin(Math.min(vertical,horizontal))>radius,'all worlds fit in narrower dimension');
+ }
+ assert.ok(galaxyCameraFit(90,320,600)>galaxyCameraFit(90,1440,800));
+ console.log('Galaxy camera: portrait, landscape and desktop bounds passed');
+})();

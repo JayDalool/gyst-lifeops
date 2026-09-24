@@ -1,7 +1,5 @@
 {{define "content"}}
 <section class="galaxy-shell" data-galaxy aria-labelledby="galaxy-title">
-  <div class="galaxy-stage" data-galaxy-stage tabindex="0" aria-label="Interactive project galaxy">
-    <canvas data-galaxy-canvas aria-hidden="true"></canvas>
     <section class="galaxy-hub" aria-label="Galaxy hub">
       <p class="kicker">Your project worlds</p>
       <h1 id="galaxy-title">Galaxy</h1>
@@ -12,12 +10,18 @@
         <a class="btn sm ghost" href="/projects/new">New project</a>
       </div>
     </section>
+  <div class="galaxy-stage" data-galaxy-stage tabindex="0" aria-label="Interactive project galaxy">
+    <canvas data-galaxy-canvas aria-hidden="true"></canvas>
+
     <div class="galaxy-controls" aria-label="Galaxy camera">
       <button type="button" data-galaxy-zoom="in" aria-label="Zoom in" disabled>+</button>
       <button type="button" data-galaxy-zoom="out" aria-label="Zoom out" disabled>−</button>
       <button type="button" data-galaxy-reset disabled>Reset view</button>
     </div>
     <div class="galaxy-status" data-galaxy-status role="status">Loading galaxy&hellip;</div>
+
+	<div class="galaxy-legend" aria-label="Project states"><span class="active">Active</span><span class="upcoming">Upcoming</span><span class="locked">Locked</span></div>
+  </div>
 	<aside class="galaxy-context" data-galaxy-context aria-label="Selected project" hidden>
       <button type="button" class="galaxy-close" data-galaxy-close aria-label="Close project preview">×</button>
 	  <p class="kicker" data-galaxy-category>Project</p>
@@ -28,8 +32,6 @@
 	  <p class="meta" data-galaxy-next></p>
       <a class="btn" data-galaxy-open hidden>Open project</a>
 	</aside>
-	<div class="galaxy-legend" aria-label="Project states"><span class="active">Active</span><span class="upcoming">Upcoming</span><span class="locked">Locked</span></div>
-  </div>
   <div class="galaxy-browser gyst-scope" id="galaxy-projects">
     <div><p class="kicker">Accessible navigator</p><h2 class="section-title">All projects</h2></div>
     <p class="meta">Open a project directly, or preview its world in the Galaxy.</p>

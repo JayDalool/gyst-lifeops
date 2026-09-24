@@ -37,3 +37,13 @@ for outbound HTTPS. Browser validation: Chromium and WebKit at 320, 390, 844,
 1440px; filters/details and 200% text passed with isolated synthetic fixtures.
 No JavaScript errors. Physical iPhone and live Hevy account remain unverified.
 Next action: finish mobile Galaxy framing and overlays.
+
+Training UI commit `39ec35d`; [CI green](https://github.com/JayDalool/gyst-lifeops/actions/runs/36071378784).
+Galaxy measured before changes: at 390×844 the hub overlay covered 164.875px of
+the 730px canvas. Header now outside canvas; camera fits all project bounds to
+the narrower viewport dimension, responsive zoom limits and fog, labels avoid
+overlaps/edges, phone detail panel flows below the canvas. Scene retained.
+Chromium/WebKit checks passed at 320/390/844/1440px: no horizontal overflow,
+project list, preview/open/close and reset. Both engines rendered the 3D scene.
+Node gesture and camera math checks passed; physical iPhone review remains open.
+Next action: deploy the tested changes after a verified production backup.

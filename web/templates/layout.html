@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="/static/css/ui-shell.css?v=nav-1">
   {{if eq .Page "today"}}<link rel="stylesheet" href="/static/css/ui-today.css?v=ui-2">{{end}}
   {{if eq .Page "projects"}}<link rel="stylesheet" href="/static/css/ui-projects.css?v=ui-3">{{end}}
-  {{if eq .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-galaxy.css?v=nav-1">{{end}}
+  {{if eq .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-galaxy.css?v=mobile-2">{{end}}
   {{if eq .Page "health"}}<link rel="stylesheet" href="/static/css/ui-health.css?v=ui-9"><link rel="stylesheet" href="/static/css/ui-training.css?v=train-1">{{end}}
   {{if eq .Page "courses"}}<link rel="stylesheet" href="/static/css/ui-courses.css?v=ui-10">{{end}}
   <script defer src="/static/js/charts.js?v=ui-2"></script>
@@ -61,7 +61,7 @@
 	  <p class="command-help meta">↑↓ navigate · Enter open · type “tomorrow” or “!high” for quick capture</p>
 	</dialog>
 
-  {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=ui-4"></script>{{end}}
+  {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=mobile-2"></script>{{end}}
 </body>
 </html>
 {{end}}
