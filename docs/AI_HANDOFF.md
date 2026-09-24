@@ -1,10 +1,10 @@
 # GYST — Claude / Codex shared handoff
 
-**Last updated:** 2026-09-23
-**Updated by:** Claude
+**Last updated:** 2026-09-24
+**Updated by:** Codex
 **Repository:** `JayDalool/gyst-lifeops`
 **Implementation branch:** `feature/health-hardening`
-**Implementation HEAD at time of writing:** `12fabb6` (see the log below)
+**Deployed implementation:** `0b2ea78` (2026-09-24; see TRAIN1 for evidence)
 
 Read this at the start of every session, then read the task ledger. **Git is the
 source of truth.** If this file disagrees with the repository, the repository
@@ -102,7 +102,7 @@ ccec84a  docs — working rules, REV1/DOC1/B2 task files, M4 CI result
 Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 
 | Task | Status | Commit(s) | CI |
-| [TRAIN1 Hevy and mobile UI](tasks/TRAIN1-hevy.md) | IN PROGRESS | — | local validation in progress |
+| [TRAIN1 Hevy and mobile UI](tasks/TRAIN1-hevy.md) | DONE; connection pending | `c5e32bc`, `39ec35d`, `0b2ea78` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/36073256705) |
 |---|---|---|---|
 | [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
 | [NAV1 Navigation cleanup](tasks/NAV1-navigation-cleanup.md) | IN PROGRESS | — | — |
@@ -137,17 +137,16 @@ Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 without a certificate warning after the approved HTTPS rollout.
 (\*\*) **OPS1 completed:** FK audit ran on 2026-09-12, returned zero violations. Database certified clean.
 
-**Nothing above has been verified in a real browser, on a real device, or
-against the production database.** CI green means the suite passes, not that the
-application was used.
+Browser and deployment checks are recorded per task. Jay confirmed phone login
+and Shortcut success. Physical iPhone review of TRAIN1 remains pending; CI alone
+is not evidence of physical-device validation.
 
 ### Health features that do NOT exist
 
-No AI tool layer. No foods, recipes or portion engine. No Hevy or training
-tables. No progress analytics. No Apple Health Shortcut (M3). The Health Core
-service layer exists, but `CreateHealthWeightEntry`, `ListHealthWeightEntries`
-and `GetHealthSyncState` have no handler — there is no UI to record a weight or
-see sync status.
+No AI tool layer or recipe library. Hevy routines, workout cache and muscle focus
+are implemented; live connection awaits HEVY_API_KEY. Progress and sync status
+views exist. The phone Shortcut returned success, but nutrition completeness and
+automation remain unverified (M3).
 
 ---
 
@@ -208,7 +207,7 @@ sources overlap and summing double-counts. Watch is primary; phone is context.
 
 ### Training
 
-Hevy is selected but unimplemented. Future shape:
+Hevy is implemented and deployed; HEVY_API_KEY remains to be configured. Shape:
 `Hevy API → HevyProvider → normalized GYST training domain → SQLite → UI`.
 Store generic `training_*` tables with `provider`/`provider_id`, never `hevy_*`,
 and never bind the UI to raw Hevy JSON field names.
@@ -259,7 +258,11 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Build/repair the nutrition Shortcuts using the public GYST URL, then compare totals.**
+**Configure the Hevy key privately, then verify the first real import.**
+
+TRAIN1 code and mobile UI are deployed at https://gyst.zaylolabs.com. See
+[Hevy setup](HEVY_SETUP.md). Nutrition Shortcut completeness remains separate
+unresolved work; use [the phone guide](HEALTH_SHORTCUT_SETUP.md).
 
 Jay requested continuing phone sync; MyFitnessPal scope is calories and macros
 from logged foods/recipes only, not a recipe library. Jay reported a successful real-sample Shortcut sync on 2026-09-23.
@@ -463,3 +466,5 @@ A2-DOMAIN DONE; phone guide updated. Nutrition values and automation remain
 unverified; next is the step-by-step Shortcut setup and comparison.
 
 2026-09-24 — Codex — Jay authorized Hevy import, Training muscle map, mobile Galaxy fixes and deployment. Implementation plan: tasks/TRAIN1-hevy.md. No Hevy key configured; real-provider verification remains pending.
+
+2026-09-24 — Codex — TRAIN1 deployed after verified backup: Hevy provider/cache c5e32bc, Training muscle map 39ec35d, responsive Galaxy 0b2ea78. All implementation CI green, isolated Chromium/WebKit and Go/Node checks passed. Public login/TLS/auth/static-asset smoke checks passed. Hevy key absent; first real import and physical iPhone review pending. No fixture data deployed.

@@ -1,6 +1,6 @@
 # TRAIN1 — Hevy training and mobile Galaxy
 
-Status: IN PROGRESS. Authorized by Jay on 2026-09-24, including UI changes and deployment.
+Status: DONE (implementation and deployment); PENDING (Hevy account connection). Authorized by Jay on 2026-09-24, including UI changes and deployment.
 
 ## Plan and acceptance
 
@@ -47,3 +47,25 @@ Chromium/WebKit checks passed at 320/390/844/1440px: no horizontal overflow,
 project list, preview/open/close and reset. Both engines rendered the 3D scene.
 Node gesture and camera math checks passed; physical iPhone review remains open.
 Next action: deploy the tested changes after a verified production backup.
+
+
+## Deployment and final evidence
+
+- Backend `c5e32bc`, Training UI `39ec35d`, Galaxy `0b2ea78` deployed.
+- [Galaxy CI green](https://github.com/JayDalool/gyst-lifeops/actions/runs/36073256705).
+- Full local Go format/vet/build/unit/race and Node checks passed. Exact 401
+  assertion added to the training sync authorization regression test.
+- Pre-deployment verified backup: `lifeops-20260924T233240Z.db`, 32 tables,
+  19 migrations, integrity_check OK. No production data reset/reseed.
+- Public login 200, TLS verification 0; protected Training 303; unauthenticated
+  sync POST 401; new Training CSS and Galaxy JS 200. Production startup normal.
+- Runtime image includes trusted public CA roots. Hevy key is not configured;
+  no real Hevy account import has been claimed or sample data deployed.
+- Browser screenshots/checks use only a disposable database under /tmp.
+- Manual nutrition completeness and phone automation remain separate M3 work.
+
+Next action: configure HEVY_API_KEY privately using [the setup guide](../HEVY_SETUP.md),
+then verify the first real import against Hevy. Physical iPhone review pending.
+
+Post-deployment backup `lifeops-20260924T233929Z.db` also passed integrity_check:
+33 tables, 20 migrations, confirming the additive training migration applied.

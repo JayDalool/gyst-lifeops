@@ -36,7 +36,7 @@ func TestTrainingSyncRequiresSessionAndSameOrigin(t *testing.T) {
 	h := testHandler(t)
 	r := httptest.NewRecorder()
 	h.Authenticated().ServeHTTP(r, httptest.NewRequest("POST", "/health/training/sync", nil))
-	if r.Code == 200 || r.Code == 503 {
+	if r.Code != http.StatusUnauthorized {
 		t.Fatalf("unauthenticated sync reached handler: %d", r.Code)
 	}
 	request := httptest.NewRequest("POST", "/health/training/sync", nil)
