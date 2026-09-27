@@ -10,7 +10,7 @@ Permanent reference for how development work is tracked. Governance summary:
 
 ## Source of truth
 
-- **GitHub Issues** in `JayDalool/gyst-lifeops` are the only editable development-task record.
+- **GitHub Issues** in `JayDalool/gyst-lifeops` are the only editable development-task record. **`master`** is the canonical trunk: task branches start from it and PRs target it (GYST-VN-001).
 - An Issue created from the vNext backlog keeps its provisional ID in the title and body (for example `GYST-VN-003`). The ID stays the stable roadmap reference; GitHub's `#number` is the working reference.
 - **Labels are canonical for workflow state.** GitHub Projects (if ever added) is a visualization only and never holds canonical fields.
 - `docs/tasks/` is a historical ledger. It isn't updated for new work.

@@ -169,7 +169,9 @@ Each blocked Issue has a comment naming its blocker. **`agent:ready` count: 0.**
 4. historical branches (recommended: keep)
 5. old ledger reconciliation
 
-**Until #2 is resolved:**
+**Resolution (2026-09-27):** Jay chose `master` as the canonical trunk and default branch. `feature/health-hardening` entered `master` through PR #10 (merge commit `145e1b9`, tree identical to production `dab7995`); this branch lands through PR #11. GitHub Actions was unavailable (billing), so a one-time CI exception approved by Jay is recorded on #2. Finding: branch protection and rulesets return HTTP 403 on this private repository's current plan, so GYST-VN-099 needs a re-plan.
+
+**Until #2 was resolved:**
 - Issues may exist.
 - Implementation branches that depend on the base don't start.
 - No stash, commit, branch or mainline change is made by any agent.

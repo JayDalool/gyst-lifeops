@@ -29,7 +29,7 @@ becomes an Issue, the Issue is the live record.
 1. **Read the GitHub Issue completely**, including acceptance criteria, dependencies, out of scope and risk class.
 2. **Read the rules it points to:** [`docs/RULES.md`](docs/RULES.md) always; the referenced design, security and decision documents (for example `docs/audit/vnext/05A`, `08A`, `10A`, `13A`, `17A`).
 3. **One Issue → one task branch → one focused PR.**
-4. **Branch name:** `task/<issue-number>-<short-slug>` (for example `task/12-login-throttling`), created from the base branch recorded by GYST-VN-001.
+4. **Branch name:** `task/<issue-number>-<short-slug>` (for example `task/12-login-throttling`), created from **`master`**. PRs target `master` unless the Issue explicitly says otherwise.
 5. **Do not expand scope silently.** If the Issue is wrong or incomplete, say so in the Issue/PR and stop or ask. Don't widen the change.
 6. **No production changes** unless the Issue explicitly defines a human-controlled operational step. Agents never run commands against the production database, host services, GitHub/Cloudflare/n8n settings or credentials.
 7. **Database/schema changes** need explicit acceptance criteria, a rollback consideration and migration review. Migrations are additive, timestamp-prefixed and never edited once applied (`docs/RULES.md` §2.5, §3.1).
@@ -38,7 +38,7 @@ becomes an Issue, the Issue is the live record.
 10. **Report limitations honestly:** what wasn't run, wasn't verified, or failed, with the output.
 11. **Code existing is not Done.** Done means the acceptance criteria are verified, reviewed and accepted by Jay (then `status:done` / closed).
 12. **Independent review** by a different agent/provider where practical is required before Jay's final acceptance whenever the Issue's risk class or reviewer field asks for it. ELEVATED and PRIVILEGED always need it. A self-review is not independent.
-13. **Agents never merge protected branches**, never force-push, never rewrite shared history, never change branch protection, secrets or repository settings.
+13. **Agents never merge into `master`** (GitHub branch protection isn't available on the repository's current plan, so this rule is enforced by process until GYST-VN-099 is re-planned), never force-push, never rewrite shared history, never change branch protection, secrets or repository settings.
 14. **PRs reference Issues with `Refs #<issue>`**, never `Closes`/`Fixes`. Jay closes the Issue after verification.
 15. **Secrets never enter the repository**, logs, Issues, PRs or screenshots.
 
@@ -57,11 +57,12 @@ labels and Issue lifecycle: [`docs/agents/README.md`](docs/agents/README.md).
 - **Design:** `13A_DESIGN_DECISIONS.md` > `11`/`12`/`13` > prototypes. Don't invent spacing, radii, colours, navigation or component patterns; report conflicts. Violet is identity only, never a state colour. No new UI framework, build system or component library.
 - **Security:** the risk class on an Issue is informative. Tasks labelled `risk:not-agent-eligible` are human-only. Later automation re-derives risk and never trusts a label alone (`docs/audit/vnext/09_SECURITY_FOUNDATION.md` §J).
 
-## Base branch gate
+## Canonical trunk
 
-Until **GYST-VN-001** (branch baseline decision) is resolved and recorded here,
-agents must not start implementation branches for Issues that depend on it.
-Issues may exist; work waits.
+**`master`** is the canonical development trunk and the GitHub default branch
+(decided in GYST-VN-001, Issue #2). Task branches start from `master`, PRs
+target `master`, and only Jay merges. `feature/health-hardening` was merged into
+`master` (PR #10) and is historical.
 
 ## When in doubt
 
