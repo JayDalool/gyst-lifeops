@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Learn</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="learn">
+<div class="app">
+<main class="main">
+  <header class="topbar"><div class="lead"></div><div class="t">Learn</div><div class="trail"><button class="icon-btn" type="button" data-toast="Add course sheet (prototype)" aria-label="Add course"><svg class="i"><use href="#i-plus"/></svg></button></div></header>
+
+  <div class="content">
+    <div class="ph"><h1>Learn</h1></div>
+
+    <!-- MANY -->
+    <div data-group="st" data-name="many" class="content" style="gap:var(--s6)">
+      <section class="now" aria-label="Continue learning">
+        <div class="now-main">
+          <span class="tile lg"><svg class="i"><use href="#i-cap"/></svg></span>
+          <div style="display:grid;gap:2px;min-width:0;flex:1"><span class="kicker">CONTINUE</span><span class="what">Lecture 4 · Consensus</span><span style="font-size:14px;color:var(--ink-2)">Distributed Systems · 45 min · due today</span></div>
+          <button class="icon-btn filled" type="button" aria-label="Start session" data-toast="Session started"><svg class="i"><use href="#i-play"/></svg></button>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="wk-h">
+        <div class="section-h"><h2 id="wk-h">This week</h2></div>
+        <ul class="group">
+          <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Problem set 2"><span></span></button><span class="copy"><span class="title">Problem set 2</span><span class="meta">Distributed Systems <span class="sep"></span> Thu</span></span><span class="trail"><span class="tag">Assignment</span></span></li>
+          <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Ch. 5 reading"><span></span></button><span class="copy"><span class="title">Ch. 5 · Replication</span><span class="meta">Designing Data Systems <span class="sep"></span> Sat</span></span></li>
+          <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Catch-up lecture 3"><span></span></button><span class="copy"><span class="title">Lecture 3 · Time</span><span class="meta"><span class="state warn"><span class="dot warn"></span>Catch-up</span></span></span></li>
+        </ul>
+      </section>
+
+      <section class="section" aria-labelledby="c-h">
+        <div class="section-h"><h2 id="c-h">Courses</h2></div>
+        <ul class="group">
+          <li><a class="row" href="#"><span class="tile"><svg class="i"><use href="#i-cap"/></svg></span><span class="copy"><span class="title">Distributed Systems</span><span class="meta">University · 4 of 20</span></span><span class="trail"><span class="ring" style="--v:20;width:28px;height:28px"></span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+          <li><a class="row" href="#"><span class="tile"><svg class="i"><use href="#i-book"/></svg></span><span class="copy"><span class="title">Designing Data Systems</span><span class="meta">Book · ch. 4 of 12</span></span><span class="trail"><span class="ring" style="--v:33;width:28px;height:28px"></span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+          <li><a class="row" href="#"><span class="tile idle"><svg class="i"><use href="#i-code"/></svg></span><span class="copy"><span class="title">Rust fundamentals</span><span class="meta">Paused</span></span><span class="trail"><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- ONE -->
+    <div data-group="st" data-name="one" hidden class="content" style="gap:var(--s6)">
+      <section class="now" aria-label="Continue learning">
+        <div class="now-main"><span class="tile lg"><svg class="i"><use href="#i-cap"/></svg></span>
+          <div style="display:grid;gap:2px;min-width:0;flex:1"><span class="kicker">CONTINUE</span><span class="what">Lesson 7 · Ownership</span><span style="font-size:14px;color:var(--ink-2)">Rust fundamentals · 30 min</span></div>
+          <button class="icon-btn filled" type="button" aria-label="Start session"><svg class="i"><use href="#i-play"/></svg></button></div>
+        <div class="now-sub"><div><div><div class="k">Progress</div><div class="v">7 of 24</div></div></div><div><div><div class="k">Next deadline</div><div class="v">None set</div></div></div></div>
+      </section>
+    </div>
+
+    <!-- EMPTY -->
+    <div data-group="st" data-name="empty" hidden>
+      <div class="empty">
+        <span class="tile"><svg class="i"><use href="#i-cap"/></svg></span>
+        <h3>Nothing to study yet</h3>
+        <p>Add a course, a book or a degree module. GYST will line up what's next.</p>
+        <button class="btn" type="button" data-toast="Add course sheet (prototype)">Add course</button>
+      </div>
+    </div>
+
+    <div class="proto-bar"><b>Prototype</b> · state:
+      <span class="filters" style="display:inline-flex">
+        <button class="filter" type="button" data-single data-group="st" data-show="many" aria-pressed="true">Many</button>
+        <button class="filter" type="button" data-single data-group="st" data-show="one" aria-pressed="false">One</button>
+        <button class="filter" type="button" data-single data-group="st" data-show="empty" aria-pressed="false">Empty</button>
+      </span>
+      <button type="button" data-toggle-theme>Theme</button>
+    </div>
+  </div>
+</main>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

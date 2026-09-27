@@ -1,5 +1,7 @@
 # GYST task ledger
 
+> **Historical ledger (since 2026-09-27).** New development work is tracked in **GitHub Issues** (`AGENTS.md`, `docs/agents/`). The files here remain as history and context. They aren't updated for new work and aren't canonical for it. Open items here (for example NAV1, M3, A1/A2) are reconciled by GYST-VN-001.
+
 One file per work item. The ledger is the shared record between Claude, Codex
 and Jay, so it lives on the implementation branch where the work happens.
 

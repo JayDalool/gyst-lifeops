@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Reviews</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="projects" data-area="development" class="has-inspector">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"><a class="icon-btn" href="development.html" aria-label="Back to Development"><svg class="i"><use href="#i-back"/></svg></a></div>
+    <div class="t">Reviews</div>
+    <div class="trail"></div>
+  </header>
+
+  <div class="content">
+    <div class="ph"><div class="eyebrow">Development</div><h1>Reviews</h1></div>
+
+    <div class="filters" role="tablist" aria-label="Development views">
+      <a class="filter" role="tab" href="development.html">Tasks</a>
+      <a class="filter" role="tab" href="reviews.html" aria-pressed="true" aria-selected="true">Reviews <span class="badge" style="min-width:18px;height:18px;font-size:11px">2</span></a>
+      <a class="filter" role="tab" href="agents.html">Agents</a>
+      <a class="filter" role="tab" href="development.html#repos">Repos</a>
+    </div>
+
+    <section class="section" aria-labelledby="w-h">
+      <div class="section-h"><h2 id="w-h">Waiting for you</h2></div>
+      <ul class="group">
+        <li><button class="row" type="button" data-open="rv218" data-inspect="r218" aria-current="true"><span class="tile ok"><svg class="i"><use href="#i-pr"/></svg></span>
+          <span class="copy"><span class="title">Offline sync for field notes</span><span class="meta"><span class="tag num">ATL-142</span>Claude → Codex <span class="sep"></span> PR #218</span></span>
+          <span class="trail"><span class="chip ok">Checks pass</span></span></button></li>
+        <li><button class="row" type="button" data-open="rv44" data-inspect="r44"><span class="tile warn"><svg class="i"><use href="#i-pr"/></svg></span>
+          <span class="copy"><span class="title">Date picker overflow</span><span class="meta"><span class="tag num">HBR-9</span>Codex → Claude <span class="sep"></span> PR #44</span></span>
+          <span class="trail"><span class="chip warn">1 concern</span></span></button></li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="v-h">
+      <div class="section-h"><h2 id="v-h">Merged · verify & close</h2></div>
+      <ul class="group">
+        <li><a class="row" href="dev-task.html"><span class="tile idle"><svg class="i"><use href="#i-check"/></svg></span>
+          <span class="copy"><span class="title">Faster cold start</span><span class="meta"><span class="tag num">ATL-133</span>Merged yesterday <span class="sep"></span> Refs #133</span></span>
+          <span class="trail"><span class="btn small secondary">Verify</span></span></a></li>
+      </ul>
+      <p class="foot">Agent PRs don't close issues. You close them after checking.</p>
+    </section>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+
+<aside class="inspector" aria-label="Review details">
+  <div data-for="r218" class="content" style="gap:var(--s4)">
+    <div class="hero"><div class="line"><span class="tag num">PR #218</span><span class="tag num">ATL-142</span></div><h1>Offline sync for field notes</h1></div>
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric"><span class="k">Checks</span><span class="v" style="font-size:18px;color:var(--ok-text)">Pass</span><span class="s num">48 tests</span></div>
+      <div class="metric"><span class="k">Review</span><span class="v" style="font-size:18px">Codex</span><span class="s">2 notes</span></div>
+      <div class="metric"><span class="k">Diff</span><span class="v num" style="font-size:18px">+312 −40</span><span class="s">7 files</span></div>
+    </div>
+    <div class="section"><div class="section-h"><h2>Reviewer notes</h2></div>
+      <ul class="group"><li class="row"><span class="dot"></span><span class="copy"><span class="title" style="font-weight:450;font-size:15px">Queue size isn't capped; consider 500.</span></span></li><li class="row"><span class="dot"></span><span class="copy"><span class="title" style="font-weight:450;font-size:15px">Rename <code>syncMaybe</code> for clarity.</span></span></li></ul></div>
+    <div class="section"><div class="section-h"><h2>Acceptance</h2><span class="foot" style="padding:0">3 of 4</span></div>
+      <ul class="group checklist"><li><span class="ck on"></span>Notes saved offline</li><li><span class="ck on"></span>Syncs on reconnect</li><li><span class="ck on"></span>Conflicts keep both copies</li><li><span class="ck"></span>Verified on a phone</li></ul></div>
+    <div class="bottom-actions"><a class="btn" href="#">Open PR <svg class="i i-16"><use href="#i-ext"/></svg></a><button class="btn secondary" type="button" data-toast="Changes requested (prototype)">Request changes</button></div>
+    <p class="foot">Merge on GitHub. GYST never merges.</p>
+  </div>
+  <div data-for="r44" hidden class="content" style="gap:var(--s4)">
+    <div class="hero"><div class="line"><span class="tag num">PR #44</span><span class="tag num">HBR-9</span></div><h1>Date picker overflow</h1></div>
+    <div class="banner"><svg class="i"><use href="#i-alert"/></svg><span class="grow">Claude flagged a layout regression at 320 px.</span></div>
+    <div class="bottom-actions"><a class="btn" href="#">Open PR <svg class="i i-16"><use href="#i-ext"/></svg></a><button class="btn secondary" type="button" data-toast="Re-run queued (prototype)">Re-run with notes</button></div>
+  </div>
+</aside>
+</div>
+
+<div class="sheet" id="rv218" role="dialog" aria-modal="true" aria-labelledby="rv218-h" hidden>
+  <div class="grab"></div>
+  <div class="sheet-h"><h2 id="rv218-h">Offline sync for field notes</h2><button class="close" type="button" data-close aria-label="Close"><span><svg class="i i-16"><use href="#i-x"/></svg></span></button></div>
+  <div class="content" style="gap:var(--s4)">
+    <div class="line hero" style="gap:var(--s2);display:flex;flex-wrap:wrap"><span class="tag num">PR #218</span><span class="chip ok">Checks pass</span><span class="tag num">+312 −40</span></div>
+    <ul class="group">
+      <li class="row"><span class="tile"><svg class="i"><use href="#i-bot"/></svg></span><span class="copy"><span class="title">Codex review: pass</span><span class="meta">2 notes · queue cap, naming</span></span></li>
+      <li class="row"><span class="tile ok"><svg class="i"><use href="#i-check"/></svg></span><span class="copy"><span class="title">Acceptance 3 of 4</span><span class="meta">Phone check is yours</span></span></li>
+    </ul>
+    <div class="bottom-actions"><a class="btn" href="#">Open PR <svg class="i i-16"><use href="#i-ext"/></svg></a><button class="btn secondary" type="button" data-close>Later</button></div>
+  </div>
+</div>
+<div class="sheet" id="rv44" role="dialog" aria-modal="true" aria-labelledby="rv44-h" hidden>
+  <div class="grab"></div>
+  <div class="sheet-h"><h2 id="rv44-h">Date picker overflow</h2><button class="close" type="button" data-close aria-label="Close"><span><svg class="i i-16"><use href="#i-x"/></svg></span></button></div>
+  <div class="content" style="gap:var(--s4)">
+    <div class="banner"><svg class="i"><use href="#i-alert"/></svg><span class="grow">Claude flagged a layout regression at 320 px.</span></div>
+    <div class="bottom-actions"><a class="btn" href="#">Open PR <svg class="i i-16"><use href="#i-ext"/></svg></a><button class="btn secondary" type="button" data-close>Later</button></div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

@@ -1,4 +1,7 @@
 # CODEX HANDOFF PROMPT
+
+> **Superseded (2026-09-27).** This 2026-09-12 Codex handoff is historical. Current governance: [`AGENTS.md`](AGENTS.md) · workflow: [`docs/agents/`](docs/agents/README.md) · tasks: GitHub Issues. Don't follow the task order or commit trailer below.
+
 ## GYST LifeOps — Continue from A2 Implementation
 
 **Current Date:** 2026-09-12  

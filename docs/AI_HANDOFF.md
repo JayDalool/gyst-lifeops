@@ -1,5 +1,7 @@
 # GYST — Claude / Codex shared handoff
 
+> **Superseded as the workflow entry point (2026-09-27).** The canonical trunk is now `master` (GYST-VN-001); `feature/health-hardening` was merged into `master` (PR #10) and is historical. Start with [`../AGENTS.md`](../AGENTS.md) and the GitHub Issue. This file remains as historical context about the health-hardening branch; its status tables aren't maintained for new work.
+
 **Last updated:** 2026-09-24
 **Updated by:** Codex
 **Repository:** `JayDalool/gyst-lifeops`

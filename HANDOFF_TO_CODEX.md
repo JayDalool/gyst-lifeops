@@ -1,5 +1,7 @@
 # 🤖 HANDOFF TO CODEX — Complete Briefing
 
+> **Superseded (2026-09-27).** This 2026-09-12 briefing is historical. Current governance: [`AGENTS.md`](AGENTS.md) · workflow: [`docs/agents/`](docs/agents/README.md) · tasks: GitHub Issues.
+
 **Date:** 2026-09-12  
 **Status:** Ready for Codex to take over  
 **Current branch:** `feature/health-hardening` (all work here)  

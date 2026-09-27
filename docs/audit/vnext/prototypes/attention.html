@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Attention</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="today" data-area="attention">
+<div class="app">
+<main class="main">
+  <header class="topbar"><div class="lead"><a class="icon-btn" href="today.html" aria-label="Back to Today"><svg class="i"><use href="#i-back"/></svg></a></div><div class="t">Attention</div><div class="trail"></div></header>
+
+  <div class="content">
+    <div class="ph"><h1>Attention</h1></div>
+    <div class="filters" role="group" aria-label="Filter">
+      <button class="filter" type="button" data-single aria-pressed="true">All · 5</button>
+      <button class="filter" type="button" data-single aria-pressed="false">Decisions · 2</button>
+      <button class="filter" type="button" data-single aria-pressed="false">Problems · 3</button>
+    </div>
+
+    <section class="section" aria-labelledby="cr-h">
+      <div class="section-h"><h2 id="cr-h">Critical</h2></div>
+      <ul class="group attn">
+        <li class="row"><span class="sev"><span class="tile crit"><svg class="i"><use href="#i-server"/></svg></span></span>
+          <a class="copy" href="system.html"><span class="title">Backup job failed</span><span class="meta">System <span class="sep"></span> 3h ago <span class="sep"></span> last good 27h ago</span></a>
+          <button class="icon-btn" type="button" data-open="attn-menu" aria-label="Options for Backup job failed"><svg class="i"><use href="#i-more"/></svg></button></li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="dc-h">
+      <div class="section-h"><h2 id="dc-h">Needs you</h2></div>
+      <ul class="group attn">
+        <li class="row"><span class="sev"><span class="tile info"><svg class="i"><use href="#i-pr"/></svg></span></span>
+          <a class="copy" href="reviews.html"><span class="title">Review Offline sync</span><span class="meta">GitHub <span class="sep"></span> PR #218 <span class="sep"></span> Codex reviewed</span></a>
+          <a class="btn small secondary act" href="reviews.html">Review</a></li>
+        <li class="row"><span class="sev"><span class="tile warn"><svg class="i"><use href="#i-bot"/></svg></span></span>
+          <a class="copy" href="agent-detail.html"><span class="title">Codex has a question</span><span class="meta">Agents <span class="sep"></span> ATL-149 Import legacy notes</span></a>
+          <a class="btn small secondary act" href="agent-detail.html">Answer</a></li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="wr-h">
+      <div class="section-h"><h2 id="wr-h">Warnings</h2></div>
+      <ul class="group attn">
+        <li class="row"><span class="sev"><span class="tile warn"><svg class="i"><use href="#i-clock"/></svg></span></span>
+          <a class="copy" href="#"><span class="title">Renew parking permit</span><span class="meta">Tasks <span class="sep"></span> overdue since Friday</span></a>
+          <button class="icon-btn" type="button" data-open="attn-menu" aria-label="Options for Renew parking permit"><svg class="i"><use href="#i-more"/></svg></button></li>
+        <li class="row"><span class="sev"><span class="tile warn"><svg class="i"><use href="#i-heart"/></svg></span></span>
+          <a class="copy" href="health.html"><span class="title">Health not synced</span><span class="meta">Apple Health <span class="sep"></span> since 6:40</span></a>
+          <button class="icon-btn" type="button" data-open="attn-menu" aria-label="Options for Health not synced"><svg class="i"><use href="#i-more"/></svg></button></li>
+      </ul>
+    </section>
+
+    <details class="group">
+      <summary class="row compact"><span class="tile ok" style="width:28px;height:28px"><svg class="i i-16"><use href="#i-check"/></svg></span><span class="copy"><span class="title" style="font-weight:500;color:var(--ink-2)">Resolved today · 4</span></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <div class="row compact"><span style="width:28px"></span><span class="copy"><span class="title" style="font-weight:450;color:var(--ink-3)">n8n unreachable</span><span class="meta">Recovered 08:12</span></span></div>
+      <div class="row compact"><span style="width:28px"></span><span class="copy"><span class="title" style="font-weight:450;color:var(--ink-3)">Review Export fix</span><span class="meta">You approved · 07:30</span></span></div>
+    </details>
+    <p class="foot">Items clear on their own when the underlying problem is fixed.</p>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+</div>
+
+<div class="sheet" id="attn-menu" role="dialog" aria-modal="true" aria-label="Attention item options" hidden>
+  <div class="grab"></div>
+  <ul class="group">
+    <li><button class="row" type="button" data-close data-toast="Snoozed for 1 hour" data-undo="1"><svg class="i"><use href="#i-clock"/></svg><span class="copy"><span class="title">Snooze 1 hour</span></span></button></li>
+    <li><button class="row" type="button" data-close data-toast="Snoozed until tomorrow" data-undo="1"><svg class="i"><use href="#i-moon"/></svg><span class="copy"><span class="title">Snooze until tomorrow</span></span></button></li>
+    <li><button class="row" type="button" data-close data-toast="Dismissed until it changes" data-undo="1"><svg class="i"><use href="#i-x"/></svg><span class="copy"><span class="title">Dismiss</span><span class="meta">Returns if the condition changes</span></span></button></li>
+  </ul>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Agents</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="projects" data-area="development">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"><a class="icon-btn" href="development.html" aria-label="Back to Development"><svg class="i"><use href="#i-back"/></svg></a></div>
+    <div class="t">Agents</div>
+    <div class="trail"></div>
+  </header>
+
+  <div class="content">
+    <div class="ph"><div class="eyebrow">Development</div><h1>Agents</h1></div>
+
+    <div class="filters" role="tablist" aria-label="Development views">
+      <a class="filter" role="tab" href="development.html">Tasks</a>
+      <a class="filter" role="tab" href="reviews.html">Reviews <span class="badge" style="min-width:18px;height:18px;font-size:11px">2</span></a>
+      <a class="filter" role="tab" href="agents.html" aria-pressed="true" aria-selected="true">Agents</a>
+      <a class="filter" role="tab" href="development.html#repos">Repos</a>
+    </div>
+
+    <section class="section" aria-labelledby="now-h">
+      <div class="section-h"><h2 id="now-h">Now</h2><span class="foot num" style="padding:0">1 of 1 · 1 of 1</span></div>
+      <ul class="group">
+        <li><a class="row" href="agent-detail.html"><span class="tile"><svg class="i"><use href="#i-bot"/></svg></span>
+          <span class="copy"><span class="title">Codex</span><span class="meta"><span class="tag num">ATL-151</span>CSV export</span></span>
+          <span class="trail"><span class="num">18m</span><span class="chip info working">Working</span></span></a></li>
+        <li><a class="row" href="agent-detail.html"><span class="tile xp"><svg class="i"><use href="#i-bot"/></svg></span>
+          <span class="copy"><span class="title">Claude</span><span class="meta">Reviewing PR #44</span></span>
+          <span class="trail"><span class="num">3m</span><span class="chip xp working">Reviewing</span></span></a></li>
+      </ul>
+      <p class="foot">Limits: 1 implementation and 1 review at a time.</p>
+    </section>
+
+    <section class="section" aria-labelledby="q-h">
+      <div class="section-h"><h2 id="q-h">Queue</h2></div>
+      <ul class="group">
+        <li><a class="row" href="dev-task.html"><span class="tile idle"><svg class="i"><use href="#i-clock"/></svg></span>
+          <span class="copy"><span class="title">Retry on network timeout</span><span class="meta"><span class="tag num">ATL-160</span>Codex</span></span>
+          <span class="trail"><span class="chip nodot">Queued</span></span></a></li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="r-h">
+      <div class="section-h"><h2 id="r-h">Recent</h2></div>
+      <ul class="group">
+        <li><a class="row" href="agent-detail.html"><span class="tile crit"><svg class="i"><use href="#i-circleAlert"/></svg></span>
+          <span class="copy"><span class="title">Theme tokens cleanup</span><span class="meta"><span class="tag num">HBR-14</span>Claude <span class="sep"></span> tests failed</span></span>
+          <span class="trail"><span class="chip crit">Failed</span></span></a></li>
+        <li><a class="row" href="reviews.html"><span class="tile ok"><svg class="i"><use href="#i-check"/></svg></span>
+          <span class="copy"><span class="title">Offline sync for field notes</span><span class="meta"><span class="tag num">ATL-142</span>Claude → Codex <span class="sep"></span> PR #218</span></span>
+          <span class="trail"><span class="chip ok">Done</span></span></a></li>
+        <li><a class="row" href="agent-detail.html"><span class="tile warn"><svg class="i"><use href="#i-circleAlert"/></svg></span>
+          <span class="copy"><span class="title">Import legacy notes</span><span class="meta"><span class="tag num">ATL-149</span>Codex <span class="sep"></span> asked a question</span></span>
+          <span class="trail"><span class="chip warn">Needs input</span></span></a></li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="av-h">
+      <div class="section-h"><h2 id="av-h">Available</h2></div>
+      <ul class="group">
+        <li class="row"><span class="tile idle"><svg class="i"><use href="#i-bot"/></svg></span><span class="copy"><span class="title">Claude</span><span class="meta">Implement · Review</span></span><span class="trail"><span class="state ok"><span class="dot ok"></span>Ready</span></span></li>
+        <li class="row"><span class="tile idle"><svg class="i"><use href="#i-bot"/></svg></span><span class="copy"><span class="title">Codex</span><span class="meta">Implement · Review</span></span><span class="trail"><span class="state info"><span class="dot info"></span>Busy</span></span></li>
+      </ul>
+      <p class="foot">Agent Bridge connected · 12 s ago · repos: atlas-cli</p>
+    </section>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

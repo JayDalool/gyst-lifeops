@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Projects</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="projects" data-area="projects">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"></div>
+    <div class="t">Projects</div>
+    <div class="trail">
+      <a class="icon-btn" href="launcher.html" aria-label="Search"><svg class="i"><use href="#i-search"/></svg></a>
+      <button class="icon-btn" type="button" data-toast="New project sheet (prototype)" aria-label="New project"><svg class="i"><use href="#i-plus"/></svg></button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="ph"><h1>Projects</h1></div>
+
+    <nav class="subnav" aria-label="Projects sections">
+      <div class="seg">
+        <a href="projects.html" aria-current="page">Projects</a>
+        <a href="development.html">Development <span class="count">3</span></a>
+        <a href="galaxy.html">Galaxy</a>
+        <a href="#roadmaps">Roadmaps</a>
+      </div>
+    </nav>
+
+    <div class="filters" role="group" aria-label="Filter projects">
+      <button class="filter" type="button" data-single aria-pressed="true">Active · 4</button>
+      <button class="filter" type="button" data-single aria-pressed="false">Planned · 2</button>
+      <button class="filter" type="button" data-single aria-pressed="false">Blocked · 1</button>
+      <button class="filter" type="button" data-single aria-pressed="false">Paused</button>
+    </div>
+
+    <section class="section" aria-label="Active projects">
+      <ul class="group">
+        <li><a class="row" href="project-detail.html"><span class="tile orb" style="--c:#7aa2ff"></span>
+          <span class="copy"><span class="title">Kestrel Field Guide</span><span class="meta">Next: Draft chapter 3 outline</span></span>
+          <span class="trail"><span class="ring" style="--v:62;width:28px;height:28px" aria-label="62% complete"></span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+        <li><a class="row" href="project-detail.html"><span class="tile orb" style="--c:#5ee0b5"></span>
+          <span class="copy"><span class="title">Atlas CLI</span><span class="meta"><svg class="i i-16" style="color:var(--info)"><use href="#i-pr"/></svg>2 reviews waiting</span></span>
+          <span class="trail"><span class="ring" style="--v:78;width:28px;height:28px;--c:var(--ok)" aria-label="78% complete"></span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+        <li><a class="row" href="project-detail.html"><span class="tile orb" style="--c:#ffb86b"></span>
+          <span class="copy"><span class="title">Home workshop</span><span class="meta">Next: Order pegboard <span class="sep"></span> Fri</span></span>
+          <span class="trail"><span class="ring" style="--v:35;width:28px;height:28px" aria-label="35% complete"></span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+        <li><a class="row" href="project-detail.html"><span class="tile orb" style="--c:#f38bd8"></span>
+          <span class="copy"><span class="title">Harbor rebuild</span><span class="meta"><span class="state warn"><span class="dot warn"></span>Blocked</span><span class="sep"></span>Waits for Atlas CLI</span></span>
+          <span class="trail"><span class="ring" style="--v:20;width:28px;height:28px;--c:var(--warn)" aria-label="20% complete"></span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+      </ul>
+    </section>
+
+    <details class="group">
+      <summary class="row compact"><span class="tile ok" style="width:28px;height:28px"><svg class="i i-16"><use href="#i-check"/></svg></span><span class="copy"><span class="title" style="font-weight:500;color:var(--ink-2)">Done · 11</span></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <a class="row compact" href="project-detail.html"><span class="tile orb done" style="--c:#7aa2ff;width:28px;height:28px"></span><span class="copy"><span class="title" style="font-weight:500">Portfolio site v2</span></span><span class="trail">Aug</span></a>
+      <a class="row compact" href="project-detail.html"><span class="tile orb done" style="--c:#5ee0b5;width:28px;height:28px"></span><span class="copy"><span class="title" style="font-weight:500">Cloud cert prep</span></span><span class="trail">Jul</span></a>
+      <a class="row compact" href="#"><span style="width:28px"></span><span class="copy"><span class="title" style="font-weight:500;color:var(--accent)">Show all 11</span></span></a>
+      <a class="row compact" href="galaxy.html"><span class="tile xp" style="width:28px;height:28px"><svg class="i i-16"><use href="#i-orbit"/></svg></span><span class="copy"><span class="title" style="font-weight:500">See them in Galaxy</span></span><svg class="i chev"><use href="#i-chev"/></svg></a>
+    </details>
+
+    <section class="section" id="roadmaps" aria-labelledby="rm-h">
+      <div class="section-h"><h2 id="rm-h">Roadmaps</h2><a href="#">All</a></div>
+      <ul class="group">
+        <li><a class="row" href="#"><span class="tile"><svg class="i"><use href="#i-route"/></svg></span>
+          <span class="copy"><span class="title">Writing year</span><span class="meta num">3 of 5 projects <span class="sep"></span> next: Kestrel Field Guide</span></span>
+          <span class="trail"><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+      </ul>
+    </section>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

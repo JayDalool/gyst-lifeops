@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Galaxy</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="projects" data-area="galaxy" class="galaxy-page">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"></div>
+    <div class="t">Galaxy</div>
+    <div class="trail"><a class="icon-btn" href="launcher.html" aria-label="Find a project" style="color:#cfe0ff"><svg class="i"><use href="#i-search"/></svg></a></div>
+  </header>
+
+  <div class="content" style="gap:var(--s4)">
+    <nav class="subnav" aria-label="Projects sections">
+      <div class="seg">
+        <a href="projects.html">Projects</a>
+        <a href="development.html">Development</a>
+        <a href="galaxy.html" aria-current="page">Galaxy</a>
+        <a href="projects.html#roadmaps">Roadmaps</a>
+      </div>
+    </nav>
+
+    <div class="filters" role="group" aria-label="Galaxy filters">
+      <button class="filter" type="button" aria-pressed="true" id="f-active">Active · 4</button>
+      <button class="filter" type="button" aria-pressed="false" id="f-done">Done · 11</button>
+      <button class="filter" type="button" aria-pressed="false">Writing</button>
+      <button class="filter" type="button" aria-pressed="false">Code</button>
+      <button class="filter" type="button" aria-pressed="false">Home</button>
+    </div>
+
+    <div class="space" id="space" role="application" aria-label="Galaxy map. Use the project list below for keyboard access.">
+      <canvas id="stars" aria-hidden="true"></canvas>
+      <div class="orbit" style="width:46%;aspect-ratio:1.9/1"></div>
+      <div class="orbit" style="width:88%;aspect-ratio:1.9/1"></div>
+      <div class="sun" aria-hidden="true"></div>
+      <!-- active worlds: inner orbit -->
+      <button class="world" type="button" style="left:34%;top:40%" data-w="kestrel" aria-pressed="false" aria-label="Kestrel Field Guide, active, 62%"><span class="p" style="--c:#7aa2ff;--size:34px"></span><span class="n">Kestrel</span></button>
+      <button class="world" type="button" style="left:66%;top:36%" data-w="atlas" aria-pressed="false" aria-label="Atlas CLI, active, 78%, 2 reviews waiting"><span class="p" style="--c:#5ee0b5;--size:40px"></span><span class="n">Atlas CLI</span></button>
+      <button class="world" type="button" style="left:62%;top:70%" data-w="workshop" aria-pressed="false" aria-label="Home workshop, active, 35%"><span class="p" style="--c:#ffb86b;--size:26px"></span><span class="n">Workshop</span></button>
+      <button class="world" type="button" style="left:38%;top:68%" data-w="harbor" aria-pressed="false" aria-label="Harbor rebuild, blocked, 20%"><span class="p" style="--c:#f38bd8;--size:24px"></span><span class="n">Harbor</span></button>
+      <!-- completed worlds: outer orbit, hidden until "Done" -->
+      <div id="done-worlds" hidden>
+        <button class="world done" type="button" style="left:12%;top:50%" data-w="portfolio" aria-label="Portfolio site v2, done"><span class="p" style="--c:#7aa2ff;--size:18px"></span><span class="n">Portfolio v2</span></button>
+        <button class="world done" type="button" style="left:88%;top:52%" data-w="cert" aria-label="Cloud cert prep, done"><span class="p" style="--c:#5ee0b5;--size:16px"></span><span class="n">Cloud cert</span></button>
+        <button class="world done" type="button" style="left:50%;top:14%" data-w="trip" aria-label="Research trip, done"><span class="p" style="--c:#ffb86b;--size:16px"></span><span class="n">Research trip</span></button>
+        <button class="world done" type="button" style="left:24%;top:84%" data-w="garden" aria-label="Garden beds, done"><span class="p" style="--c:#9be37a;--size:14px"></span><span class="n">Garden</span></button>
+        <button class="world done" type="button" style="left:78%;top:86%" data-w="bike" aria-label="Bike rebuild, done"><span class="p" style="--c:#f38bd8;--size:14px"></span><span class="n">Bike</span></button>
+      </div>
+      <span class="ship" id="ship" style="left:50%;top:52%" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-ship"/></svg></span>
+      <div class="space-ctl"><button type="button" aria-label="Zoom in"><svg class="i"><use href="#i-plus"/></svg></button><button type="button" aria-label="Zoom out"><svg class="i"><use href="#i-minus"/></svg></button><button type="button" aria-label="Recenter"><svg class="i"><use href="#i-target"/></svg></button></div>
+      <div class="space-legend" aria-hidden="true"><span>● Active</span><span style="opacity:.6">● Done</span></div>
+    </div>
+
+    <section class="section" aria-labelledby="gl-h">
+      <div class="section-h"><h2 id="gl-h">Worlds</h2></div>
+      <ul class="group">
+        <li><button class="row" type="button" data-w="kestrel"><span class="tile orb" style="--c:#7aa2ff"></span><span class="copy"><span class="title">Kestrel Field Guide</span><span class="meta">62%</span></span><svg class="i chev"><use href="#i-chev"/></svg></button></li>
+        <li><button class="row" type="button" data-w="atlas"><span class="tile orb" style="--c:#5ee0b5"></span><span class="copy"><span class="title">Atlas CLI</span><span class="meta">78% · 2 reviews</span></span><svg class="i chev"><use href="#i-chev"/></svg></button></li>
+      </ul>
+    </section>
+
+    <div class="proto-bar" style="border-color:rgb(255 255 255 / 25%);color:var(--space-ink-2)"><b style="color:var(--space-ink)">Prototype</b> · fictional data · tap a world · toggle "Done"</div>
+  </div>
+</main>
+</div>
+
+<div class="sheet" id="world-sheet" role="dialog" aria-modal="true" aria-labelledby="ws-h" hidden>
+  <div class="grab" style="background:rgb(255 255 255 / 20%)"></div>
+  <div class="sheet-h"><h2 id="ws-h">Atlas CLI</h2><button class="close" type="button" data-close aria-label="Close preview"><span><svg class="i i-16"><use href="#i-x"/></svg></span></button></div>
+  <div class="content" style="gap:var(--s4)">
+    <div style="display:flex;align-items:center;gap:var(--s3)"><div class="bar ok" style="flex:1;--v:78%;background:rgb(255 255 255 / 12%)"><i id="ws-bar"></i></div><span class="num" id="ws-pct" style="font-weight:650">78%</span></div>
+    <ul class="group"><li class="row"><span class="tile" style="background:rgb(255 255 255 / 10%);color:#cfe0ff"><svg class="i"><use href="#i-check"/></svg></span><span class="copy"><span class="title" id="ws-next">Review PR #218</span><span class="meta" id="ws-meta">Next · 2 reviews waiting</span></span></li></ul>
+    <div class="bottom-actions"><a class="btn" href="project-detail.html">Open project</a><button class="btn secondary" type="button" data-close style="background:rgb(255 255 255 / 10%);color:#fff">Keep exploring</button></div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stars"), space = document.getElementById("space");
+  function draw() {
+    var r = space.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
+    c.width = r.width * d; c.height = r.height * d;
+    var x = c.getContext("2d"); x.scale(d, d);
+    var seed = 7; function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+    for (var i = 0; i < 260; i++) { x.globalAlpha = .25 + rnd() * .6; x.fillStyle = "#dfe7ff"; x.beginPath(); x.arc(rnd() * r.width, rnd() * r.height, rnd() * 1.2 + .2, 0, 7); x.fill(); }
+  }
+  draw(); addEventListener("resize", draw);
+  var data = {
+    kestrel: ["Kestrel Field Guide", 62, "Draft chapter 3 outline", "Next · today 11:00"],
+    atlas: ["Atlas CLI", 78, "Review PR #218", "Next · 2 reviews waiting"],
+    workshop: ["Home workshop", 35, "Order pegboard", "Next · Friday"],
+    harbor: ["Harbor rebuild", 20, "Waits for Atlas CLI", "Blocked"],
+    portfolio: ["Portfolio site v2", 100, "Completed in August", "Done"],
+    cert: ["Cloud cert prep", 100, "Completed in July", "Done"],
+    trip: ["Research trip", 100, "Completed in August", "Done"],
+    garden: ["Garden beds", 100, "Completed in May", "Done"],
+    bike: ["Bike rebuild", 100, "Completed in April", "Done"]
+  };
+  var sheet = document.getElementById("world-sheet"), ship = document.getElementById("ship");
+  document.addEventListener("click", function (e) {
+    var w = e.target.closest("[data-w]"); if (!w) return;
+    var k = w.getAttribute("data-w"), d = data[k];
+    document.querySelectorAll(".world").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-w") === k)); });
+    var planet = document.querySelector('.world[data-w="' + k + '"]');
+    if (planet && !planet.closest("[hidden]")) { ship.style.left = planet.style.left; ship.style.top = "calc(" + planet.style.top + " - 34px)"; }
+    document.getElementById("ws-h").textContent = d[0];
+    document.getElementById("ws-pct").textContent = d[1] + "%";
+    document.getElementById("ws-bar").parentElement.style.setProperty("--v", d[1] + "%");
+    document.getElementById("ws-next").textContent = d[2];
+    document.getElementById("ws-meta").textContent = d[3];
+    sheet.hidden = false; requestAnimationFrame(function () { sheet.classList.add("open"); document.querySelector(".scrim").classList.add("open"); });
+  });
+  var fd = document.getElementById("f-done");
+  fd.addEventListener("click", function () { var on = fd.getAttribute("aria-pressed") !== "true"; fd.setAttribute("aria-pressed", String(on)); document.getElementById("done-worlds").hidden = !on; });
+})();
+</script>
+</body>
+</html>
