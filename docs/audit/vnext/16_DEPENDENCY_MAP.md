@@ -1,7 +1,7 @@
 # Stage 8 — Dependency Map (vNext)
 
 - **Recorded:** 2026-09-27 on `audit/vnext`. Planning only.
-- **Source:** the DEPENDENCIES field of every task in `15_TASK_BACKLOG.md` (142 tasks). The graphs, the critical path and the hotspot table were generated from that field, so they agree with it.
+- **Source:** the DEPENDENCIES field of every task in `15_TASK_BACKLOG.md` (145 tasks). The graphs, the critical path and the hotspot table were generated from that field, so they agree with it.
 
 ---
 
@@ -147,6 +147,7 @@ flowchart LR
     nav["025 Navigation shell: Today · Projects · Health …"]
     more["026 Simplify More to the grouped model"]
     terms["027 Terminology migration in the UI: Project /…"]
+    gbase["143 Document the production Galaxy baseline"]
     getwrites["028 Remove database writes from GET requests"]
     tdedupe["029 Today: remove the Focus / Next up duplication"]
     nowlogic["030 Today: Now selection logic"]
@@ -173,7 +174,9 @@ flowchart LR
   nav --> more
   lists --> more
   base --> terms
+  base --> gbase
   base --> getwrites
+  gbase --> getwrites
   lists --> tdedupe
   tz --> nowlogic
   nowlogic --> nowui
@@ -211,11 +214,13 @@ flowchart LR
     roadmaps["042 Roadmaps list and route page"]
     gdisc["043 Galaxy discoverability"]
     gtap["044 Galaxy 56 px touch targets"]
-    gclose["045 Galaxy preview close accessibility"]
+    gclose["045 Galaxy preview close and focus accessibility"]
     gdone["046 Galaxy completed worlds on the outer orbit"]
     gfilter["047 Galaxy completed filter / hide"]
-    gsparse["048 Galaxy sparse data and empty state"]
-    gmobile["049 Galaxy phone layout and preview sheet"]
+    gsparse["048 Galaxy sparse and empty states"]
+    gmobile["049 Galaxy phone layout and premium preview"]
+    gdepth["144 Galaxy visual depth (measured)"]
+    gsignal["145 Galaxy subtle project-state encoding"]
     learnia["050 Courses → Learn (IA and presentation)"]
     learnstates["051 Learn: zero, one and many courses with…"]
     hplace["052 Hide unbuilt Health placeholders"]
@@ -230,6 +235,7 @@ flowchart LR
     legacy["061 Secondary screens adopt the vNext shell"]
   end
   getwrites --> pstate
+  gbase --> pstate
   pstate --> ptx
   nav --> psub
   psub --> plist
@@ -241,7 +247,8 @@ flowchart LR
   psub --> roadmaps
   terms --> roadmaps
   psub --> gdisc
-  base --> gtap
+  gbase --> gdisc
+  gbase --> gtap
   gtap --> gclose
   pstate --> gdone
   gclose --> gdone
@@ -249,6 +256,11 @@ flowchart LR
   gdone --> gsparse
   gclose --> gmobile
   sheets --> gmobile
+  gbase --> gdepth
+  gmobile --> gdepth
+  gsparse --> gdepth
+  gbase --> gsignal
+  gdone --> gsignal
   nav --> learnia
   terms --> learnia
   learnia --> learnstates
@@ -270,6 +282,7 @@ flowchart LR
   lists --> legacy
   states --> legacy
   base(["001 Resolve the vNext implementation…"]):::ext
+  gbase(["143 Document the production Galaxy…"]):::ext
   getwrites(["028 Remove database writes from GET…"]):::ext
   lists(["020 Grouped list and row components"]):::ext
   more(["026 Simplify More to the grouped model"]):::ext
@@ -734,11 +747,11 @@ Weights: S = 1, M = 2, L = 3. These are relative effort, not calendar time. The 
 | L-UI UI foundation → shell | Agent | GYST-VN-018, GYST-VN-019, GYST-VN-020, GYST-VN-021, GYST-VN-022, GYST-VN-023, GYST-VN-024 → GYST-VN-025, GYST-VN-026 | Shared CSS/gallery: one at a time |
 | L-TODAY Today | Agent | GYST-VN-029, GYST-VN-031, GYST-VN-032, GYST-VN-033, GYST-VN-034, GYST-VN-035, GYST-VN-036 → GYST-VN-069 | Single file group: one at a time |
 | L-SCREENS Independent screens | Agent | GYST-VN-052, GYST-VN-053 → GYST-VN-054, GYST-VN-055, GYST-VN-056, GYST-VN-057, GYST-VN-058; GYST-VN-050, GYST-VN-051; GYST-VN-060 | Health tasks are sequential among themselves |
-| L-GALAXY Galaxy | Agent | GYST-VN-044, GYST-VN-045, GYST-VN-043, GYST-VN-046, GYST-VN-047, GYST-VN-048, GYST-VN-049 | `galaxy.js` group: one at a time. GYST-VN-044 can start immediately |
+| L-GALAXY Galaxy | Agent (+ Jay for iPhone measurements) | GYST-VN-143 → GYST-VN-044, GYST-VN-045, GYST-VN-043, GYST-VN-046, GYST-VN-047, GYST-VN-048, GYST-VN-049 → GYST-VN-144, GYST-VN-145 | `galaxy.js` group: one at a time. The baseline can start immediately; every task follows `17A` |
 | L-INT Integrations | Agent + Jay | Phases 6–9 in order | After CP-1 |
 | L-AGENT Agent Bridge | Agent + Jay | Phases 10 and 12 | After CP-5; bridge code lives in the repository chosen by GYST-VN-071 |
 
-**Safe to start in parallel immediately** (after GYST-VN-001): GYST-VN-003, GYST-VN-006, GYST-VN-004, GYST-VN-018, GYST-VN-052, GYST-VN-044, and Jay's GYST-VN-009 (host only; it can start even before GYST-VN-001). No shared files between these tasks (checked by the generator against each task's RELEVANT FILES).
+**Safe to start in parallel immediately** (after GYST-VN-001): GYST-VN-003, GYST-VN-006, GYST-VN-004, GYST-VN-018, GYST-VN-052, GYST-VN-143, and Jay's GYST-VN-009 (host only; it can start even before GYST-VN-001). No shared files between these tasks (checked by the generator against each task's RELEVANT FILES).
 
 **Recommended concurrency:**
 - At most two agent implementation sessions at once, on different lanes, with no shared file in the hotspot table.
@@ -752,13 +765,13 @@ Files named in the RELEVANT FILES of four or more tasks:
 |---|---|---|
 | `internal/handlers/` | 082, 084, 093, 103, 105, 106, 110, 111, 116, 117, 120, 129, 139 | 13 |
 | `internal/handlers/handlers.go` | 003, 014, 015, 028, 037, 038, 060, 063, 065, 073 | 10 |
+| `web/static/js/galaxy.js` | 027, 043, 044, 045, 046, 047, 048, 049, 144, 145 | 10 |
 | `internal/services/github/` | 101, 102, 103, 104, 108, 120, 121, 122, 124, 130 | 10 |
 | `web/templates/today.html` | 029, 031, 032, 033, 034, 035, 036, 069, 094 | 9 |
 | `internal/handlers/today_view.go` | 003, 029, 030, 032, 034, 035, 069 | 7 |
 | `internal/services/auth.go` | 006, 007, 008, 077, 078, 079, 080 | 7 |
 | `internal/handlers/middleware.go` | 006, 014, 015, 075, 077, 079, 081 | 7 |
 | `web/static/css/ui-today.css` | 029, 031, 033, 034, 035, 036, 069 | 7 |
-| `web/static/js/galaxy.js` | 043, 044, 045, 046, 047, 048, 049 | 7 |
 | `internal/services/attention.go` | 066, 067, 070, 090, 094, 108, 134 | 7 |
 | `docs/adr/` | 002, 059, 071, 096, 112, 113 | 6 |
 | `internal/app/app.go` | 003, 008, 015, 072, 073, 088 | 6 |
@@ -768,11 +781,12 @@ Files named in the RELEVANT FILES of four or more tasks:
 | `web/templates/ui_gallery.html` | 018, 020, 021, 022, 023 | 5 |
 | `web/static/css/ui-components.css` | 020, 021, 022, 023, 024 | 5 |
 | `internal/handlers/ui_shell.go` | 025, 026, 039, 062, 068 | 5 |
+| `web/static/css/ui-galaxy.css` | 043, 044, 045, 049, 144 | 5 |
 | `internal/handlers/auth.go` | 006, 007, 078, 079 | 4 |
 | `docker-compose.yml` | 016, 073, 074, 076 | 4 |
 | `web/static/js/app.js` | 023, 063, 064, 065 | 4 |
 | `internal/handlers/projects_view.go` | 028, 037, 040, 041 | 4 |
-| `web/static/css/ui-galaxy.css` | 043, 044, 045, 049 | 4 |
+| `internal/services/galaxy.go` | 028, 037, 046, 145 | 4 |
 | `web/templates/training.html` | 052, 053, 055, 057 | 4 |
 | `web/templates/system.html` | 093, 139, 141, 142 | 4 |
 | `internal/services/agents.go` | 129, 130, 131, 134 | 4 |
@@ -786,7 +800,7 @@ Files named in the RELEVANT FILES of four or more tasks:
 | H-3 Shell | `web/templates/layout.html`, `web/templates/ui_shell.html`, `internal/handlers/ui_shell.go`, `web/static/css/ui-shell.css`, `scripts/check-ui-shell.cjs` | GYST-VN-019, GYST-VN-024, GYST-VN-025, GYST-VN-026, GYST-VN-039, GYST-VN-062, GYST-VN-063, GYST-VN-068, GYST-VN-094 |
 | H-4 Shared components | `web/static/css/ui-components.css`, `web/templates/ui_components.html`, `web/templates/ui_gallery.html` | GYST-VN-018, GYST-VN-020, GYST-VN-021, GYST-VN-022, GYST-VN-023, GYST-VN-024 |
 | H-5 Today | `web/templates/today.html`, `internal/handlers/today_view.go`, `web/static/css/ui-today.css` | GYST-VN-003, GYST-VN-029, GYST-VN-030, GYST-VN-031, GYST-VN-032, GYST-VN-033, GYST-VN-034, GYST-VN-035, GYST-VN-036, GYST-VN-069, GYST-VN-094 |
-| H-6 Galaxy | `web/static/js/galaxy*.js`, `web/templates/galaxy.html`, `web/static/css/ui-galaxy.css` | GYST-VN-028, GYST-VN-043, GYST-VN-044, GYST-VN-045, GYST-VN-046, GYST-VN-047, GYST-VN-048, GYST-VN-049, GYST-VN-039 |
+| H-6 Galaxy | `web/static/js/galaxy*.js`, `web/templates/galaxy.html`, `web/static/css/ui-galaxy.css`, `internal/services/galaxy.go` | GYST-VN-028, GYST-VN-037, GYST-VN-027, GYST-VN-043, GYST-VN-044, GYST-VN-045, GYST-VN-046, GYST-VN-047, GYST-VN-048, GYST-VN-049, GYST-VN-144, GYST-VN-145, GYST-VN-039. Protected by `17A`: never parallel, always regression-checked |
 | H-7 Health | `web/templates/health*.html`, `internal/handlers/health_*.go`, `web/templates/training.html` | GYST-VN-052, GYST-VN-053, GYST-VN-054, GYST-VN-055, GYST-VN-056, GYST-VN-057, GYST-VN-058, GYST-VN-085 |
 | H-8 Launcher/app JS | `web/static/js/app.js`, `internal/services/search.go` | GYST-VN-023, GYST-VN-063, GYST-VN-064, GYST-VN-065, GYST-VN-068 |
 | H-9 Attention | `internal/services/attention.go` | GYST-VN-066, GYST-VN-067, GYST-VN-070, GYST-VN-090, GYST-VN-094, GYST-VN-108, GYST-VN-110, GYST-VN-134 |
@@ -857,6 +871,9 @@ Agent-implemented tasks that still need a Jay step (deploy, host install or a pr
 |---|---|---|
 | GYST-VN-010 | Scheduled GYST backup job | Agent writes the script and status writer; Jay installs and enables the timer |
 | GYST-VN-016 | Log rotation and Docker healthcheck in Compose | Agent edits Compose; Jay deploys |
+| GYST-VN-143 | Document the production Galaxy baseline | Claude Code or Codex (document and seed); Jay runs the iPhone measurements |
+| GYST-VN-144 | Galaxy visual depth (measured) | Claude Code or Codex (proposal reviewed by Jay first) |
+| GYST-VN-145 | Galaxy subtle project-state encoding | Claude Code or Codex (proposal reviewed by Jay first) |
 | GYST-VN-073 | Dual listener: public, privileged (tailnet) and internal machine | Agent implements; Jay deploys |
 | GYST-VN-076 | Run the GYST container as a non-root user | Agent edits Dockerfile/Compose; Jay deploys and changes ownership |
 | GYST-VN-080 | Unify password hashing at cost 12 | Agent unifies code; Jay regenerates the production hash |

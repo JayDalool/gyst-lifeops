@@ -46,7 +46,7 @@
 | `projects_list.html` | Projects list + sub-nav | GYST-VN-039, GYST-VN-040 | After status mapping |
 | `project_detail.html`, `project_form.html` | Project detail with ⋯ menu | GYST-VN-041 | After transactions |
 | `roadmap.html`, `rocket_route.html`, `roadmap_form.html` | Roadmaps list + route page | GYST-VN-042 | — |
-| `galaxy.html` (+ `galaxy*.js`) | Galaxy with 56 px targets, accessible preview, outer-orbit completed worlds, filter, sparse state, phone sheet | GYST-VN-044, GYST-VN-045, GYST-VN-043, GYST-VN-046, GYST-VN-047, GYST-VN-048, GYST-VN-049 | Sequential (H-6); keep Three.js |
+| `galaxy.html` (+ `galaxy*.js`) | **The same production Three.js Galaxy, evolved in place** (`17A`): 56 px targets, accessible preview, outer-orbit completed worlds, filter, sparse state, phone sheet, then depth and state encoding | GYST-VN-143 first, then GYST-VN-044, GYST-VN-045, GYST-VN-043, GYST-VN-046, GYST-VN-047, GYST-VN-048, GYST-VN-049, GYST-VN-144, GYST-VN-145 | Sequential (H-6). Never rebuilt or replaced; the Stage 7 prototype is a reference only |
 | `courses_list.html`, `course_detail.html`, `course_form.html` | Learn | GYST-VN-050, GYST-VN-051 | Routes aliased |
 | `health.html`, `health_components.html` | Health Summary | GYST-VN-052, GYST-VN-053, GYST-VN-054, GYST-VN-055 | Placeholders first |
 | `nutrition.html` | Nutrition | GYST-VN-056 | — |
@@ -58,6 +58,8 @@
 | `dashboard.html` | Retired as a destination only if nothing links to it (it is superseded by Today) | GYST-VN-061 | Verify with `grep` and route logs |
 | — (new) | Apps, Launcher, Attention, System, Automations, Development, Dev task, Reviews, Agents, Agent run | Phases 4–12 | Each appears only when it works (PG-1) |
 | `login.html` | Unchanged apart from generic errors and throttle messaging | GYST-VN-006, GYST-VN-015 | — |
+
+**Galaxy exception:** Galaxy isn't "migrated" to prototype markup. The existing implementation is preserved and improved incrementally under `17A`, with its baseline as the regression reference.
 
 **For every screen:**
 1. Implement against the prototype and the `12` field table.

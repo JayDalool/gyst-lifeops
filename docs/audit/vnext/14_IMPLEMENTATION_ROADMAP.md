@@ -4,7 +4,8 @@
 - **Recorded:** 2026-09-27 on `audit/vnext`
 - **Status:** plan only. No code, configuration, database, GitHub, Cloudflare, n8n or agent setting was changed. No GitHub Issues were created.
 - **Binding inputs:** `05A_PRODUCT_DECISIONS.md`, `08A_INTEGRATION_DECISIONS.md`, `10A_SECURITY_DECISIONS.md`, `13A_DESIGN_DECISIONS.md`. Specifications: `09`–`13`.
-- **Companion files:** `15_TASK_BACKLOG.md` (142 tasks, `GYST-VN-001…`), `16_DEPENDENCY_MAP.md`, `17_MIGRATION_STRATEGY.md`.
+- **Galaxy:** `17A_GALAXY_PRESERVATION.md` (binding product constraint added after Stage 8)
+- **Companion files:** `15_TASK_BACKLOG.md` (145 tasks, `GYST-VN-001…`), `16_DEPENDENCY_MAP.md`, `17_MIGRATION_STRATEGY.md`.
 
 Task IDs are provisional. They become GitHub Issue numbers only when Jay approves creating the issues.
 
@@ -43,8 +44,8 @@ Task IDs are provisional. They become GitHub Issue numbers only when Jay approve
 | Milestone | Phases | Tasks | P0/P1/P2/P3 | User-visible outcome |
 |---|---|---|---|---|
 | M0 Safe foundation | 0 | 17 | 5 / 11 / 1 / 0 | GYST data is backed up off-host and restorable, the public login resists guessing, "today" means Jay's local day everywhere, and failures are visible in logs and /healthz. |
-| M1 vNext core experience | 1, 2 | 19 | 0 / 16 / 3 / 0 | The app looks and navigates like vNext: Today · Projects · Health · Learn · More, a calm Today with Now, Rhythm and no duplicate blocks, a simpler More, and System/Light/Dark appearance. |
-| M2 vNext Life areas | 3 | 25 | 0 / 10 / 13 / 2 | Projects, Galaxy, Learn, Health and Goals use the vNext patterns and plain terminology; Health shows only what really works; Galaxy is usable on a phone. |
+| M1 vNext core experience | 1, 2 | 20 | 0 / 17 / 3 / 0 | The app looks and navigates like vNext: Today · Projects · Health · Learn · More, a calm Today with Now, Rhythm and no duplicate blocks, a simpler More, and System/Light/Dark appearance. |
+| M2 vNext Life areas | 3 | 27 | 0 / 10 / 13 / 4 | Projects, Galaxy, Learn, Health and Goals use the vNext patterns and plain terminology; Health shows only what really works; Galaxy is usable on a phone. |
 | M3 Command centre | 4, 5 | 9 | 0 / 5 / 3 / 1 | One launcher (Go · Do · Capture) reaches everything; Apps opens external tools; one Attention model tells Jay what needs him, from GYST's own data. |
 | M4 Read-only integrations | 6, 7, 8, 9 | 41 | 0 / 9 / 30 / 2 | GYST shows sanitized server health, GitHub issues/PRs/reviews in Development, and n8n automation status, all read-only, on a hardened two-listener foundation. |
 | M5 Agent-assisted development | 10, 11, 12 | 25 | 0 / 0 / 23 / 2 | Jay can write GitHub issues from GYST, mark a NORMAL issue ready for an agent after re-auth, watch the run, review the PR in GitHub and verify-and-close from GYST. |
@@ -58,8 +59,8 @@ Milestones are defined by the user-visible outcome, not by dates. A milestone is
 |---|---|---|---|---|
 | 0 | Foundation | M0 | 17 | GYST-VN-001–017 |
 | 1 | vNext UI foundation | M1 | 7 | GYST-VN-018–024 |
-| 2 | Today + navigation + cleanup | M1 | 12 | GYST-VN-025–036 |
-| 3 | Projects / Galaxy / Learn / Health migrations | M2 | 25 | GYST-VN-037–061 |
+| 2 | Today + navigation + cleanup | M1 | 13 | GYST-VN-025–036 + 143 |
+| 3 | Projects / Galaxy / Learn / Health migrations | M2 | 27 | GYST-VN-037–061 + 144, 145 |
 | 4 | Apps + Launcher | M3 | 4 | GYST-VN-062–065 |
 | 5 | Attention | M3 | 5 | GYST-VN-066–070 |
 | 6 | Machine auth / integration foundation | M4 | 18 | GYST-VN-071–088 |
@@ -220,6 +221,7 @@ SamVision is added only through GYST-VN-136, after evidence on all 8 criteria: w
 | PG-7 Human merges | GYST never merges, never shows full diffs | Phases 8–12 |
 | PG-8 Learn scope | Courses → Learn is IA/presentation only; no Master's/program features | GYST-VN-050, GYST-VN-051 |
 | PG-9 Quiet healthy | Healthy infrastructure never dominates Today; problems are prominent | GYST-VN-035, GYST-VN-094 |
+| PG-10 Galaxy preservation (binding, `17A`) | The real Three.js Galaxy is preserved and evolved, never deleted, replaced, downgraded or substituted by a list/grid or the Stage 7 prototype; baseline GYST-VN-143 precedes material Galaxy changes; rewrites need Jay's explicit approval | GYST-VN-143, GYST-VN-028, GYST-VN-037, GYST-VN-043, GYST-VN-044, GYST-VN-045, GYST-VN-046, GYST-VN-047, GYST-VN-048, GYST-VN-049, GYST-VN-144, GYST-VN-145 and every shared-surface task |
 
 ## G. Design gates
 
@@ -238,6 +240,7 @@ Every UI task (and every UI-changing bug/feature) is checked against:
 | DG-9 Violet | `--xp`/`--xp-soft` are identity only, never state (DD-4) |
 | DG-10 Appearance | One System/Light/Dark setting; System follows OS changes live (DD-1) |
 | DG-11 No new UI dependency | No framework, build system or component library (`13A`, working agreement §9) |
+| DG-12 Galaxy regression | Galaxy tasks pass the `17A` §L checklist; shared CSS/JS, shell, CSP, terminology and project-data tasks pass the Galaxy quick check |
 
 ## H. Parallelization
 
@@ -254,7 +257,7 @@ Summary (details and file groups in `16` §C–§D):
   - the shared component tasks (`ui-components.css`, `ui_gallery.html`)
   - the shell tasks (`layout.html`, `ui_shell.html`, `ui_shell.go`)
   - tasks editing `handlers.go` or `middleware.go`
-- **Tasks safe to start immediately after the branch baseline:** GYST-VN-003, GYST-VN-006, GYST-VN-004, GYST-VN-018, GYST-VN-052, GYST-VN-044, plus Jay's GYST-VN-009. No shared files between these tasks (checked by the generator against each task's RELEVANT FILES).
+- **Tasks safe to start immediately after the branch baseline:** GYST-VN-003, GYST-VN-006, GYST-VN-004, GYST-VN-018, GYST-VN-052, GYST-VN-143, plus Jay's GYST-VN-009. No shared files between these tasks (checked by the generator against each task's RELEVANT FILES).
 - **Concurrency limit for agents:** the same rule as for dispatch. Keep at most **two** agent implementation sessions in flight: one backend and one UI, on disjoint files. Jay reviews every PR.
 
 ## I. Stop/go checkpoints
@@ -300,59 +303,59 @@ The approach stays the same: Docker Compose on the host, deployed by Jay. vNext 
 
 ### K.1 Counts
 
-**Total tasks: 142**
+**Total tasks: 145**
 
 | Priority | Tasks |
 |---|---|
 | P0 | 5 |
-| P1 | 51 |
+| P1 | 52 |
 | P2 | 73 |
-| P3 | 13 |
-| **Total** | **142** |
+| P3 | 15 |
+| **Total** | **145** |
 
 | Risk class | Tasks |
 |---|---|
-| NORMAL | 65 |
+| NORMAL | 68 |
 | ELEVATED | 33 |
 | PRIVILEGED | 18 |
 | NOT AGENT-ELIGIBLE | 26 |
-| **Total** | **142** |
+| **Total** | **145** |
 
 | Type | Tasks |
 |---|---|
 | Bug | 4 |
-| Feature | 32 |
-| UI | 38 |
+| Feature | 33 |
+| UI | 39 |
 | UX | 4 |
 | Refactor | 3 |
 | Security | 18 |
 | Infrastructure | 9 |
 | Integration | 6 |
 | Operations | 19 |
-| Documentation | 2 |
+| Documentation | 3 |
 | Research | 7 |
-| **Total** | **142** |
+| **Total** | **145** |
 
 | Agent eligibility | Tasks |
 |---|---|
-| Claude/Codex implementable | 113 |
+| Claude/Codex implementable | 116 |
 | Human-assisted (agent prepares; Jay decides or executes) | 11 |
 | Human-only (Jay) | 5 |
 | NOT AGENT-ELIGIBLE operational work (Jay) | 13 |
-| **Total** | **142** |
+| **Total** | **145** |
 
 | Complexity | Tasks |
 |---|---|
-| S | 88 |
-| M | 50 |
+| S | 89 |
+| M | 52 |
 | L | 4 |
-| **Total** | **142** |
+| **Total** | **145** |
 
 | Milestone | Phases | Tasks | P0/P1/P2/P3 | User-visible outcome |
 |---|---|---|---|---|
 | M0 Safe foundation | 0 | 17 | 5 / 11 / 1 / 0 | GYST data is backed up off-host and restorable, the public login resists guessing, "today" means Jay's local day everywhere, and failures are visible in logs and /healthz. |
-| M1 vNext core experience | 1, 2 | 19 | 0 / 16 / 3 / 0 | The app looks and navigates like vNext: Today · Projects · Health · Learn · More, a calm Today with Now, Rhythm and no duplicate blocks, a simpler More, and System/Light/Dark appearance. |
-| M2 vNext Life areas | 3 | 25 | 0 / 10 / 13 / 2 | Projects, Galaxy, Learn, Health and Goals use the vNext patterns and plain terminology; Health shows only what really works; Galaxy is usable on a phone. |
+| M1 vNext core experience | 1, 2 | 20 | 0 / 17 / 3 / 0 | The app looks and navigates like vNext: Today · Projects · Health · Learn · More, a calm Today with Now, Rhythm and no duplicate blocks, a simpler More, and System/Light/Dark appearance. |
+| M2 vNext Life areas | 3 | 27 | 0 / 10 / 13 / 4 | Projects, Galaxy, Learn, Health and Goals use the vNext patterns and plain terminology; Health shows only what really works; Galaxy is usable on a phone. |
 | M3 Command centre | 4, 5 | 9 | 0 / 5 / 3 / 1 | One launcher (Go · Do · Capture) reaches everything; Apps opens external tools; one Attention model tells Jay what needs him, from GYST's own data. |
 | M4 Read-only integrations | 6, 7, 8, 9 | 41 | 0 / 9 / 30 / 2 | GYST shows sanitized server health, GitHub issues/PRs/reviews in Development, and n8n automation status, all read-only, on a hardened two-listener foundation. |
 | M5 Agent-assisted development | 10, 11, 12 | 25 | 0 / 0 / 23 / 2 | Jay can write GitHub issues from GYST, mark a NORMAL issue ready for an agent after re-auth, watch the run, review the PR in GitHub and verify-and-close from GYST. |
@@ -370,7 +373,7 @@ The first tasks mix foundation work with visible product progress. The numbering
 | 4 | GYST-VN-006 Login throttling | Auth | P0: the public login can be brute-forced |
 | 5 | GYST-VN-003 Local-day correctness | Time | P0: verified wrong-day data; Now, Rhythm, overdue and Attention all build on it |
 | 6 | GYST-VN-052 Hide Health placeholders | Screens | **Visible:** Health stops promising features that don't exist; isolated templates; S |
-| 7 | GYST-VN-044 Galaxy 56 px targets | Galaxy | **Visible:** Galaxy becomes usable on the iPhone; isolated JS/CSS; S |
+| 7 | GYST-VN-143 Galaxy baseline → GYST-VN-044 Galaxy 56 px targets | Galaxy | The baseline protects the signature feature (`17A`); then a **visible** fix: Galaxy becomes comfortable on the iPhone; isolated files |
 | 8 | GYST-VN-018 Design tokens | UI | Unlocks every vNext UI task; no visible change, so low risk |
 | 9 | GYST-VN-004 → GYST-VN-005 → GYST-VN-007 | Auth | Step 0 items 11 and 2; the audit store is reused by every later security feature |
 | 10 | GYST-VN-053 Real Hevy state | Screens | **Visible:** removes a UI contradiction; small |
@@ -409,6 +412,7 @@ The first tasks mix foundation work with visible product progress. The numbering
 | U-9 | Replacing the NAV1 assertions in `scripts/check-ui-shell.cjs` | GYST-VN-025 | Treat as an explicit spec change that Jay acknowledges in the PR, not as weakening a test (`docs/RULES.md`) |
 | U-10 | Training storage shape | GYST-VN-059 | Decide before any training-history feature |
 | U-11 | Reconciling the existing `docs/tasks/` ledger (A1, A2, M3 Apple Health ingestion, `GYST_PASSWORD_HASH`) with this backlog | GYST-VN-001 | Record each as done, superseded or still open during the baseline task |
+| U-13 | Permanent Galaxy rule in `AGENTS.md`/`CLAUDE.md` | Stage 9 | Add the one-line rule quoted in `17A` (flagged for Stage 9; not added yet) |
 | U-12 | Root containers other than GYST (n8n, SamVision, Kuma) | outside this backlog | Separate server-hardening review |
 
 ## Explicitly deferred

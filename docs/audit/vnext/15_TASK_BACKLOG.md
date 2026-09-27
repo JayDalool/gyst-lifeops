@@ -2,6 +2,7 @@
 
 - **Status:** planning document. No GitHub Issues created. IDs are **provisional** (`GYST-VN-nnn`) and are replaced by Issue numbers when Jay approves creating them.
 - **Base:** `audit/vnext` after `e269df2`. Binding inputs: `05A`, `08A`, `10A`, `13A`, with `09`–`13` as the specifications they refine.
+- **Galaxy:** `17A_GALAXY_PRESERVATION.md` is binding. Every Galaxy task carries its §L regression checklist; tasks touching shared surfaces carry the Galaxy quick check. IDs GYST-VN-143–145 were appended after Stage 8 so earlier IDs stay stable.
 - **Roadmap:** `14_IMPLEMENTATION_ROADMAP.md` · **Dependencies:** `16_DEPENDENCY_MAP.md` · **Migration:** `17_MIGRATION_STRATEGY.md`
 
 ## How to read this backlog
@@ -54,6 +55,7 @@
 | [GYST-VN-025](#gyst-vn-025) | Navigation shell: Today · Projects · Health · Learn · More | UI | P1 | NORMAL | Claude/Codex implementable | M |
 | [GYST-VN-026](#gyst-vn-026) | Simplify More to the grouped model | UI | P1 | NORMAL | Claude/Codex implementable | S |
 | [GYST-VN-027](#gyst-vn-027) | Terminology migration in the UI: Project / Task / Roadmap | UX | P1 | NORMAL | Claude/Codex implementable | M |
+| [GYST-VN-143](#gyst-vn-143) | Document the production Galaxy baseline | Documentation | P1 | NORMAL | Claude/Codex implementable | S |
 | [GYST-VN-028](#gyst-vn-028) | Remove database writes from GET requests | Bug | P1 | ELEVATED | Claude/Codex implementable | M |
 | [GYST-VN-029](#gyst-vn-029) | Today: remove the Focus / Next up duplication | UI | P1 | NORMAL | Claude/Codex implementable | S |
 | [GYST-VN-030](#gyst-vn-030) | Today: Now selection logic | Feature | P1 | NORMAL | Claude/Codex implementable | M |
@@ -76,11 +78,13 @@
 | [GYST-VN-042](#gyst-vn-042) | Roadmaps list and route page | UI | P2 | NORMAL | Claude/Codex implementable | M |
 | [GYST-VN-043](#gyst-vn-043) | Galaxy discoverability | UX | P2 | NORMAL | Claude/Codex implementable | S |
 | [GYST-VN-044](#gyst-vn-044) | Galaxy 56 px touch targets | UI | P1 | NORMAL | Claude/Codex implementable | S |
-| [GYST-VN-045](#gyst-vn-045) | Galaxy preview close accessibility | Bug | P1 | NORMAL | Claude/Codex implementable | S |
+| [GYST-VN-045](#gyst-vn-045) | Galaxy preview close and focus accessibility | Bug | P1 | NORMAL | Claude/Codex implementable | S |
 | [GYST-VN-046](#gyst-vn-046) | Galaxy completed worlds on the outer orbit | Feature | P2 | NORMAL | Claude/Codex implementable | M |
 | [GYST-VN-047](#gyst-vn-047) | Galaxy completed filter / hide | UI | P2 | NORMAL | Claude/Codex implementable | S |
-| [GYST-VN-048](#gyst-vn-048) | Galaxy sparse data and empty state | UI | P2 | NORMAL | Claude/Codex implementable | S |
-| [GYST-VN-049](#gyst-vn-049) | Galaxy phone layout and preview sheet | UI | P2 | NORMAL | Claude/Codex implementable | M |
+| [GYST-VN-048](#gyst-vn-048) | Galaxy sparse and empty states | UI | P2 | NORMAL | Claude/Codex implementable | S |
+| [GYST-VN-049](#gyst-vn-049) | Galaxy phone layout and premium preview | UI | P2 | NORMAL | Claude/Codex implementable | M |
+| [GYST-VN-144](#gyst-vn-144) | Galaxy visual depth (measured) | UI | P3 | NORMAL | Claude/Codex implementable | M |
+| [GYST-VN-145](#gyst-vn-145) | Galaxy subtle project-state encoding | Feature | P3 | NORMAL | Claude/Codex implementable | M |
 | [GYST-VN-050](#gyst-vn-050) | Courses → Learn (IA and presentation) | UX | P1 | NORMAL | Claude/Codex implementable | S |
 | [GYST-VN-051](#gyst-vn-051) | Learn: zero, one and many courses with Continue | UI | P2 | NORMAL | Claude/Codex implementable | S |
 | [GYST-VN-052](#gyst-vn-052) | Hide unbuilt Health placeholders | UI | P1 | NORMAL | Claude/Codex implementable | S |
@@ -839,7 +843,7 @@
   - Update `ui_gallery.html` with a token swatch section as the living reference
 - **PROPOSED BEHAVIOR:** Components built from now on read one token set; existing screens look the same.
 - **RELEVANT FILES / LIKELY AREAS:** `web/static/css/ui-tokens.css`, `web/templates/ui_gallery.html`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `11` §B–§I; prototype `prototypes/assets/proto.css` (reference, non-binding)
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `11` §B–§I; prototype `prototypes/assets/proto.css` (reference, non-binding); `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-001 (Resolve the vNext implementation branch baseline)
 - **ACCEPTANCE CRITERIA:**
@@ -853,6 +857,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert the CSS file.
@@ -880,11 +885,11 @@
   - Setting stored per device (existing `theme.js` storage) with values system/light/dark; default system
   - System mode listens to `prefers-color-scheme` changes without reload
   - Set before first paint to avoid a flash
-  - Galaxy may keep its dark scene regardless
+  - Galaxy keeps its immersive dark scene regardless (DD-1); its page chrome follows the setting
   - One setting for the whole app; the control lives in Settings → Appearance (and the existing toggle location until Settings is migrated)
 - **PROPOSED BEHAVIOR:** Jay's phone switches GYST between light and dark with iOS automatically, unless he picks a fixed mode.
 - **RELEVANT FILES / LIKELY AREAS:** `web/static/js/theme.js`, `web/templates/layout.html`, `web/templates/settings.html`, `web/static/css/ui-tokens.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; DD-1 in `13A`; `11` §J
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; DD-1 in `13A`; `11` §J; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-018 (vNext design tokens in the existing ui-* CSS layer)
 - **ACCEPTANCE CRITERIA:**
@@ -899,6 +904,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert JS; the old stored value is mapped (`dark`→dark, `light`→light).
@@ -1061,7 +1067,7 @@
   - Confirm dialog is in-page (never `window.confirm`)
 - **PROPOSED BEHAVIOR:** Consistent overlays that work with keyboard and screen reader.
 - **RELEVANT FILES / LIKELY AREAS:** `web/static/js/app.js` (or a new `ui-sheet.js` module), `web/static/css/ui-components.css`, `web/templates/ui_gallery.html`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `13` §Overlays; prototype `prototypes/galaxy.html`, `launcher.html`
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `13` §Overlays; prototype `prototypes/galaxy.html`, `launcher.html`; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-018 (vNext design tokens in the existing ui-* CSS layer), GYST-VN-021 (Icon set and icon/action button components)
 - **ACCEPTANCE CRITERIA:**
@@ -1075,6 +1081,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -1101,10 +1108,11 @@
 - **DETAILED REQUIREMENTS:**
   - Extend `scripts/check-ui-shell.cjs` (existing tooling) to measure interactive elements and document width at 320/390/1280
   - Fix shell-level offenders (tab bar, top bar, shared buttons)
+  - The check measures the Galaxy page's DOM controls; scene targets (56 px) are measured by the Galaxy tasks, not excluded or flattened
   - Screen-specific offenders are recorded for their screen tasks, not fixed here
 - **PROPOSED BEHAVIOR:** Regression protection for the most common mobile defect.
 - **RELEVANT FILES / LIKELY AREAS:** `scripts/check-ui-shell.cjs`, `web/static/css/ui-shell.css`, `web/static/css/ui-components.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `13` §Touch targets
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `13` §Touch targets; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-018 (vNext design tokens in the existing ui-* CSS layer)
 - **ACCEPTANCE CRITERIA:**
@@ -1118,6 +1126,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -1150,9 +1159,10 @@
   - No Attention tab (C1)
   - Update the UI shell test to the D11 spec as an explicit, reviewed spec change (not a weakened test); Jay acknowledges in the PR
   - Old routes keep working (bookmarks, PWA start URL)
+  - Galaxy entry points are kept (Projects-list Galaxy tile, command menu "Open Galaxy") until their successors ship (`17A` §C.7)
 - **PROPOSED BEHAVIOR:** The app's top-level structure matches vNext on phone and desktop.
 - **RELEVANT FILES / LIKELY AREAS:** `web/templates/layout.html`, `web/templates/ui_shell.html`, `internal/handlers/ui_shell.go`, `web/static/css/ui-shell.css`, `scripts/check-ui-shell.cjs`, `web/static/service-worker.js`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D11, C1; `12` §More; `13` §Navigation; prototype `prototypes/today.html`
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D11, C1; `12` §More; `13` §Navigation; prototype `prototypes/today.html`; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-020 (Grouped list and row components), GYST-VN-021 (Icon set and icon/action button components), GYST-VN-022 (State components: chips, banners, empty, stale, error, offline), GYST-VN-024 (44 px tap targets and overflow guard for shared components)
 - **ACCEPTANCE CRITERIA:**
@@ -1167,6 +1177,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert the PR; routes are unchanged so no link breaks.
@@ -1192,11 +1203,11 @@
 - **CURRENT PROBLEM:** More has 19 rows in 5 groups including duplicates of tab destinations and placeholders (Stage 3).
 - **DETAILED REQUIREMENTS:**
   - Groups: Attention + Goals; Operate (System, Automations, Apps: each shown **only when it exists**); Tools (All tasks & reminders, Calendar, Review & analytics, Import & export, Archive); Settings
-  - Remove rows that duplicate tabs (Today, Projects, Health sub-pages, Learn, Galaxy, Development)
+  - Remove rows that duplicate tabs (Today, Projects, Health sub-pages, Learn, Development); **keep the Galaxy row until the Projects → Galaxy segment (GYST-VN-039) ships** (`17A` §C.7)
   - Attention row shown only once the Attention page exists; a search field only once the launcher exists
 - **PROPOSED BEHAVIOR:** More is a short list of real destinations.
 - **RELEVANT FILES / LIKELY AREAS:** `web/templates/more.html`, `internal/handlers/ui_shell.go`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D6, D7; `12` §More; prototype `prototypes/more.html`
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D6, D7; `12` §More; prototype `prototypes/more.html`; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-025 (Navigation shell: Today · Projects · Health · Learn · More), GYST-VN-020 (Grouped list and row components)
 - **ACCEPTANCE CRITERIA:**
@@ -1210,6 +1221,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -1236,11 +1248,11 @@
 - **DETAILED REQUIREMENTS:**
   - Change visible strings only (templates, flash text, page titles, aria labels)
   - Keep route paths, table and column names, JSON keys and CSS hooks; add aliases where a URL contains a retired term only if a visible URL matters
-  - Keep Galaxy/world/ship/XP personality words
+  - Keep Galaxy/world/ship/XP personality words; Galaxy changes are strings only (no behaviour)
   - Record a terminology table in `17` style in the PR
 - **PROPOSED BEHAVIOR:** Plain labels everywhere; nothing in the database changes.
-- **RELEVANT FILES / LIKELY AREAS:** `web/templates/*.html`, `internal/handlers/*.go` (user-facing strings), `internal/services/roadmap.go` (messages).
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D3; `05` §X terminology table
+- **RELEVANT FILES / LIKELY AREAS:** `web/templates/*.html`, `internal/handlers/*.go` (user-facing strings), `internal/services/roadmap.go` (messages), `web/static/js/galaxy.js` (preview strings such as "missions" / "Next mission" only).
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D3; `05` §X terminology table; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-001 (Resolve the vNext implementation branch baseline)
 - **ACCEPTANCE CRITERIA:**
@@ -1255,6 +1267,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -1263,6 +1276,45 @@
 - **SUGGESTED IMPLEMENTER:** Claude Code or Codex
 - **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
 - **ESTIMATED COMPLEXITY:** M
+
+<a id="gyst-vn-143"></a>
+### GYST-VN-143 — Document the production Galaxy baseline
+
+- **ID:** GYST-VN-143
+- **NAME:** Document the production Galaxy baseline
+- **PROJECT:** GYST LifeOps
+- **REPOSITORY:** `JayDalool/gyst-lifeops`
+- **TYPE:** Documentation
+- **PRIORITY:** P1
+- **PHASE:** 2 — Today + navigation + cleanup · Milestone M1
+- **RISK CLASS:** NORMAL
+- **AGENT ELIGIBILITY:** Claude/Codex implementable
+- **SUMMARY:** Record the current production Galaxy as the regression baseline before any task that materially changes it (`17A` §F).
+- **CURRENT PROBLEM:** `17A`: Galaxy is a protected signature feature. Without a recorded baseline, later tasks can't prove that no behaviour was lost.
+- **DETAILED REQUIREMENTS:**
+  - Verify `17A` §B at runtime: entry points, Three.js architecture, `/galaxy/data` flow, world generation and position rules, ship, selection, preview, camera, desktop and mobile interactions, filters, the unfinished-project rule, visual details
+  - Measure first-frame time and frame time (idle, drag, fly-to-world) on desktop Chrome and a real iPhone (Safari and PWA) with 3, 10 and 30 seeded worlds
+  - Screenshots/short recordings at 390×844 and 1280×800 (idle, selected, zoomed, empty, sparse, WebGL fallback) using **fictional seeded data only**
+  - Write the parity checklist every later Galaxy task re-checks
+  - Store under `docs/design/galaxy-baseline/`; no production data, no private project names
+- **PROPOSED BEHAVIOR:** A written, measured baseline that every Galaxy change is compared against.
+- **RELEVANT FILES / LIKELY AREAS:** `docs/design/galaxy-baseline/` (new), a local seed script or fixture for fictional projects.
+- **DESIGN REFERENCES:** `17A_GALAXY_PRESERVATION.md` §B, §F; `12` §Galaxy
+- **SECURITY REFERENCES:** —
+- **DEPENDENCIES:** GYST-VN-001 (Resolve the vNext implementation branch baseline)
+- **ACCEPTANCE CRITERIA:**
+  - Every §B row confirmed or corrected with evidence
+  - Performance numbers recorded for desktop and iPhone
+  - Parity checklist committed
+  - No private data in any media
+- **TEST PLAN:** Run the app locally against a seeded copy (never the production DB); `node scripts/check-galaxy.cjs`.
+- **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800; real iPhone in Safari and the installed PWA (Jay) for the performance and interaction baseline.
+- **ROLLBACK CONSIDERATION:** Docs only; revert.
+- **OUT OF SCOPE:** Any Galaxy code change.
+- **KNOWN RISKS:** iPhone measurements need Jay's device; the agent prepares the seed and the measurement steps.
+- **SUGGESTED IMPLEMENTER:** Claude Code or Codex (document and seed); Jay runs the iPhone measurements
+- **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
+- **ESTIMATED COMPLEXITY:** S
 
 <a id="gyst-vn-028"></a>
 ### GYST-VN-028 — Remove database writes from GET requests
@@ -1282,14 +1334,29 @@
   - Move reconciliation into the write paths that cause it (task complete, status change) or into an explicit POST
   - GET handlers become read-only
   - Test asserting no row changes after GET on a seeded DB
+  - **Galaxy positions stay identical:** compute the deterministic UUID-hash position on read without writing, or persist it at project creation / via an explicit step; never re-randomise existing worlds
+  - The `/galaxy/data` JSON contract is unchanged
 - **PROPOSED BEHAVIOR:** Viewing never changes data.
 - **RELEVANT FILES / LIKELY AREAS:** `internal/handlers/handlers.go`, `internal/handlers/projects_view.go`, `internal/services/galaxy.go`, `internal/services/rocket.go`.
-- **DESIGN REFERENCES:** None (no UI change).
+- **DESIGN REFERENCES:** None (no UI change).; `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
 - **SECURITY REFERENCES:** S2-15; `02B` D4; CSRF guard assumption.
-- **DEPENDENCIES:** GYST-VN-001 (Resolve the vNext implementation branch baseline)
+- **DEPENDENCIES:** GYST-VN-001 (Resolve the vNext implementation branch baseline), GYST-VN-143 (Document the production Galaxy baseline)
 - **ACCEPTANCE CRITERIA:**
   - Tests: row counts and `updated_at` unchanged after both GETs
   - Galaxy and Projects render the same data as before on a seeded DB
+  - Test: every world's x/y/z is identical before and after on a seeded DB, including projects that had no stored position
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
 - **TEST PLAN:** `go test ./...`; `node scripts/check-galaxy.cjs`.
 - **BROWSER / DEVICE VERIFICATION:** Not applicable (no UI change).
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -1659,14 +1726,16 @@
   - One function in the service layer with a table test
   - All three callers use it
   - No stored value changes
+  - Galaxy world states, colours and legend (Active/Upcoming/Locked) unchanged except the listed edge statuses, checked against the Galaxy baseline
 - **PROPOSED BEHAVIOR:** A project shows the same state on every screen.
 - **RELEVANT FILES / LIKELY AREAS:** `internal/services/rocket.go`, `internal/handlers/handlers.go`, `internal/handlers/projects_view.go`, `internal/services/galaxy.go`.
-- **DESIGN REFERENCES:** `02B` D3
+- **DESIGN REFERENCES:** `02B` D3; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
-- **DEPENDENCIES:** GYST-VN-028 (Remove database writes from GET requests)
+- **DEPENDENCIES:** GYST-VN-028 (Remove database writes from GET requests), GYST-VN-143 (Document the production Galaxy baseline)
 - **ACCEPTANCE CRITERIA:**
   - Table test covers every stored status
   - `grep` shows one mapping
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...`, `go test -race ./...`, `gofmt`, `go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Not applicable (no UI change).
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -1727,11 +1796,12 @@
 - **CURRENT PROBLEM:** Galaxy and Roadmaps are reached from separate places; Development doesn't exist yet.
 - **DETAILED REQUIREMENTS:**
   - Segmented control under the title on phone; sidebar sub-items on desktop
+  - The Galaxy segment opens the real `/galaxy` Three.js view (`17A`); Galaxy stays a peer view, never replaced by a list
   - Development segment hidden until the Development area ships (no empty destination)
   - State preserved in the URL (deep-linkable)
 - **PROPOSED BEHAVIOR:** All Projects areas are one tap apart.
 - **RELEVANT FILES / LIKELY AREAS:** `web/templates/projects_list.html`, `web/templates/galaxy.html`, `web/templates/roadmap.html`, `internal/handlers/ui_shell.go`, `web/static/css/ui-projects.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D2; `12` §Projects; prototype `prototypes/projects.html`
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D2; `12` §Projects; prototype `prototypes/projects.html`; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-025 (Navigation shell: Today · Projects · Health · Learn · More)
 - **ACCEPTANCE CRITERIA:**
@@ -1745,6 +1815,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -1773,9 +1844,10 @@
   - Completed collapsed as `Done · n`
   - One signal per row (next task or blocked reason)
   - Roadmaps summary row
+  - The existing Galaxy entry stays visible (via the sub-nav segment); the list is a peer of Galaxy, not a replacement (`17A` §M)
 - **PROPOSED BEHAVIOR:** Jay sees active work first.
 - **RELEVANT FILES / LIKELY AREAS:** `web/templates/projects_list.html`, `internal/handlers/projects_view.go`, `web/static/css/ui-projects.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Projects; prototype `prototypes/projects.html`
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Projects; prototype `prototypes/projects.html`; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-039 (Projects area sub-navigation: Projects · Development · Galaxy · Roadmaps), GYST-VN-037 (One project status → state mapping), GYST-VN-027 (Terminology migration in the UI: Project / Task / Roadmap)
 - **ACCEPTANCE CRITERIA:**
@@ -1789,6 +1861,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -1896,19 +1969,21 @@
 - **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
 - **RISK CLASS:** NORMAL
 - **AGENT ELIGIBILITY:** Claude/Codex implementable
-- **SUMMARY:** Make Galaxy reachable from the Projects sub-navigation and add the keyboard/list of worlds under the scene.
-- **CURRENT PROBLEM:** Stage 3: Galaxy is hard to find and has no non-spatial way to reach a world.
+- **SUMMARY:** Make the real Galaxy easy to find from Projects (the Projects → Galaxy segment and the sidebar), a launcher Go result, and keep and improve the existing accessible navigator under the scene.
+- **CURRENT PROBLEM:** Stage 3: Galaxy is hard to find. Its entry points today are a Projects-list tile, the command menu, a More row and the direct URL. The existing navigator (world list, category filter, Preview buttons) is below the fold.
 - **DETAILED REQUIREMENTS:**
-  - Entry via Projects → Galaxy segment and the launcher (later)
-  - List of worlds under the scene (also the WebGL-unavailable fallback)
-  - Legend visible
-- **PROPOSED BEHAVIOR:** Galaxy is easy to reach and usable without precise tapping.
+  - The Projects → Galaxy segment and the desktop sidebar open the real `/galaxy` (Three.js scene)
+  - Keep the existing entry points until their successors exist (`17A` §C.7)
+  - Keep and improve the **existing** accessible navigator. It supplements the scene and is the WebGL-failure fallback; it is never promoted to replace a working scene
+  - Legend and hint text visible and plain (terminology per `05` §X)
+- **PROPOSED BEHAVIOR:** Galaxy is easy to reach, and usable without precise tapping, while staying a spatial view.
 - **RELEVANT FILES / LIKELY AREAS:** `web/templates/galaxy.html`, `web/static/js/galaxy.js`, `web/static/css/ui-galaxy.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Galaxy; prototype `prototypes/galaxy.html`
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Galaxy; prototype `prototypes/galaxy.html` (reference); `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
 - **SECURITY REFERENCES:** —
-- **DEPENDENCIES:** GYST-VN-039 (Projects area sub-navigation: Projects · Development · Galaxy · Roadmaps)
+- **DEPENDENCIES:** GYST-VN-039 (Projects area sub-navigation: Projects · Development · Galaxy · Roadmaps), GYST-VN-143 (Document the production Galaxy baseline)
 - **ACCEPTANCE CRITERIA:**
-  - World list opens the same preview as tapping a world
+  - Galaxy reachable in one tap from Projects on phone and desktop
+  - Navigator Preview opens the same preview as tapping a world
   - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
   - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
   - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
@@ -1917,10 +1992,22 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
-- **TEST PLAN:** `node scripts/check-galaxy.cjs` plus the standard UI checks.
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `node scripts/check-galaxy.cjs` plus the standard UI checks and the `17A` §L checklist.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
-- **OUT OF SCOPE:** Three.js replacement.
+- **OUT OF SCOPE:** Replacing or rebuilding the Three.js Galaxy; making Galaxy the default Projects view.
 - **KNOWN RISKS:** Galaxy files are one contention group.
 - **SUGGESTED IMPLEMENTER:** Claude Code or Codex
 - **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
@@ -1938,20 +2025,23 @@
 - **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
 - **RISK CLASS:** NORMAL
 - **AGENT ELIGIBILITY:** Claude/Codex implementable
-- **SUMMARY:** Give every world a 56 px hit area on touch devices and make zoom/recenter controls 44 px.
-- **CURRENT PROBLEM:** Stage 3: small worlds are hard to hit on a phone.
+- **SUMMARY:** Give every world about a 56 px usable touch target (or equivalent comfortable area) and make the zoom, reset and close controls at least 44 px, building on the existing hit logic.
+- **CURRENT PROBLEM:** Stage 3: small worlds are hard to hit on a phone. The current hit test is a raycast, then the nearest world whose screen edge is within 28 px (44 px for the selected world), with a 5 px minimum screen radius. The +/−/Reset buttons are small.
 - **DETAILED REQUIREMENTS:**
-  - Invisible hit proxies sized in screen pixels, independent of zoom
-  - Controls use icon buttons (44 px)
+  - Measure the effective target sizes on the baseline first
+  - Extend the existing screen-space padding logic (`planetAtPointer`) so the effective diameter is ≥ 56 px at default and max zoom, with a nearest-centre rule for close worlds
+  - Keep the gesture model in `galaxy-gestures.js` (tap vs drag vs pinch vs cancel) and extend its tests
+  - Controls use 44 px icon buttons
   - Keep Three.js
-- **PROPOSED BEHAVIOR:** Worlds are tappable on an iPhone.
-- **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `web/static/js/galaxy-gestures.js`, `web/static/css/ui-galaxy.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `13` §Touch targets (56 px Galaxy)
+- **PROPOSED BEHAVIOR:** Worlds are easy to tap on an iPhone without changing the scene.
+- **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `web/static/js/galaxy-gestures.js`, `web/static/css/ui-galaxy.css`, `scripts/check-galaxy.cjs`.
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `13` §Touch targets (56 px Galaxy); `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
 - **SECURITY REFERENCES:** —
-- **DEPENDENCIES:** GYST-VN-001 (Resolve the vNext implementation branch baseline)
+- **DEPENDENCIES:** GYST-VN-143 (Document the production Galaxy baseline)
 - **ACCEPTANCE CRITERIA:**
-  - Hit area measured 56 px at default and max zoom
+  - Effective target measured ≥ 56 px at default and max zoom
   - Real iPhone check recorded
+  - Drag and pinch never trigger selection (existing tests still pass)
   - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
   - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
   - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
@@ -1960,20 +2050,32 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
-- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks.
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks; `17A` §L checklist.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
-- **OUT OF SCOPE:** Visual redesign.
-- **KNOWN RISKS:** Overlapping hit areas when worlds are close; nearest-centre rule.
+- **OUT OF SCOPE:** Visual redesign; replacing the hit logic or the renderer.
+- **KNOWN RISKS:** Overlapping targets when worlds are close; nearest-centre rule.
 - **SUGGESTED IMPLEMENTER:** Claude Code or Codex
 - **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
 - **ESTIMATED COMPLEXITY:** S
 
 <a id="gyst-vn-045"></a>
-### GYST-VN-045 — Galaxy preview close accessibility
+### GYST-VN-045 — Galaxy preview close and focus accessibility
 
 - **ID:** GYST-VN-045
-- **NAME:** Galaxy preview close accessibility
+- **NAME:** Galaxy preview close and focus accessibility
 - **PROJECT:** GYST LifeOps
 - **REPOSITORY:** `JayDalool/gyst-lifeops`
 - **TYPE:** Bug
@@ -1981,19 +2083,21 @@
 - **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
 - **RISK CLASS:** NORMAL
 - **AGENT ELIGIBILITY:** Claude/Codex implementable
-- **SUMMARY:** Make the world preview closable by an accessible 44 px close button, Escape and tapping outside, with focus returned to the world.
-- **CURRENT PROBLEM:** Stage 3: the preview close control is small, unlabeled and not keyboard reachable.
+- **SUMMARY:** Make the existing preview's close control clearly visible and ≥ 44 px, add outside-tap close, and return focus to the world or navigator item that opened it.
+- **CURRENT PROBLEM:** Stage 3: the preview close control (a small "×" with an aria-label) is hard to see and hit, especially on phones. Escape recentres, but focus handling is incomplete.
 - **DETAILED REQUIREMENTS:**
-  - Close button with accessible name
-  - Escape and outside tap close
-  - Focus returns to the world or list item that opened it
-- **PROPOSED BEHAVIOR:** The preview never traps the user.
+  - Keep the existing preview content and the "Open project" action
+  - Close button ≥ 44 px, visible on dark and light surrounds
+  - Escape (existing) and outside tap close; closing recentres as today
+  - Focus returns to the invoking world (stage) or navigator Preview button
+- **PROPOSED BEHAVIOR:** The preview never traps the user, and the Galaxy flow is otherwise unchanged.
 - **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `web/templates/galaxy.html`, `web/static/css/ui-galaxy.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `13` §Overlays
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `13` §Overlays; `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-044 (Galaxy 56 px touch targets)
 - **ACCEPTANCE CRITERIA:**
   - Keyboard and VoiceOver can close the preview
+  - Open project still works from the preview
   - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
   - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
   - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
@@ -2002,10 +2106,22 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
-- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks.
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks; `17A` §L checklist.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
-- **OUT OF SCOPE:** Preview content redesign.
+- **OUT OF SCOPE:** Preview redesign (see the phone layout task).
 - **KNOWN RISKS:** Low.
 - **SUGGESTED IMPLEMENTER:** Claude Code or Codex
 - **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
@@ -2023,19 +2139,23 @@
 - **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
 - **RISK CLASS:** NORMAL
 - **AGENT ELIGIBILITY:** Claude/Codex implementable
-- **SUMMARY:** Represent completed projects as dimmed worlds on an outer orbit, visually distinct from active ones.
-- **CURRENT PROBLEM:** D4: completed projects must be shown distinctly without overwhelming the active Galaxy.
+- **SUMMARY:** Include completed projects in Galaxy data with a completed flag, and render them as dimmed, distant, outer-orbit worlds, hidden by default.
+- **CURRENT PROBLEM:** `/galaxy/data` currently excludes done/completed/archived projects ("Completed worlds have left the Galaxy"). D4 approves showing them distinctly and hideably.
 - **DETAILED REQUIREMENTS:**
-  - Completed state from the single status mapping
-  - Dimmed, smaller glow, outer orbit
-  - Never uses state colours to mean "done" on the world itself
-- **PROPOSED BEHAVIOR:** History is visible but quiet.
-- **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `internal/services/galaxy.go`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D4; `12` §Galaxy
+  - Additive JSON field (e.g. `completed: true`); the existing fields and the contract are unchanged
+  - Completed state comes from the single status mapping
+  - Dimmed, smaller glow, outer orbit by a documented rule (or deterministic position kept); never out-shine active worlds
+  - **Hidden by default** until the filter task ships the visible Done toggle
+  - Never uses a state colour alone to mean done; the navigator marks it in words
+  - Performance measured with many completed worlds
+- **PROPOSED BEHAVIOR:** History is visible on request and stays quiet.
+- **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `internal/services/galaxy.go`, `internal/models/models.go`.
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D4; `12` §Galaxy; `17A` §I; `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
 - **SECURITY REFERENCES:** —
-- **DEPENDENCIES:** GYST-VN-037 (One project status → state mapping), GYST-VN-045 (Galaxy preview close accessibility)
+- **DEPENDENCIES:** GYST-VN-037 (One project status → state mapping), GYST-VN-045 (Galaxy preview close and focus accessibility)
 - **ACCEPTANCE CRITERIA:**
-  - Seeded galaxy with 3 active and 10 completed: active remain dominant
+  - Seeded galaxy with 3 active and 10 completed: active remain dominant when completed are shown
+  - Default view unchanged (completed hidden)
   - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
   - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
   - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
@@ -2044,11 +2164,23 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
-- **TEST PLAN:** `node scripts/check-galaxy.cjs`; screenshot comparison.
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `go test ./...`; `node scripts/check-galaxy.cjs`; before/after frame-time comparison.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
-- **ROLLBACK CONSIDERATION:** Revert.
-- **OUT OF SCOPE:** Archive view.
-- **KNOWN RISKS:** Performance with many worlds; measure frame time.
+- **ROLLBACK CONSIDERATION:** Revert; the additive field is ignored by old clients.
+- **OUT OF SCOPE:** Archive view; moving existing worlds without approval.
+- **KNOWN RISKS:** Performance with many worlds; measured.
 - **SUGGESTED IMPLEMENTER:** Claude Code or Codex
 - **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
 - **ESTIMATED COMPLEXITY:** M
@@ -2065,19 +2197,20 @@
 - **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
 - **RISK CLASS:** NORMAL
 - **AGENT ELIGIBILITY:** Claude/Codex implementable
-- **SUMMARY:** Add the Active · Done (· category) filter; completed worlds hidden by default and shown by toggle, remembered per device.
-- **CURRENT PROBLEM:** D4 requires completed projects to be filterable and hideable.
+- **SUMMARY:** Extend the existing category filter with an Active · Done toggle that applies to both the scene and the navigator; completed worlds are hidden by default, and the choice is remembered per device.
+- **CURRENT PROBLEM:** D4 requires completed projects to be filterable and hideable. Today the category filter only filters the navigator list, not the scene.
 - **DETAILED REQUIREMENTS:**
-  - Toggle state in the URL and local storage
-  - List under the scene follows the filter
+  - Toggle state in the URL and local storage (with try/catch)
+  - Scene and navigator follow the same filter
+  - The existing category filter keeps working
 - **PROPOSED BEHAVIOR:** Jay chooses whether history is visible.
 - **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `web/templates/galaxy.html`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D4
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `05A` D4; `17A` §I; `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-046 (Galaxy completed worlds on the outer orbit)
 - **ACCEPTANCE CRITERIA:**
   - Default hides completed
-  - Toggle is keyboard accessible with state announced
+  - Toggle is keyboard accessible with its state announced
   - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
   - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
   - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
@@ -2086,7 +2219,19 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
-- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks.
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks; `17A` §L checklist.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
 - **OUT OF SCOPE:** Category management.
@@ -2096,10 +2241,10 @@
 - **ESTIMATED COMPLEXITY:** S
 
 <a id="gyst-vn-048"></a>
-### GYST-VN-048 — Galaxy sparse data and empty state
+### GYST-VN-048 — Galaxy sparse and empty states
 
 - **ID:** GYST-VN-048
-- **NAME:** Galaxy sparse data and empty state
+- **NAME:** Galaxy sparse and empty states
 - **PROJECT:** GYST LifeOps
 - **REPOSITORY:** `JayDalool/gyst-lifeops`
 - **TYPE:** UI
@@ -2107,18 +2252,20 @@
 - **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
 - **RISK CLASS:** NORMAL
 - **AGENT ELIGIBILITY:** Claude/Codex implementable
-- **SUMMARY:** With ≤ 3 worlds scale them up and keep labels on; with none show one sun and "Create a project to launch your first world".
-- **CURRENT PROBLEM:** Sparse galaxies look empty or broken.
+- **SUMMARY:** Make Galaxy look intentional with only a few worlds. Investigate orbital composition, camera framing, ambient elements, completed/distant worlds and depth; improve the empty state.
+- **CURRENT PROBLEM:** With ≤ 3 active projects the scene looks empty. With none, the page shows a status line and a list link, and no scene renders.
 - **DETAILED REQUIREMENTS:**
-  - Never falls back to a grid of cards
-  - Empty-state action opens New project
-- **PROPOSED BEHAVIOR:** Galaxy looks intentional with little data.
-- **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `web/templates/galaxy.html`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Galaxy (sparse)
+  - With ≤ 3 worlds: better framing and scale, labels always on, composition that uses the existing core, rings and nebulae; no meaningless clutter
+  - Empty: keep the scene (core, stars, ship) with "Create a project to launch your first world" instead of a scene-less page
+  - **Never** falls back to a grid of cards
+  - Performance unchanged
+- **PROPOSED BEHAVIOR:** Galaxy feels deliberate at any size.
+- **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `web/static/js/galaxy-camera.js`, `web/templates/galaxy.html`.
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Galaxy (sparse); `17A` §G; `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-046 (Galaxy completed worlds on the outer orbit)
 - **ACCEPTANCE CRITERIA:**
-  - 0, 1, 3 and many worlds verified
+  - 0, 1, 3 and many worlds verified with screenshots against the baseline
   - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
   - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
   - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
@@ -2127,20 +2274,32 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
-- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks.
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `node scripts/check-galaxy.cjs` (camera-fit cases for sparse); standard UI checks; `17A` §L checklist.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
 - **OUT OF SCOPE:** —
-- **KNOWN RISKS:** Low.
+- **KNOWN RISKS:** Over-decoration; judged against the baseline.
 - **SUGGESTED IMPLEMENTER:** Claude Code or Codex
 - **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
 - **ESTIMATED COMPLEXITY:** S
 
 <a id="gyst-vn-049"></a>
-### GYST-VN-049 — Galaxy phone layout and preview sheet
+### GYST-VN-049 — Galaxy phone layout and premium preview
 
 - **ID:** GYST-VN-049
-- **NAME:** Galaxy phone layout and preview sheet
+- **NAME:** Galaxy phone layout and premium preview
 - **PROJECT:** GYST LifeOps
 - **REPOSITORY:** `JayDalool/gyst-lifeops`
 - **TYPE:** UI
@@ -2148,19 +2307,22 @@
 - **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
 - **RISK CLASS:** NORMAL
 - **AGENT ELIGIBILITY:** Claude/Codex implementable
-- **SUMMARY:** Size the scene to about 64 vh (min 420 px) on phones and show the preview as a bottom sheet (side panel on desktop).
-- **CURRENT PROBLEM:** The scene and preview don't fit phone screens well (recent fit work helped; `12` defines the target).
+- **SUMMARY:** Size the scene to about 64 vh (minimum 420 px) on phones, and make the preview a readable bottom sheet (side panel on desktop) with clear hierarchy, useful actions and a visible close.
+- **CURRENT PROBLEM:** The scene and preview don't fit phone screens well; recent fit work helped, and `12`/`17A` §G define the target.
 - **DETAILED REQUIREMENTS:**
-  - Uses the shared sheet component
-  - Ship flies to the selection (existing behaviour kept)
-  - Page scroll and scene gestures don't fight
-- **PROPOSED BEHAVIOR:** Galaxy is comfortable on an iPhone.
+  - The preview uses the shared sheet component on phones with the same content, plus name · state · progress · next item · Open project
+  - Camera flight to the selected world is preserved
+  - The ship (the Oliver sprite that rides with the camera and follows the pointer) is preserved
+  - The header hide-on-scroll behaviour is kept or deliberately replaced, and noted
+  - Page scroll and scene gestures don't conflict
+- **PROPOSED BEHAVIOR:** Galaxy is comfortable and polished on an iPhone.
 - **RELEVANT FILES / LIKELY AREAS:** `web/templates/galaxy.html`, `web/static/js/galaxy.js`, `web/static/js/galaxy-camera.js`, `web/static/css/ui-galaxy.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Galaxy; prototype `prototypes/galaxy.html`
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Galaxy; `17A` §G; prototype `prototypes/galaxy.html` (reference); `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
 - **SECURITY REFERENCES:** —
-- **DEPENDENCIES:** GYST-VN-045 (Galaxy preview close accessibility), GYST-VN-023 (Sheet, popover, inspector and confirm dialog components)
+- **DEPENDENCIES:** GYST-VN-045 (Galaxy preview close and focus accessibility), GYST-VN-023 (Sheet, popover, inspector and confirm dialog components)
 - **ACCEPTANCE CRITERIA:**
   - Real iPhone Safari and PWA check recorded
+  - Preview readable at 320 px
   - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
   - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
   - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
@@ -2169,12 +2331,134 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
-- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks.
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `node scripts/check-galaxy.cjs`; standard UI checks; `17A` §L checklist.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
-- **OUT OF SCOPE:** —
+- **OUT OF SCOPE:** Replacing the scene or the ship.
 - **KNOWN RISKS:** iOS gesture conflicts.
 - **SUGGESTED IMPLEMENTER:** Claude Code or Codex
+- **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
+- **ESTIMATED COMPLEXITY:** M
+
+<a id="gyst-vn-144"></a>
+### GYST-VN-144 — Galaxy visual depth (measured)
+
+- **ID:** GYST-VN-144
+- **NAME:** Galaxy visual depth (measured)
+- **PROJECT:** GYST LifeOps
+- **REPOSITORY:** `JayDalool/gyst-lifeops`
+- **TYPE:** UI
+- **PRIORITY:** P3
+- **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
+- **RISK CLASS:** NORMAL
+- **AGENT ELIGIBILITY:** Claude/Codex implementable
+- **SUMMARY:** Improve depth and atmosphere within the existing scene: lighting, atmospheres, rings, subtle particles, world variation, orbit paths, transitions and ship movement. Each change must be performance-measured.
+- **CURRENT PROBLEM:** `17A` amplification goal 6: the scene can feel richer, but must not trade usability or iPhone performance for spectacle.
+- **DETAILED REQUIREMENTS:**
+  - Proposal first: a short list of changes with expected cost, reviewed by Jay before implementation
+  - Each effect behind reduced-motion rules; no effect that hurts label legibility or targets
+  - Before/after frame-time numbers on desktop and iPhone at 10 and 30 worlds
+- **PROPOSED BEHAVIOR:** Galaxy feels deeper without becoming slower or harder to use.
+- **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `web/static/css/ui-galaxy.css`.
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `17A` §D, §J; `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
+- **SECURITY REFERENCES:** —
+- **DEPENDENCIES:** GYST-VN-143 (Document the production Galaxy baseline), GYST-VN-049 (Galaxy phone layout and premium preview), GYST-VN-048 (Galaxy sparse and empty states)
+- **ACCEPTANCE CRITERIA:**
+  - Proposal approved
+  - No regression beyond an agreed budget
+  - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
+  - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
+  - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
+  - No horizontal page overflow at 320, 390, 768, 1024 and 1280 px
+  - Progressive disclosure as specified in `12`: hidden-until-requested content is not shown by default
+  - Icon-only controls have accessible names; focus is visible; heading order is correct
+  - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
+  - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `node scripts/check-galaxy.cjs`; performance comparison; `17A` §L checklist.
+- **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
+- **ROLLBACK CONSIDERATION:** Revert individual effects.
+- **OUT OF SCOPE:** Changing the renderer; new 3D libraries.
+- **KNOWN RISKS:** Performance on iPhone.
+- **SUGGESTED IMPLEMENTER:** Claude Code or Codex (proposal reviewed by Jay first)
+- **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
+- **ESTIMATED COMPLEXITY:** M
+
+<a id="gyst-vn-145"></a>
+### GYST-VN-145 — Galaxy subtle project-state encoding
+
+- **ID:** GYST-VN-145
+- **NAME:** Galaxy subtle project-state encoding
+- **PROJECT:** GYST LifeOps
+- **REPOSITORY:** `JayDalool/gyst-lifeops`
+- **TYPE:** Feature
+- **PRIORITY:** P3
+- **PHASE:** 3 — Projects / Galaxy / Learn / Health migrations · Milestone M2
+- **RISK CLASS:** NORMAL
+- **AGENT ELIGIBILITY:** Claude/Codex implementable
+- **SUMMARY:** Encode useful project information subtly on worlds: progress, active/paused state, completed state and (once Attention exists) attention needed, without turning worlds into dashboards.
+- **CURRENT PROBLEM:** `17A` amplification goal 7: Galaxy should communicate meaning, not only look good.
+- **DETAILED REQUIREMENTS:**
+  - Design proposal first (for example a progress arc or ring, paused as dimmed rotation, attention as a quiet marker plus a label in the preview, **added only once Attention (Phase 5) exists**); reviewed by Jay
+  - Reads the single status mapping and Attention; no state stored in Galaxy
+  - Encoded information is also present in words in the preview and navigator (never colour alone)
+- **PROPOSED BEHAVIOR:** A glance at Galaxy says which worlds are moving, paused or need Jay.
+- **RELEVANT FILES / LIKELY AREAS:** `web/static/js/galaxy.js`, `internal/services/galaxy.go`.
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `17A` §D, §O; `13A` DD-4; `17A_GALAXY_PRESERVATION.md` (binding); Stage 7 `prototypes/galaxy.html` is a design reference only, not a substitute for the production Three.js Galaxy
+- **SECURITY REFERENCES:** —
+- **DEPENDENCIES:** GYST-VN-143 (Document the production Galaxy baseline), GYST-VN-046 (Galaxy completed worlds on the outer orbit)
+- **ACCEPTANCE CRITERIA:**
+  - Proposal approved
+  - Tests for the data fields
+  - Checked in a browser at phone (390×844) and desktop (1280×800) widths; no console errors or failed requests
+  - Every interactive target ≥ 44 × 44 px (Galaxy scene targets 56 px)
+  - Correct in light and dark mode; in System mode it follows an OS appearance change without reload (DD-1)
+  - No horizontal page overflow at 320, 390, 768, 1024 and 1280 px
+  - Progressive disclosure as specified in `12`: hidden-until-requested content is not shown by default
+  - Icon-only controls have accessible names; focus is visible; heading order is correct
+  - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
+  - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy regression checklist (`17A` §L) passes and is recorded in the task record:
+  - The real Galaxy still exists at `/galaxy`; Three.js/spatial interaction still works
+  - Existing project worlds remain accessible (scene and accessible navigator)
+  - The ship remains part of the experience (unless this task was explicitly approved to change it)
+  - Project selection works (tap, click, keyboard, navigator Preview) and preview/Open project works
+  - Desktop interaction works (drag, wheel, hover roam, click/double-click open); mobile works (tap, drag, pinch) on a real iPhone for material changes
+  - No existing Galaxy behaviour silently lost versus the baseline parity list; no list/grid substituted for Galaxy
+  - The normal Projects list remains available separately; Galaxy remains an alternate/signature project view
+  - Performance no worse than the baseline without documented justification (frame time and first frame, desktop and iPhone)
+  - Reduced-motion and accessibility behaviour considered and checked
+  - Completed-project enhancements don't clutter active worlds; completed projects can be hidden/filtered (once GYST-VN-047 has shipped)
+  - `node scripts/check-galaxy.cjs` passes (extended when behaviour is added)
+- **TEST PLAN:** `go test ./...`; `node scripts/check-galaxy.cjs`; `17A` §L checklist.
+- **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
+- **ROLLBACK CONSIDERATION:** Revert.
+- **OUT OF SCOPE:** Badges or numbers on every world.
+- **KNOWN RISKS:** Clutter; judged against `17A` §I and DD-4.
+- **SUGGESTED IMPLEMENTER:** Claude Code or Codex (proposal reviewed by Jay first)
 - **SUGGESTED REVIEWER:** The other agent (Codex reviews Claude and vice versa), then Jay
 - **ESTIMATED COMPLEXITY:** M
 
@@ -2652,10 +2936,10 @@
 - **DETAILED REQUIREMENTS:**
   - One PR per screen
   - No behaviour change
-  - Remove per-screen legacy CSS only when unused (grep proof)
+  - Remove per-screen legacy CSS only when unused (grep proof, including `galaxy.html`/`galaxy.js` class usage)
 - **PROPOSED BEHAVIOR:** The whole app feels consistent.
 - **RELEVANT FILES / LIKELY AREAS:** `web/templates/tasks_list.html`, `web/templates/reminders.html`, `web/templates/monthly.html`, `web/templates/analytics.html`, `web/templates/archive.html`, `web/templates/settings.html`, `web/static/css/styles.css`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `17` screen-by-screen table
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `17` screen-by-screen table; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-025 (Navigation shell: Today · Projects · Health · Learn · More), GYST-VN-020 (Grouped list and row components), GYST-VN-022 (State components: chips, banners, empty, stale, error, offline)
 - **ACCEPTANCE CRITERIA:**
@@ -2668,6 +2952,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert per screen.
@@ -2743,9 +3028,10 @@
   - Keyboard: arrows, Enter, Escape; recents + suggestions when empty
   - Mode prefixes: none = Go, `>` = Do, `+` = Capture (Do and Capture arrive in their own tasks)
   - Results are links (no `location.href` hacks)
+  - Galaxy is a Go result opening the real `/galaxy` (replaces the old command-menu "Open Galaxy" entry, `17A` §C.7)
 - **PROPOSED BEHAVIOR:** Jay can reach anything in two keystrokes or one tap.
 - **RELEVANT FILES / LIKELY AREAS:** `web/static/js/app.js` (launcher module), `internal/handlers/handlers.go` (search route), new `internal/services/search.go`, `web/templates/layout.html`.
-- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Launcher; `13` §Launcher; prototype `prototypes/launcher.html`
+- **DESIGN REFERENCES:** `11_DESIGN_SYSTEM_VNEXT.md`, `12_SCREEN_ARCHITECTURE.md`, `13_RESPONSIVE_INTERACTION_SPEC.md`, `13A_DESIGN_DECISIONS.md`; `12` §Launcher; `13` §Launcher; prototype `prototypes/launcher.html`; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** —
 - **DEPENDENCIES:** GYST-VN-023 (Sheet, popover, inspector and confirm dialog components), GYST-VN-062 (Apps registry and Apps page), GYST-VN-025 (Navigation shell: Today · Projects · Health · Learn · More)
 - **ACCEPTANCE CRITERIA:**
@@ -2759,6 +3045,7 @@
   - Icon-only controls have accessible names; focus is visible; heading order is correct
   - Violet (`--xp`, `--xp-soft`) is not used for any state, badge or severity (DD-4)
   - No spacing, radius, colour, navigation or component pattern outside `11`/`13A`; any conflict is reported in the task record, not invented
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...` (template/handler render tests for the empty, one and many states), `node scripts/check-ui-shell.cjs` (updated only where this task deliberately changes the specified behaviour), `gofmt`/`go vet`.
 - **BROWSER / DEVICE VERIFICATION:** Chrome at 390×844 and 1280×800 (and 1440 when an inspector is involved), light and dark, keyboard pass, console and network clean. For a major mobile screen, verify on a real iPhone in Safari and in the installed PWA where practical; record the result (not private screenshots) in the task record.
 - **ROLLBACK CONSIDERATION:** Revert.
@@ -3209,19 +3496,20 @@
 - **SUMMARY:** Send CSP (with `frame-ancestors 'none'`), `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy` on all responses.
 - **CURRENT PROBLEM:** S2-07: no browser security headers.
 - **DETAILED REQUIREMENTS:**
-  - Middleware sets headers; CSP allows only self plus the specific needs (Three.js vendor file is local)
+  - Middleware sets headers; CSP allows only self plus the specific needs (Three.js vendor module is local and loaded by dynamic `import()`; Galaxy uses WebGL, canvas-generated textures and `/static/images`)
   - Report-only first for one deploy, then enforce
   - PWA and service worker still work
 - **PROPOSED BEHAVIOR:** GYST can't be framed, and injected content is constrained.
 - **RELEVANT FILES / LIKELY AREAS:** `internal/handlers/middleware.go`.
-- **DESIGN REFERENCES:** None (no UI change).
+- **DESIGN REFERENCES:** None (no UI change).; `17A` §N.5 (shared-change awareness)
 - **SECURITY REFERENCES:** `09` gate G15; S2-07.
 - **DEPENDENCIES:** GYST-VN-015 (Structured application logging and sanitized client errors)
 - **ACCEPTANCE CRITERIA:**
   - Tests assert headers
   - No CSP violation in the console on every migrated screen
+  - Galaxy quick regression check (`17A` §L, §N.5): `/galaxy` loads the real Three.js scene, a world can be selected and opened, the ship is visible, and `node scripts/check-galaxy.cjs` passes
 - **TEST PLAN:** `go test ./...`; browser console on each main screen.
-- **BROWSER / DEVICE VERIFICATION:** Chrome at 390 and 1280 on every top-level screen: console free of CSP violations; installed PWA on iPhone still launches.
+- **BROWSER / DEVICE VERIFICATION:** Chrome at 390 and 1280 on every top-level screen, including `/galaxy` with the 3D scene running: console free of CSP violations; installed PWA on iPhone still launches.
 - **ROLLBACK CONSIDERATION:** Revert or return to report-only.
 - **OUT OF SCOPE:** Subresource integrity.
 - **KNOWN RISKS:** Inline scripts in templates break under CSP; inventory first.
@@ -5725,59 +6013,59 @@
 
 ## Backlog statistics
 
-**Total tasks: 142**
+**Total tasks: 145**
 
 | Priority | Tasks |
 |---|---|
 | P0 | 5 |
-| P1 | 51 |
+| P1 | 52 |
 | P2 | 73 |
-| P3 | 13 |
-| **Total** | **142** |
+| P3 | 15 |
+| **Total** | **145** |
 
 | Risk class | Tasks |
 |---|---|
-| NORMAL | 65 |
+| NORMAL | 68 |
 | ELEVATED | 33 |
 | PRIVILEGED | 18 |
 | NOT AGENT-ELIGIBLE | 26 |
-| **Total** | **142** |
+| **Total** | **145** |
 
 | Type | Tasks |
 |---|---|
 | Bug | 4 |
-| Feature | 32 |
-| UI | 38 |
+| Feature | 33 |
+| UI | 39 |
 | UX | 4 |
 | Refactor | 3 |
 | Security | 18 |
 | Infrastructure | 9 |
 | Integration | 6 |
 | Operations | 19 |
-| Documentation | 2 |
+| Documentation | 3 |
 | Research | 7 |
-| **Total** | **142** |
+| **Total** | **145** |
 
 | Agent eligibility | Tasks |
 |---|---|
-| Claude/Codex implementable | 113 |
+| Claude/Codex implementable | 116 |
 | Human-assisted (agent prepares; Jay decides or executes) | 11 |
 | Human-only (Jay) | 5 |
 | NOT AGENT-ELIGIBLE operational work (Jay) | 13 |
-| **Total** | **142** |
+| **Total** | **145** |
 
 | Complexity | Tasks |
 |---|---|
-| S | 88 |
-| M | 50 |
+| S | 89 |
+| M | 52 |
 | L | 4 |
-| **Total** | **142** |
+| **Total** | **145** |
 
 | Milestone | Phases | Tasks | P0/P1/P2/P3 | User-visible outcome |
 |---|---|---|---|---|
 | M0 Safe foundation | 0 | 17 | 5 / 11 / 1 / 0 | GYST data is backed up off-host and restorable, the public login resists guessing, "today" means Jay's local day everywhere, and failures are visible in logs and /healthz. |
-| M1 vNext core experience | 1, 2 | 19 | 0 / 16 / 3 / 0 | The app looks and navigates like vNext: Today · Projects · Health · Learn · More, a calm Today with Now, Rhythm and no duplicate blocks, a simpler More, and System/Light/Dark appearance. |
-| M2 vNext Life areas | 3 | 25 | 0 / 10 / 13 / 2 | Projects, Galaxy, Learn, Health and Goals use the vNext patterns and plain terminology; Health shows only what really works; Galaxy is usable on a phone. |
+| M1 vNext core experience | 1, 2 | 20 | 0 / 17 / 3 / 0 | The app looks and navigates like vNext: Today · Projects · Health · Learn · More, a calm Today with Now, Rhythm and no duplicate blocks, a simpler More, and System/Light/Dark appearance. |
+| M2 vNext Life areas | 3 | 27 | 0 / 10 / 13 / 4 | Projects, Galaxy, Learn, Health and Goals use the vNext patterns and plain terminology; Health shows only what really works; Galaxy is usable on a phone. |
 | M3 Command centre | 4, 5 | 9 | 0 / 5 / 3 / 1 | One launcher (Go · Do · Capture) reaches everything; Apps opens external tools; one Attention model tells Jay what needs him, from GYST's own data. |
 | M4 Read-only integrations | 6, 7, 8, 9 | 41 | 0 / 9 / 30 / 2 | GYST shows sanitized server health, GitHub issues/PRs/reviews in Development, and n8n automation status, all read-only, on a hardened two-listener foundation. |
 | M5 Agent-assisted development | 10, 11, 12 | 25 | 0 / 0 / 23 / 2 | Jay can write GitHub issues from GYST, mark a NORMAL issue ready for an agent after re-auth, watch the run, review the PR in GitHub and verify-and-close from GYST. |
