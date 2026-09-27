@@ -16,14 +16,8 @@
   <a href="/health/plan">Plan</a>
 </nav>
 <section id="summary" class="health-dashboard" aria-label="Health summary">
-  <p class="health-preview"><strong>Today · {{.Today.Date}}</strong><span>Week, month and year summaries are not built yet.</span></p>
-  <div class="health-period" role="group" aria-label="Summary period">
-    <button type="button" data-period="Day" aria-pressed="true">Day</button>
-    <button type="button" data-period="Week" disabled title="Weekly summaries are not available yet">Week</button>
-    <button type="button" data-period="Month" disabled title="Monthly summaries are not available yet">Month</button>
-    <button type="button" data-period="Year" disabled title="Yearly summaries are not available yet">Year</button>
-  </div>
-  <div data-period-daily class="health-grid">
+  <p class="health-preview"><strong>Today · {{.Today.Date}}</strong></p>
+  <div class="health-grid">
     {{if not .Today.HasCycle}}
       <section class="card health-wide health-notice">
         <h2>No health plan yet</h2>
@@ -119,10 +113,6 @@
       <h2>Workout history</h2>
       <p class="meta">Hevy workouts are not connected yet. You can track your gym consistency below.</p>
       <a class="btn" href="/health/training">Training details</a>
-      <details class="health-planned"><summary>Planned tools</summary>
-        <h3>Next meal</h3><p class="meta">Meal planning and workout sessions are not available yet.</p>
-        <div class="health-planned-actions"><button class="btn" type="button" disabled>Plan meal</button><button class="btn" type="button" disabled>Start workout</button></div>
-      </details>
     </section>
     <section class="card health-wide">
       <p class="kicker">Movement</p>
@@ -156,18 +146,8 @@
     <p class="kicker">Progress</p>
     <h2>Your longer view</h2>
     <a class="btn" href="/health/progress">Progress details</a>
-    <div class="health-grid">
-      <div>
-        <h3>Weight trend</h3>
-
-        <p class="meta"><a href="/health/progress">View recorded weight history</a>.</p>
-      </div>
-      <div>
-        <h3>Strength trend</h3>
-
-        <p class="meta">No strength records connected.</p>
-      </div>
-    </div>
+    <h3>Weight trend</h3>
+    <p class="meta"><a href="/health/progress">View recorded weight history</a>.</p>
   </section>
   <section id="plan" class="card">
     <p class="kicker">Plan</p>
