@@ -28,6 +28,7 @@ Production itself was **not opened** in this task: loading production Galaxy cal
 | Viewports | 390×844, 430×932, 768×1024, 1280×800, 1440×900, 1920×1080 |
 | Real iPhone | **NOT VERIFIED** — no device available to the agent; steps for Jay in §J.7 |
 | Reproduce | Start instances (see the script header), then `docker run --rm --network host -v "$PWD/docs/design/galaxy-baseline":/work -w /work mcr.microsoft.com/playwright/python:v1.58.0-noble sh -c 'pip install -q --break-system-packages playwright==1.58.0 && python3 measure_galaxy.py'` |
+| Committed media | **16 JPEGs:** `galaxy-{1280x800,390x844}-{idle,selected,zoomed,empty,sparse-1,sparse-3,webgl-fallback}.jpg` (14) and `phone-webkit_iphone13_emulated-390-{selected,world-tap}.jpg` (2). A harness run also writes `phone-chromium-*` and the 430-wide `phone-*` variants, which aren't committed. Review any new file before committing it. |
 
 ## B. Entry points (LIVE)
 
@@ -50,13 +51,13 @@ Discoverability (LIVE-PROD, Stage 3): Galaxy is **2 taps** away (Menu → Galaxy
 
 ## D. Data flow (LIVE)
 
-`GET /galaxy` (HTML only, **no write**) → `galaxy.js` → `GET /galaxy/data` (10 s timeout) → JSON planets (id, name, category, colour, summary, target, next, missions, url, state, size, progress, x/y/z, moons). Measured payload: 7.5 KB for 28 worlds, ~50 ms locally. Only **non-complete top-level projects** become planets; their non-complete child projects become moons. State comes from `RouteState(status, progress)`.
+`GET /galaxy` (HTML only, **no write**) → `galaxy.js` → `GET /galaxy/data` (10 s timeout) → JSON planets (id, name, category, colour, summary, target, next, missions, url, state, size, progress, x/y/z, moons). Payload: 7.5 KB for 28 worlds, ~50 ms (**UNVERIFIED**: the 28-world dataset isn't one the seed script creates, and neither the figure nor the instance behind it is recorded in `results.json`; re-measure against the 33-world set). Only **non-complete top-level projects** become planets; their non-complete child projects become moons. State comes from `RouteState(status, progress)`.
 
 ## E. Three.js scene behaviour (LIVE unless marked)
 
 - Dark scene (`#03050b`) independent of app theme; central core with rotating hub rings and glow; two nebulae; 850-point spiral starfield; per-project colour; atmosphere shell and faint orbit per world; moons; DOM labels with collision hiding.
 - **Visible labels:** only a subset at a time — 3–5 of 33 on phones, 9–12 of 33 on desktop (§J, §K); the rest appear when zoomed or selected.
-- Legend Active / Upcoming / Locked. **Paused and upcoming fixtures rendered as `locked`**; "Upcoming" was never produced by the fixtures (§Q).
+- Legend Active / Upcoming / Locked. **Paused and upcoming fixtures rendered as `locked`**. "Upcoming" **cannot occur**: `RouteState` (`internal/services/rocket.go:62`) maps `locked`, `upcoming` and `paused` to `locked`, so the `upcoming` colour and ring branch in `galaxy.js` (:156, :174) never run for `/galaxy/data` planets (CODE, consistent with LIVE) (§Q).
 - **Empty (0 worlds): no scene at all** — no core, stars or ship; controls stay disabled; status "No active planets. Completed worlds have left the Galaxy." ([media](media/galaxy-390x844-empty.jpg)).
 - **WebGL unavailable (LIVE, Chromium with `--disable-webgl`):** status "3D view unavailable. Use the project list below.", fallback text visible, all worlds listed in the navigator ([media](media/galaxy-1280x800-webgl-fallback.jpg)).
 
@@ -96,7 +97,8 @@ Measured (LIVE, binary search in 4 directions from each world's centre; 0.65 s b
 
 So an **isolated world already offers ≈ 66 px of target diameter**; the real problem is **crowding** — in a 30-world scene some directions give only a few pixels before the tap selects a neighbour. Drag (> 8 px) never selects (LIVE); pinch never selects (CODE + `check-galaxy.cjs`).
 
-- **Selected world, 44 px padding / click-again-to-open:** **NOT VERIFIED.** In the harness, clicking the centre of the already-selected world after its flight did not open the project within 1 s; the cause (preview panel/label overlap or harness timing) wasn't isolated. Open project via the panel button works (LIVE).
+- **Click-again-to-open is mouse-only (CODE).** The tap handler opens the selected world only when `event.pointerType === "mouse"` (`galaxy.js:323`). On touch, re-tapping the selected world calls `preview()` with the same world, which returns early (`:215`), so **nothing happens**. On phones a world opens only through Open project, the navigator links or `dblclick` (not reliable on iOS).
+- **Selected world, 44 px padding / desktop click-again distance:** **NOT VERIFIED.** In the harness, a mouse click on the centre of the already-selected world after its flight did not open the project within 1 s; the cause (preview panel/label overlap or harness timing) wasn't isolated. Open project via the panel button works (LIVE).
 - **Double-click / double-tap:** during the desktop sweep, two clicks < ~0.2 s apart on a world **navigated to its project** (LIVE, incidental, matches the `dblclick` handler); a controlled double-tap in emulated Chromium touch **did not** open the project. Real-iPhone double-tap: NOT VERIFIED.
 
 ## I. Preview behaviour (LIVE)
@@ -121,7 +123,7 @@ So an **isolated world already offers ≈ 66 px of target diameter**; the real p
 
 - 768 / 1280 / 1440 / 1920: stage 768×800 / 1072×625 / 1232×725 / 1712×850; no overflow; 9–12 visible labels; controls 44 px; **close 30×43 and Open project 107×40 are under 44 px**.
 - Mouse: click previews; hover near edges roams; +/−/Reset work; Escape closes; arrows move selection **only when a world lies in that direction** (true in one session, no neighbour in the other).
-- Real GPU (Jay's Windows Chrome, 28 worlds, 120 Hz, earlier in the day): idle **116 fps, median 8.3 ms, p95 8.6 ms**, one 115 ms long task at start.
+- Real GPU (Jay's Windows Chrome, 28 worlds, 120 Hz, earlier in the day): idle **116 fps, median 8.3 ms, p95 8.6 ms**, one 115 ms long task at start. **UNVERIFIED:** the instance and dataset this page loaded aren't recorded (see §M).
 
 ## L. Accessibility
 
@@ -148,7 +150,7 @@ So an **isolated world already offers ≈ 66 px of target diameter**; the real p
 | 10 | 212 | 128 ms | 49 | 36 · 33.3 / 33.4 | 33.3 / 50 | 74 | 3.8 | 0 |
 | 33 | 227 | 134 ms | 147 | 23 · 49.9 / 66.7 | 49.9 / 66.6 | 131 | 2.9 | 0 |
 
-- Real GPU reference (Windows Chrome, 28 worlds): idle 116 fps (median 8.3 ms, p95 8.6 ms); DOMContentLoaded 198 ms; one 115 ms long task at start.
+- Real GPU reference (Windows Chrome, 28 worlds): idle 116 fps (median 8.3 ms, p95 8.6 ms); DOMContentLoaded 198 ms; one 115 ms long task at start. **UNVERIFIED:** none of the harness datasets (0/1/3/10/33 worlds) has 28 worlds, the figures aren't in `results.json`, and the instance and dataset Jay's browser loaded weren't recorded. Don't use them as a comparison baseline until they're re-measured on a recorded fictional dataset.
 - Assets: Three.js 2.0 MB decoded; `galaxy.js` 24 KB; ship PNG 1.17 MB for a small sprite (optimisation candidate).
 - Cost grows with world count (~4 draw calls per world); the render loop never idles.
 - **Real iPhone: NOT VERIFIED** (§J.7).
@@ -191,13 +193,13 @@ Run `node scripts/check-galaxy.cjs` and the harness; compare against the values 
 | Three.js architecture (vendored, dynamic import, one loop, pixel ratio ≤ 2) | Confirmed; **r180**; ~9 + 4/world draw calls | MATCH | Added numbers |
 | World generation: active top-level planets, non-complete children as moons, done/completed/archived excluded | Confirmed (33 of 37) | MATCH | |
 | Positions deterministic, persisted on first `/galaxy/data` read | Confirmed; the write also bumps `updated_at` | MATCH + detail | |
-| Locked 1.35× out, rings for upcoming/locked; legend Active/Upcoming/Locked | Paused and upcoming fixtures render as **locked**; "Upcoming" never produced; the create form stored "paused" as `upcoming` | **DIFFER** | Legend entry may be unreachable |
+| Locked 1.35× out, rings for upcoming/locked; legend Active/Upcoming/Locked | Paused and upcoming fixtures render as **locked**; the create form stored "paused" as `upcoming` (`internal/repository/roadmap.go:561–564`) | **DIFFER** | Legend "Upcoming" **cannot occur**: `RouteState` maps upcoming/paused → `locked` (`rocket.go:62`) |
 | Visual identity (core, rings, nebulae, starfield, colours, atmospheres, labels, halo) | Confirmed in screenshots | MATCH | Only a subset of labels visible |
 | Ship rides with the camera, follows the pointer, flap animation | Follows pointer; **also jumps to the tap point on touch**; flap not verified | MATCH / **DIFFER (detail)** / NOT VERIFIED | Movement is instant, not a flight |
 | Camera: orbit, drag, pinch/wheel/+/−, hover roam, fly to selection, Reset/close/Escape return, reduced-motion snaps | All confirmed except wheel (CODE) | MATCH | Flight 2.3–3.8 s; reduced 0.11 s |
 | Hit test 28 px (44 px selected), 5 px minimum | Uncontested edge 33 px confirmed; **crowding** reduces targets to 2–28 px; selected 44 px NOT VERIFIED | MATCH / NOT VERIFIED | Isolated worlds already ≈ 66 px diameter |
 | Keyboard: stage focusable, Escape, arrows | Confirmed; arrows direction-dependent | MATCH | |
-| Preview and opening; mouse click-again / double-click / context-click opens | Panel + Open project confirmed; double-click open observed incidentally; click-again NOT VERIFIED; context-click CODE | PARTIAL | |
+| Preview and opening; mouse click-again / double-click / context-click opens | Panel + Open project confirmed; double-click open observed incidentally; click-again is **mouse-only** (CODE, `galaxy.js:323`; re-tap on touch does nothing), desktop click-again NOT VERIFIED; context-click CODE | PARTIAL | |
 | Category filter filters the list only | Confirmed | MATCH | |
 | **Mobile: app header hides while scrolling** | **No visible effect** — CSS targets legacy `body > .nav` | **DIFFER** | Dead styling path |
 | Tests (`check-galaxy.cjs`) | Pass | MATCH | |
@@ -215,6 +217,6 @@ Run `node scripts/check-galaxy.cjs` and the harness; compare against the values 
 4. **Render cost scales with worlds** (~4 draw calls each) and the loop never idles — richer effects (GYST-VN-144) must be measured with this harness and on a real iPhone.
 5. **Label visibility**: most worlds are unlabeled at a time; any change to labels affects discoverability and hit expectations.
 6. **Close control** is effectively invisible (1.01:1) and under 44 px on desktop (GYST-VN-045).
-7. **Dead scroll-hide CSS** and the "Upcoming" legend may mislead implementers; don't "fix" them silently — decide in a task.
+7. **Dead scroll-hide CSS** and the **unreachable "Upcoming" legend** (`RouteState` never returns `upcoming`) may mislead implementers; don't "fix" them silently — decide in a task.
 8. **Terminology** ("missions") lives in `galaxy.js` strings (GYST-VN-027 must touch strings only).
 9. **Evidence gaps:** real iPhone (Safari + PWA), VoiceOver, ship flap, selected-world click-again — close them before or during the first material Galaxy change.
