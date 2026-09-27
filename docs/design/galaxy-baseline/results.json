@@ -1,0 +1,661 @@
+{
+ "performance_desktop_chromium_swiftshader": {
+  "0": {
+   "load_to_ready_ms": 242,
+   "worlds_in_data": 0,
+   "labels": 0,
+   "visible_labels": 0,
+   "draw_calls_per_frame_median": 0.0,
+   "longtasks": [],
+   "status": "No active planets. Completed worlds have left the Galaxy.",
+   "console_errors": []
+  },
+  "1": {
+   "load_to_ready_ms": 227,
+   "worlds_in_data": 1,
+   "labels": 1,
+   "visible_labels": 1,
+   "draw_calls_per_frame_median": 13.0,
+   "longtasks": [
+    [
+     79,
+     144
+    ]
+   ],
+   "status": "Drag to explore \u00b7 tap a world to preview",
+   "idle": {
+    "frames": 136,
+    "fps": 45.3,
+    "median_ms": 16.7,
+    "p95_ms": 33.4,
+    "max_ms": 50
+   },
+   "drag": {
+    "frames": 98,
+    "median_ms": 16.7,
+    "p95_ms": 33.4,
+    "max_ms": 33.4
+   },
+   "preview_status_ms": 91,
+   "flight_settle_s": 3.75,
+   "console_errors": []
+  },
+  "3": {
+   "load_to_ready_ms": 188,
+   "worlds_in_data": 3,
+   "labels": 3,
+   "visible_labels": 3,
+   "draw_calls_per_frame_median": 21.0,
+   "longtasks": [
+    [
+     84,
+     101
+    ]
+   ],
+   "status": "Drag to explore \u00b7 tap a world to preview",
+   "idle": {
+    "frames": 134,
+    "fps": 44.7,
+    "median_ms": 16.7,
+    "p95_ms": 33.4,
+    "max_ms": 50
+   },
+   "drag": {
+    "frames": 95,
+    "median_ms": 16.7,
+    "p95_ms": 33.4,
+    "max_ms": 33.4
+   },
+   "preview_status_ms": 106,
+   "flight_settle_s": 2.33,
+   "console_errors": []
+  },
+  "10": {
+   "load_to_ready_ms": 212,
+   "worlds_in_data": 10,
+   "labels": 10,
+   "visible_labels": 5,
+   "draw_calls_per_frame_median": 49.0,
+   "longtasks": [
+    [
+     81,
+     128
+    ]
+   ],
+   "status": "Drag to explore \u00b7 tap a world to preview",
+   "idle": {
+    "frames": 107,
+    "fps": 35.7,
+    "median_ms": 33.3,
+    "p95_ms": 33.4,
+    "max_ms": 50
+   },
+   "drag": {
+    "frames": 78,
+    "median_ms": 33.3,
+    "p95_ms": 50,
+    "max_ms": 50.1
+   },
+   "preview_status_ms": 74,
+   "flight_settle_s": 3.76,
+   "console_errors": []
+  },
+  "30": {
+   "load_to_ready_ms": 227,
+   "worlds_in_data": 33,
+   "labels": 33,
+   "visible_labels": 9,
+   "draw_calls_per_frame_median": 147.0,
+   "longtasks": [
+    [
+     91,
+     134
+    ]
+   ],
+   "status": "Drag to explore \u00b7 tap a world to preview",
+   "idle": {
+    "frames": 70,
+    "fps": 23.3,
+    "median_ms": 49.9,
+    "p95_ms": 66.7,
+    "max_ms": 66.7
+   },
+   "drag": {
+    "frames": 54,
+    "median_ms": 49.9,
+    "p95_ms": 66.6,
+    "max_ms": 83.3
+   },
+   "preview_status_ms": 131,
+   "flight_settle_s": 2.93,
+   "console_errors": []
+  }
+ },
+ "hit_targets": {
+  "10_desktop_mouse_1280": [
+   {
+    "world": "Demo World 1",
+    "right": {
+     "edge_px": 33,
+     "lost_to": null
+    },
+    "left": {
+     "edge_px": 44,
+     "lost_to": null
+    },
+    "up": {
+     "edge_px": 33,
+     "lost_to": null
+    },
+    "down": {
+     "edge_px": 44,
+     "lost_to": null
+    }
+   },
+   {
+    "world": "Demo World 2",
+    "right": {
+     "edge_px": 28,
+     "lost_to": "Demo World 4"
+    },
+    "left": {
+     "edge_px": 33,
+     "lost_to": null
+    },
+    "up": {
+     "edge_px": 19,
+     "lost_to": "Demo World 4"
+    },
+    "down": {
+     "edge_px": 33,
+     "lost_to": "Demo World 5"
+    }
+   }
+  ],
+  "10_phone_touch_390": [
+   {
+    "world": "Demo World 1",
+    "right": {
+     "edge_px": 33,
+     "lost_to": null
+    },
+    "left": {
+     "edge_px": 42,
+     "lost_to": "Demo World 7"
+    },
+    "up": {
+     "edge_px": 33,
+     "lost_to": null
+    },
+    "down": {
+     "edge_px": 41,
+     "lost_to": null
+    }
+   },
+   {
+    "world": "Demo World 2",
+    "right": {
+     "edge_px": 22,
+     "lost_to": "Demo World 6"
+    },
+    "left": {
+     "edge_px": 33,
+     "lost_to": null
+    },
+    "up": {
+     "edge_px": 11,
+     "lost_to": "Demo World 4"
+    },
+    "down": {
+     "edge_px": 23,
+     "lost_to": "Demo World 5"
+    }
+   }
+  ],
+  "30_desktop_mouse_1280": [
+   {
+    "world": "Demo World 1",
+    "right": {
+     "edge_px": 66,
+     "lost_to": "Demo World 7"
+    },
+    "left": {
+     "edge_px": 19,
+     "lost_to": "Demo World 26"
+    },
+    "up": {
+     "edge_px": 14,
+     "lost_to": "Demo World 25"
+    },
+    "down": {
+     "edge_px": 28,
+     "lost_to": "Demo World 28"
+    }
+   },
+   {
+    "world": "Demo World 2",
+    "right": {
+     "edge_px": 39,
+     "lost_to": null
+    },
+    "left": {
+     "edge_px": 8,
+     "lost_to": "Demo World 11"
+    },
+    "up": {
+     "edge_px": 17,
+     "lost_to": "Demo World 17"
+    },
+    "down": {
+     "edge_px": 11,
+     "lost_to": "Demo World 11"
+    }
+   }
+  ],
+  "30_phone_touch_390": [
+   {
+    "world": "Demo World 1",
+    "right": {
+     "edge_px": 44,
+     "lost_to": "Demo World 7"
+    },
+    "left": {
+     "edge_px": 77,
+     "lost_to": "Demo World 8"
+    },
+    "up": {
+     "edge_px": 9,
+     "lost_to": "Demo World 25"
+    },
+    "down": {
+     "edge_px": 67,
+     "lost_to": null
+    }
+   },
+   {
+    "world": "Demo World 2",
+    "right": {
+     "edge_px": 59,
+     "lost_to": "Demo Locked World"
+    },
+    "left": {
+     "edge_px": 2,
+     "lost_to": "Demo World 11"
+    },
+    "up": {
+     "edge_px": 58,
+     "lost_to": "Demo Paused World"
+    },
+    "down": {
+     "edge_px": 8,
+     "lost_to": "Demo World 11"
+    }
+   }
+  ]
+ },
+ "selected_world_click_open_desktop": {
+  "world": "Demo World 1",
+  "edge_px_from_centre": 0,
+  "trials": [
+   {
+    "offset": 0,
+    "selected_first": true,
+    "opened": false
+   }
+  ]
+ },
+ "ship_and_roam_desktop": {
+  "ship_crop_bytes_differ_after_pointer_moves_away": 0.073,
+  "label_max_shift_px_pointer_centre_2s": 0.1,
+  "label_max_shift_px_pointer_right_edge_2s": 31.2,
+  "ship_crop_changes_while_pointer_still": 0.955
+ },
+ "zoom_buttons_label_spread_px": {
+  "before": 100.2,
+  "after_2x_zoom_in": 128.6
+ },
+ "keyboard": {
+  "preview_button_focus_moves_to": "Open project",
+  "arrow_right_changes_selection": false,
+  "escape_closes_panel": true,
+  "tab_order_from_hub": [
+   "Browse worlds",
+   "All projects",
+   "New project",
+   "Interactive project galaxy",
+   "Zoom in",
+   "Zoom out",
+   "Reset view",
+   "All categoriesbusinesscarcodinghealthoth",
+   "Demo World 10% \u00b7 active \u00b7 sim rig",
+   "Preview Demo World 1"
+  ]
+ },
+ "contrast": {
+  "close_button_fg_vs_bg": 1.01,
+  "close_button_colors": [
+   "rgb(231, 242, 251)",
+   "rgb(239, 239, 239)"
+  ],
+  "planet_label": 13.69,
+  "status": 16.5,
+  "legend": 9.39,
+  "assumed_background": "#03050b (scene)"
+ },
+ "reduced_motion": {
+  "os_prefers_reduced_motion": {
+   "flight_settle_s": 0.11,
+   "dataset_motion": null,
+   "ship_crop_changes_while_pointer_still": 0.979
+  },
+  "app_setting_lifeops_motion": {
+   "flight_settle_s": 0.11,
+   "dataset_motion": "reduced",
+   "ship_crop_changes_while_pointer_still": 0.979
+  }
+ },
+ "phone": {
+  "chromium_390": {
+   "load_to_ready_ms": 202,
+   "console_errors": [],
+   "open_project_centre_hits_button": true,
+   "open_project_obscured_by": "A",
+   "world_tap_selected": true,
+   "world_tap_open_project_centre_hits_button": true,
+   "world_tap_open_project_obscured_by": "none (button itself)",
+   "world_tap_open_project_rect_vs_viewport": [
+    702,
+    746,
+    844
+   ],
+   "scroll_down_body_has_galaxy_nav_hidden": true,
+   "top_header_hidden_after_scroll": false,
+   "bottom_bar_still_visible_after_scroll": true
+  },
+  "chromium_430": {
+   "load_to_ready_ms": 210,
+   "console_errors": [],
+   "open_project_centre_hits_button": true,
+   "open_project_obscured_by": "A",
+   "world_tap_selected": true,
+   "world_tap_open_project_centre_hits_button": true,
+   "world_tap_open_project_obscured_by": "none (button itself)",
+   "world_tap_open_project_rect_vs_viewport": [
+    790,
+    834,
+    932
+   ],
+   "scroll_down_body_has_galaxy_nav_hidden": true,
+   "top_header_hidden_after_scroll": false,
+   "bottom_bar_still_visible_after_scroll": true
+  },
+  "webkit_iphone13_emulated_390": {
+   "load_to_ready_ms": 2874,
+   "console_errors": [],
+   "open_project_centre_hits_button": true,
+   "open_project_obscured_by": "A",
+   "world_tap_selected": true,
+   "world_tap_open_project_centre_hits_button": true,
+   "world_tap_open_project_obscured_by": "none (button itself)",
+   "world_tap_open_project_rect_vs_viewport": [
+    702,
+    746,
+    844
+   ],
+   "scroll_down_body_has_galaxy_nav_hidden": true,
+   "top_header_hidden_after_scroll": false,
+   "bottom_bar_still_visible_after_scroll": true
+  },
+  "webkit_iphone13_emulated_430": {
+   "load_to_ready_ms": 853,
+   "console_errors": [],
+   "open_project_centre_hits_button": true,
+   "open_project_obscured_by": "A",
+   "world_tap_selected": true,
+   "world_tap_open_project_centre_hits_button": true,
+   "world_tap_open_project_obscured_by": "none (button itself)",
+   "world_tap_open_project_rect_vs_viewport": [
+    790,
+    834,
+    932
+   ],
+   "scroll_down_body_has_galaxy_nav_hidden": true,
+   "top_header_hidden_after_scroll": false,
+   "bottom_bar_still_visible_after_scroll": true
+  },
+  "double_tap_world_opens_project_390": false,
+  "cdp_touch_390": {
+   "pinch_out_label_spread_px": [
+    71.6,
+    109.7
+   ],
+   "drag_label_max_shift_px": 36.2,
+   "drag_did_not_select": true
+  }
+ },
+ "layout_30_worlds": {
+  "390": {
+   "overflow_x": false,
+   "stage": [
+    390,
+    560
+   ],
+   "visible_labels": 3,
+   "zoom_in": [
+    44,
+    44
+   ],
+   "reset": [
+    92,
+    44
+   ],
+   "close": [
+    44,
+    44
+   ],
+   "open": [
+    332,
+    44
+   ],
+   "preview_button": [
+    83,
+    44
+   ],
+   "nav_items": [
+    "Today",
+    "Projects",
+    "Health",
+    "Courses",
+    "Menu"
+   ]
+  },
+  "430": {
+   "overflow_x": false,
+   "stage": [
+    430,
+    648
+   ],
+   "visible_labels": 5,
+   "zoom_in": [
+    44,
+    44
+   ],
+   "reset": [
+    92,
+    44
+   ],
+   "close": [
+    44,
+    44
+   ],
+   "open": [
+    372,
+    44
+   ],
+   "preview_button": [
+    83,
+    44
+   ],
+   "nav_items": [
+    "Today",
+    "Projects",
+    "Health",
+    "Courses",
+    "Menu"
+   ]
+  },
+  "768": {
+   "overflow_x": false,
+   "stage": [
+    768,
+    800
+   ],
+   "visible_labels": 11,
+   "zoom_in": [
+    44,
+    44
+   ],
+   "reset": [
+    92,
+    44
+   ],
+   "close": [
+    30,
+    43
+   ],
+   "open": [
+    107,
+    40
+   ],
+   "preview_button": [
+    83,
+    44
+   ],
+   "nav_items": [
+    "Today",
+    "Projects",
+    "Health",
+    "Courses",
+    "Menu"
+   ]
+  },
+  "1280": {
+   "overflow_x": false,
+   "stage": [
+    1072,
+    625
+   ],
+   "visible_labels": 9,
+   "zoom_in": [
+    44,
+    44
+   ],
+   "reset": [
+    92,
+    44
+   ],
+   "close": [
+    30,
+    43
+   ],
+   "open": [
+    107,
+    40
+   ],
+   "preview_button": [
+    83,
+    44
+   ],
+   "nav_items": [
+    "Today",
+    "Projects",
+    "Health",
+    "Courses",
+    "Menu"
+   ]
+  },
+  "1440": {
+   "overflow_x": false,
+   "stage": [
+    1232,
+    725
+   ],
+   "visible_labels": 9,
+   "zoom_in": [
+    44,
+    44
+   ],
+   "reset": [
+    92,
+    44
+   ],
+   "close": [
+    30,
+    43
+   ],
+   "open": [
+    107,
+    40
+   ],
+   "preview_button": [
+    83,
+    44
+   ],
+   "nav_items": [
+    "Today",
+    "Projects",
+    "Health",
+    "Courses",
+    "Menu"
+   ]
+  },
+  "1920": {
+   "overflow_x": false,
+   "stage": [
+    1712,
+    850
+   ],
+   "visible_labels": 12,
+   "zoom_in": [
+    44,
+    44
+   ],
+   "reset": [
+    92,
+    44
+   ],
+   "close": [
+    30,
+    43
+   ],
+   "open": [
+    107,
+    40
+   ],
+   "preview_button": [
+    83,
+    44
+   ],
+   "nav_items": [
+    "Today",
+    "Projects",
+    "Health",
+    "Courses",
+    "Menu"
+   ]
+  }
+ },
+ "webgl_fallback": {
+  "1280x800": {
+   "status": "3D view unavailable. Use the project list below.",
+   "fallback_visible": true,
+   "navigator_items": 10
+  },
+  "390x844": {
+   "status": "3D view unavailable. Use the project list below.",
+   "fallback_visible": true,
+   "navigator_items": 10
+  }
+ },
+ "accessibility_snapshot_excerpt": "- region \"Galaxy\":\n  - region \"Galaxy hub\":\n    - heading \"Galaxy\" [level=1]\n    - paragraph: Drag to explore. Pinch or use the zoom controls. Tap a world to preview it.\n    - link \"Browse worlds\":\n      - /url: \"#galaxy-projects\"\n    - link \"All projects\":\n      - /url: /projects\n    - link \"New project\":\n      - /url: /projects/new\n  - button \"Zoom in\": +\n  - button \"Zoom out\": \u2212\n  - button \"Reset view\"\n  - status: Drag to explore \u00b7 tap a world to preview\n  - text: Active Upcoming Locked Demo World 1 Demo World 2 Demo World 3\n  - paragraph: Accessible navigator\n  - heading \"All projects\" [level=2]\n  - paragraph: Open a project directly, or preview its world in the Galaxy.\n  - text: Category\n  - combobox \"Category\":\n    - option \"All categories\" [selected]\n    - option \"car\"\n    - option \"health\"\n    - option \"sim rig\"\n  - list:\n    - listitem:\n      - link \"Demo World 1 0% \u00b7 active \u00b7 sim rig\":\n        - /url: /projects/1\n      - button \"Preview Demo World 1\": Preview\n    - listitem:\n      - link \"Demo World 2 0% \u00b7 active \u00b7 car\":\n        - /url: /projects/2\n      - button \"Preview Demo World 2\": Preview\n    - listitem:\n      - link \"Demo World 3 0% \u00b7 active \u00b7 health\":\n        - /url: /projects/3\n      - button \"Preview Demo World 3\": Preview"
+}
