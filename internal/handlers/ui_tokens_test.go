@@ -61,7 +61,7 @@ func vnBlock(t *testing.T, css, header string) map[string]string {
 	out := map[string]string{}
 	for _, decl := range strings.Split(body, ";") {
 		name, value, ok := strings.Cut(decl, ":")
-		if name = strings.TrimSpace(name); ok && strings.HasPrefix(name, "--vn-") {
+		if name = strings.TrimSpace(name); ok && strings.HasPrefix(name, "--") {
 			out[name] = strings.Join(strings.Fields(value), " ")
 		}
 	}
@@ -136,6 +136,9 @@ type vnSwatch struct {
 type vnSwatchGroup struct {
 	Label, Word string
 	Tokens      []vnSwatch
+	// StateStyle follows 11 §I: ok is quiet (--ink-2 text and a green dot),
+	// info and idle use their text colour, only warn and crit are tinted chips.
+	StateStyle template.CSS
 }
 
 type vnGallery struct {
@@ -144,6 +147,14 @@ type vnGallery struct {
 }
 
 // One word per state family from 11 §I; state is never shown by colour alone.
+var vnStateStyles = map[string]template.CSS{
+	"ok":   "color:var(--vn-ink-2)",
+	"info": "color:var(--vn-info-text)",
+	"warn": "color:var(--vn-warn-text);background:var(--vn-warn-soft)",
+	"crit": "color:var(--vn-crit-text);background:var(--vn-crit-soft)",
+	"idle": "color:var(--vn-idle-text)",
+}
+
 var vnStateWords = map[string]string{"ok": "Healthy", "info": "Working", "warn": "Stale", "crit": "Failed", "idle": "Paused"}
 
 func vnGalleryData() vnGallery {
@@ -162,7 +173,7 @@ func vnGalleryData() vnGallery {
 			(*groups)[n-1].Tokens = append((*groups)[n-1].Tokens, s)
 			return
 		}
-		*groups = append(*groups, vnSwatchGroup{Label: tok.Group, Word: vnStateWords[tok.Group], Tokens: []vnSwatch{s}})
+		*groups = append(*groups, vnSwatchGroup{Label: tok.Group, Word: vnStateWords[tok.Group], StateStyle: vnStateStyles[tok.Group], Tokens: []vnSwatch{s}})
 	}
 	for _, tok := range vnTokens {
 		switch tok.Group {
