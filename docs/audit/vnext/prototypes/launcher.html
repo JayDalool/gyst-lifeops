@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Launcher</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="today">
+<div class="app">
+<main class="main">
+  <header class="topbar"><div class="lead"></div><div class="t">Today</div><div class="trail"></div></header>
+  <div class="content"><div class="ph"><div class="eyebrow">Sunday, 27 September</div><h1>Good morning</h1></div>
+    <div class="group" style="height:220px"></div><div class="group" style="height:140px"></div></div>
+</main>
+</div>
+
+<div class="launcher" role="dialog" aria-modal="true" aria-label="Search and commands">
+  <div class="launch-box">
+    <div class="launch-in">
+      <svg class="i" style="color:var(--ink-3)"><use href="#i-search"/></svg>
+      <label class="sr" for="q">Search GYST</label>
+      <input id="q" value="atl" autocomplete="off" spellcheck="false" aria-controls="res" aria-autocomplete="list">
+      <a class="close" href="today.html" aria-label="Close launcher"><span><svg class="i i-16"><use href="#i-x"/></svg></span></a>
+    </div>
+    <div class="modes" role="tablist" aria-label="Mode">
+      <button type="button" role="tab" data-mode="go" aria-pressed="true" aria-selected="true">Go</button>
+      <button type="button" role="tab" data-mode="do" aria-pressed="false" aria-selected="false">Do <kbd>&gt;</kbd></button>
+      <button type="button" role="tab" data-mode="cap" aria-pressed="false" aria-selected="false">Capture <kbd>+</kbd></button>
+    </div>
+
+    <div class="results" id="res" role="listbox" aria-label="Results">
+      <div data-mode-panel="go">
+        <div class="grp">Top hit</div>
+        <a class="row" role="option" aria-selected="true" href="project-detail.html"><span class="tile orb" style="--c:#5ee0b5"></span><span class="copy"><span class="title">Atlas CLI</span><span class="meta">Project · 78%</span></span><span class="enter">↵</span></a>
+        <div class="grp">Development</div>
+        <a class="row" role="option" aria-selected="false" href="dev-task.html"><span class="tile idle"><svg class="i"><use href="#i-code"/></svg></span><span class="copy"><span class="title">ATL-160 Retry on network timeout</span><span class="meta">Task · Ready</span></span></a>
+        <a class="row" role="option" aria-selected="false" href="reviews.html"><span class="tile info"><svg class="i"><use href="#i-pr"/></svg></span><span class="copy"><span class="title">ATL-142 Offline sync</span><span class="meta">Review · PR #218</span></span></a>
+        <a class="row" role="option" aria-selected="false" href="development.html#repos"><span class="tile idle"><svg class="i"><use href="#i-branch"/></svg></span><span class="copy"><span class="title">atlas-cli</span><span class="meta">Repository</span></span></a>
+        <div class="grp">Apps</div>
+        <a class="row" role="option" aria-selected="false" href="apps.html"><span class="tile app" style="background:#24292f">GH</span><span class="copy"><span class="title">atlas-cli on GitHub</span><span class="meta">Opens in a new tab</span></span></a>
+      </div>
+      <div data-mode-panel="do" hidden>
+        <div class="grp">Commands</div>
+        <button class="row" role="option" aria-selected="true" type="button"><span class="tile"><svg class="i"><use href="#i-plus"/></svg></span><span class="copy"><span class="title">New development task in atlas-cli</span><span class="meta">Creates a GitHub issue</span></span></button>
+        <button class="row" role="option" aria-selected="false" type="button"><span class="tile"><svg class="i"><use href="#i-play"/></svg></span><span class="copy"><span class="title">Queue ATL-160 for Codex</span><span class="meta">Needs your password</span></span></button>
+        <button class="row" role="option" aria-selected="false" type="button"><span class="tile idle"><svg class="i"><use href="#i-orbit"/></svg></span><span class="copy"><span class="title">Show Atlas CLI in Galaxy</span></span></button>
+        <button class="row" role="option" aria-selected="false" type="button" disabled><span class="tile idle"><svg class="i"><use href="#i-refresh"/></svg></span><span class="copy"><span class="title">Run “Nightly backup copy”</span><span class="meta"><svg class="i i-16"><use href="#i-lock"/></svg>Tailnet only</span></span></button>
+      </div>
+      <div data-mode-panel="cap" hidden>
+        <div class="grp">New task</div>
+        <div style="padding:var(--s2) var(--s4);display:grid;gap:var(--s3)">
+          <input class="input" id="cap" value="Email Atlas beta testers tomorrow" aria-label="Task title">
+          <div class="filters"><span class="filter" aria-pressed="true"><svg class="i i-16"><use href="#i-calendar"/></svg>Tomorrow</span><span class="filter"><svg class="i i-16"><use href="#i-folder"/></svg>Atlas CLI</span></div>
+          <button class="btn" type="button" data-toast="Task added">Add task</button>
+        </div>
+      </div>
+    </div>
+    <div class="hint"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>Tab</kbd> mode</span><span><kbd>esc</kbd> close</span></div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+<script>
+(function () {
+  var modes = document.querySelectorAll("[data-mode]"), q = document.getElementById("q");
+  function setMode(m) {
+    modes.forEach(function (b) { var on = b.dataset.mode === m; b.setAttribute("aria-pressed", String(on)); b.setAttribute("aria-selected", String(on)); });
+    document.querySelectorAll("[data-mode-panel]").forEach(function (p) { p.hidden = p.dataset.modePanel !== m; });
+    if (m === "cap") document.getElementById("cap").focus(); else q.focus();
+  }
+  modes.forEach(function (b) { b.addEventListener("click", function () { setMode(b.dataset.mode); }); });
+  q.addEventListener("input", function () { if (q.value.charAt(0) === ">") setMode("do"); else if (q.value.charAt(0) === "+") setMode("cap"); });
+  document.addEventListener("keydown", function (e) {
+    var panel = document.querySelector("[data-mode-panel]:not([hidden])");
+    var opts = Array.prototype.slice.call(panel.querySelectorAll('[role="option"]:not([disabled])'));
+    var i = opts.findIndex(function (o) { return o.getAttribute("aria-selected") === "true"; });
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault(); if (!opts.length) return;
+      var n = e.key === "ArrowDown" ? Math.min(i + 1, opts.length - 1) : Math.max(i - 1, 0);
+      opts.forEach(function (o, k) { o.setAttribute("aria-selected", String(k === n)); });
+      opts[n].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Tab" && !e.shiftKey && document.activeElement === q) {
+      e.preventDefault(); var order = ["go", "do", "cap"], cur = document.querySelector('[data-mode][aria-pressed="true"]').dataset.mode;
+      setMode(order[(order.indexOf(cur) + 1) % 3]);
+    } else if (e.key === "Escape") { location.href = "today.html"; }
+  });
+  q.focus(); q.setSelectionRange(q.value.length, q.value.length);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Health</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="health">
+<div class="app">
+<main class="main">
+  <header class="topbar"><div class="lead"></div><div class="t">Health</div><div class="trail"><a class="icon-btn" href="launcher.html" aria-label="Search"><svg class="i"><use href="#i-search"/></svg></a></div></header>
+
+  <div class="content">
+    <div class="ph"><div class="eyebrow">Today · Sunday</div><h1>Health</h1></div>
+
+    <nav class="subnav" aria-label="Health sections">
+      <div class="seg">
+        <a href="health.html" aria-current="page">Summary</a>
+        <a href="nutrition.html">Nutrition</a>
+        <a href="#training">Training</a>
+        <a href="#progress">Progress</a>
+        <a href="#plan">Plan</a>
+      </div>
+    </nav>
+
+    <div class="metrics" role="list" aria-label="Today's key numbers">
+      <div class="metric" role="listitem"><span class="k"><svg class="i i-16" style="color:var(--ok)"><use href="#i-utensils"/></svg>Intake</span><span class="v">920 <small>/ 2,000 kcal</small></span><div class="bar ok" style="--v:46%"><i></i></div><a class="cover" href="nutrition.html" aria-label="Open nutrition"></a></div>
+      <div class="metric" role="listitem"><span class="k"><svg class="i i-16" style="color:var(--warn)"><use href="#i-flame"/></svg>Burned</span><span class="v">1,840 <small>kcal</small></span><span class="s num">1,610 resting + 230 active</span></div>
+      <div class="metric" role="listitem"><span class="k"><svg class="i i-16" style="color:var(--accent)"><use href="#i-steps"/></svg>Steps</span><span class="v">4,120 <small>Watch</small></span><span class="s num">Phone 3,870 · counted separately</span></div>
+      <div class="metric" role="listitem"><span class="k"><svg class="i i-16" style="color:var(--xp)"><use href="#i-activity"/></svg>Exercise</span><span class="v">0 <small>min</small></span><span class="s">Recorded zero</span></div>
+    </div>
+
+    <section class="section" aria-labelledby="bal-h">
+      <div class="section-h"><h2 id="bal-h">Energy</h2><button type="button" data-open="energy-info" aria-label="How energy is calculated"><svg class="i i-16"><use href="#i-info"/></svg></button></div>
+      <ul class="group">
+        <li class="row"><span class="tile ok"><svg class="i"><use href="#i-utensils"/></svg></span><span class="copy"><span class="title">Food left</span><span class="meta">Target minus intake</span></span><span class="trail"><span class="value">1,080 kcal</span></span></li>
+        <li class="row"><span class="tile idle"><svg class="i"><use href="#i-activity"/></svg></span><span class="copy"><span class="title">Balance so far</span><span class="meta">Observed, not projected</span></span><span class="trail"><span class="value">−920 kcal</span></span></li>
+      </ul>
+    </section>
+
+    <section class="section" id="training" aria-labelledby="tr-h">
+      <div class="section-h"><h2 id="tr-h">Training</h2><a href="#">Open</a></div>
+      <ul class="group">
+        <li><a class="row" href="#"><span class="tile"><svg class="i"><use href="#i-dumbbell"/></svg></span><span class="copy"><span class="title">Push day</span><span class="meta">Thursday <span class="sep"></span> 52 min <span class="sep"></span> via Hevy</span></span><span class="trail"><span class="num">2 this week</span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+      </ul>
+    </section>
+
+    <section class="section" id="progress" aria-labelledby="bd-h">
+      <div class="section-h"><h2 id="bd-h">Body & plan</h2></div>
+      <ul class="group">
+        <li><a class="row" href="#"><span class="tile idle"><svg class="i"><use href="#i-scale"/></svg></span><span class="copy"><span class="title">Weight</span><span class="meta">3 days ago</span></span><span class="trail"><span class="value">78.4 kg</span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+        <li id="plan"><a class="row" href="#"><span class="tile"><svg class="i"><use href="#i-target"/></svg></span><span class="copy"><span class="title">Lean-out</span><span class="meta num">Day 12 of 84</span></span><span class="trail"><div class="bar" style="width:64px;--v:14%"><i></i></div><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+      </ul>
+    </section>
+
+    <div class="banner"><svg class="i"><use href="#i-refresh"/></svg><span class="grow">Apple Health last synced 6:40</span><span class="chip warn">Stale</span></div>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+</div>
+
+<div class="sheet" id="energy-info" role="dialog" aria-modal="true" aria-labelledby="ei-h" hidden>
+  <div class="grab"></div>
+  <div class="sheet-h"><h2 id="ei-h">How energy works</h2><button class="close" type="button" data-close aria-label="Close"><span><svg class="i i-16"><use href="#i-x"/></svg></span></button></div>
+  <div class="prose" style="padding:0">
+    <p><strong>Burned</strong> is resting plus active energy from Apple Health. Steps are never turned into calories.</p>
+    <p><strong>Food left</strong> is your plan target minus what you've logged.</p>
+    <p><strong>Balance</strong> is intake minus burned so far today. GYST doesn't project the rest of the day.</p>
+    <p>A dash means no data arrived. A zero means Apple Health reported zero.</p>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

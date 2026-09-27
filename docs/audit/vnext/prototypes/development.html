@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Development</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="projects" data-area="development" class="has-inspector">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"></div>
+    <div class="t">Development</div>
+    <div class="trail">
+      <a class="icon-btn" href="launcher.html" aria-label="Search"><svg class="i"><use href="#i-search"/></svg></a>
+      <button class="icon-btn" type="button" data-toast="New issue sheet (prototype)" aria-label="New development task"><svg class="i"><use href="#i-plus"/></svg></button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="ph"><h1>Development</h1></div>
+
+    <nav class="subnav" aria-label="Projects sections">
+      <div class="seg">
+        <a href="projects.html">Projects</a>
+        <a href="development.html" aria-current="page">Development <span class="count">3</span></a>
+        <a href="galaxy.html">Galaxy</a>
+        <a href="projects.html#roadmaps">Roadmaps</a>
+      </div>
+    </nav>
+
+    <div class="filters" role="tablist" aria-label="Development views">
+      <a class="filter" role="tab" href="development.html" aria-pressed="true" aria-selected="true">Tasks</a>
+      <a class="filter" role="tab" href="reviews.html">Reviews <span class="badge" style="min-width:18px;height:18px;font-size:11px">2</span></a>
+      <a class="filter" role="tab" href="agents.html">Agents</a>
+      <a class="filter" role="tab" href="#repos">Repos</a>
+    </div>
+
+    <section class="section" aria-labelledby="nm-h">
+      <div class="section-h"><h2 id="nm-h">Needs you</h2></div>
+      <ul class="group">
+        <li><a class="row" href="dev-task.html" data-inspect="t142" aria-current="true"><span class="tile info"><svg class="i"><use href="#i-pr"/></svg></span>
+          <span class="copy"><span class="title">Offline sync for field notes</span><span class="meta"><span class="tag num">ATL-142</span>atlas-cli <span class="sep"></span> Claude → Codex reviewed</span></span>
+          <span class="trail"><span class="chip info">Review</span></span></a></li>
+        <li><a class="row" href="dev-task.html" data-inspect="t157"><span class="tile warn"><svg class="i"><use href="#i-circleAlert"/></svg></span>
+          <span class="copy"><span class="title">Rate-limit login attempts</span><span class="meta"><span class="tag num">ATL-157</span><span class="tag risk">Elevated</span>Needs approval</span></span>
+          <span class="trail"><span class="chip warn">Approve</span></span></a></li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="ip-h">
+      <div class="section-h"><h2 id="ip-h">In progress</h2></div>
+      <ul class="group">
+        <li><a class="row" href="dev-task.html" data-inspect="t151"><span class="tile"><svg class="i"><use href="#i-bot"/></svg></span>
+          <span class="copy"><span class="title">CSV export for sessions</span><span class="meta"><span class="tag num">ATL-151</span>Codex <span class="sep"></span> 18m</span></span>
+          <span class="trail"><span class="chip info working">Working</span></span></a></li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="rd-h">
+      <div class="section-h"><h2 id="rd-h">Ready · 3</h2><a href="#">Inbox · 6</a></div>
+      <ul class="group">
+        <li><a class="row" href="dev-task.html" data-inspect="t160"><span class="tile idle"><svg class="i"><use href="#i-code"/></svg></span>
+          <span class="copy"><span class="title">Dark mode for settings</span><span class="meta"><span class="tag num">HBR-12</span>harbor-web <span class="sep"></span> <span class="tag p1">P1</span></span></span>
+          <span class="trail"><span class="chip">Ready</span></span></a></li>
+        <li><a class="row" href="dev-task.html" data-inspect="t161"><span class="tile idle"><svg class="i"><use href="#i-code"/></svg></span>
+          <span class="copy"><span class="title">Retry on network timeout</span><span class="meta"><span class="tag num">ATL-160</span>atlas-cli <span class="sep"></span> agent:ready</span></span>
+          <span class="trail"><span class="chip info nodot">Queued</span></span></a></li>
+        <li><a class="row" href="dev-task.html" data-inspect="t162"><span class="tile idle"><svg class="i"><use href="#i-code"/></svg></span>
+          <span class="copy"><span class="title">Trim onboarding copy</span><span class="meta"><span class="tag num">HBR-15</span>harbor-web</span></span>
+          <span class="trail"><span class="chip">Ready</span></span></a></li>
+      </ul>
+    </section>
+
+    <section class="section" id="repos" aria-labelledby="rp-h">
+      <div class="section-h"><h2 id="rp-h">Repositories</h2></div>
+      <ul class="group">
+        <li><a class="row" href="#"><span class="tile idle"><svg class="i"><use href="#i-branch"/></svg></span><span class="copy"><span class="title">atlas-cli</span><span class="meta">Atlas CLI <span class="sep"></span> 4 open <span class="sep"></span> CI passing</span></span><span class="trail"><span class="dot ok" aria-label="CI passing"></span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+        <li><a class="row" href="#"><span class="tile idle"><svg class="i"><use href="#i-branch"/></svg></span><span class="copy"><span class="title">harbor-web</span><span class="meta">Harbor rebuild <span class="sep"></span> 2 open</span></span><span class="trail"><span class="dot warn" aria-label="CI failing on main"></span><svg class="i chev"><use href="#i-chev"/></svg></span></a></li>
+      </ul>
+      <p class="foot">Synced from GitHub 2 min ago</p>
+    </section>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data · select a row at ≥1280 px to fill the inspector <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+
+<aside class="inspector" aria-label="Task details">
+  <div data-for="t142" class="content" style="gap:var(--s4)">
+    <div class="hero"><div class="line"><span class="tag num">ATL-142</span><span class="chip info">Review</span><span class="tag">atlas-cli</span></div><h1>Offline sync for field notes</h1></div>
+    <ul class="group">
+      <li class="row"><span class="tile"><svg class="i"><use href="#i-bot"/></svg></span><span class="copy"><span class="title">Claude implemented</span><span class="meta">agent/142-offline-sync · 2h ago</span></span></li>
+      <li class="row"><span class="tile ok"><svg class="i"><use href="#i-check"/></svg></span><span class="copy"><span class="title">Codex review: pass</span><span class="meta">2 minor notes</span></span></li>
+      <li class="row"><span class="tile ok"><svg class="i"><use href="#i-activity"/></svg></span><span class="copy"><span class="title">Checks passing</span><span class="meta num">48 tests · 1m 12s</span></span></li>
+    </ul>
+    <div class="section"><div class="section-h"><h2>Acceptance</h2><span class="foot" style="padding:0">3 of 4</span></div>
+      <ul class="group checklist"><li><span class="ck on"></span>Notes saved offline</li><li><span class="ck on"></span>Syncs on reconnect</li><li><span class="ck on"></span>Conflicts keep both copies</li><li><span class="ck"></span>Verified on a phone</li></ul></div>
+    <div class="bottom-actions"><a class="btn" href="reviews.html">Review PR #218</a><a class="btn secondary" href="#" aria-label="Open PR on GitHub"><svg class="i"><use href="#i-ext"/></svg></a></div>
+  </div>
+  <div data-for="t157" hidden class="content" style="gap:var(--s4)">
+    <div class="hero"><div class="line"><span class="tag num">ATL-157</span><span class="tag risk">Elevated</span></div><h1>Rate-limit login attempts</h1></div>
+    <div class="banner"><svg class="i"><use href="#i-shield"/></svg><span class="grow">Elevated task. Approve on your tailnet before an agent can start.</span></div>
+    <dl class="group kv"><dt>Agent</dt><dd>Claude</dd><dt>Class</dt><dd>Elevated · auth</dd><dt>Status</dt><dd>Ready</dd></dl>
+    <button class="btn" type="button" disabled title="Tailnet only">Approve (tailnet only)</button>
+  </div>
+  <div data-for="t151" hidden class="content" style="gap:var(--s4)">
+    <div class="hero"><div class="line"><span class="tag num">ATL-151</span><span class="chip info working">Working</span></div><h1>CSV export for sessions</h1></div>
+    <dl class="group kv"><dt>Agent</dt><dd>Codex</dd><dt>Elapsed</dt><dd class="num">18m</dd><dt>Branch</dt><dd class="num">agent/151-csv-export</dd></dl>
+    <div class="bottom-actions"><a class="btn secondary" href="agent-detail.html">Open run</a><button class="btn destructive" type="button" data-toast="Stop requested">Stop</button></div>
+  </div>
+  <div data-for="t160" hidden class="content"><div class="hero"><div class="line"><span class="tag num">HBR-12</span><span class="tag p1">P1</span></div><h1>Dark mode for settings</h1></div><a class="btn" href="dev-task.html">Open task</a></div>
+  <div data-for="t161" hidden class="content"><div class="hero"><div class="line"><span class="tag num">ATL-160</span><span class="chip info nodot">Queued</span></div><h1>Retry on network timeout</h1></div><p class="foot">Starts when the current Codex run finishes (limit 1).</p></div>
+  <div data-for="t162" hidden class="content"><div class="hero"><div class="line"><span class="tag num">HBR-15</span></div><h1>Trim onboarding copy</h1></div><a class="btn" href="dev-task.html">Open task</a></div>
+</aside>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

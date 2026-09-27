@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Automations</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="more" data-area="system">
+<div class="app">
+<main class="main">
+  <header class="topbar"><div class="lead"><a class="icon-btn" href="more.html" aria-label="Back to More"><svg class="i"><use href="#i-back"/></svg></a></div><div class="t">Automations</div><div class="trail"><a class="icon-btn" href="apps.html" aria-label="Open n8n"><svg class="i"><use href="#i-ext"/></svg></a></div></header>
+
+  <div class="content">
+    <div class="ph"><h1>Automations</h1></div>
+
+    <ul class="group" aria-label="Automations">
+      <li><button class="row" type="button" data-open="auto-fail"><span class="tile crit"><svg class="i"><use href="#i-zap"/></svg></span><span class="copy"><span class="title">Nightly backup copy</span><span class="meta">Failed 3h ago <span class="sep"></span> disk full</span></span><span class="trail"><span class="chip crit">Failed</span></span></button></li>
+      <li><button class="row" type="button"><span class="tile ok"><svg class="i"><use href="#i-sun"/></svg></span><span class="copy"><span class="title">Morning brief</span><span class="meta num">Next 7:00 AM</span></span><span class="trail"><span class="state ok"><span class="dot ok"></span>Healthy</span></span></button></li>
+      <li><button class="row" type="button"><span class="tile ok"><svg class="i"><use href="#i-heart"/></svg></span><span class="copy"><span class="title">Health reminder</span><span class="meta num">Ran 12m ago</span></span><span class="trail"><span class="state ok"><span class="dot ok"></span>Healthy</span></span></button></li>
+      <li><button class="row" type="button"><span class="tile info"><svg class="i"><use href="#i-refresh"/></svg></span><span class="copy"><span class="title">Weekly digest</span><span class="meta">Running now</span></span><span class="trail"><span class="chip info working">Running</span></span></button></li>
+      <li><button class="row" type="button"><span class="tile idle"><svg class="i"><use href="#i-calendar"/></svg></span><span class="copy"><span class="title">Course calendar sync</span><span class="meta">Turned off in n8n</span></span><span class="trail"><span class="state">Disabled</span></span></button></li>
+    </ul>
+    <p class="foot">GYST automations only. SamVision automations stay in n8n.</p>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data · tap the failed row <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+</div>
+
+<div class="sheet" id="auto-fail" role="dialog" aria-modal="true" aria-labelledby="af-h" hidden>
+  <div class="grab"></div>
+  <div class="sheet-h"><h2 id="af-h">Nightly backup copy</h2><button class="close" type="button" data-close aria-label="Close"><span><svg class="i i-16"><use href="#i-x"/></svg></span></button></div>
+  <div class="content" style="gap:var(--s4)">
+    <div class="banner crit"><svg class="i"><use href="#i-circleAlert"/></svg><span class="grow">Destination disk is full.</span></div>
+    <dl class="group kv"><dt>Last run</dt><dd class="num">Today 03:30 · failed</dd><dt>Last success</dt><dd class="num">Yesterday 03:30</dd><dt>Next run</dt><dd class="num">Tomorrow 03:30</dd></dl>
+    <div class="bottom-actions"><button class="btn" type="button" data-close data-toast="Run started">Run now</button><a class="btn secondary" href="apps.html">Open n8n <svg class="i i-16"><use href="#i-ext"/></svg></a></div>
+    <p class="foot" style="text-align:center">Run now is available on your tailnet.</p>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

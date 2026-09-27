@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Project</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="projects" data-area="projects">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"><a class="icon-btn" href="projects.html" aria-label="Back to Projects"><svg class="i"><use href="#i-back"/></svg></a></div>
+    <div class="t">Kestrel Field Guide</div>
+    <div class="trail">
+      <button class="icon-btn" type="button" data-open="proj-menu" aria-label="More actions"><svg class="i"><use href="#i-more"/></svg></button>
+    </div>
+  </header>
+
+  <div class="content">
+    <section class="hero">
+      <div class="line"><span class="tile orb lg" style="--c:#7aa2ff"></span><span class="chip info">Active</span><span class="tag">Writing year</span></div>
+      <h1>Kestrel Field Guide</h1>
+      <div class="line" style="gap:var(--s3)">
+        <div class="bar" style="flex:1;--v:62%"><i></i></div>
+        <span class="num" style="font-weight:650">62%</span>
+        <span class="foot num" style="padding:0">13 of 21 · due Nov 30</span>
+      </div>
+    </section>
+
+    <section class="now" aria-label="Next task">
+      <div class="now-main">
+        <button class="check" type="button" data-press data-toast="Done · +20 XP" aria-pressed="false" aria-label="Complete: Draft chapter 3 outline"><span></span></button>
+        <div style="display:grid;gap:2px;min-width:0"><span class="kicker">NEXT</span><span class="what">Draft chapter 3 outline</span><span style="font-size:14px;color:var(--ink-2)">Today · 11:00</span></div>
+      </div>
+    </section>
+
+    <nav class="subnav" aria-label="Project sections">
+      <div class="seg">
+        <button type="button" aria-pressed="true" data-group="pd" data-show="tasks">Tasks</button>
+        <button type="button" aria-pressed="false" data-group="pd" data-show="roadmap">Roadmap</button>
+        <button type="button" aria-pressed="false" data-group="pd" data-show="activity">Activity</button>
+        <button type="button" aria-pressed="false" data-group="pd" data-show="resources">Resources</button>
+      </div>
+    </nav>
+
+    <section class="section" data-group="pd" data-name="tasks" aria-label="Tasks">
+      <ul class="group">
+        <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Collect field photos"><span></span></button><span class="copy"><span class="title">Collect field photos</span><span class="meta">Fri <span class="sep"></span> Proof: link</span></span></li>
+        <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Interview the ranger"><span></span></button><span class="copy"><span class="title">Interview the ranger</span><span class="meta">Oct 8</span></span></li>
+        <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Chapter 3 first draft"><span></span></button><span class="copy"><span class="title">Chapter 3 first draft</span><span class="meta">Oct 15 <span class="sep"></span> 3 of 6 checklist</span></span></li>
+        <li><button class="row" type="button" data-toast="Add task sheet (prototype)"><span class="tile idle" style="width:28px;height:28px;margin-left:8px"><svg class="i i-16"><use href="#i-plus"/></svg></span><span class="copy"><span class="title" style="color:var(--accent);font-weight:500">Add task</span></span></button></li>
+      </ul>
+      <details class="group" style="margin-top:var(--s2)">
+        <summary class="row compact"><span class="tile ok" style="width:28px;height:28px"><svg class="i i-16"><use href="#i-check"/></svg></span><span class="copy"><span class="title" style="font-weight:500;color:var(--ink-2)">Done · 13</span></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+        <div class="row compact"><span style="width:28px"></span><span class="copy"><span class="title" style="font-weight:450;color:var(--ink-3)">Chapter 2 edit</span></span><span class="trail">Sep 20</span></div>
+        <div class="row compact"><span style="width:28px"></span><span class="copy"><span class="title" style="font-weight:450;color:var(--ink-3)">Map the three trails</span></span><span class="trail">Sep 12</span></div>
+      </details>
+    </section>
+
+    <section class="section" data-group="pd" data-name="roadmap" hidden aria-label="Roadmap">
+      <ul class="group">
+        <li class="row"><span class="tile ok"><svg class="i"><use href="#i-check"/></svg></span><span class="copy"><span class="title">Research trip</span><span class="meta">Done Aug</span></span></li>
+        <li class="row"><span class="tile"><svg class="i"><use href="#i-route"/></svg></span><span class="copy"><span class="title">Kestrel Field Guide</span><span class="meta">You are here · 62%</span></span></li>
+        <li class="row"><span class="tile idle"><svg class="i"><use href="#i-lock"/></svg></span><span class="copy"><span class="title">Print edition</span><span class="meta">Planned · starts after this project</span></span></li>
+      </ul>
+    </section>
+
+    <section class="section" data-group="pd" data-name="activity" hidden aria-label="Activity">
+      <ul class="group timeline">
+        <li><span class="dot ok"></span><span>Completed <b>Chapter 2 edit</b></span><span class="when">Sep 20</span></li>
+        <li><span class="dot info"></span><span>Due date moved to Nov 30</span><span class="when">Sep 18</span></li>
+        <li><span class="dot"></span><span>Linked note <b>Style sheet</b></span><span class="when">Sep 12</span></li>
+      </ul>
+    </section>
+
+    <section class="section" data-group="pd" data-name="resources" hidden aria-label="Resources">
+      <ul class="group">
+        <li><a class="row" href="#"><span class="tile idle"><svg class="i"><use href="#i-edit"/></svg></span><span class="copy"><span class="title">Notes</span><span class="meta">Keep chapters under 4,000 words…</span></span><svg class="i chev"><use href="#i-chev"/></svg></a></li>
+        <li><a class="row" href="#"><span class="tile idle"><svg class="i"><use href="#i-link"/></svg></span><span class="copy"><span class="title">Links</span><span class="meta">2 links</span></span><svg class="i chev"><use href="#i-chev"/></svg></a></li>
+        <li><a class="row" href="galaxy.html"><span class="tile xp"><svg class="i"><use href="#i-orbit"/></svg></span><span class="copy"><span class="title">Show in Galaxy</span></span><svg class="i chev"><use href="#i-chev"/></svg></a></li>
+      </ul>
+    </section>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+</div>
+
+<div class="sheet" id="proj-menu" role="dialog" aria-modal="true" aria-label="Project actions" hidden>
+  <div class="grab"></div>
+  <ul class="group">
+    <li><button class="row" type="button" data-close><svg class="i"><use href="#i-edit"/></svg><span class="copy"><span class="title">Edit project</span></span></button></li>
+    <li><button class="row" type="button" data-close><svg class="i"><use href="#i-layers"/></svg><span class="copy"><span class="title">Dependencies & proof</span></span></button></li>
+    <li><button class="row" type="button" data-close><svg class="i"><use href="#i-route"/></svg><span class="copy"><span class="title">Move to roadmap</span></span></button></li>
+    <li><button class="row" type="button" data-close><svg class="i"><use href="#i-archive"/></svg><span class="copy"><span class="title">Archive</span></span></button></li>
+  </ul>
+  <div style="height:var(--s3)"></div>
+  <ul class="group"><li><button class="row" type="button" data-close style="color:var(--crit-text)"><svg class="i"><use href="#i-x"/></svg><span class="copy"><span class="title">Delete project…</span></span></button></li></ul>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

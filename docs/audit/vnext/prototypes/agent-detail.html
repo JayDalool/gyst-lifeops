@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Agent Run</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="projects" data-area="development">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"><a class="icon-btn" href="agents.html" aria-label="Back to Agents"><svg class="i"><use href="#i-back"/></svg></a></div>
+    <div class="t">Codex · ATL-151</div>
+    <div class="trail"></div>
+  </header>
+
+  <div class="content">
+    <section class="hero">
+      <div class="line"><span class="tile lg"><svg class="i"><use href="#i-bot"/></svg></span><span class="chip info working">Working</span><span class="tag num">18m</span></div>
+      <h1>CSV export for sessions</h1>
+      <p style="color:var(--ink-2);font-size:15px">Codex · implementer · atlas-cli</p>
+    </section>
+
+    <dl class="group kv" aria-label="Run facts">
+      <dt>Task</dt><dd><a href="dev-task.html" style="color:var(--accent)">ATL-151</a></dd>
+      <dt>Project</dt><dd>Atlas CLI</dd>
+      <dt>Branch</dt><dd class="num" style="font-size:14px">agent/151-csv-export</dd>
+      <dt>Risk</dt><dd>Normal</dd>
+      <dt>Review</dt><dd>Claude, after tests</dd>
+      <dt>Pull request</dt><dd style="color:var(--ink-3)">Not yet</dd>
+    </dl>
+
+    <section class="section" aria-labelledby="act-h">
+      <div class="section-h"><h2 id="act-h">Activity</h2><span class="foot" style="padding:0">latest 5</span></div>
+      <ul class="group timeline">
+        <li><span class="dot info"></span><span>Running tests</span><span class="when num">now</span></li>
+        <li><span class="dot"></span><span>Edited 3 files in export/</span><span class="when num">4m</span></li>
+        <li><span class="dot"></span><span>Added CSV writer tests</span><span class="when num">9m</span></li>
+        <li><span class="dot"></span><span>Read issue and AGENTS.md</span><span class="when num">16m</span></li>
+        <li><span class="dot ok"></span><span>Worktree created</span><span class="when num">18m</span></li>
+      </ul>
+      <p class="foot">Summaries from the Agent Bridge. Full logs open on your tailnet.</p>
+    </section>
+
+    <ul class="group">
+      <li><a class="row" href="#" aria-disabled="true"><span class="tile idle"><svg class="i"><use href="#i-lock"/></svg></span><span class="copy"><span class="title">Logs</span><span class="meta">Tailnet only</span></span><svg class="i chev"><use href="#i-chev"/></svg></a></li>
+    </ul>
+
+    <div class="bottom-actions">
+      <button class="btn destructive" type="button" data-open="stop-dlg"><svg class="i i-16"><use href="#i-stop"/></svg>Stop run</button>
+      <a class="btn secondary" href="dev-task.html">Open task</a>
+    </div>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+</div>
+
+<div class="dialog" id="stop-dlg" role="alertdialog" aria-modal="true" aria-labelledby="st-h" aria-describedby="st-p">
+  <h2 id="st-h">Stop this run?</h2>
+  <p id="st-p">Codex stops now. The branch and worktree are kept so you can retry.</p>
+  <div class="acts">
+    <button class="btn destructive" type="button" data-close data-toast="Run stopped">Stop run</button>
+    <button class="btn secondary" type="button" data-close>Keep running</button>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST System</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="more" data-area="system">
+<div class="app">
+<main class="main">
+  <header class="topbar"><div class="lead"><a class="icon-btn" href="more.html" aria-label="Back to More"><svg class="i"><use href="#i-back"/></svg></a></div><div class="t">System</div><div class="trail"></div></header>
+
+  <div class="content">
+    <div class="ph"><h1>System</h1></div>
+
+    <section class="now" aria-label="Overall status">
+      <div class="now-main"><span class="tile lg crit"><svg class="i"><use href="#i-server"/></svg></span>
+        <div style="display:grid;gap:2px;flex:1;min-width:0"><span class="what">1 problem</span><span style="font-size:14px;color:var(--ink-2)">Backup failed · everything else healthy</span></div></div>
+      <div class="now-sub" style="grid-template-columns:repeat(3,1fr)">
+        <div style="display:grid;gap:0;justify-items:start"><span class="k">CPU</span><span class="v">20%</span></div>
+        <div style="display:grid;gap:0;justify-items:start"><span class="k">Memory</span><span class="v">45%</span></div>
+        <div style="display:grid;gap:0;justify-items:start"><span class="k">Disk</span><span class="v">80%</span></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="sv-h">
+      <div class="section-h"><h2 id="sv-h">Services</h2><span class="foot" style="padding:0">checked 1 min ago</span></div>
+      <ul class="group">
+        <li class="row"><span class="tile idle"><svg class="i"><use href="#i-home"/></svg></span><span class="copy"><span class="title">GYST</span><span class="meta" data-group="vis" data-name="tailnet" hidden>v0.9.3 <span class="sep"></span> deployed 2 days ago <span class="sep"></span> 0 restarts</span></span><span class="trail"><span class="state ok"><span class="dot ok"></span>Healthy</span></span></li>
+        <li class="row"><span class="tile idle"><svg class="i"><use href="#i-zap"/></svg></span><span class="copy"><span class="title">n8n</span><span class="meta" data-group="vis" data-name="tailnet" hidden>n8n 2.x <span class="sep"></span> 1 restart today</span></span><span class="trail"><span class="state ok"><span class="dot ok"></span>Healthy</span></span></li>
+        <li class="row"><span class="tile idle"><svg class="i"><use href="#i-grid"/></svg></span><span class="copy"><span class="title">SamVision</span></span><span class="trail"><span class="state ok"><span class="dot ok"></span>Healthy</span></span></li>
+        <li class="row"><span class="tile crit"><svg class="i"><use href="#i-database"/></svg></span><span class="copy"><span class="title">Backup</span><span class="meta">Failed 3h ago <span class="sep"></span> last good 27h ago</span></span><span class="trail"><span class="chip crit">Failed</span></span></li>
+        <li class="row"><span class="tile idle"><svg class="i"><use href="#i-lock"/></svg></span><span class="copy"><span class="title">Certificates</span></span><span class="trail"><span class="state ok"><span class="dot ok"></span>Valid · 61 days</span></span></li>
+      </ul>
+    </section>
+
+    <!-- Public-safe: no diagnostics, no actions -->
+    <div data-group="vis" data-name="public" class="banner idle"><svg class="i"><use href="#i-lock"/></svg><span class="grow">Details and actions open on your tailnet.</span></div>
+
+    <!-- Tailnet diagnostic -->
+    <section class="section" data-group="vis" data-name="tailnet" hidden aria-labelledby="ac-h">
+      <div class="section-h"><h2 id="ac-h">Actions</h2><span class="chip info nodot">Tailnet</span></div>
+      <ul class="group">
+        <li><button class="row" type="button" data-open="confirm-backup"><span class="tile"><svg class="i"><use href="#i-refresh"/></svg></span><span class="copy"><span class="title">Run backup now</span></span><svg class="i chev"><use href="#i-chev"/></svg></button></li>
+        <li><button class="row" type="button" data-open="confirm-backup"><span class="tile"><svg class="i"><use href="#i-refresh"/></svg></span><span class="copy"><span class="title">Restart n8n</span><span class="meta">Needs your password</span></span><svg class="i chev"><use href="#i-chev"/></svg></button></li>
+        <li><a class="row" href="#"><span class="tile idle"><svg class="i"><use href="#i-list"/></svg></span><span class="copy"><span class="title">Backup logs</span><span class="meta">Last 200 lines · redacted</span></span><svg class="i chev"><use href="#i-chev"/></svg></a></li>
+        <li><a class="row" href="apps.html"><span class="tile idle"><svg class="i"><use href="#i-ext"/></svg></span><span class="copy"><span class="title">Open Portainer</span></span><svg class="i chev"><use href="#i-chev"/></svg></a></li>
+      </ul>
+    </section>
+
+    <div class="proto-bar"><b>Prototype</b> · view as:
+      <span class="filters" style="display:inline-flex">
+        <button class="filter" type="button" data-single data-group="vis" data-show="public" aria-pressed="true">Public domain</button>
+        <button class="filter" type="button" data-single data-group="vis" data-show="tailnet" aria-pressed="false">Tailnet</button>
+      </span>
+      <button type="button" data-toggle-theme>Theme</button>
+    </div>
+  </div>
+</main>
+</div>
+
+<div class="dialog" id="confirm-backup" role="alertdialog" aria-modal="true" aria-labelledby="cb-h" aria-describedby="cb-p">
+  <h2 id="cb-h">Run backup now?</h2>
+  <p id="cb-p">Copies the GYST database and checks it. Takes about a minute.</p>
+  <div class="acts"><button class="btn" type="button" data-close data-toast="Backup started">Run backup</button><button class="btn secondary" type="button" data-close>Cancel</button></div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

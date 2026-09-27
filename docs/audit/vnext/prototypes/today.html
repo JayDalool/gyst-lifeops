@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Today</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="today" data-attn="3">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"></div>
+    <div class="t">Today</div>
+    <div class="trail">
+      <a class="icon-btn" href="launcher.html" aria-label="Search and commands"><svg class="i"><use href="#i-search"/></svg></a>
+      <button class="icon-btn" type="button" data-open="capture" aria-label="Capture a task"><svg class="i"><use href="#i-plus"/></svg></button>
+    </div>
+  </header>
+
+  <div class="content wide">
+    <div class="ph">
+      <div class="eyebrow">Sunday, 27 September</div>
+      <div class="ph-row">
+        <h1>Good morning</h1>
+        <span class="chip xp nodot num" title="Level 16 · 1,590 XP"><svg class="i i-16"><use href="#i-sparkle"/></svg>Lv 16</span>
+      </div>
+    </div>
+
+    <div class="two split">
+      <div class="content" style="gap:var(--s6)">
+        <!-- NOW -->
+        <section class="now" aria-label="Now">
+          <div class="now-main">
+            <button class="check" type="button" data-press data-toast="Done · +20 XP" aria-pressed="false" aria-label="Complete: Draft chapter 3 outline"><span></span></button>
+            <div class="copy" style="display:grid;gap:2px;min-width:0">
+              <span class="kicker">NOW</span>
+              <a class="what" href="project-detail.html">Draft chapter 3 outline</a>
+              <span class="row meta" style="padding:0;min-height:0;font-size:14px;color:var(--ink-2)">Kestrel Field Guide <span class="sep"></span> due 11:00</span>
+            </div>
+          </div>
+          <div class="now-sub">
+            <div><div class="tile" style="background:var(--xp-soft);color:var(--xp)"><svg class="i"><use href="#i-moonstar"/></svg></div><div><div class="k num">Next prayer · 1h 12m</div><div class="v">Dhuhr 1:21</div></div></div>
+            <div><div class="tile idle"><svg class="i"><use href="#i-calendar"/></svg></div><div><div class="k num">Next · 10:30</div><div class="v">Standup</div></div></div>
+          </div>
+        </section>
+
+        <!-- RHYTHM -->
+        <section class="section" aria-labelledby="rh-h">
+          <div class="section-h"><h2 id="rh-h">Rhythm</h2><span class="foot" style="padding:0">3 of 8</span></div>
+          <div class="rhythm" role="group" aria-label="Daily rhythm check-ins">
+            <button type="button" data-press aria-pressed="true" aria-label="Fajr, done"><span class="o"></span>Fajr</button>
+            <button type="button" class="next" data-press aria-pressed="false" aria-label="Dhuhr, next at 1:21 PM"><span class="o"></span>Dhuhr</button>
+            <button type="button" data-press aria-pressed="false" aria-label="Asr"><span class="o"></span>Asr</button>
+            <button type="button" data-press aria-pressed="false" aria-label="Maghrib"><span class="o"></span>Maghrib</button>
+            <button type="button" data-press aria-pressed="false" aria-label="Isha"><span class="o"></span>Isha</button>
+            <button type="button" data-press aria-pressed="true" aria-label="Morning athkar, done"><span class="o"></span>Sabah</button>
+            <button type="button" data-press aria-pressed="false" aria-label="Evening athkar"><span class="o"></span>Masaa</button>
+            <button type="button" data-press aria-pressed="true" aria-label="Gym, done"><span class="o"></span>Gym</button>
+          </div>
+        </section>
+
+        <!-- ATTENTION (scenario-dependent) -->
+        <section class="section" data-group="scn" data-name="busy" aria-labelledby="attn-h">
+          <div class="section-h"><h2 id="attn-h">Attention</h2><a href="attention.html">All 5</a></div>
+          <ul class="group attn">
+            <li><a class="row" href="attention.html"><span class="sev"><span class="tile crit"><svg class="i"><use href="#i-server"/></svg></span></span>
+              <span class="copy"><span class="title">Backup job failed</span><span class="meta">System <span class="sep"></span> 3h ago</span></span><span class="trail"><span class="chip crit">Critical</span></span></a></li>
+            <li><a class="row" href="reviews.html"><span class="sev"><span class="tile info"><svg class="i"><use href="#i-pr"/></svg></span></span>
+              <span class="copy"><span class="title">2 reviews waiting</span><span class="meta">ATL-142 Offline sync <span class="sep"></span> ATL-151 Export</span></span><span class="trail act"><span class="btn small secondary">Review</span></span></a></li>
+            <li><a class="row" href="attention.html"><span class="sev"><span class="tile warn"><svg class="i"><use href="#i-clock"/></svg></span></span>
+              <span class="copy"><span class="title">Renew parking permit</span><span class="meta">Overdue <span class="sep"></span> since Friday</span></span><svg class="i chev"><use href="#i-chev"/></svg></a></li>
+          </ul>
+        </section>
+        <section class="section" data-group="scn" data-name="overdue" hidden aria-label="Attention">
+          <div class="section-h"><h2>Attention</h2><a href="attention.html">Open</a></div>
+          <ul class="group attn">
+            <li><a class="row" href="attention.html"><span class="sev"><span class="tile warn"><svg class="i"><use href="#i-clock"/></svg></span></span>
+              <span class="copy"><span class="title">Renew parking permit</span><span class="meta">Overdue <span class="sep"></span> since Friday</span></span><span class="trail act"><span class="btn small secondary">Do today</span></span></a></li>
+          </ul>
+        </section>
+
+        <!-- TODAY'S ITEMS -->
+        <section class="section" aria-labelledby="items-h">
+          <div class="section-h"><h2 id="items-h">Today <span style="text-transform:none;letter-spacing:0;color:var(--ink-3);font-weight:500">· 4 left</span></h2><a href="#">All tasks</a></div>
+          <ul class="group">
+            <li class="row"><button class="check" type="button" data-press data-toast="Done · +10 XP" aria-pressed="false" aria-label="Complete: Call the bike shop"><span></span></button>
+              <span class="copy"><span class="title">Call the bike shop</span><span class="meta">Personal <span class="sep"></span> 12:00</span></span></li>
+            <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Lecture 4 — Consensus"><span></span></button>
+              <span class="copy"><span class="title">Lecture 4 · Consensus</span><span class="meta"><svg class="i i-16" style="color:var(--accent)"><use href="#i-cap"/></svg>Distributed Systems <span class="sep"></span> 45 min</span></span></li>
+            <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Evening walk"><span></span></button>
+              <span class="copy"><span class="title">Evening walk</span><span class="meta">Daily <span class="sep"></span> Health</span></span></li>
+            <li class="row"><button class="check" type="button" data-press aria-pressed="false" aria-label="Complete: Pack gym bag"><span></span></button>
+              <span class="copy"><span class="title">Pack gym bag</span><span class="meta">Daily</span></span></li>
+          </ul>
+          <details class="group" style="margin-top:var(--s2)">
+            <summary class="row compact"><span class="tile ok" style="width:28px;height:28px"><svg class="i i-16"><use href="#i-check"/></svg></span><span class="copy"><span class="title" style="font-weight:500;color:var(--ink-2)">Done · 3</span></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+            <div class="row compact"><span style="width:28px"></span><span class="copy"><span class="title" style="font-weight:450;color:var(--ink-3);text-decoration:line-through">Morning pages</span></span></div>
+            <div class="row compact"><span style="width:28px"></span><span class="copy"><span class="title" style="font-weight:450;color:var(--ink-3);text-decoration:line-through">Review inbox</span></span></div>
+            <div class="row compact"><span style="width:28px"></span><span class="copy"><span class="title" style="font-weight:450;color:var(--ink-3);text-decoration:line-through">Stretch 10 min</span></span></div>
+          </details>
+        </section>
+      </div>
+
+      <div class="content" style="gap:var(--s6)">
+        <!-- STATUS (exceptions + live activity only) -->
+        <section class="section" data-group="scn" data-name="busy" aria-label="Status">
+          <div class="strip">
+            <a href="health.html"><span class="dot warn"></span>Health not synced · 6:40</a>
+            <a href="agent-detail.html"><span class="dot info" style="animation:pulse 1.6s infinite"></span>Codex working · ATL-151</a>
+            <a href="system.html"><span class="dot crit"></span>Backup failed</a>
+          </div>
+        </section>
+        <section class="section" data-group="scn" data-name="normal" hidden aria-label="Status">
+          <div class="strip"><a href="system.html"><span class="dot ok"></span>All systems normal</a></div>
+        </section>
+
+        <!-- Health glance (only once data exists) -->
+        <section class="section" aria-labelledby="hg-h">
+          <div class="section-h"><h2 id="hg-h">Health</h2><a href="health.html">Open</a></div>
+          <a class="group row" href="health.html" style="border-radius:var(--r-lg)">
+            <span class="ring" style="--v:46;--c:var(--ok)"></span>
+            <span class="copy"><span class="title num">920 <span style="font-weight:450;color:var(--ink-2)">of 2,000 kcal</span></span><span class="meta num">Watch 4,120 steps <span class="sep"></span> Protein 58 g</span></span>
+            <svg class="i chev"><use href="#i-chev"/></svg>
+          </a>
+        </section>
+      </div>
+    </div>
+
+    <div class="proto-bar" role="group" aria-label="Prototype controls">
+      <b>Prototype</b> · fictional data · scenario:
+      <span class="filters" style="display:inline-flex">
+        <button class="filter" type="button" data-single data-group="scn" data-show="busy" aria-pressed="true">Busy</button>
+        <button class="filter" type="button" data-single data-group="scn" data-show="overdue" aria-pressed="false">One overdue</button>
+        <button class="filter" type="button" data-single data-group="scn" data-show="normal" aria-pressed="false">Everything normal</button>
+      </span>
+      <button type="button" data-toggle-theme>Theme</button>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- Quick capture sheet -->
+<div class="sheet" id="capture" role="dialog" aria-modal="true" aria-labelledby="cap-h" hidden>
+  <div class="grab"></div>
+  <div class="sheet-h"><h2 id="cap-h">New task</h2><button class="close" type="button" data-close aria-label="Close"><span><svg class="i i-16"><use href="#i-x"/></svg></span></button></div>
+  <form class="content" style="gap:var(--s3)" onsubmit="event.preventDefault()">
+    <div class="field"><label for="cap-t">Task</label><input class="input" id="cap-t" value="Book dentist tomorrow 9am"></div>
+    <div class="filters" role="group" aria-label="Parsed details">
+      <span class="filter" aria-pressed="true"><svg class="i i-16"><use href="#i-calendar"/></svg>Mon 9:00</span>
+      <span class="filter"><svg class="i i-16"><use href="#i-folder"/></svg>No project</span>
+      <span class="filter">Normal priority</span>
+    </div>
+    <button class="btn" type="submit" data-close data-toast="Task added">Add task</button>
+  </form>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

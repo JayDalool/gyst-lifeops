@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Dev Task</title>
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body data-tab="projects" data-area="development">
+<div class="app">
+<main class="main">
+  <header class="topbar">
+    <div class="lead"><a class="icon-btn" href="development.html" aria-label="Back to Development"><svg class="i"><use href="#i-back"/></svg></a></div>
+    <div class="t">ATL-160</div>
+    <div class="trail"><a class="icon-btn" href="#" aria-label="Open issue on GitHub"><svg class="i"><use href="#i-ext"/></svg></a></div>
+  </header>
+
+  <div class="content">
+    <section class="hero">
+      <div class="line"><span class="tag num">ATL-160</span><span class="chip">Ready</span><span class="tag">atlas-cli</span><span class="tag p1">P1</span></div>
+      <h1>Retry on network timeout</h1>
+      <p style="color:var(--ink-2);font-size:15px">Sync gives up after one timeout. Retry with backoff before showing an error.</p>
+    </section>
+
+    <!-- lifecycle: canonical in GitHub labels -->
+    <ol class="group" aria-label="Workflow" style="display:grid;grid-template-columns:repeat(5,1fr);padding:var(--s3) var(--s2);gap:2px;text-align:center;font-size:12px;font-weight:600;color:var(--ink-3)">
+      <li><span class="dot ok" style="margin:0 auto 6px"></span>Spec</li>
+      <li style="color:var(--accent)"><span class="dot info" style="margin:0 auto 6px;box-shadow:0 0 0 3px var(--info-soft)"></span>Ready</li>
+      <li><span class="dot" style="margin:0 auto 6px"></span>Working</li>
+      <li><span class="dot" style="margin:0 auto 6px"></span>Review</li>
+      <li><span class="dot" style="margin:0 auto 6px"></span>Done</li>
+    </ol>
+
+    <section class="section" aria-labelledby="ag-h">
+      <div class="section-h"><h2 id="ag-h">Agent</h2></div>
+      <ul class="group">
+        <li class="row"><span class="tile"><svg class="i"><use href="#i-bot"/></svg></span><span class="copy"><span class="title">Codex</span><span class="meta">Implementer <span class="sep"></span> review by Claude</span></span><span class="trail"><span class="tag">Normal risk</span></span></li>
+        <li><button class="row" type="button" data-open="reauth"><span class="tile ok"><svg class="i"><use href="#i-play"/></svg></span><span class="copy"><span class="title">Ready for agent</span><span class="meta">Adds agent:ready · needs your password</span></span><svg class="i chev"><use href="#i-chev"/></svg></button></li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="ac-h">
+      <div class="section-h"><h2 id="ac-h">Acceptance</h2><span class="foot" style="padding:0">0 of 3</span></div>
+      <ul class="group checklist">
+        <li><span class="ck"></span>Retries 3 times with backoff</li>
+        <li><span class="ck"></span>Shows one clear error after the last try</li>
+        <li><span class="ck"></span>Unit tests cover timeout and success after retry</li>
+      </ul>
+    </section>
+
+    <section class="section" aria-label="Details">
+      <div class="group">
+        <details><summary class="row"><span class="tile idle"><svg class="i"><use href="#i-list"/></svg></span><span class="copy"><span class="title">Explanation</span></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+          <div class="prose"><p>The sync client calls <strong>fetchNotes()</strong> once. On a flaky connection it fails and the user sees "Sync failed". Use the existing backoff helper.</p><p><strong>Out of scope:</strong> changing the server API.</p></div></details>
+        <details><summary class="row"><span class="tile idle"><svg class="i"><use href="#i-link"/></svg></span><span class="copy"><span class="title">Dependencies</span><span class="meta">None blocking</span></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+          <div class="prose"><p>Related: ATL-142 Offline sync (in review)</p></div></details>
+        <details><summary class="row"><span class="tile idle"><svg class="i"><use href="#i-layers"/></svg></span><span class="copy"><span class="title">Attachments</span><span class="meta">1 screenshot</span></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+          <div class="prose"><p>sync-error.png · open on GitHub</p></div></details>
+        <details><summary class="row"><span class="tile idle"><svg class="i"><use href="#i-clock"/></svg></span><span class="copy"><span class="title">History</span></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+          <ul class="timeline"><li><span class="dot ok"></span><span>Moved to Ready</span><span class="when">Sep 26</span></li><li><span class="dot"></span><span>Created from GYST</span><span class="when">Sep 24</span></li></ul></details>
+      </div>
+      <p class="foot">Issue and labels live on GitHub · synced 1 min ago</p>
+    </section>
+
+    <div class="proto-bar"><b>Prototype</b> · fictional data <button type="button" data-toggle-theme>Theme</button></div>
+  </div>
+</main>
+</div>
+
+<div class="sheet" id="reauth" role="dialog" aria-modal="true" aria-labelledby="ra-h" hidden>
+  <div class="grab"></div>
+  <div class="sheet-h"><h2 id="ra-h">Confirm it's you</h2><button class="close" type="button" data-close aria-label="Close"><span><svg class="i i-16"><use href="#i-x"/></svg></span></button></div>
+  <form class="content" style="gap:var(--s3)" onsubmit="event.preventDefault()">
+    <ul class="group"><li class="row"><span class="tile"><svg class="i"><use href="#i-bot"/></svg></span><span class="copy"><span class="title">Queue ATL-160 for Codex</span><span class="meta">Normal risk · atlas-cli · limit 1 running</span></span></li></ul>
+    <div class="field"><label for="ra-p">Password</label><input class="input" id="ra-p" type="password" autocomplete="current-password" value="demo-demo"></div>
+    <button class="btn" type="submit" data-close data-toast="Queued for Codex">Queue for agent</button>
+    <p class="foot" style="text-align:center">Valid for 15 minutes. Agents never merge.</p>
+  </form>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>
