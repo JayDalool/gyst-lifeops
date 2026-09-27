@@ -1,0 +1,113 @@
+name: GYST task
+description: A development or operational task (the canonical task record). Short fields are fine for small tasks.
+title: "GYST-VN-___ — "
+labels: ["status:inbox"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One Issue → one task branch (`task/<issue-number>-<slug>`) → one focused PR that says `Refs #<this issue>`.
+        Governance: `AGENTS.md` · Workflow: `docs/agents/IMPLEMENTATION_WORKFLOW.md`. Add `priority:*`, `type:*` and `risk:*` labels after creating.
+        Only Jay applies `agent:ready`.
+  - type: input
+    id: vn_id
+    attributes:
+      label: GYST-VN ID
+      description: Provisional roadmap ID from docs/audit/vnext/15_TASK_BACKLOG.md, or "none" for new work.
+      placeholder: GYST-VN-003
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences, outcome first.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Current problem
+      description: What is wrong or missing today, with evidence (finding IDs, file paths).
+    validations:
+      required: false
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements
+      placeholder: "- ..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checkable statements. The reviewer marks each PASS / FAIL / PARTIAL / NOT VERIFIED.
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Issues (#n) or GYST-VN IDs that must be done first. "None" if none.
+      placeholder: "None"
+    validations:
+      required: false
+  - type: textarea
+    id: design
+    attributes:
+      label: Design references
+      description: For UI work always 11, 12, 13 and 13A (docs/audit/vnext/); 17A for anything touching Galaxy.
+    validations:
+      required: false
+  - type: textarea
+    id: security
+    attributes:
+      label: Security references
+      description: e.g. docs/audit/vnext/09_SECURITY_FOUNDATION.md §…, 10A decisions, finding IDs.
+    validations:
+      required: false
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Tests to run; browser/device checks; operational evidence to record.
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+    validations:
+      required: false
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk class
+      description: "Informative (09 §J). Set the matching risk:* label too."
+      options:
+        - NORMAL
+        - ELEVATED
+        - PRIVILEGED
+        - NOT AGENT-ELIGIBLE
+    validations:
+      required: true
+  - type: dropdown
+    id: eligibility
+    attributes:
+      label: Agent eligibility
+      options:
+        - Claude/Codex implementable
+        - Human-assisted (agent prepares; Jay decides or executes)
+        - Human-only (Jay)
+        - NOT AGENT-ELIGIBLE operational work (Jay)
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Rollback, known risks, reviewer
+      description: Optional. Rollback approach, known risks, suggested implementer/reviewer, complexity (S/M/L).
+    validations:
+      required: false

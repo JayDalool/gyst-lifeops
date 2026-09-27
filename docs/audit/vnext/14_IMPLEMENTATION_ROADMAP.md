@@ -401,7 +401,7 @@ The first tasks mix foundation work with visible product progress. The numbering
 
 | # | Decision | Task | Recommendation |
 |---|---|---|---|
-| U-1 | Base branch for vNext; fate of unpushed `master` commits and `stash@{2}` | GYST-VN-001 | Jay decides; agents don't touch them |
+| U-1 | Base branch for vNext; fate of unpushed `master` commits and `stash@{2}` | GYST-VN-001 (Issue #2, open; see `18` §L) | Jay decides; agents don't touch them |
 | U-2 | Historical wrong-day rows | GYST-VN-011 | Measure first; correct only rows with a provable instant, or leave them |
 | U-3 | Off-host backup destination | GYST-VN-012 | A second machine on the tailnet; if cloud, client-side encrypted |
 | U-4 | Repository and packaging for Bridge/Provider/Runner | GYST-VN-071 | Separate private `gyst-ops` repo, not on the agent allowlist |
@@ -412,7 +412,7 @@ The first tasks mix foundation work with visible product progress. The numbering
 | U-9 | Replacing the NAV1 assertions in `scripts/check-ui-shell.cjs` | GYST-VN-025 | Treat as an explicit spec change that Jay acknowledges in the PR, not as weakening a test (`docs/RULES.md`) |
 | U-10 | Training storage shape | GYST-VN-059 | Decide before any training-history feature |
 | U-11 | Reconciling the existing `docs/tasks/` ledger (A1, A2, M3 Apple Health ingestion, `GYST_PASSWORD_HASH`) with this backlog | GYST-VN-001 | Record each as done, superseded or still open during the baseline task |
-| U-13 | Permanent Galaxy rule in `AGENTS.md`/`CLAUDE.md` | Stage 9 | Add the one-line rule quoted in `17A` (flagged for Stage 9; not added yet) |
+| U-13 | Permanent Galaxy rule in `AGENTS.md`/`CLAUDE.md` | Stage 9 | **Resolved in Stage 9** (`18` §K): the rule is in root `AGENTS.md` |
 | U-12 | Root containers other than GYST (n8n, SamVision, Kuma) | outside this backlog | Separate server-hardening review |
 
 ## Explicitly deferred

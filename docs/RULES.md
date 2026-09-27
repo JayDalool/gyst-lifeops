@@ -1,5 +1,7 @@
 # GYST — working rules for agents
 
+> **Note (2026-09-27):** these rules stay in force. For new work, two sections are read with [`../AGENTS.md`](../AGENTS.md): **§5 Branches**, where work happens on `task/<issue>-<slug>` branches off the base recorded by GYST-VN-001, merged by Jay via PR; and **§6 The ledger**, where the GitHub Issue is the ledger and `docs/tasks/` is historical. "One reviewable commit at a time" (§2.1) becomes one focused PR per Issue.
+
 **Audience:** Claude, Codex, and any other agent that commits to this
 repository. Jay is the operator and the only one who runs anything against the
 production database.
