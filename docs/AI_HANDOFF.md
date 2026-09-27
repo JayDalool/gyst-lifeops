@@ -1,10 +1,10 @@
 # GYST — Claude / Codex shared handoff
 
-**Last updated:** 2026-09-12
-**Updated by:** Claude
+**Last updated:** 2026-09-24
+**Updated by:** Codex
 **Repository:** `JayDalool/gyst-lifeops`
 **Implementation branch:** `feature/health-hardening`
-**Implementation HEAD at time of writing:** `12fabb6` (see the log below)
+**Deployed implementation:** `0b2ea78` (2026-09-24; see TRAIN1 for evidence)
 
 Read this at the start of every session, then read the task ledger. **Git is the
 source of truth.** If this file disagrees with the repository, the repository
@@ -58,7 +58,7 @@ The Health architecture combines GYST with Apple Health, Apple Watch,
 MyFitnessPal (routed through Apple Health), Apple Shortcuts ingestion, and Hevy
 Pro for strength training.
 
-> **Hevy is PLANNED, not implemented.** No Hevy code, tables or provider exists.
+> **Hevy implementation authorized 2026-09-24.** See TRAIN1 for current evidence.
 
 External apps are **providers**, not the source of truth for architecture.
 
@@ -102,36 +102,51 @@ ccec84a  docs — working rules, REV1/DOC1/B2 task files, M4 CI result
 Full detail, including acceptance criteria, in [`docs/tasks/`](tasks/README.md).
 
 | Task | Status | Commit(s) | CI |
+| [TRAIN1 Hevy and mobile UI](tasks/TRAIN1-hevy.md) | DONE; connection pending | `c5e32bc`, `39ec35d`, `0b2ea78` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/36073256705) |
 |---|---|---|---|
+| [UI-PLAN design system](tasks/UI-PLAN-design-system.md) | DONE | `0145c9c` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34668589837) |
+| [NAV1 Navigation cleanup](tasks/NAV1-navigation-cleanup.md) | IN PROGRESS | — | — |
+| [UI-10 Courses](tasks/UI-10-courses.md) | DONE | `612da7b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34794115995) |
+| [UI-9 Health Plan](tasks/UI-9-plan.md) | DONE | `694e5b7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34778983272) |
+| [UI-8 Progress](tasks/UI-8-progress.md) | DONE | `17c227b` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34774519741) |
+| [UI-7 Training](tasks/UI-7-training.md) | DONE | `63d33f5` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34739294360) |
+| [UI-6 Nutrition](tasks/UI-6-nutrition.md) | DONE | `f3a18f7` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34738919673) |
+| [UI-5 Health summary](tasks/UI-5-health.md) | DONE | `a6ec19f` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34725554881) |
+| [UI-4 Mobile Galaxy](tasks/UI-4-galaxy.md) | DONE | `0fea4fe` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34709626557) |
+| [UI-3 Projects](tasks/UI-3-projects.md) | DONE | `6c86252` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34708681737) |
+| [UI-2 Today](tasks/UI-2-today.md) | DONE | `3dd076d` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34671487875) |
+| [UI-1 shell](tasks/UI-1-shell.md) | DONE | `a8f9105` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34670549071) |
+| [UI-0 foundation](tasks/UI-0-foundation.md) | DONE | `99f5968` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/34669485151) |
 | [B1 SQLite PRAGMA correctness](tasks/B1-sqlite-pragma-correctness.md) | DONE | `fb4f1eb` | none — predates CI |
 | [B1-FIX review fixes](tasks/B1-FIX-review-fixes.md) | DONE | `a1dc3da`, `29adc43` | none — predates CI |
 | [B6 CI safety gate](tasks/B6-ci-safety-gate.md) | DONE | `f663f3f` | green |
-| [A3 session store](tasks/A3-session-store.md) | DEFERRED (\*) | `7835b7d` | green |
-| [A4 application auth](tasks/A4-application-auth.md) | DEFERRED (\*) | `fb05cc3` | green |
+| [A3 session store](tasks/A3-session-store.md) | DONE (deployed) | `7835b7d` | green |
+| [A4 application auth](tasks/A4-application-auth.md) | DONE (deployed) | `fb05cc3` | green |
 | [A5 Health API write-only](tasks/A5-health-api-write-only.md) | DONE | `18196e9` | green |
-| [A2 trusted TLS](tasks/A2-trusted-tls.md) | IN PROGRESS | — | — |
-| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | BLOCKED (on A2) | — | — |
+| [A2-DOMAIN public domain](tasks/A2-custom-domain.md) | DONE | `04cf28e` | [CI pending](https://github.com/JayDalool/gyst-lifeops/actions/runs/35821849995); public checks passed |
+| [A2 trusted TLS](tasks/A2-trusted-tls.md) | DONE | `ac9ae82` | [green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763) |
+| [A1 remove plaintext port](tasks/A1-remove-plaintext-port.md) | DONE (deployed) | `6700cec`, `ac9ae82` | server checks passed |
 | [OPS1 production FK audit](tasks/OPS1-production-fk-audit.md) | DONE (\*\*) | (manual) | n/a — operator |
 | [B2 backup tooling](tasks/B2-backup-tooling.md) | DONE | `820c704` | green |
 | [M4 live Day view](tasks/M4-live-day-view.md) | DONE | `60be715` | green |
 | [REV1 B1 independent review](tasks/REV1-b1-independent-review.md) | DONE | findings in `29adc43` | n/a — review |
 | [DOC1 documentation](tasks/DOC1-documentation.md) | DONE | `d4007a3`, `5341e46` | green |
-| [M3 Apple Health ingestion](tasks/M3-health-ingestion.md) | PLANNED | — | — |
+| [M3 Apple Health ingestion](tasks/M3-health-ingestion.md) | IN PROGRESS (nutrition validation) | existing Health Core/API | end-to-end pending |
 
-(\*) **A3/A4 deferred:** Auth is documented as complete but not deployed. Will be implemented after A2/A1/M3 ship. Currently no login required.  
+(*) **A3/A4 deployed:** Authentication is enabled; Jay confirmed iPhone login
+without a certificate warning after the approved HTTPS rollout.
 (\*\*) **OPS1 completed:** FK audit ran on 2026-09-12, returned zero violations. Database certified clean.
 
-**Nothing above has been verified in a real browser, on a real device, or
-against the production database.** CI green means the suite passes, not that the
-application was used.
+Browser and deployment checks are recorded per task. Jay confirmed phone login
+and Shortcut success. Physical iPhone review of TRAIN1 remains pending; CI alone
+is not evidence of physical-device validation.
 
 ### Health features that do NOT exist
 
-No AI tool layer. No foods, recipes or portion engine. No Hevy or training
-tables. No progress analytics. No Apple Health Shortcut (M3). The Health Core
-service layer exists, but `CreateHealthWeightEntry`, `ListHealthWeightEntries`
-and `GetHealthSyncState` have no handler — there is no UI to record a weight or
-see sync status.
+No AI tool layer or recipe library. Hevy routines, workout cache and muscle focus
+are implemented; live connection awaits HEVY_API_KEY. Progress and sync status
+views exist. The phone Shortcut returned success, but nutrition completeness and
+automation remain unverified (M3).
 
 ---
 
@@ -145,7 +160,10 @@ see sync status.
   before any deployment or migration. **Do not back up with `cp` —** the
   database is in WAL mode and the main file alone can be near-empty.
 - **`GYST_PASSWORD_HASH` must be set** or nobody can sign in after A4 deploys.
-- **Tailscale HTTPS is not enabled**, which blocks A2, therefore A1, therefore M3.
+- **Tailscale HTTPS eligibility is enabled** (verified 2026-09-22). A2 trusted
+  certificate retrieval passes an isolated probe; production deployment passed server checks;
+  Jay confirmed iPhone browser login without a warning and successful Shortcut
+  sync returning `last_synced_at` (2026-09-23). A2 is complete.
 - **M3 must not begin** before the M2.5 correctness and security gates close.
 - **UI v3 is design-only.** Not implemented.
 
@@ -189,7 +207,7 @@ sources overlap and summing double-counts. Watch is primary; phone is context.
 
 ### Training
 
-Hevy is selected but unimplemented. Future shape:
+Hevy is implemented and deployed; HEVY_API_KEY remains to be configured. Shape:
 `Hevy API → HevyProvider → normalized GYST training domain → SQLite → UI`.
 Store generic `training_*` tables with `provider`/`provider_id`, never `hevy_*`,
 and never bind the UI to raw Hevy JSON field names.
@@ -224,7 +242,7 @@ complete unless Git proves it.**
 
 ## 7. Do not do yet
 
-- Do not implement Hevy.
+- Hevy implementation is authorized by Jay (2026-09-24); see TRAIN1.
 - Do not redesign the production UI while hardening is mid-flight, unless asked.
 - Do not implement several plan commits in one batch — one reviewable commit at a time.
 - Do not edit applied migrations.
@@ -240,31 +258,23 @@ complete unless Git proves it.**
 
 ## 8. Next action
 
-**Operator steps completed:**
-- ✅ [OPS1](tasks/OPS1-production-fk-audit.md) — FK audit passed (zero violations)
-- ✅ Tailscale HTTPS — enabled in admin panel
-- ⏸️ `GYST_PASSWORD_HASH` — deferred (auth implementation deferred to after A2/A1/M3)
+**Configure the Hevy key privately, then verify the first real import.**
 
-**Agent work unblocked:**
+TRAIN1 code and mobile UI are deployed at https://gyst.zaylolabs.com. See
+[Hevy setup](HEVY_SETUP.md). Nutrition Shortcut completeness remains separate
+unresolved work; use [the phone guide](HEALTH_SHORTCUT_SETUP.md).
 
-1. **[A2 — Trusted TLS](tasks/A2-trusted-tls.md)** — IN PROGRESS
-   - Update Caddyfile to use Tailscale MagicDNS certificate
-   - Implement 90-day renewal automation
-   - Test from iPhone Shortcut
-   - Unblocks A1
+Jay requested continuing phone sync; MyFitnessPal scope is calories and macros
+from logged foods/recipes only, not a recipe library. Jay reported a successful real-sample Shortcut sync on 2026-09-23.
+The secure ingress gate is closed; nutrition completeness remains unverified. See [A2](tasks/A2-trusted-tls.md) for the reviewed setup,
+local evidence, deployment sequence and outstanding physical-phone checks.
 
-2. **[A1 — Remove plaintext port](tasks/A1-remove-plaintext-port.md)** — BLOCKED on A2
-   - Remove port 3005 from docker-compose.yml
-   - HTTPS-only ingress
-   - Unblocks M3
-
-3. **[M3 — Apple Health ingestion](tasks/M3-health-ingestion.md)** — PLANNED
-   - Shortcut sync handler at `/api/health/sync`
-   - Store observations (steps, calories, etc.)
-   - Handle NULL vs 0 semantics
-
-**After A2/A1/M3 ship:**
-- A3/A4 (authentication) — currently documented as DONE but not deployed; will implement then
+The persistent deployment checkout is `/srv/server/repos/gyst-lifeops` on
+`feature/health-hardening`; `/tmp/gyst-health-resume` is detached. Local Compose
+edits and design images are preserved in named Git stashes. A verified B2 backup
+preceded the approved rollout, and production authentication is enabled. Historical sections contain contradictory operator/auth claims: auth code
+exists, and an old record reports OPS1 passed, but production authentication and
+the audit evidence were not reverified in this task. No production DB access.
 
 ---
 
@@ -329,3 +339,132 @@ Append-only, newest last.
                       detailed handoff for next agent to implement A2 → A1
                       → M3.                           Commits: 9cd2c2c, 9a5aefd
 ```
+
+2026-09-11 — Codex — Inspected both approved design boards and implementation
+source at 5c50011. Prepared UI_SYSTEM.md and UI_SCREEN_MAP.md with exact UI-0/UI-1
+files, data gaps and preservation requirements. UI-PLAN awaits Jay's approval.
+No runtime changes or production access. Commit: 0145c9c. CI green: run 34668589837. Local format/vet/build/unit/race checks passed. Approval remains pending.
+
+2026-09-11 — Codex — Jay approved UI-0. Added the opt-in component foundation,
+Lucide subset and standalone development gallery. Chromium/WebKit review passed;
+real iPhone review pending. Commit: 99f5968; CI green: run 34669485151.
+
+2026-09-11 — Codex — Jay liked UI-0 and approved UI-1. Implemented the GYST
+shell, More, five SVG navigation links, theme ownership and private-safe offline
+behavior. Verification and commit evidence recorded in UI-1 task; no production
+deployment or data access.
+
+2026-09-11 — Codex — Jay approved UI-1 and requested the next phase. UI-2
+adopts Today and adds the shared daily checklist route. Existing task/study,
+prayer/Athan/trackers and XP actions remain. Health uses existing read services;
+no business logic/schema/production data changes. Evidence: UI-2 task file.
+
+2026-09-11 — Codex — Jay requested continuation after UI-2. UI-3 adopts Projects
+cards, status/roadmap filters, detail sections and forms while preserving
+hierarchy, proof, external work and action guards. Evidence: UI-3 task file.
+No production access or deployment.
+
+2026-09-12 — Codex — Resumed UI-3 with Jay’s approval. Implementation committed
+as 6c86252; CI green: run 34708681737. Local format/vet/build/unit/race and
+Chromium/WebKit checks passed. Physical iPhone review remains pending.
+Next action: Jay reviews UI-3 before approving UI-4. No production deployment.
+
+2026-09-12 — Codex — Jay authorized UI-4 while testing UI-3. Mobile Galaxy
+gestures, selection panel and category navigator committed as 0fea4fe. CI green:
+run 34709626557. Chromium/WebKit and local Go/Node checks passed; real iPhone
+review pending. No production access or deployment. Next: Jay reviews UI-4
+before approving UI-5 Health summary.
+
+2026-09-12 — Codex — Jay requested continuation and identified Health sizing.
+UI-5 committed as a6ec19f, CI green: run 34725554881. Phone/landscape/desktop,
+200% text, dark theme and gym interaction checks passed in Chromium/WebKit.
+Local Go and Node suites passed. No production deployment; physical device
+review pending. Next: Jay reviews Health sizing before UI-6 Nutrition.
+
+2026-09-12 — Codex — UI-6 Nutrition detail committed as f3a18f7; CI green:
+run 34738919673. Local Go/Node suites and Chromium/WebKit empty/populated
+responsive checks passed. No production deployment. Physical device review
+pending. Next: Jay reviews UI-6 before UI-7 Training. Shortcut setup remains
+with Jay’s other conversation; authenticated connection test was user-reported,
+not evidence that actual health measurements have synced.
+
+2026-09-13 — Codex — Jay requested UI-7. Training onboarding and shared gym
+check-ins committed as 63d33f5; CI green: run 34739294360. Local Go/Node and
+Chromium/WebKit responsive, large-text, dark-mode and persistent tracker checks
+passed. No production deployment. Physical device review pending. Next: Jay
+reviews UI-7 before UI-8 Progress. Hevy remains unimplemented.
+
+2026-09-13 — Codex — Continued the unfinished UI-8 Progress work. Recorded weight
+history, date ranges and accessible chart/table committed as 17c227b. CI green:
+run 34774519741. Local Go/Node checks and Chromium/WebKit responsive checks
+passed using a temporary fixture database. Physical iPhone review pending.
+No production deployment. Next: Jay reviews UI-8 before UI-9 Plan.
+
+2026-09-13 — Codex — Jay requested UI-9. Grouped Health Plan editor and saved
+cycle cards committed as 694e5b7. CI green: run 34778983272. Local Go/Node
+checks and Chromium/WebKit responsive create/edit/error-recovery checks passed
+using a temporary fixture database. No production deployment. Physical iPhone
+and software-keyboard review pending. Next: Jay reviews UI-9 before UI-10 Courses.
+
+2026-09-13 — Codex — Jay requested UI-10. Courses cards, detail sections and
+forms committed as 612da7b. CI green: run 34794115995. Local Go/Node and
+Chromium/WebKit responsive/action checks passed with temporary fixture data.
+Fixed WebKit select overflow at enlarged text and duplicate catch-up anchors.
+No production deployment; physical iPhone review pending. Next: UI-10 review
+before UI-11. Remaining phase detail lives in docs/UI_SCREEN_MAP.md.
+
+2026-09-22 — Codex — Resumed A2 in an isolated feature checkout. Caddy's
+Tailscale certificate integration passed a trusted TLS/proxy probe against a
+disposable backend; wrong hostname rejected. Local Go format/vet/build/unit/race
+checks passed. Production still publishes 3005; A1 corrected to rollout pending.
+Phone verification, operator backup/auth readiness and deployment remain open.
+MyFitnessPal scope confirmed: logged calories/macros only, no recipe library.
+
+2026-09-22 — Codex — Jay authorized production backup and deployment. B2 backup
+passed integrity_check; the backup has zero FK violations. Live auth enabled,
+password and health token configured (values not exposed). A2 CI green at
+35819079763, implementation ac9ae82. Added Docker context exclusions before
+building the production image. Rollout and phone checks follow.
+
+2026-09-22 — Codex — Approved A1/A2 deployment completed using the existing
+production data mount. Trusted HTTPS login 200, HSTS present, Health 303 to login
+and unauthenticated sync POST 401. Port 3005 no longer published/listening.
+A1 DONE; A2 awaits real iPhone login/Shortcuts verification. Automatic renewal
+is configured, not empirically observed across expiry. Next: Jay phone check.
+
+2026-09-22 — Codex — Jay confirmed real iPhone HTTPS access and successful
+existing-password login without a certificate warning. He already has a GYST
+Shortcut. Inspect whether it reads real samples or sends fixed test values before
+running it. The existing API already supports nutrition totals and idempotent
+daily replacement; do not reimplement ingestion based on older handoff prose.
+A2 remains open only for the Shortcuts-specific request check. No runtime edits.
+
+2026-09-23 — Codex — Jay confirmed the existing Shortcut reads real Health
+samples. Requested one run using the new HTTPS sync URL with its existing
+Bearer token. Created M3 acceptance checklist around the existing API, including
+MyFitnessPal source filtering, day totals, units and missing-versus-zero. No
+server code or production data changes. Await phone result before claiming sync.
+
+2026-09-23 — Codex — Jay reported `last_synced_at` returned from his real-sample
+Shortcut on the new HTTPS endpoint. A2 DONE. M3 IN PROGRESS: awaiting comparison
+of calories, protein, carbs and fat with MyFitnessPal; automation not yet
+verified. Confirmation is user-reported, not independent inspection of payload.
+
+2026-09-23 — Codex — Jay reported missing nutrition fields and requested a
+step-by-step Shortcut rebuild plus gyst.zaylolabs.com. Found the existing
+Cloudflare route still points to removed port 3005, a dependency missed in the
+prior rollout. Prepared/deployed Caddy origin on the existing proxy Docker
+network at gyst-caddy:8081, with no published HTTP port. Backup verified first.
+Internal login/auth/redirect checks and existing trusted HTTPS passed. Public
+route awaits Jay’s Cloudflare dashboard update. Added phone setup guide; no
+claim that missing nutrition is fixed.
+
+2026-09-23 — Codex — Jay saved the Cloudflare route. Public
+https://gyst.zaylolabs.com/login returned 200 with trusted TLS from host and
+proxy network; protected Health returned 303 and unauthenticated sync POST 401.
+A2-DOMAIN DONE; phone guide updated. Nutrition values and automation remain
+unverified; next is the step-by-step Shortcut setup and comparison.
+
+2026-09-24 — Codex — Jay authorized Hevy import, Training muscle map, mobile Galaxy fixes and deployment. Implementation plan: tasks/TRAIN1-hevy.md. No Hevy key configured; real-provider verification remains pending.
+
+2026-09-24 — Codex — TRAIN1 deployed after verified backup: Hevy provider/cache c5e32bc, Training muscle map 39ec35d, responsive Galaxy 0b2ea78. All implementation CI green, isolated Chromium/WebKit and Go/Node checks passed. Public login/TLS/auth/static-asset smoke checks passed. Hevy key absent; first real import and physical iPhone review pending. No fixture data deployed.

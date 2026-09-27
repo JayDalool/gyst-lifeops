@@ -1,5 +1,25 @@
-https://localhost, https://jay-server, https://10.0.0.183, https://100.117.218.14 {
-    tls internal
-    encode zstd gzip
-    reverse_proxy gyst-lifeops:8080
+# Use the full MagicDNS name reported by `tailscale status`.
+# Caddy obtains and renews its certificate through the local Tailscale daemon.
+https://{$GYST_TLS_HOSTNAME} {
+	tls {
+		get_certificate tailscale
+	}
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy gyst-lifeops:8080
+}
+
+# Cloudflare terminates public HTTPS; this origin is Docker-network-only.
+# Do not publish 8081 on the host. Preserve the public host for CSRF checks.
+http://gyst.zaylolabs.com:8081 {
+	@plainHTTP header X-Forwarded-Proto http
+	redir @plainHTTP https://gyst.zaylolabs.com{uri} permanent
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		Cache-Control "no-store"
+	}
+	reverse_proxy gyst-lifeops:8080 {
+		header_up X-Forwarded-Proto https
+	}
 }

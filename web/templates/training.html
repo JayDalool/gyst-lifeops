@@ -1,0 +1,59 @@
+{{define "content"}}
+<div class="gyst-scope health-ui training-ui">
+ <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Training</h1><p class="gyst-caption">Your routines. Your sessions. Your focus.</p></div>{{if .Connected}}<form method="post" action="/health/training/sync"><button class="btn" type="submit">Sync now</button></form>{{end}}</header>
+ <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training" aria-current="page">Training</a><a href="/health/progress">Progress</a><a href="/health/plan">Plan</a></nav>
+ <section class="card training-connection">
+ {{if .Connected}}<p class="kicker">Hevy · {{if .HasData}}Connected{{else}}Awaiting first sync{{end}}</p>{{else}}<p class="kicker">Hevy · Not connected</p>{{end}}
+ {{if .HasData}}<p class="meta">Last imported {{.LastSync}}{{if .Stale}} · Update overdue{{end}}. {{len .Routines}} routines. Showing your 30 most recent sessions below.</p>{{else}}<h2>Workout history unavailable</h2><p class="meta">Connect Hevy to bring your routines, exercises and logged sets into GYST.</p>{{end}}
+ {{if .Error}}<p role="status">{{.Error}}. Your last successful import is kept.</p>{{end}}
+ {{if not .Connected}}<details><summary>Connect Hevy</summary><p>Get your API key from <a href="https://hevy.com/settings?developer" target="_blank" rel="noopener noreferrer">Hevy developer settings</a> (Hevy Pro required). Add it to the server’s private <code>HEVY_API_KEY</code> setting and restart GYST. Keep the key private.</p><p class="meta">Once connected, GYST imports automatically every 37 minutes. Continue logging workouts in Hevy.</p></details>{{end}}
+ </section>
+ {{if .HasData}}
+ <section class="card training-focus" aria-labelledby="focus-title">
+ <div><p class="kicker">Muscle focus</p><h2 id="focus-title">{{if eq .Mode "planned"}}What your routines target{{else}}What you trained{{end}}</h2></div>
+ <form method="get" class="training-filters">
+ <label>View<select name="mode"><option value="planned" {{if eq .Mode "planned"}}selected{{end}}>Routine targets</option><option value="7" {{if eq .Mode "7"}}selected{{end}}>Logged · last 7 days</option><option value="30" {{if eq .Mode "30"}}selected{{end}}>Logged · last 30 days</option></select></label>
+ <label>Routine (planned view)<select name="routine"><option value="">All routines</option>{{range .Routines}}<option value="{{.ID}}" {{if eq $.Routine .ID}}selected{{end}}>{{.Title}}</option>{{end}}</select></label><button class="btn" type="submit">Show</button>
+ </form>
+ <p class="meta">{{if eq .Mode "planned"}}One pass through {{.Summary.Entries}} selected routines. This is planned work, not a weekly schedule.{{else}}{{.Summary.Entries}} sessions in this rolling period.{{end}} {{.Summary.Sets}} work sets; warmups excluded.</p>
+ <div class="training-focus-grid">
+ <div class="training-map"><svg viewBox="0 0 400 360" role="img" aria-labelledby="muscle-map-title muscle-map-desc"><title id="muscle-map-title">Primary muscle focus, front and back</title><desc id="muscle-map-desc">Darker blue means more primary work sets within this selection. Exact counts and secondary involvement are listed alongside. Uncoloured regions have no counted primary sets.</desc>
+ {{template "training.body" .}}
+ </svg><p class="training-legend"><span>No primary sets</span><i class="heat-0"></i><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><span>More sets</span></p></div>
+ <div>{{if .Summary.Muscles}}<table class="training-muscles"><caption>Sets by muscle group</caption><thead><tr><th scope="col">Muscle</th><th scope="col">Primary</th><th scope="col">Secondary</th></tr></thead><tbody>{{range .Summary.Muscles}}<tr><th scope="row"><span class="training-dot heat-{{.Level}}"></span>{{.Name}}</th><td>{{.Primary}}</td><td>{{.Secondary}}</td></tr>{{end}}</tbody></table>{{else}}<p>No mapped work sets in this selection.</p>{{end}}<p class="meta">Secondary counts show involvement; they are not added to primary sets. This map does not measure effort, recovery or muscle growth.</p>{{if .Summary.Unclassified}}<p class="meta">{{.Summary.Unclassified}} work sets have no muscle mapping.</p>{{end}}<p class="meta">Cardio, full body and other classifications appear in the table only.</p></div>
+ </div></section>
+ <div class="health-grid training-library"><section class="card"><p class="kicker">Plan</p><h2>Your routines</h2>{{range .Routines}}<details class="training-entry"><summary>{{.Title}} <span class="meta">{{len .Exercises}} exercises</span></summary><a href="/health/training?mode=planned&amp;routine={{.ID}}">View muscle focus</a>{{template "training.exercises" .}}</details>{{else}}<p class="meta">No routines received. Create a routine in Hevy, then sync.</p>{{end}}</section>
+ <section class="card"><p class="kicker">History</p><h2>Recent workouts</h2>{{range .Workouts}}<details class="training-entry"><summary>{{.Title}}<span class="meta">{{.Date}}</span></summary>{{template "training.exercises" .}}</details>{{else}}<p class="meta">No workouts received yet.</p>{{end}}</section></div>
+ {{end}}
+ <section class="card"><details><summary>Your gym week · manual check-ins</summary><p class="meta">These gym-day check-ins are separate from Hevy workout sessions. Tap a day to change done, not done or rest.</p>{{template "health.gymWeek" .}}<a href="/health/plan">Manage health plan</a><noscript><p class="meta">Enable JavaScript to update gym days.</p></noscript></details></section>
+</div>
+{{end}}
+{{define "training.exercises"}}<ol class="training-exercises">{{range .Exercises}}<li><strong>{{.Name}}</strong><small>{{.Muscles}}</small><ul>{{range .Sets}}<li>{{.}}</li>{{else}}<li>No sets received</li>{{end}}</ul></li>{{else}}<li>No exercises received</li>{{end}}</ol>{{end}}
+
+{{define "training.body"}}
+<g transform="translate(0 0)"><text x="100" y="25" class="body-label">Front</text><ellipse cx="100" cy="52" rx="15" ry="20" class="body-outline"/><path class="body-outline" d="M88 65 L87 76 L67 82 Q55 87 51 103 L39 143 L31 185 Q32 195 39 192 L49 169 L58 141 L66 120 L67 169 L60 198 L65 247 L68 287 L65 322 Q71 332 86 325 L88 286 L95 242 L100 214 L105 242 L112 286 L114 325 Q129 332 135 322 L132 287 L135 247 L140 198 L133 169 L134 120 L142 141 L151 169 L161 192 Q168 195 169 185 L161 143 L149 103 Q145 87 133 82 L113 76 L112 65 Z"/>
+<path class="body-muscle heat-{{index .Summary.Heat "neck"}}" d="M89 69 L111 69 L113 80 L100 88 L87 80 Z"><title>Neck</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "chest"}}" d="M70 92 Q84 86 98 93 L98 119 Q82 126 69 114 Z M102 93 Q116 86 130 92 L131 114 Q118 126 102 119 Z"><title>Chest</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "shoulders"}}" d="M65 85 L77 86 L68 109 L55 113 Q55 93 65 85 Z M123 86 L135 85 Q145 93 145 113 L132 109 Z"><title>Shoulders</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "biceps"}}" d="M55 115 L67 112 L63 138 L51 150 L47 145 Z M133 112 L145 115 L153 145 L149 150 L137 138 Z"><title>Biceps</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "forearms"}}" d="M47 150 L56 148 L47 174 L39 188 L35 185 Z M144 148 L153 150 L165 185 L161 188 L153 174 Z"><title>Forearms</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "abdominals"}}" d="M87 126 L98 124 L98 169 L89 180 L82 165 Z M102 124 L113 126 L118 165 L111 180 L102 169 Z"><title>Abdominals</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "quadriceps"}}" d="M72 190 L88 185 L95 202 L88 241 L82 258 L71 246 L66 209 Z M112 185 L128 190 L134 209 L129 246 L118 258 L112 241 L105 202 Z"><title>Quadriceps</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "adductors"}}" d="M91 184 L99 190 L98 215 L91 239 L93 207 Z M101 190 L109 184 L107 207 L109 239 L102 215 Z"><title>Adductors</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "abductors"}}" d="M66 175 L76 180 L67 210 L62 201 Z M124 180 L134 175 L138 201 L133 210 Z"><title>Abductors</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "calves"}}" d="M72 265 L84 265 L82 298 L76 314 L71 290 Z M116 265 L128 265 L129 290 L124 314 L118 298 Z"><title>Calves</title></path>
+</g>
+<g transform="translate(200 0)"><text x="100" y="25" class="body-label">Back</text><ellipse cx="100" cy="52" rx="15" ry="20" class="body-outline"/><path class="body-outline" d="M88 65 L87 76 L67 82 Q55 87 51 103 L39 143 L31 185 Q32 195 39 192 L49 169 L58 141 L66 120 L67 169 L60 198 L65 247 L68 287 L65 322 Q71 332 86 325 L88 286 L95 242 L100 214 L105 242 L112 286 L114 325 Q129 332 135 322 L132 287 L135 247 L140 198 L133 169 L134 120 L142 141 L151 169 L161 192 Q168 195 169 185 L161 143 L149 103 Q145 87 133 82 L113 76 L112 65 Z"/>
+<path class="body-muscle heat-{{index .Summary.Heat "neck"}}" d="M89 69 L111 69 L113 80 L100 88 L87 80 Z"><title>Neck</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "shoulders"}}" d="M65 85 L77 86 L68 109 L55 113 Q55 93 65 85 Z M123 86 L135 85 Q145 93 145 113 L132 109 Z"><title>Shoulders</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "forearms"}}" d="M47 150 L56 148 L47 174 L39 188 L35 185 Z M144 148 L153 150 L165 185 L161 188 L153 174 Z"><title>Forearms</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "traps"}}" d="M85 80 L100 88 L115 80 L124 91 L100 112 L76 91 Z"><title>Traps</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "upper_back"}}" d="M75 97 L97 114 L97 135 L76 120 Z M103 114 L125 97 L124 120 L103 135 Z"><title>Upper Back</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "lats"}}" d="M70 120 L82 129 L96 140 L93 163 L79 153 Z M118 129 L130 120 L121 153 L107 163 L104 140 Z"><title>Lats</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "lower_back"}}" d="M88 156 L100 168 L112 156 L119 176 L100 187 L81 176 Z"><title>Lower Back</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "triceps"}}" d="M55 115 L67 112 L63 138 L51 150 L47 145 Z M133 112 L145 115 L153 145 L149 150 L137 138 Z"><title>Triceps</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "glutes"}}" d="M73 180 L98 188 L98 211 Q79 223 66 205 Z M102 188 L127 180 L134 205 Q121 223 102 211 Z"><title>Glutes</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "hamstrings"}}" d="M68 214 L92 217 L88 244 L81 259 L70 249 Z M108 217 L132 214 L130 249 L119 259 L112 244 Z"><title>Hamstrings</title></path>
+<path class="body-muscle heat-{{index .Summary.Heat "calves"}}" d="M72 262 L84 263 L85 283 L77 301 L71 290 Z M116 263 L128 262 L129 290 L123 301 L115 283 Z"><title>Calves</title></path>
+</g>
+{{end}}

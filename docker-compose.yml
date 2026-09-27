@@ -3,12 +3,13 @@ services:
     build: .
     container_name: gyst-lifeops
     restart: unless-stopped
-    ports:
-      - "3005:8080"
     volumes:
       - ./data:/app/data
     environment:
+      - HEVY_API_KEY=${HEVY_API_KEY:-}
       - GYST_HEALTH_SYNC_TOKEN=${GYST_HEALTH_SYNC_TOKEN:-}
+      - GYST_PASSWORD_HASH=${GYST_PASSWORD_HASH:-}
+      - GYST_AUTH_DISABLED=${GYST_AUTH_DISABLED:-}
       - PORT=8080
       - DB_PATH=/app/data/lifeops.db
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
@@ -22,15 +23,32 @@ services:
     image: caddy:2.10.2-alpine
     container_name: gyst-caddy
     restart: unless-stopped
+    environment:
+      - GYST_TLS_HOSTNAME=${GYST_TLS_HOSTNAME:?Set the full Tailscale MagicDNS hostname}
+    networks:
+      - default
+      - proxy
     depends_on:
       - gyst-lifeops
     ports:
       - "3443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Mount the directory so a tailscaled restart can replace its socket.
+      - type: bind
+        source: /var/run/tailscale
+        target: /var/run/tailscale
+        read_only: true
+        bind:
+          create_host_path: false
       - caddy_data:/data
       - caddy_config:/config
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  proxy:
+    external: true
+    name: proxy

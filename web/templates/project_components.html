@@ -1,0 +1,17 @@
+{{define "gyst.project-card"}}
+<a class="gyst-project-card" data-color="{{.Project.Color}}" href="/projects/{{.Project.ID}}">
+  <span class="gyst-icon-tile">{{template "gyst.icon" .Icon}}</span>
+  <span class="gyst-project-copy"><strong>{{.Project.Name}}</strong><span class="gyst-caption">{{.Project.Category}}{{if .Project.ProjectKind}} · {{.Project.ProjectKind}}{{end}}</span></span>
+  <span class="gyst-badge">{{.Project.Status}}</span>
+  <span class="gyst-project-summary">{{if .NextDueItem}}Next: {{.NextDueItem}}{{if .NextDueDate}} · {{niceDate .NextDueDate}}{{end}}{{else if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else if or (eq .Project.Status "locked") (eq .Project.Status "upcoming")}}{{if .Project.AutoUnlock}}Unlocks automatically{{else}}Manual unlock{{end}}{{else if .Project.Description}}{{.Project.Description}}{{else}}{{.CompletedItems}} of {{.TotalItems}} missions complete{{end}}</span>
+  <div class="gyst-project-progress">{{template "gyst.progress" .ProgressView}}<span class="gyst-caption">{{.Progress}}%</span></div>
+</a>
+{{end}}
+{{define "projectRowsV2"}}
+{{$tree := .}}
+<ul class="project-list">
+  {{range .Main}}<li>{{template "gyst.project-card" (projectCard .)}}{{with index $tree.Children .Project.ID}}<ul class="subprojects" aria-label="Subprojects">{{range .}}<li>{{template "gyst.project-card" (projectCard .)}}</li>{{end}}</ul>{{end}}</li>{{end}}
+  {{range .Upcoming}}<li>{{template "gyst.project-card" (projectCard .)}}{{with index $tree.Children .Project.ID}}<ul class="subprojects" aria-label="Subprojects">{{range .}}<li>{{template "gyst.project-card" (projectCard .)}}</li>{{end}}</ul>{{end}}</li>{{end}}
+</ul>
+{{if and (not .Main) (not .Upcoming)}}<p class="gyst-caption">No projects match this view. Choose another status or roadmap.</p>{{end}}
+{{end}}

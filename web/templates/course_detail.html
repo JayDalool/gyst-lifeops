@@ -1,13 +1,14 @@
 {{define "content"}}
+<div class="gyst-scope courses-ui">
 {{$cid := .Course.ID}}
-<div class="page-head">
+<div class="gyst-header">
   <div>
     <p class="kicker"><a href="/courses">Courses</a> / {{if .Course.Provider}}{{.Course.Provider}}{{else}}course{{end}}{{if .Course.Instructor}} &middot; {{.Course.Instructor}}{{end}}</p>
-    <h1 class="page-title">{{.Course.Name}}</h1>
-    <p class="page-sub">
+    <h1 class="gyst-page-title">{{.Course.Name}}</h1>
+    <p class="gyst-caption">
       {{.Course.Status}}{{if .Course.TargetDate}} &middot; target {{niceDate .Course.TargetDate}}{{end}} &middot; {{.Course.ProgressPercent}}% complete.
     </p>
-    {{if .Course.Notes}}<p class="page-sub">{{.Course.Notes}}</p>{{end}}
+
   </div>
   <div class="map-head-actions">
     {{if .Course.URL}}<a class="btn ghost" href="{{.Course.URL}}" target="_blank" rel="noopener">Open course &#8599;</a>{{end}}
@@ -16,9 +17,11 @@
   </div>
 </div>
 
-<div class="card tight mt-24">
+<nav class="gyst-segments gyst-subnav" aria-label="Course sections"><a class="gyst-segment" href="#overview">Overview</a><a class="gyst-segment" href="#learning-blocks">Learning blocks</a><a class="gyst-segment" href="#course-notes">Notes</a><a class="gyst-segment" href="#add-block">Add block</a></nav>
+<div id="overview" class="card tight mt-24">
+  <h2>Overview</h2>
   <div class="progress-row">
-    <div class="progress{{if eq .Course.ProgressPercent 100}} done{{end}}"><span style="width: {{progressWidth .Course.ProgressPercent}}"></span></div>
+    <progress class="gyst-progress" max="100" value="{{.Course.ProgressPercent}}" aria-label="Course progress">{{.Course.ProgressPercent}}%</progress>
     <span class="num meta">{{.Course.ProgressPercent}}%</span>
   </div>
   <div class="flag-row mt-16">
@@ -47,7 +50,7 @@
         <p class="group-label">Catch-ups</p>
         <ul class="tasks">
           {{range .Catchups}}
-            <li class="task" id="block-{{.ID}}">
+            <li class="task" id="catchup-{{.ID}}">
               <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/complete">
                 <input type="hidden" name="return_to" value="/courses/{{$cid}}#block-{{.ID}}">
                 <input type="checkbox" aria-label="Done: {{.Title}}" onchange="this.form.requestSubmit()">
@@ -62,7 +65,7 @@
       </div>
     {{end}}
 
-    <div class="day-group" aria-label="Learning blocks">
+    <div id="learning-blocks" class="day-group" aria-label="Learning blocks">
       <p class="group-label">Learning blocks</p>
       {{if .Blocks}}
         <ul class="tasks">
@@ -84,7 +87,7 @@
                   {{if .URL}}<a href="{{.URL}}" target="_blank" rel="noopener">{{.Title}} &#8599;</a>{{else}}{{.Title}}{{end}}
                 </div>
                 <div class="task-meta">
-                  {{blockLabel .BlockType}}
+                  {{blockLabel .BlockType}} &middot; {{.Status}}
                   {{- if .IsCatchup}} &middot; catch-up{{end}}
                   {{- if .DueDate}} &middot; due {{niceDate .DueDate}}{{else}} &middot; self-paced{{end}}
                   {{- if .StartTime}} &middot; {{.StartTime}}{{if .EndTime}}&ndash;{{.EndTime}}{{end}}{{end}}
@@ -106,10 +109,11 @@
           {{end}}
         </ul>
       {{else}}
-        <p class="meta">No learning blocks yet. Add lessons, study blocks, or deadlines on the right.</p>
+        <p class="meta">No learning blocks yet. Use Add block to schedule a lesson, study session or deadline.</p>
       {{end}}
     </div>
 
+    <section id="course-notes" class="card"><h2>Course notes</h2>{{if .Course.Notes}}<p class="course-notes">{{.Course.Notes}}</p>{{else}}<p class="meta">No course notes yet.</p>{{end}}<a class="btn quiet" href="/courses/{{$cid}}/edit">Edit notes</a></section>
     <div class="flag-row mt-24">
       <form method="post" action="/courses/{{$cid}}/archive">
         <button class="btn sm danger" type="submit">Archive course</button>
@@ -118,7 +122,7 @@
   </div>
 
   <aside>
-    <section class="card tight">
+    <section id="add-block" class="card tight">
       <h2 class="section-title card-title">Add learning block</h2>
       <form class="form-stack" method="post" action="/courses/{{$cid}}/blocks">
         <input type="hidden" name="return_to" value="/courses/{{$cid}}">
@@ -172,5 +176,6 @@
       </form>
     </section>
   </aside>
+</div>
 </div>
 {{end}}

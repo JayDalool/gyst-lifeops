@@ -1,0 +1,59 @@
+/* UI-1 shell. Page components retain their existing CSS until their own phase. */
+:root { --gyst-topbar-height: 64px; --gyst-header-clearance: calc(65px + var(--gyst-safe-top)); --gyst-nav-clearance: 0px; --gyst-sidebar-width: 208px; }
+[data-gyst-theme="dark"] .gyst-scope { color-scheme: dark; }
+:root .gyst-app { background: var(--gyst-bg); }
+.gyst-skip { position: fixed; top: 8px; left: 16px; z-index: 1000; transform: translateY(-160%); padding: 12px 16px; color: #fff; background: #2563eb; border-radius: 12px; }
+.gyst-skip:focus { transform: none; }
+.gyst-topbar { position: relative; z-index: 110; background: var(--gyst-surface); border-bottom: 1px solid var(--gyst-border); padding-top: var(--gyst-safe-top); }
+.gyst-topbar-inner { max-width: 1200px; min-height: var(--gyst-topbar-height); margin: auto; padding-inline: max(16px,var(--gyst-safe-left)) max(16px,var(--gyst-safe-right)); display: flex; align-items: center; gap: 16px; }
+.gyst-brand { display: flex; align-items: center; min-height: 44px; font-size: 1.5rem; letter-spacing: -.065em; font-weight: 750; color: var(--gyst-text); text-decoration: none; }
+.gyst-topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.gyst-topbar-actions .gyst-button { border: 0; }
+.gyst-primary { display: flex; justify-content: center; gap: 24px; padding: 4px max(16px,var(--gyst-safe-right)) 4px max(16px,var(--gyst-safe-left)); background: var(--gyst-surface); border-bottom: 1px solid var(--gyst-border); }
+.gyst-primary > a { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 88px; min-height: 44px; color: var(--gyst-text-secondary); font-size: .875rem; font-weight: 500; text-decoration: none; }
+.gyst-primary > a > span { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
+.gyst-primary > a[aria-current="page"] { color: var(--gyst-blue); }
+.gyst-primary > a:hover { color: var(--gyst-blue); }
+:root .wrap.gyst-main { max-width: 1200px; margin: 0 auto; padding: 24px max(16px,var(--gyst-safe-right)) 32px max(16px,var(--gyst-safe-left)); }
+.gyst-main:focus { outline: none; }
+.gyst-more { display: grid; gap: 32px; }
+.gyst-more-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
+/* Existing command-palette behavior and form names remain, with shared shell geometry. */
+:root .command-palette.gyst-command { border: 1px solid var(--gyst-border); border-radius: 24px; color: var(--gyst-text); background: var(--gyst-surface); width: min(600px,calc(100% - 32px)); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px - var(--gyst-safe-top) - var(--gyst-safe-bottom)); overflow: auto; font-family: var(--gyst-font); box-shadow: var(--gyst-shadow-floating); }
+:root .gyst-command .command-results a { color: var(--gyst-text); min-height: 44px; }
+:root .gyst-command .command-results a.active { background: var(--gyst-blue-soft); color: var(--gyst-blue); }
+:root .gyst-command input, :root .gyst-command select { min-height: 44px; font-size: 16px; color: var(--gyst-text); background: var(--gyst-surface); }
+:root .gyst-command :is(button,a,input,select):focus-visible { outline: 2px solid var(--gyst-blue); outline-offset: 2px; }
+:root body.galaxy-page .galaxy-stage { --text: #e7f2fb; --muted: #b5c0d0; --quiet: #a6b4c5; --accent: #53c6e4; --border: #344155; --border-strong: #64748b; }
+/* Galaxy keeps its scene and controls; only its available shell rectangle changes. */
+:root body.galaxy-page .wrap.gyst-main { padding-top: 0; padding-inline: 0; max-width: none; }
+:root body.galaxy-page .galaxy-stage { height: calc(100vh - var(--gyst-header-clearance) - var(--gyst-nav-clearance)); height: calc(100dvh - var(--gyst-header-clearance) - var(--gyst-nav-clearance)); min-height: 0; }
+/* Desktop uses a sidebar; phone and tablet use the same five bottom links. */
+@media (min-width: 1024px) {
+  .gyst-topbar { margin-left: var(--gyst-sidebar-width); }
+  .gyst-primary { position: fixed; inset: 0 auto 0 0; z-index: 100; width: var(--gyst-sidebar-width); display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; padding: max(24px,var(--gyst-safe-top)) 16px; border-right: 1px solid var(--gyst-border); border-bottom: 0; overflow-y: auto; }
+  .gyst-primary > a { justify-content: flex-start; padding: 12px; border-radius: 12px; min-width: 0; }
+  .gyst-primary > a[aria-current="page"] { background: var(--gyst-blue-soft); }
+  .gyst-primary > a > span { text-align: left; }
+  :root .wrap.gyst-main { width: calc(100% - var(--gyst-sidebar-width)); margin-left: var(--gyst-sidebar-width); margin-right: 0; max-width: none; }
+  .gyst-main > :not(.galaxy-stage) { max-width: 1200px; margin-inline: auto; }
+}
+
+@media (max-width: 1023px) { .gyst-more-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 1023px) {
+  :root { --gyst-topbar-height: 56px; --gyst-header-clearance: calc(57px + var(--gyst-safe-top)); --gyst-nav-clearance: calc(57px + var(--gyst-safe-bottom)); scroll-padding-bottom: calc(var(--gyst-nav-clearance) + 24px); }
+  .gyst-topbar-inner { gap: 12px; }
+  .gyst-primary { position: fixed; z-index: 100; inset: auto 0 0; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 0; padding: 0 max(8px,var(--gyst-safe-right)) var(--gyst-safe-bottom) max(8px,var(--gyst-safe-left)); border-top: 1px solid var(--gyst-border); border-bottom: 0; }
+  .gyst-primary > a { min-width: 0; min-height: var(--gyst-tab-height); flex-direction: column; gap: 2px; padding: 5px 0; font-size: .75rem; line-height: 1.2; }
+  .gyst-primary .gyst-icon { width: 22px; height: 22px; }
+  :root .wrap.gyst-main { padding-bottom: calc(var(--gyst-nav-clearance) + 24px); }
+
+  .gyst-more { gap: 24px; }
+  :root body.galaxy-page .galaxy-hub, :root body.galaxy-page.galaxy-nav-hidden .galaxy-hub { top: 16px; }
+  :root body.galaxy-page .galaxy-context { bottom: 48px; max-height: 40%; overflow: auto; }
+  :root .lifeops-toast { bottom: calc(var(--gyst-nav-clearance) + 16px); }
+}
+@media (prefers-reduced-motion: reduce) { .gyst-skip { transition: none; } }
+
+@media (max-width: 767px) { .gyst-more-grid { grid-template-columns: minmax(0,1fr); } }
+:root .gyst-command .command-results a[hidden] { display: none; }

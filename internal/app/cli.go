@@ -44,6 +44,7 @@ func Run() {
 
 	lifeOps, err := New(Config{
 		DBPath:           *dbPath,
+		HevyAPIKey:       os.Getenv("HEVY_API_KEY"),
 		MigrationsDir:    *migrationsDir,
 		SeedPath:         *seedPath,
 		TemplateDir:      *templateDir,

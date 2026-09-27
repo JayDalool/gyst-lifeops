@@ -1,19 +1,26 @@
-const CACHE = "lifeops-shell-v28";
-const SHELL = ["/today", "/galaxy", "/projects", "/static/css/styles.css?v=design-5", "/static/js/app.js?v=3", "/static/js/galaxy.js?v=24", "/static/js/vendor/three.module.js", "/static/js/vendor/three.core.js", "/static/images/oliver-galaxy-pixel.png", "/static/favicon.svg"];
+// Cache only public static assets. Private pages, API responses and redirects
+// never enter CacheStorage, including pages viewed before signing out.
+const CACHE = "lifeops-shell-v42-galaxy";
+const SHELL = ["/static/css/styles.css?v=ui-1", "/static/css/ui-tokens.css?v=ui-0", "/static/css/ui-components.css?v=ui-0", "/static/css/ui-shell.css?v=nav-1", "/static/css/ui-today.css?v=ui-2", "/static/css/ui-projects.css?v=ui-3", "/static/css/ui-galaxy.css?v=mobile-2", "/static/css/ui-health.css?v=ui-9", "/static/css/ui-training.css?v=train-1", "/static/css/ui-courses.css?v=ui-10", "/static/js/theme.js?v=ui-1", "/static/js/charts.js?v=ui-2", "/static/js/app.js?v=nav-1", "/static/favicon.svg"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));
-self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
+self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("lifeops-shell-") && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
+const OFFLINE = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GYST · Offline</title><body><main><h1>You’re offline</h1><p>Connect to the internet to view your GYST data.</p><p><a href="">Try again</a></p></main></body></html>';
 self.addEventListener("fetch", event => {
-  // Private Health responses must never enter CacheStorage or use HTML fallbacks.
-  let path;
-  try { path = decodeURIComponent(new URL(event.request.url).pathname).replace(/\/+$/, ""); } catch (_) { return; }
-  if (event.request.headers.has("Authorization")) return;
-  if (path === "/api/health" || path.startsWith("/api/health/") || path === "/health/plan") return;
-  // Never cache the login page or an authentication decision: a cached 303 to
-  // /login would keep bouncing a signed-in user, and a cached page from before
-  // sign-out would survive it.
-  if (path === "/login" || path === "/logout") return;
-  if (event.request.method !== "GET" || new URL(event.request.url).origin !== location.origin) return;
-  event.respondWith(fetch(event.request).then(response => { if (response.ok && response.type === "basic") { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, copy)); } return response; }).catch(() => caches.match(event.request).then(response => response || caches.match("/today"))));
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== "GET" || url.origin !== self.location.origin || request.headers.has("Authorization")) return;
+  if (request.mode === "navigate") {
+    event.respondWith(fetch(request, {cache: "no-store"}).catch(() => new Response(OFFLINE, {status: 503, headers: {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store"}})));
+    return;
+  }
+  if (!url.pathname.startsWith("/static/")) return;
+  event.respondWith(fetch(request).then(async response => {
+    if (response.ok && response.type === "basic" && !response.redirected && !response.headers.get("Cache-Control")?.includes("no-store") && !response.headers.get("Content-Type")?.includes("text/html")) {
+      const cache = await caches.open(CACHE);
+      await cache.put(request, response.clone());
+    }
+    return response;
+  }).catch(async () => (await caches.match(request, {cacheName: CACHE})) || Response.error()));
 });
 self.addEventListener("push", event => {
   let data = {title:"Prayer time", body:"It is time for prayer.", url:"/today", tag:"prayer"};

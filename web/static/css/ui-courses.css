@@ -1,0 +1,46 @@
+/* UI-10: Courses list, detail and forms opt into shared visual tokens. */
+:root .courses-ui { display: grid; gap: 20px; min-width: 0; }
+:root .courses-ui :is(h1,h2,h3,p,a,span,div,label) { overflow-wrap: anywhere; }
+:root .courses-ui .gyst-header { flex-wrap: wrap; align-items: start; }
+:root .courses-ui .gyst-header > div { min-width: 0; }
+:root .courses-ui :is(.card,.day-group) { min-width: 0; margin: 0; padding: 16px; border: 1px solid var(--gyst-border); border-radius: 16px; background: var(--gyst-surface); box-shadow: var(--gyst-shadow-card); }
+:root .courses-ui :is(.mt-16,.mt-24) { margin-top: 0; }
+:root .courses-ui h2 { font-size: 1.125rem; line-height: 1.4; margin: 0 0 12px; color: var(--gyst-text); }
+:root .courses-ui :is(.meta,.kicker,.task-meta,.group-label) { font-size: .875rem; line-height: 1.5; color: var(--gyst-text-secondary); }
+:root .courses-ui .btn { display: inline-flex; justify-content: center; align-items: center; min-height: 44px; padding: 10px 14px; border: 1px solid var(--gyst-border); border-radius: 12px; background: var(--gyst-surface); color: var(--gyst-blue); white-space: normal; }
+:root .courses-ui .btn.danger { color: var(--gyst-danger-text); }
+:root .courses-ui :is(a,button,input,textarea,select):focus-visible { outline: 2px solid var(--gyst-blue); outline-offset: 3px; }
+:root .courses-ui .course-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; }
+:root .courses-ui .course { display: grid; align-content: start; gap: 16px; }
+:root .courses-ui .course-heading { display: flex; gap: 12px; align-items: start; }
+:root .courses-ui .course-heading > div { min-width: 0; }
+:root .courses-ui .course h2 a { color: var(--gyst-text); }
+:root .courses-ui .progress-row { display: flex; align-items: center; gap: 12px; }
+:root .courses-ui .progress-row progress { flex: 1; min-width: 0; }
+:root .courses-ui .next-block { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; border-radius: 12px; background: var(--gyst-bg); font-size: .875rem; }
+:root .courses-ui .next-block-copy { flex: 1 1 150px; min-width: 0; color: var(--gyst-text); }
+:root .courses-ui .next-block-copy small { display: block; margin-top: 8px; color: var(--gyst-text-secondary); }
+:root .courses-ui :is(.map-head-actions,.flag-row) { display: flex; flex-wrap: wrap; gap: 8px; }
+:root .courses-ui .flag-row { margin-top: 16px; }
+:root .courses-ui form { margin: 0; min-width: 0; }
+:root .courses-ui .cols-wide { display: grid; grid-template-columns: minmax(0,1fr); gap: 24px; align-items: start; }
+:root .courses-ui .cols-wide > div { display: grid; gap: 20px; min-width: 0; }
+:root .courses-ui .tasks { list-style: none; margin: 0; padding: 0; }
+:root .courses-ui .task { display: flex; flex-wrap: wrap; align-items: start; gap: 8px; padding: 16px 0; border-bottom: 1px solid var(--gyst-border); background: transparent; }
+:root .courses-ui .task-body { flex: 1 1 150px; min-width: 0; }
+:root .courses-ui .task-title { color: var(--gyst-text); font-size: 1rem; }
+:root .courses-ui .task form:has(input[type=checkbox]) { display: grid; place-items: center; min-width: 44px; min-height: 44px; }
+:root .courses-ui input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--gyst-blue); }
+:root .courses-ui .form-stack { display: grid; gap: 16px; }
+:root .courses-ui .form-card { width: 100%; max-width: 640px; }
+:root .courses-ui .form-row { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; }
+:root .courses-ui .field { display: grid; gap: 8px; min-width: 0; color: var(--gyst-text); font-size: .875rem; }
+:root .courses-ui .field :is(input,textarea,select) { width: 100%; max-width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--gyst-control-border); border-radius: 12px; background: var(--gyst-surface); color: var(--gyst-text); font-size: 1rem; }
+:root .courses-ui textarea { resize: vertical; }
+:root .courses-ui .course-notes { white-space: pre-wrap; margin-bottom: 16px; }
+:root .courses-ui [id] { scroll-margin-top: calc(var(--gyst-header-height, 120px) + 24px); }
+@media (min-width: 600px) { :root .courses-ui .form-row { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (min-width: 768px) { :root .courses-ui .course-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } :root .courses-ui :is(.card,.day-group) { padding: 24px; } }
+@media (min-width: 1024px) { :root .courses-ui .course-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } :root .courses-ui .cols-wide { grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); } }
+/* WebKit otherwise paints long native option labels beyond a narrow field. */
+:root .courses-ui .field select { appearance: none; overflow: hidden; text-overflow: ellipsis; padding-right: 32px; background-image: linear-gradient(45deg, transparent 50%, var(--gyst-text-secondary) 50%), linear-gradient(135deg, var(--gyst-text-secondary) 50%, transparent 50%); background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }

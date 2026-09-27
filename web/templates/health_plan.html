@@ -1,63 +1,87 @@
 {{define "content"}}
-<div class="page-head">
-  <div><p class="kicker"><a href="/health">Health</a> · Plan</p><h1 class="page-title">Health plan</h1>
-    <p class="page-sub">Set your own targets for a goal period. Dates include both start and end; periods cannot overlap.</p></div>
-  <a class="btn quiet" href="/health">Back to Health</a>
-</div>
-{{if .Saved}}<p role="status">Health cycle saved.</p>{{end}}
-{{if .Error}}<p role="alert" id="plan-error">{{.Error}}</p>{{end}}
-<form class="card form-card form-stack mt-24" method="post" action="/health/plan" {{if .Error}}aria-describedby="plan-error"{{end}}>
+<div class="gyst-scope health-ui health-plan-ui">
+  <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Health plan</h1><p class="gyst-caption">Your goals, dates and targets in one place.</p></div><a class="btn" href="/health/plan?new=1">New cycle</a></header>
+  <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training">Training</a><a href="/health/progress">Progress</a><a href="/health/plan" aria-current="page">Plan</a></nav>
+  {{if .Saved}}<p class="card health-plan-success" role="status">Health cycle saved.</p>{{end}}
+  {{if .Error}}<div class="card health-plan-error" role="alert" id="plan-error"><h2>Check your plan</h2><p>{{.Error}}</p><p class="meta">Your entries are kept below so you can correct them and save again.</p></div>{{end}}
+  <div class="health-plan-layout">
+<form class="health-plan-form gyst-stack" method="post" action="/health/plan" {{if .Error}}aria-describedby="plan-error"{{end}}>
   <input type="hidden" name="cycle_id" value="{{.Form.ID}}">
-  <h2 class="section-title">{{if eq .Form.ID "0"}}New cycle{{else}}Edit cycle{{end}}</h2>
-  <p class="meta">A new cycle starts with zero targets. Enter your chosen values; these are configuration, not recommendations. The default period is approximately 12 weeks and can be changed.</p>
-  <label class="field"><span>Title</span>
-    <input type="text" name="title" required maxlength="200" value="{{.Form.Title}}">
+  <h2>{{if eq .Form.ID "0"}}New cycle{{else}}Edit cycle{{end}}</h2>
+  {{if eq .Form.ID "0"}}<p class="meta">Choose a period and enter your own targets. New cycles start with zero targets; the default dates can be changed.</p>{{end}}
+  <fieldset class="card health-plan-section"><legend>Goal &amp; dates</legend>
+  <p class="meta" id="plan-dates-help">Both dates are included. Choose any duration; cycles cannot overlap.</p>
+  <div class="health-plan-fields">
+  <label class="gyst-field health-plan-wide"><span>Title</span>
+    <input class="gyst-input" type="text" name="title" required maxlength="200" value="{{.Form.Title}}">
   </label>
-  <label class="field"><span>Start date</span>
-    <input type="date" name="start_date" required value="{{.Form.StartDate}}">
+  <label class="gyst-field"><span>Start date</span>
+    <input class="gyst-input" type="date" aria-describedby="plan-dates-help" name="start_date" required value="{{.Form.StartDate}}">
   </label>
-  <label class="field"><span>End date</span>
-    <input type="date" name="end_date" required value="{{.Form.EndDate}}">
+  <label class="gyst-field"><span>End date</span>
+    <input class="gyst-input" type="date" aria-describedby="plan-dates-help" name="end_date" required value="{{.Form.EndDate}}">
   </label>
-  <label class="field"><span>Primary goal</span>
-    <textarea name="primary_goal" rows="3" maxlength="2000" required>{{.Form.PrimaryGoal}}</textarea>
+  <label class="gyst-field health-plan-wide"><span>Primary goal</span>
+    <textarea class="gyst-input" name="primary_goal" rows="3" maxlength="2000" required>{{.Form.PrimaryGoal}}</textarea>
   </label>
-  <label class="field"><span>Daily calorie target (kcal)</span>
-    <input type="number" name="daily_calorie_target" required min="0" max="1000000000" step="any" value="{{.Form.DailyCalorieTarget}}">
+  </div></fieldset>
+  <fieldset class="card health-plan-section"><legend>Daily nutrition targets</legend>
+  <p class="meta">These are your chosen targets, not recorded intake.</p>
+  <div class="health-plan-fields">
+  <label class="gyst-field"><span>Daily calorie target (kcal)</span>
+    <input class="gyst-input" type="number" inputmode="decimal" name="daily_calorie_target" required min="0" max="1000000000" step="any" value="{{.Form.DailyCalorieTarget}}">
   </label>
-  <label class="field"><span>Protein target (g)</span>
-    <input type="number" name="protein_target_g" required min="0" max="1000000000" step="any" value="{{.Form.ProteinTargetG}}">
+  <label class="gyst-field"><span>Protein target (g)</span>
+    <input class="gyst-input" type="number" inputmode="decimal" name="protein_target_g" required min="0" max="1000000000" step="any" value="{{.Form.ProteinTargetG}}">
   </label>
-  <label class="field"><span>Carbohydrate target (g)</span>
-    <input type="number" name="carbs_target_g" required min="0" max="1000000000" step="any" value="{{.Form.CarbsTargetG}}">
+  <label class="gyst-field"><span>Carbohydrate target (g)</span>
+    <input class="gyst-input" type="number" inputmode="decimal" name="carbs_target_g" required min="0" max="1000000000" step="any" value="{{.Form.CarbsTargetG}}">
   </label>
-  <label class="field"><span>Fat target (g)</span>
-    <input type="number" name="fat_target_g" required min="0" max="1000000000" step="any" value="{{.Form.FatTargetG}}">
+  <label class="gyst-field"><span>Fat target (g)</span>
+    <input class="gyst-input" type="number" inputmode="decimal" name="fat_target_g" required min="0" max="1000000000" step="any" value="{{.Form.FatTargetG}}">
   </label>
-  <label class="field"><span>Fiber target (g)</span>
-    <input type="number" name="fiber_target_g" required min="0" max="1000000000" step="any" value="{{.Form.FiberTargetG}}">
+  <label class="gyst-field"><span>Fiber target (g)</span>
+    <input class="gyst-input" type="number" inputmode="decimal" name="fiber_target_g" required min="0" max="1000000000" step="any" value="{{.Form.FiberTargetG}}">
   </label>
-  <label class="field"><span>Target deficit (kcal)</span>
-    <input type="number" name="target_deficit_kcal" required min="0" max="1000000000" step="any" value="{{.Form.TargetDeficitKcal}}">
+  </div></fieldset>
+  <fieldset class="card health-plan-section"><legend>Energy target</legend>
+  <p class="meta">Enter a positive deficit magnitude. Food budget and observed energy balance remain separate; this target does not predict your final daily balance.</p>
+  <div class="health-plan-fields">
+  <label class="gyst-field"><span>Target deficit (kcal)</span>
+    <input class="gyst-input" type="number" inputmode="decimal" name="target_deficit_kcal" required min="0" max="1000000000" step="any" value="{{.Form.TargetDeficitKcal}}">
   </label>
-  <label class="field"><span>Strength sessions / week</span>
-    <input type="number" name="strength_sessions_per_week" required min="0" max="1000000000" step="1" value="{{.Form.StrengthSessionsPerWeek}}">
+  </div></fieldset>
+  <fieldset class="card health-plan-section"><legend>Activity targets</legend>
+  <p class="meta">Weekly session goals and a daily step target. Watch and phone steps remain separate.</p>
+  <div class="health-plan-fields">
+  <label class="gyst-field"><span>Strength sessions / week</span>
+    <input class="gyst-input" type="number" inputmode="numeric" name="strength_sessions_per_week" required min="0" max="1000000000" step="1" value="{{.Form.StrengthSessionsPerWeek}}">
   </label>
-  <label class="field"><span>Cardio sessions / week</span>
-    <input type="number" name="cardio_sessions_per_week" required min="0" max="1000000000" step="1" value="{{.Form.CardioSessionsPerWeek}}">
+  <label class="gyst-field"><span>Cardio sessions / week</span>
+    <input class="gyst-input" type="number" inputmode="numeric" name="cardio_sessions_per_week" required min="0" max="1000000000" step="1" value="{{.Form.CardioSessionsPerWeek}}">
   </label>
-  <label class="field"><span>Step target</span>
-    <input type="number" name="step_target" required min="0" max="1000000000" step="1" value="{{.Form.StepTarget}}">
+  <label class="gyst-field"><span>Step target</span>
+    <input class="gyst-input" type="number" inputmode="numeric" name="step_target" required min="0" max="1000000000" step="1" value="{{.Form.StepTarget}}">
   </label>
-  <label class="field"><span>Notes (optional)</span>
-    <textarea name="notes" rows="3" maxlength="10000">{{.Form.Notes}}</textarea>
+  </div></fieldset>
+  <fieldset class="card health-plan-section"><legend>Notes</legend>
+  <p class="meta">Keep any context you want to revisit with this cycle.</p>
+  <div class="health-plan-fields">
+  <label class="gyst-field health-plan-wide"><span>Notes (optional)</span>
+    <textarea class="gyst-input" name="notes" rows="3" maxlength="10000">{{.Form.Notes}}</textarea>
   </label>
-  <p class="meta">A deficit target is a positive magnitude. Observed energy balance is not a prediction of your final daily deficit.</p>
-  <button class="btn" type="submit">Save health cycle</button>
+  </div></fieldset>
+  <div class="gyst-cluster health-plan-actions"><button class="gyst-button" type="submit">Save health cycle</button><a class="btn" href="/health">Back to Health</a></div>
 </form>
-<section class="section-head"><h2 class="section-title">Your cycles</h2><a class="btn quiet" href="/health/plan?new=1">New cycle</a></section>
-<div class="card"><ul class="list">
-{{range .Cycles}}<li><a class="grow" href="/health/plan?id={{.ID}}">{{.Title}}</a><span class="meta">{{.StartDate}} – {{.EndDate}}</span></li>
-{{else}}<li>No health cycles configured yet.</li>{{end}}
-</ul></div>
+  <aside class="gyst-stack" aria-label="Saved health cycles">
+    <section class="card"><h2>Your cycles</h2><p class="meta">Open a saved cycle to review or edit its targets.</p>
+      <ul class="health-cycle-list">
+      {{range .Cycles}}<li><a href="/health/plan?id={{.ID}}" {{if eq (printf "%d" .ID) $.Form.ID}}aria-current="true"{{end}}><strong>{{.Title}}</strong><span>{{.StartDate}} – {{.EndDate}}</span><span>{{.PrimaryGoal}}</span>{{if eq (printf "%d" .ID) $.Form.ID}}<span class="health-cycle-selected">Editing this cycle</span>{{end}}</a></li>
+      {{else}}<li><p class="meta">No health cycles configured yet. Save your first cycle using the form.</p></li>{{end}}
+      </ul>
+    </section>
+    <section class="card"><h2>Plan &amp; observations</h2><p class="meta">Targets describe what you intend to do. <a href="/health">Today's Health summary</a> shows the observations received so far. Historical plan adherence is not available yet.</p></section>
+  </aside>
+  </div>
+</div>
 {{end}}

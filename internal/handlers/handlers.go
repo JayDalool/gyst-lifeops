@@ -37,6 +37,10 @@ type Handler struct {
 }
 
 type TodayData struct {
+	ChecklistOnly  bool
+	NextReminder   *models.ReminderView
+	Greeting       string
+	HealthSnapshot TodayHealthSnapshot
 	Page           string
 	Today          string
 	Progress       int
@@ -270,6 +274,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch segments[0] {
 	case "dashboard":
 		http.Redirect(w, r, "/today", http.StatusPermanentRedirect)
+	case "checklist":
+		if len(segments) != 1 {
+			http.NotFound(w, r)
+			return
+		}
+		h.today(w, r)
 	case "today":
 		h.today(w, r)
 	case "galaxy":
@@ -278,6 +288,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			h.galaxy(w, r)
 		}
+	case "more":
+		h.more(w, r)
 	case "monthly":
 		h.monthly(w, r)
 	case "tasks":
@@ -297,6 +309,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "health":
 		if len(segments) == 1 {
 			h.health(w, r)
+		} else if len(segments) == 2 && segments[1] == "progress" {
+			h.healthProgress(w, r)
+		} else if len(segments) == 3 && segments[1] == "training" && segments[2] == "sync" {
+			h.trainingSync(w, r)
+		} else if len(segments) == 2 && segments[1] == "training" {
+			h.training(w, r)
+		} else if len(segments) == 2 && segments[1] == "nutrition" {
+			h.nutrition(w, r)
 		} else if len(segments) == 2 && segments[1] == "plan" {
 			h.healthPlan(w, r)
 		} else {
@@ -478,7 +498,31 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 			currentName = ""
 		}
 	}
-	h.render(w, "today.html", TodayData{
+	checklistOnly := strings.Trim(r.URL.Path, "/") == "checklist"
+	var healthSnapshot TodayHealthSnapshot
+	if !checklistOnly {
+		health, healthErr := h.Service.HealthToday()
+		healthSnapshot = buildTodayHealthSnapshot(buildHealthTodayView(health, h.Service.Now()), healthErr)
+	}
+	greeting := "Good morning"
+	location, _ := time.LoadLocation(prayerConfig.Timezone)
+	if location == nil {
+		location = time.UTC
+	}
+	if hour := h.Service.Now().In(location).Hour(); hour >= 18 {
+		greeting = "Good evening"
+	} else if hour >= 12 {
+		greeting = "Good afternoon"
+	}
+	page := "today.html"
+	if checklistOnly {
+		page = "checklist.html"
+	}
+	h.render(w, page, TodayData{
+		ChecklistOnly:  checklistOnly,
+		Greeting:       greeting,
+		NextReminder:   nextTodayReminder(remindersToday, h.Service.Now().In(location)),
+		HealthSnapshot: healthSnapshot,
 		Page:           "today",
 		Today:          h.Service.TodayString(),
 		Progress:       services.CompletionPercentage(items),
@@ -835,7 +879,7 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 			serverError(w, err)
 			return
 		}
-		statusFilter := cleanForm(r.URL.Query().Get("status"), "current")
+		statusFilter := projectFilter(r.URL.Query().Get("status"))
 		unlocked := r.URL.Query().Get("unlocked") == "1"
 
 		// A specific roadmap is selected → single filtered deck (radio tabs).
@@ -2070,20 +2114,28 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	files := []string{
 		filepath.Join(h.TemplateDir, "layout.html"),
 		filepath.Join(h.TemplateDir, "rocket_route.html"),
+		filepath.Join(h.TemplateDir, "ui_icons.html"),
+		filepath.Join(h.TemplateDir, "ui_components.html"),
+		filepath.Join(h.TemplateDir, "ui_shell.html"),
+		filepath.Join(h.TemplateDir, "today_components.html"),
+		filepath.Join(h.TemplateDir, "project_components.html"),
+		filepath.Join(h.TemplateDir, "health_components.html"),
 		filepath.Join(h.TemplateDir, page),
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
-		"xpStats":      func() models.PlayerStats { return playerXP },
-		"join":         strings.Join,
-		"joinInts":     joinInts,
-		"niceDate":     niceDate,
-		"niceDateTime": niceDateTime,
-		"niceNumber":   niceNumber,
-		"greeting":     greeting,
-		"nodeState":    nodeState,
-		"levelPct":     levelPct,
-		"toNextLevel":  toNextLevel,
-		"blockLabel":   services.BlockTypeLabel,
+		"primarySection": primarySection,
+		"projectCard":    projectCard,
+		"xpStats":        func() models.PlayerStats { return playerXP },
+		"join":           strings.Join,
+		"joinInts":       joinInts,
+		"niceDate":       niceDate,
+		"niceDateTime":   niceDateTime,
+		"niceNumber":     niceNumber,
+		"greeting":       greeting,
+		"nodeState":      nodeState,
+		"levelPct":       levelPct,
+		"toNextLevel":    toNextLevel,
+		"blockLabel":     services.BlockTypeLabel,
 		"routeDone": func(nodes []models.RouteNode) int {
 			done := 0
 			for _, node := range nodes {

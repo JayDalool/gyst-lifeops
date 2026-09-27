@@ -1,9 +1,10 @@
 {{define "content"}}
-<div class="page-head">
+<div class="gyst-scope courses-ui">
+<div class="gyst-header">
   <div>
     <p class="kicker"><a href="/courses">Courses</a></p>
-    <h1 class="page-title">{{.Title}}</h1>
-    <p class="page-sub">Anything self-paced counts &mdash; Udemy, a bootcamp, a YouTube series. Fields marked <em class="req">*</em> are required.</p>
+    <h1 class="gyst-page-title">{{.Title}}</h1>
+    <p class="gyst-caption">Anything self-paced counts &mdash; Udemy, a bootcamp, a YouTube series. Fields marked <em class="req">*</em> are required.</p>
   </div>
   <a class="btn quiet" href="/courses">Cancel</a>
 </div>
@@ -60,4 +61,5 @@
   </label>
   <button class="btn" type="submit">Save course</button>
 </form>
+</div>
 {{end}}

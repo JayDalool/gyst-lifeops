@@ -1,0 +1,61 @@
+/* UI-2: Today composition uses UI-0 cards, typography, status and progress. */
+.today-page { display: grid; gap: 16px; }
+.today-heading { margin-bottom: 4px; }
+.today-heading > div { display: grid; gap: 4px; }
+.today-intention { display: flex; align-items: center; gap: 12px; }
+.today-grid { display: grid; gap: 16px; grid-template-columns: minmax(0,1fr); align-items: start; }
+.today-page .gyst-stack { gap: 16px; }
+.today-page .gyst-header { flex-wrap: wrap; gap: 8px; }
+.today-page .gyst-section-title { font-size: 1.125rem; }
+.today-page .today-link { display: inline-flex; align-items: center; min-height: 44px; gap: 4px; color: var(--gyst-blue); font-size: .875rem; text-decoration: none; }
+.today-link .gyst-icon { width: 16px; height: 16px; }
+.today-focus-title { display: block; padding-block: 8px; min-height: 44px; color: var(--gyst-text); font-size: 1.125rem; font-weight: 600; text-decoration: none; }
+.today-checklist > .gyst-progress { margin-block: 12px 8px; }
+.today-page .tasks { margin: 8px 0 0; padding: 0; list-style: none; }
+.today-page .task { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--gyst-border); background: transparent; }
+.today-page .task:last-child { border-bottom: 0; }
+.today-page .task-body { flex: 1; min-width: 100px; }
+.today-page .task-title { font-size: .9375rem; line-height: 1.4; }
+.today-page .task-title a { display: flex; align-items: center; min-height: 44px; color: var(--gyst-text); overflow-wrap: anywhere; }
+.today-page .task-meta, .today-page .task-when, .today-page .meta { color: var(--gyst-text-secondary); font-size: .8125rem; line-height: 1.5; }
+.today-page .task form { margin: 0; }
+.today-page input[type="checkbox"] { appearance: auto; width: 24px; height: 24px; margin: 10px; accent-color: #2563eb; cursor: pointer; }
+.today-page .task input:disabled { cursor: default; }
+.today-page .btn { min-width: 44px; min-height: 44px; color: var(--gyst-blue); border: 1px solid var(--gyst-border); background: var(--gyst-surface); border-radius: var(--gyst-radius-sm); padding: 8px 12px; white-space: normal; }
+.today-page .btn:hover { background: var(--gyst-blue-soft); }
+.today-metrics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.today-metrics > .gyst-card { background: var(--gyst-bg); border: 0; padding: 12px; box-shadow: none; gap: 8px; }
+.today-metrics .gyst-number { font-size: 1.625rem; }
+.today-metrics .gyst-caption, .today-metrics .gyst-status { font-size: .8125rem; }
+.today-metrics .gyst-number .gyst-unit { display: block; }
+.today-page .day-group { margin: 0; }
+.today-page .prayer-hero { display: grid; gap: 16px; margin: 0; color: var(--gyst-text); background: var(--gyst-surface); }
+.today-page .prayer-hero h2 { font-size: 1.25rem; }
+.today-page .prayer-time { color: var(--gyst-blue); font-size: 1.75rem; }
+.today-page .prayer-alert-panel { min-width: 0; text-align: left; }
+.today-page .prayer-countdown { font-size: 1.125rem; color: var(--gyst-text); }
+.today-page .prayer-alert-actions { justify-content: flex-start; flex-wrap: wrap; }
+.today-page .group-label { color: var(--gyst-text-secondary); font-size: .875rem; }
+.today-page .tracker-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.today-page .tracker-row form { flex: 1 1 85px; margin: 0; }
+.today-page .tracker-dot { width: 100%; min-height: 64px; padding: 8px; color: var(--gyst-text); border: 1px solid var(--gyst-border); border-radius: var(--gyst-radius-sm); background: var(--gyst-bg); }
+.today-page .tracker-dot.status-done { color: var(--gyst-positive-text); background: var(--gyst-control-bg); }
+.today-page .tracker-dot.status-skipped { color: var(--gyst-warning-text); }
+.today-page .tracker-dot.prayer-current { outline: 2px solid var(--gyst-blue); outline-offset: 1px; }
+.today-page .list { list-style: none; padding: 0; }
+.today-page .list li { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-block: 12px; border-bottom: 1px solid var(--gyst-border); }
+.today-page .list li:last-child { border: 0; }
+.today-page .list a { display: inline-flex; align-items: center; min-height: 44px; color: var(--gyst-blue); }
+.today-page .slot-time { color: var(--gyst-text-secondary); }
+/* Same centralized breakpoints as UI_SYSTEM: tablet 768, desktop 1024. */
+@media (min-width: 768px) { .today-grid { grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 24px; } .today-page { gap: 24px; } }
+@media (min-width: 1024px) { .today-grid { grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); } }
+.today-context { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.today-task-check { display: grid; place-items: center; min-width: 44px; min-height: 44px; cursor: pointer; }
+.today-page .today-task-check input { margin: 0; }
+.today-page [data-tracker-status] { display: block; font-size: .75rem; text-transform: capitalize; }
+@media (max-width: 374px) { .today-context, .today-metrics { grid-template-columns: minmax(0,1fr); } }
+.today-page .tracker-dot { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; line-height: 1.4; }
+:root .today-page .tracker-dot small { margin: 0; color: var(--gyst-text-secondary); font-size: .75rem; }
+.today-page .tracker-dot > span:first-child { display: none; }
+.today-dedicated { max-width: 760px; margin-inline: auto; }

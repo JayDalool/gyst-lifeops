@@ -9,11 +9,13 @@ import (
 
 	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/handlers"
+	"lifeops-tracker/internal/providers/hevy"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 )
 
 type Config struct {
+	HevyAPIKey    string
 	DBPath        string
 	MigrationsDir string
 	SeedPath      string
@@ -65,6 +67,10 @@ func New(config Config) (*App, error) {
 	service := services.New(repo)
 	pushContext, cancelPush := context.WithCancel(context.Background())
 	go service.RunPushScheduler(pushContext)
+	if config.HevyAPIKey != "" {
+		service.Training = &services.TrainingSync{Provider: hevy.New(config.HevyAPIKey)}
+		go service.RunTrainingSync(pushContext)
+	}
 	webHandler := handlers.New(service, config.TemplateDir)
 	webHandler.AllowPublicFeeds = config.AllowPublicFeeds
 	webHandler.HealthSyncToken = config.HealthSyncToken

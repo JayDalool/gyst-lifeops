@@ -1,9 +1,10 @@
 {{define "content"}}
-<div class="page-head">
+<div class="gyst-scope courses-ui">
+<div class="gyst-header">
   <div>
     <p class="kicker">Learning deck</p>
-    <h1 class="page-title">Courses</h1>
-    <p class="page-sub">Self-paced courses, bootcamps, and modules &mdash; tracked your way.</p>
+    <h1 class="gyst-page-title">Courses</h1>
+    <p class="gyst-caption">Self-paced courses, bootcamps, and modules &mdash; tracked your way.</p>
   </div>
   <a class="btn ghost" href="/courses/new">Add course</a>
 </div>
@@ -21,13 +22,13 @@
   <div class="course-grid mt-24">
     {{range .Courses}}
       <section class="card course">
-        <div>
+        <div class="course-heading"><span class="gyst-icon-tile">{{template "gyst.icon" "book-open"}}</span><div>
           <p class="kicker">{{if .Course.Provider}}{{.Course.Provider}} &middot; {{end}}{{.Course.Status}}</p>
-          <h3><a href="/courses/{{.Course.ID}}">{{.Course.Name}}</a></h3>
-          {{if .Course.Instructor}}<p class="meta">with {{.Course.Instructor}}</p>{{end}}
+          <h2><a href="/courses/{{.Course.ID}}">{{.Course.Name}}</a></h2>
+          {{if .Course.Instructor}}<p class="meta">with {{.Course.Instructor}}</p>{{end}}</div>
         </div>
         <div class="progress-row">
-          <div class="progress{{if eq .Course.ProgressPercent 100}} done{{end}}"><span style="width: {{progressWidth .Course.ProgressPercent}}"></span></div>
+          <progress class="gyst-progress" max="100" value="{{.Course.ProgressPercent}}" aria-label="Course progress">{{.Course.ProgressPercent}}%</progress>
           <span class="meta num">{{.Course.ProgressPercent}}%</span>
         </div>
         <div class="next-block">
@@ -37,6 +38,7 @@
           </div>
           <a class="btn sm ghost" href="/courses/{{.Course.ID}}">Open</a>
         </div>
+        {{if .Course.TargetDate}}<p class="meta">Target: {{niceDate .Course.TargetDate}}</p>{{end}}
         <p class="meta">
           {{.CompletedBlocks}} of {{.BlockCount}} blocks
           {{- if .Course.URL}} &middot; <a href="{{.Course.URL}}" target="_blank" rel="noopener">course site &#8599;</a>{{end}}
@@ -45,6 +47,7 @@
     {{end}}
   </div>
 {{else}}
-  <p class="meta mt-24">No courses yet. <a href="/courses/new">Add your first course</a> &mdash; Udemy, a bootcamp, a YouTube series, anything self-paced.</p>
+  <p class="card meta mt-24">No courses yet. <a href="/courses/new">Add your first course</a> &mdash; Udemy, a bootcamp, a YouTube series, anything self-paced.</p>
 {{end}}
+</div>
 {{end}}

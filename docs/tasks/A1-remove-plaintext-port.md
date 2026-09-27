@@ -2,11 +2,10 @@
 
 - **ID:** A1
 - **Title:** Make Caddy the only ingress
-- **Status:** `BLOCKED`
-- **Owner:** Claude (blocked on operator action for A2)
-- **Implementation commit(s):** None. No commit touches `docker-compose.yml`
-  for this on `feature/health-hardening`.
-- **Review status:** N/A — not started.
+- **Status:** `DONE` — deployed and server-verified 2026-09-22
+- **Owner:** Claude
+- **Implementation commit(s):** `6700cec`
+- **Review status:** Implementation `6700cec`, trusted TLS `ac9ae82`; production checks passed.
 
 ## Problem
 
@@ -23,10 +22,10 @@ action first.
 
 ## Acceptance criteria
 
-- [ ] `ports:` removed from the `gyst-lifeops` service
-- [ ] Port 3005 not listening on any host interface
-- [ ] Application still reachable through Caddy
-- [ ] HSTS header added
+- [x] `ports:` removed from the `gyst-lifeops` service
+- [x] Port 3005 not listening on any host interface
+- [x] Application still reachable through Caddy
+- [x] HSTS header added
 
 ## Blockers
 
@@ -34,4 +33,7 @@ action first.
 
 ## Next action
 
-Wait for A2. Nothing to implement until then.
+Phone verification for A2, then M3. The approved rollout removed the live
+3005 mapping: `docker ps` shows only container port 8080 and `ss` shows no
+3005 listener. Trusted HTTPS login returns 200 with HSTS; unauthenticated
+Health redirects to login and Health sync returns 401. See A2 for backup evidence.

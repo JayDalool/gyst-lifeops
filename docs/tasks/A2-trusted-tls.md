@@ -1,45 +1,124 @@
 # A2 — Trusted TLS for Apple Shortcuts
 
 - **ID:** A2
-- **Title:** Tailscale MagicDNS certificate with a renewal strategy
-- **Status:** `BLOCKED`
-- **Owner:** Jay (operator action required before any code can be written)
-- **Implementation commit(s):** None. `Caddyfile` is unchanged on
-  `feature/health-hardening`.
-- **Review status:** N/A — not started.
+- **Status:** DONE — deployed; iPhone login and successful Shortcut sync reported by Jay
+- **Implementation commit(s):** `ac9ae82`.
+- **Review status:** Local format/vet/build/unit/race checks passed; [CI green](https://github.com/JayDalool/gyst-lifeops/actions/runs/35819079763).
 
-## Problem
+## Implementation
 
-The `Caddyfile` uses `tls internal` — a self-signed CA. Apple Shortcuts
-validates TLS and offers no bypass, so `Get Contents of URL` fails with an
-opaque error. This blocks M3 (the Health Sync Shortcut) entirely.
+Caddy serves `GYST_TLS_HOSTNAME`, the server's full Tailscale MagicDNS name,
+using its built-in `get_certificate tailscale` integration. Compose requires
+that variable and mounts `/var/run/tailscale` read-only into Caddy. Mounting the
+directory allows the socket to be replaced when tailscaled restarts. A missing
+host directory fails rather than silently creating an empty directory.
 
-The current site addresses are bare IPs and short hostnames
-(`jay-server`, `10.0.0.183`, `100.117.218.14`). None of those can receive a
-trusted certificate; the MagicDNS FQDN can.
+Caddy obtains certificates from tailscaled during TLS handshakes. Certificate
+renewal is automatic through this integration; there are no exported private
+keys or scheduled file-copy jobs. The Caddy image runs as root, which permits
+certificate requests. The socket grants privileged access to the host daemon;
+a read-only bind does not restrict socket API operations. Keep it confined to
+the trusted reverse-proxy container, never the application.
 
-## Why it needs an operator action first
+The previous IP/short-name self-signed sites are replaced by the MagicDNS
+hostname. Port 3443 stays the HTTPS port. HSTS applies to this host, without
+claiming a preload registration or imposing a policy on subdomains.
 
-`tailscale cert` only issues for the MagicDNS name **after HTTPS is enabled in
-the tailnet admin panel**. Writing the Caddyfile before that would produce a
-configuration that breaks the deploy.
+Compose also forwards the existing password/auth-disable variables so a deploy
+does not silently discard the operator's current authentication configuration.
+Authentication is implemented; historical handoff claims that it is a stub are
+incorrect. Do not enable the auth-disable flag for the health rollout.
+
+References:
+- https://tailscale.com/docs/integrations/web-servers/caddy/caddy-certificates
+- https://tailscale.com/docs/how-to/set-up-https-certificates
+- https://caddyserver.com/docs/caddyfile/directives/tls
+
+## Evidence (2026-09-22 session)
+
+- Host tailscaled is running, MagicDNS and HTTPS certificate eligibility enabled.
+- No Tailscale Serve route exists; Caddy remains the chosen ingress.
+- Caddy 2.10.2 validates the configuration.
+- Isolated Caddy obtained a trusted certificate through the mounted host socket.
+- A disposable static backend returned HTTP 200 through HTTPS, curl certificate
+  verification result 0 (no insecure bypass), with the HSTS header.
+- An unconfigured hostname failed its TLS handshake (curl exit 35).
+- Host-loopback access to the temporary published port timed out; testing inside
+  the probe network passed. Actual host/phone reachability is NOT established.
+- No production app/container/database was changed. The live app still exposes
+  port 3005; A1 is not operationally complete.
 
 ## Acceptance criteria
 
-- [ ] HTTPS enabled in the Tailscale admin panel *(operator)*
-- [ ] Caddyfile site address is the MagicDNS FQDN
-- [ ] `tls internal` replaced with the issued certificate
-- [ ] Renewal scheduled — certificates are 90-day Let's Encrypt and Caddy cannot
-      renew them through its normal ACME path, because the challenge is brokered
-      by Tailscale. An unrenewed certificate breaks Shortcut sync ~90 days after
-      M3 ships, which is the worst possible failure timing.
-- [ ] Verified from the iPhone: a Shortcut `Get Contents of URL` succeeds
+- [x] HTTPS enabled in Tailscale (verified from host state)
+- [x] Caddy configuration uses the full MagicDNS hostname
+- [x] Trusted certificate retrieval verified in an isolated container
+- [x] Automatic certificate renewal configured through the official integration
+- [x] Production deployment after operator backup and authentication check
+- [x] Real iPhone Shortcut successfully reaches the trusted HTTPS endpoint (Jay reported `last_synced_at` on 2026-09-23)
 
-## Blockers
+## Deployment procedure (operator gate)
 
-Operator: enable HTTPS in the Tailscale admin panel.
+1. In the existing deployment directory, take a verified B2 backup before any
+   deployment. Do not deploy from a new worktree with an empty `./data` directory.
+2. Reconcile the deployment checkout with this feature branch while preserving
+   local configuration. Set `GYST_TLS_HOSTNAME` in its environment to the full
+   MagicDNS hostname reported by Tailscale, without protocol, port or trailing dot.
+3. Ensure `GYST_PASSWORD_HASH` is configured and `GYST_AUTH_DISABLED` is unset;
+   preserve the existing health token. Do not print credentials or compose's
+   expanded configuration. Use `docker compose config --quiet` for validation.
+4. Deploy the reviewed configuration. A1 already removes the application's
+   published HTTP port; Caddy must be recreated to receive the new socket mount
+   and environment. Do not deploy only one half of this ingress change.
+5. Verify `https://<MagicDNS-hostname>:3443/login` without bypassing certificate
+   validation; verify login, unauthenticated API denial and absence of port 3005.
+6. On iPhone with Tailscale connected, open the HTTPS URL and test it with
+   Shortcuts. Record results before marking A1/A2 complete or beginning M3.
 
 ## Next action
 
-Jay: enable Tailscale HTTPS. Then A2 and [A1](A1-remove-plaintext-port.md) land
-together.
+Verify MyFitnessPal calorie and macro totals in M3.
+
+## Approved rollout preparation
+
+Jay explicitly authorized backup, non-secret authentication checks and deployment.
+B2 backup `lifeops-20260923T044036Z.db` passed integrity_check (32 tables, 19
+migrations); read-only foreign_key_check on that backup returned zero rows.
+This is snapshot evidence, not a stopped-app live OPS1 audit. Existing runtime
+authentication is enabled, password hash and health bearer token are configured.
+No migration files differ between the old checkout and the new branch.
+
+The build was interrupted after discovering no Docker ignore file. Added
+`.dockerignore` to exclude environment files, Git metadata, live databases and
+backups from subsequent build contexts. The clean-context production image built
+successfully. Existing local Compose edits and design images are preserved in
+two named Git stashes; the deployment checkout is now on the feature branch.
+
+## Deployment result
+
+Approved deployment completed 2026-09-22 local time (2026-09-23 UTC).
+The persistent checkout `/srv/server/repos/gyst-lifeops` is now on the feature
+branch; `/tmp/gyst-health-resume` is detached and is not the deployment source.
+The existing data mount is unchanged. Production auth remains enabled.
+
+- Trusted HTTPS `/login`: 200, certificate verify result 0, HSTS present.
+- Actual MagicDNS hostname `/health`: 303 to login without credentials.
+- Actual MagicDNS hostname POST `/api/health/sync`: 401 without a bearer token.
+- Port 3005: no host listener and no published Docker mapping.
+- Containers running; no application startup errors.
+- Jay confirmed real iPhone browser access and existing-password login without
+  a certificate warning in this session. The Shortcuts-specific check is pending.
+
+The temporary TLS probe was stopped and removed. Automated renewal is
+configured by the integration; a future renewal event has not been observed.
+
+## Phone confirmation
+
+Jay reported successful iPhone login without a certificate warning and confirmed
+an existing GYST health-sync Shortcut. Its contents are not yet inspected: it
+may read real Health samples or contain earlier fixed test values. The next
+check is its actual request and source values, not another browser login.
+
+2026-09-23 — Jay reported a successful run of his real-sample Shortcut against
+the new HTTPS sync endpoint, returning `last_synced_at`. This closes A2’s
+phone request check. Nutrition field presence and automation remain M3 work.
