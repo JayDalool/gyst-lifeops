@@ -326,7 +326,11 @@
 	  var priority = palette.querySelector("[data-quick-priority]");
 	  var items = Array.prototype.slice.call(palette.querySelectorAll("[data-command-item]"));
 	  var active = 0;
+	  // Today and tomorrow are the server's local days in the app timezone
+	  // (data-today / data-tomorrow); the browser date is only a fallback.
 	  function isoDate(offset) {
+		var server = offset === 1 ? palette.dataset.tomorrow : palette.dataset.today;
+		if (offset >= 0 && offset <= 1 && server) return server;
 		var value = new Date();
 		value.setDate(value.getDate() + offset);
 		return value.getFullYear() + "-" + String(value.getMonth() + 1).padStart(2, "0") + "-" + String(value.getDate()).padStart(2, "0");
