@@ -1673,6 +1673,10 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 			methodNotAllowed(w)
 			return
 		}
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "the prayer settings form could not be read", http.StatusBadRequest)
+			return
+		}
 		if err := h.Service.SavePrayerConfig(r.Form); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
