@@ -88,6 +88,46 @@ into the task table. Per-date completion records preserve occurrence history.
 Stable UUID, sync version, timestamp, and device fields prepare records for a
 future client sync layer without implementing that layer today.
 
+## Application timezone and local days
+
+GYST has one application timezone, set by `GYST_TIMEZONE` and defaulting to
+`America/Winnipeg` (GYST-VN-003). `internal/clock` is the only source of "now"
+and of the local calendar day; `services.Service` embeds it, so `s.Now()`,
+`s.Today()`, `s.TodayString()` and `s.Location()` are available everywhere a
+service is.
+
+- Every stored calendar day (`YYYY-MM-DD`: task due and occurrence dates,
+  tracker and prayer check-ins, reminders, goal progress, learning blocks,
+  the Health day) is the day in the application timezone, never the process
+  (container, UTC) day.
+- Prayer times, the Health day, the ICS feed and quick capture's
+  Today/Tomorrow chips read the same clock. The prayer timezone in Settings is
+  a read-only display of the application timezone; old `prayer.timezone`
+  rows are ignored, not deleted.
+- Browser-supplied dates must be canonical `YYYY-MM-DD`; a malformed value is
+  rejected with HTTP 400 before anything is written. An empty value becomes
+  the local Today where the form defines a default.
+- `app.New` resolves the timezone before opening the database, so an invalid
+  explicit `GYST_TIMEZONE` stops startup without creating or migrating it. The
+  IANA zone database is embedded in the binary (`time/tzdata`).
+- `internal/clock/guard_test.go` fails the build if code outside
+  `internal/clock` and `internal/db` uses `time.Now`, `time.Local`,
+  `time.LoadLocation` or the zone name, or derives a day from a `Now()` call
+  without `.In(location)`. Deliberate instants carry `//gyst:instant <reason>`.
+
+```mermaid
+flowchart LR
+    Env[GYST_TIMEZONE] --> Clock[internal/clock]
+    Clock --> Service[services.Service]
+    Service --> Days[Tasks, trackers, prayer, Health, reminders, courses]
+    Service --> Handlers[Handlers: date defaults and validation]
+    Handlers --> Palette[Quick capture data-today / data-tomorrow]
+```
+
+Rows written before this change may carry the UTC day for evening entries;
+their remediation is a separate decision (GYST-VN-011). How absolute
+timestamps are stored and displayed is GYST-VN-004.
+
 ## External work references
 
 Tasks, projects, and project missions can hold compact links to Jira, GitHub,
@@ -124,7 +164,8 @@ data. Detailed behavior and security decisions are documented in
 Prayer times are calculated locally in `internal/services/prayer.go` using solar
 coordinates and the configured calculation method. Settings are read through
 the existing `app_settings` repository; missing or invalid values fall back to
-Winnipeg, ISNA, and Shafi defaults. The engine makes no network request and has
+Winnipeg, ISNA, and Shafi defaults. The prayer timezone is the application
+timezone (see above). The engine makes no network request and has
 no cache table. Timezone conversion occurs after each astronomical event is
 calculated in UTC, which preserves the correct offset on DST transition days.
 
