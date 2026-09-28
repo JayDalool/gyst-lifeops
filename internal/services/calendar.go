@@ -63,11 +63,12 @@ func addHour(hm string) string {
 }
 
 // BuildICS renders a valid VCALENDAR from events. Timed events use floating
-// local wall-clock (no TZID / no LoadLocation needed): for a single-user app the
-// viewer's calendar renders them in the local zone, which is the intended
-// America/Winnipeg. All-day items use VALUE=DATE.
-func BuildICS(events []CalendarEvent, baseURL string) string {
-	stamp := time.Now().UTC().Format("20060102T150405Z")
+// local wall-clock (no TZID needed): for a single-user app the viewer's
+// calendar renders them in the local zone, which is the application timezone
+// named in X-WR-TIMEZONE. All-day items use VALUE=DATE. now is the DTSTAMP
+// instant.
+func BuildICS(events []CalendarEvent, baseURL string, now time.Time, timezone string) string {
+	stamp := now.UTC().Format("20060102T150405Z")
 	var b strings.Builder
 	write := func(line string) { b.WriteString(line); b.WriteString(icsCRLF) }
 
@@ -77,7 +78,7 @@ func BuildICS(events []CalendarEvent, baseURL string) string {
 	write("CALSCALE:GREGORIAN")
 	write("METHOD:PUBLISH")
 	write("X-WR-CALNAME:GYST LifeOps")
-	write("X-WR-TIMEZONE:America/Winnipeg")
+	write("X-WR-TIMEZONE:" + timezone)
 
 	for _, e := range events {
 		if e.Date == "" {
@@ -167,7 +168,7 @@ func (s *Service) CoursesICS(courseID int64, baseURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return BuildICS(courseBlockEvents(blocks), baseURL), nil
+	return BuildICS(courseBlockEvents(blocks), baseURL, s.Now(), s.Location().String()), nil
 }
 
 // projectTaskEvents gathers project target dates and one-time task due dates.
@@ -292,7 +293,7 @@ func (s *Service) ProjectsICS(baseURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return BuildICS(events, baseURL), nil
+	return BuildICS(events, baseURL, s.Now(), s.Location().String()), nil
 }
 
 // AllICS is the unified feed: courses + projects + tasks.
@@ -307,5 +308,5 @@ func (s *Service) AllICS(baseURL string) (string, error) {
 		return "", err
 	}
 	events = append(events, pt...)
-	return BuildICS(events, baseURL), nil
+	return BuildICS(events, baseURL, s.Now(), s.Location().String()), nil
 }

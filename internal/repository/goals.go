@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"lifeops-tracker/internal/models"
 )
@@ -65,7 +64,9 @@ func (r *Repository) GoalWithProgress(id int64) (models.GoalWithProgress, error)
 	}, nil
 }
 
-func (r *Repository) CreateGoal(goal *models.Goal) error {
+// CreateGoal stores a goal. today is the application's local day, used as the
+// initial progress entry date when the goal has no start date.
+func (r *Repository) CreateGoal(goal *models.Goal, today string) error {
 	goal.Type = clean(goal.Type, "yearly")
 	goal.Category = clean(goal.Category, "personal")
 	goal.Unit = clean(goal.Unit, "tasks")
@@ -95,7 +96,7 @@ func (r *Repository) CreateGoal(goal *models.Goal) error {
 	if goal.CurrentValue > 0 {
 		entryDate := goal.StartDate
 		if entryDate == "" {
-			entryDate = time.Now().Format("2006-01-02")
+			entryDate = today
 		}
 		return r.AddGoalProgress(goal.ID, entryDate, goal.CurrentValue, "Initial progress")
 	}

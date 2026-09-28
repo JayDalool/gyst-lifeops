@@ -3,11 +3,11 @@ package services
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"math"
 	"strings"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 )
@@ -21,8 +21,7 @@ func validHealthNumber(value float64) bool {
 	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= 0 && value <= 1e9
 }
 func ValidateHealthDate(date string) error {
-	parsed, err := time.Parse("2006-01-02", date)
-	if err != nil || parsed.Format("2006-01-02") != date || parsed.Year() < 1 {
+	if _, err := clock.ParseLocalDate(date); err != nil {
 		return healthInvalid("date must be YYYY-MM-DD")
 	}
 	return nil
@@ -202,17 +201,10 @@ func CalculateObservedHealthEnergy(snapshot *models.DailyHealthSnapshot, cycle *
 	return out
 }
 
-// Use the existing configured local timezone; incoming dates remain literal dates.
+// HealthTodayDate is the application's local calendar day; incoming dates
+// remain literal dates.
 func (s *Service) HealthTodayDate() (string, error) {
-	config, err := s.PrayerConfig()
-	if err != nil {
-		return "", err
-	}
-	location, err := time.LoadLocation(config.Timezone)
-	if err != nil {
-		return "", fmt.Errorf("health timezone: %w", err)
-	}
-	return s.Now().In(location).Format("2006-01-02"), nil
+	return s.TodayString(), nil
 }
 func (s *Service) HealthToday() (models.HealthTodayResponse, error) {
 	date, err := s.HealthTodayDate()

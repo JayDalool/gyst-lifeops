@@ -54,6 +54,7 @@ func Run() {
 		HealthSyncToken:  os.Getenv("GYST_HEALTH_SYNC_TOKEN"),
 		PasswordHash:     os.Getenv("GYST_PASSWORD_HASH"),
 		AuthDisabled:     os.Getenv("GYST_AUTH_DISABLED") == "1",
+		Timezone:         os.Getenv("GYST_TIMEZONE"),
 	})
 	if err != nil {
 		log.Fatal(err)

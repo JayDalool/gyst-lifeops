@@ -38,6 +38,7 @@ func RunBackup(args []string) error {
 
 	destination := *out
 	if destination == "" {
+		//gyst:instant backup file name stamp, not a calendar day
 		destination = db.DefaultBackupPath(*dbPath, time.Now())
 	}
 

@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
 	"lifeops-tracker/internal/xp"
@@ -474,7 +475,10 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	schedule, err := h.Service.PrayerTimes(h.Service.Now())
+	// One instant for the prayer, greeting and next-reminder decisions below,
+	// read in the application timezone.
+	now := h.Service.Now().In(h.Service.Location())
+	schedule, err := h.Service.PrayerTimes(now)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -484,17 +488,17 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	nextPrayer, err := h.Service.NextPrayer(h.Service.Now())
+	nextPrayer, err := h.Service.NextPrayer(now)
 	if err != nil {
 		serverError(w, err)
 		return
 	}
 	currentName := ""
 	for i, prayer := range schedule.Times {
-		if !prayer.At.After(h.Service.Now()) {
+		if !prayer.At.After(now) {
 			currentName = prayer.Name
 		}
-		if i == 0 && prayer.At.After(h.Service.Now()) {
+		if i == 0 && prayer.At.After(now) {
 			currentName = ""
 		}
 	}
@@ -502,18 +506,9 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 	var healthSnapshot TodayHealthSnapshot
 	if !checklistOnly {
 		health, healthErr := h.Service.HealthToday()
-		healthSnapshot = buildTodayHealthSnapshot(buildHealthTodayView(health, h.Service.Now()), healthErr)
+		healthSnapshot = buildTodayHealthSnapshot(buildHealthTodayView(health, now), healthErr)
 	}
-	greeting := "Good morning"
-	location, _ := time.LoadLocation(prayerConfig.Timezone)
-	if location == nil {
-		location = time.UTC
-	}
-	if hour := h.Service.Now().In(location).Hour(); hour >= 18 {
-		greeting = "Good evening"
-	} else if hour >= 12 {
-		greeting = "Good afternoon"
-	}
+	greeting := greetingFor(now.Hour())
 	page := "today.html"
 	if checklistOnly {
 		page = "checklist.html"
@@ -521,7 +516,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 	h.render(w, page, TodayData{
 		ChecklistOnly:  checklistOnly,
 		Greeting:       greeting,
-		NextReminder:   nextTodayReminder(remindersToday, h.Service.Now().In(location)),
+		NextReminder:   nextTodayReminder(remindersToday, now),
 		HealthSnapshot: healthSnapshot,
 		Page:           "today",
 		Today:          h.Service.TodayString(),
@@ -744,6 +739,10 @@ func (h *Handler) quickTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "task title is required", http.StatusBadRequest)
 		return
 	}
+	if !validDueDate(task.DueDate) {
+		invalidDate(w, "due_date")
+		return
+	}
 	if task.DueDate == "" {
 		task.DueDate = h.Service.TodayString()
 	}
@@ -778,6 +777,10 @@ func (h *Handler) newTask(w http.ResponseWriter, r *http.Request) {
 			serverError(w, err)
 			return
 		}
+		if !validDueDate(task.DueDate) {
+			invalidDate(w, "due_date")
+			return
+		}
 		if err := h.Service.Repo.CreateTask(&task); err != nil {
 			serverError(w, err)
 			return
@@ -809,6 +812,10 @@ func (h *Handler) editTask(w http.ResponseWriter, r *http.Request, id int64) {
 			serverError(w, err)
 			return
 		}
+		if !validDueDate(task.DueDate) {
+			invalidDate(w, "due_date")
+			return
+		}
 		task.ID = id
 		if err := h.Service.Repo.UpdateTask(&task); err != nil {
 			serverError(w, err)
@@ -829,9 +836,10 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 		serverError(w, err)
 		return
 	}
-	date := r.FormValue("occurrence_date")
-	if date == "" {
-		date = h.Service.TodayString()
+	date, err := h.formLocalDate(r.FormValue("occurrence_date"))
+	if err != nil {
+		invalidDate(w, "occurrence_date")
+		return
 	}
 	if err := h.Service.Repo.SetTaskOccurrenceStatus(id, date, status); err != nil {
 		serverError(w, err)
@@ -1454,7 +1462,7 @@ func (h *Handler) newGoal(w http.ResponseWriter, r *http.Request) {
 			serverError(w, err)
 			return
 		}
-		if err := h.Service.Repo.CreateGoal(&goal); err != nil {
+		if err := h.Service.Repo.CreateGoal(&goal, h.Service.TodayString()); err != nil {
 			serverError(w, err)
 			return
 		}
@@ -1505,7 +1513,11 @@ func (h *Handler) addGoalProgress(w http.ResponseWriter, r *http.Request, id int
 		return
 	}
 	value, _ := strconv.ParseFloat(r.FormValue("value"), 64)
-	entryDate := cleanForm(r.FormValue("entry_date"), h.Service.TodayString())
+	entryDate, err := h.formLocalDate(r.FormValue("entry_date"))
+	if err != nil {
+		invalidDate(w, "entry_date")
+		return
+	}
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	if err := h.Service.Repo.AddGoalProgress(id, entryDate, value, notes); err != nil {
 		serverError(w, err)
@@ -2058,7 +2070,11 @@ func (h *Handler) trackers(w http.ResponseWriter, r *http.Request, segments []st
 		serverError(w, err)
 		return
 	}
-	logDate := cleanForm(r.FormValue("log_date"), h.Service.TodayString())
+	logDate, err := h.formLocalDate(r.FormValue("log_date"))
+	if err != nil {
+		invalidDate(w, "log_date")
+		return
+	}
 	next, err := h.Service.Repo.ToggleTrackerLogByKey(segments[1], logDate)
 	if err != nil {
 		serverError(w, err)
@@ -2101,6 +2117,15 @@ func wantsJSON(r *http.Request) bool {
 	return strings.Contains(r.Header.Get("Accept"), "application/json")
 }
 
+// appClock is the application clock; without a service (render tests) it is
+// the default system clock.
+func (h *Handler) appClock() clock.Clock {
+	if h.Service == nil {
+		return clock.System()
+	}
+	return h.Service.Clock
+}
+
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	playerXP := models.PlayerStats{CurrentLevel: 1}
 	if h.Service != nil && h.Service.Repo != nil {
@@ -2131,11 +2156,28 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		"niceDate":       niceDate,
 		"niceDateTime":   niceDateTime,
 		"niceNumber":     niceNumber,
-		"greeting":       greeting,
-		"nodeState":      nodeState,
-		"levelPct":       levelPct,
-		"toNextLevel":    toNextLevel,
-		"blockLabel":     services.BlockTypeLabel,
+		"greeting": func() string {
+			return greeting(h.appClock().Now().In(h.appClock().Location()).Hour())
+		},
+		// Quick capture's Today/Tomorrow chips use the server's local day. With
+		// no service (render tests) they are empty and app.js falls back to the
+		// browser date.
+		"appToday": func() string {
+			if h.Service == nil {
+				return ""
+			}
+			return h.Service.TodayString()
+		},
+		"appTomorrow": func() string {
+			if h.Service == nil {
+				return ""
+			}
+			return h.Service.Today().AddDate(0, 0, 1).Format(clock.DateLayout)
+		},
+		"nodeState":   nodeState,
+		"levelPct":    levelPct,
+		"toNextLevel": toNextLevel,
+		"blockLabel":  services.BlockTypeLabel,
 		"routeDone": func(nodes []models.RouteNode) int {
 			done := 0
 			for _, node := range nodes {
@@ -2285,6 +2327,31 @@ func segmentAt(segments []string, index int) string {
 	return segments[index]
 }
 
+// formLocalDate validates a browser-supplied calendar day (GYST-VN-003). An
+// empty value becomes the application's local Today; anything else must be a
+// canonical, valid YYYY-MM-DD date.
+func (h *Handler) formLocalDate(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return h.Service.TodayString(), nil
+	}
+	return clock.ParseLocalDate(value)
+}
+
+// invalidDate answers a malformed date with 400; nothing has been written.
+func invalidDate(w http.ResponseWriter, field string) {
+	http.Error(w, field+" must be a valid YYYY-MM-DD date", http.StatusBadRequest)
+}
+
+// validDueDate reports whether a task due date is empty or a canonical date.
+func validDueDate(value string) bool {
+	if value == "" {
+		return true
+	}
+	_, err := clock.ParseLocalDate(value)
+	return err == nil
+}
+
 func cleanForm(value, fallback string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -2388,8 +2455,20 @@ func toNextLevel(stars int) int {
 	return 100 - (stars % 100)
 }
 
-func greeting() string {
-	hour := time.Now().Hour()
+// greetingFor is the Today page greeting for a local hour.
+func greetingFor(hour int) string {
+	switch {
+	case hour >= 18:
+		return "Good evening"
+	case hour >= 12:
+		return "Good afternoon"
+	default:
+		return "Good morning"
+	}
+}
+
+// greeting is the dashboard template's greeting for a local hour.
+func greeting(hour int) string {
 	switch {
 	case hour < 12:
 		return "Good Morning, Jay"

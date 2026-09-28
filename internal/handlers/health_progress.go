@@ -104,15 +104,5 @@ func (h *Handler) healthProgress(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	config, err := h.Service.PrayerConfig()
-	if err != nil {
-		serverError(w, err)
-		return
-	}
-	location, err := time.LoadLocation(config.Timezone)
-	if err != nil {
-		serverError(w, err)
-		return
-	}
-	h.render(w, "health_progress.html", buildHealthProgress(entries, period, h.Service.Now(), location))
+	h.render(w, "health_progress.html", buildHealthProgress(entries, period, h.Service.Now(), h.Service.Location()))
 }

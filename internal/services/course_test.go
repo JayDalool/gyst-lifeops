@@ -8,8 +8,12 @@ import (
 	"lifeops-tracker/internal/models"
 )
 
+// fixToday pins the clock to noon of date in the application timezone. It used
+// to pin 00:00 UTC, which is the previous evening in Winnipeg and only worked
+// while "today" was (wrongly) the UTC day (GYST-VN-003).
 func fixToday(svc *Service, date string) {
-	t, _ := time.Parse("2006-01-02", date)
+	t, _ := time.ParseInLocation("2006-01-02", date, svc.Location())
+	t = t.Add(12 * time.Hour)
 	svc.Now = func() time.Time { return t }
 }
 

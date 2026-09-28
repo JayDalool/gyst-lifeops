@@ -20,7 +20,7 @@
   {{if eq .Page "health"}}<link rel="stylesheet" href="/static/css/ui-health.css?v=ui-9"><link rel="stylesheet" href="/static/css/ui-training.css?v=train-1">{{end}}
   {{if eq .Page "courses"}}<link rel="stylesheet" href="/static/css/ui-courses.css?v=ui-10">{{end}}
   <script defer src="/static/js/charts.js?v=ui-2"></script>
-	<script defer src="/static/js/app.js?v=nav-1"></script>
+	<script defer src="/static/js/app.js?v=localday-1"></script>
 </head>
 <body class="gyst-app{{if eq .Page "galaxy"}} galaxy-page{{end}}">
   <a class="gyst-skip" href="#main-content">Skip to content</a>
@@ -29,7 +29,7 @@
     {{template "content" .}}
   </main>
 
-	<dialog class="command-palette gyst-command" data-command-palette aria-label="Command palette">
+	<dialog class="command-palette gyst-command" data-command-palette data-today="{{appToday}}" data-tomorrow="{{appTomorrow}}" aria-label="Command palette">
 	  <div class="command-search-row">
 		<input type="search" data-command-search placeholder="Search commands or type a task…" autocomplete="off" aria-label="Search commands">
 		<button type="button" class="btn sm quiet" data-command-close>Esc</button>
