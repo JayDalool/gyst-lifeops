@@ -309,8 +309,8 @@ func TestPrayerTimezoneIsTheApplicationTimezone(t *testing.T) {
 		"method": {"isna"}, "asr_method": {"shafi"}, "alert_sound": {"athan"},
 		"adjust_fajr": {"0"}, "adjust_dhuhr": {"0"}, "adjust_asr": {"0"}, "adjust_maghrib": {"0"}, "adjust_isha": {"0"},
 	}
-	// Saved through the service: the /settings/prayer handler reads r.Form
-	// without parsing it, a pre-existing bug outside this task.
+	// Saved through the service; the real /settings/prayer route is covered in
+	// prayer_settings_test.go.
 	if err := h.Service.SavePrayerConfig(values); err != nil {
 		t.Fatalf("save prayer settings: %v", err)
 	}
