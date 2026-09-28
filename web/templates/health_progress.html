@@ -16,8 +16,6 @@
   </figure>
   <div class="weight-table-wrap" tabindex="0" role="region" aria-label="Weight measurements table"><table class="weight-table"><caption>Recorded measurements · oldest first</caption><thead><tr><th scope="col">Measured</th><th scope="col">Weight (kg)</th><th scope="col">Source</th></tr></thead><tbody>{{range .Points}}<tr><th scope="row"><time datetime="{{.Timestamp}}">{{.Date}}</time></th><td>{{.Value}}</td><td>{{.Source}}</td></tr>{{end}}</tbody></table></div>
   {{else}}<h3>No weight readings in this range</h3><p class="meta">No measurements have been recorded for this period. Missing readings are not shown as zero.</p>{{if ne .Range "all"}}<a class="btn" href="?range=all">Check all time</a>{{end}}{{end}}
-  <p class="meta">Weight entry and weight import setup are not available in GYST yet.</p>
  </section>
- <div class="health-grid"><section class="card"><h2>Nutrition &amp; activity trends</h2><p class="meta">Historical summaries and plan adherence are not available yet. <a href="/health">View today's observations</a>.</p></section><section class="card"><h2>Strength trend</h2><p class="meta">Workout history is not connected yet. <a href="/health/training">Track your gym days</a> while strength trends remain unavailable.</p></section></div>
 </div>
 {{end}}

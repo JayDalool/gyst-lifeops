@@ -118,11 +118,14 @@ func TestHealthFoundation(t *testing.T) {
 				t.Errorf("health page shows a projection it does not compute: %q", banned)
 			}
 		}
-		for _, text := range []string{"Health sections", "Summary", "Nutrition", "Training", "Progress", "Plan", "Today's energy", "food calories remaining", "Observed energy balance", "Next meal", "Plan meal", "Start workout", "Activity", "Weight trend", "Strength trend", "Health goals", "Health tasks", "Gym week", "Live app data", "Week, month and year summaries are not built yet", "viewport-fit=cover", "data-period=\"Year\""} {
+		for _, text := range []string{"Health sections", "Summary", "Nutrition", "Training", "Progress", "Plan", "Today's energy", "food calories remaining", "Observed energy balance", "Activity", "Weight trend", "Health goals", "Health tasks", "Gym week", "Live app data", "viewport-fit=cover"} {
 			if !strings.Contains(body, text) {
 				t.Errorf("health missing %q", text)
 			}
 		}
+		// Unbuilt features are not offered on Health (05A D8, GYST-VN-052).
+		// These placeholders were required here before; they are now banned.
+		assertNoUnbuiltHealthMarkup(t, body)
 		for _, path := range []string{"/today", "/galaxy", "/projects", "/health", "/courses", "/more", "/tasks", "/settings", "/plan-import"} {
 			if !strings.Contains(body, `href="`+path+`"`) {
 				t.Errorf("missing navigation %s", path)
