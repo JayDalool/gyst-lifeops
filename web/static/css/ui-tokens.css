@@ -42,3 +42,111 @@
   --gyst-positive-text: #6ee7b7; --gyst-warning-text: #fcd34d;
   --gyst-danger-text: #fca5a5;
 }
+
+/* ---------------------------------------------------------------------------
+   GYST-VN-018 — vNext design tokens (docs/audit/vnext/11_DESIGN_SYSTEM_VNEXT.md
+   §C–§I, 13_RESPONSIVE_INTERACTION_SPEC.md §1, decisions in 13A).
+
+   Namespace: every vNext token is prefixed `--vn-` because `--accent` and
+   `--accent-soft` already exist in styles.css. Nothing below is referenced by
+   any current screen; the --gyst-* tokens above are unchanged.
+
+   Theme selection mirrors the existing convention plus DD-1 system mode:
+   - light values on :root and on any [data-gyst-theme="light"] scope;
+   - dark values on any [data-gyst-theme="dark"] scope (the current toggle);
+   - OS dark when no explicit light theme is set (no attribute, or a future
+     data-gyst-theme="system"), which follows OS changes live without reload.
+   layout.html/theme.js always set data-gyst-theme today, so production stays
+   on the explicit toggle until GYST-VN-019 adds the System setting.
+   color-scheme is deliberately not set here: it would restyle native
+   controls on existing screens.
+   ------------------------------------------------------------------------ */
+:root, [data-gyst-theme="light"] {
+  /* §C Typography: system stack, seven sizes (size / line height).
+     Weights per 11 §C: display 700 · title 700 −0.025em · section 650 −0.015em ·
+     body 400 (row titles 550) · sub 400–550 · foot 400–600 · caption 500–650.
+     Tab labels use 11 px (the one documented exception to the seven sizes). */
+  --vn-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --vn-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --vn-t-display: 34px; --vn-t-display-lh: 40px;
+  --vn-t-title: 28px;   --vn-t-title-lh: 32px;
+  --vn-t-section: 20px; --vn-t-section-lh: 25px;
+  --vn-t-body: 16px;    --vn-t-body-lh: 23px;
+  --vn-t-sub: 14px;     --vn-t-sub-lh: 19px;
+  --vn-t-foot: 13px;    --vn-t-foot-lh: 18px;
+  --vn-t-caption: 12px; --vn-t-caption-lh: 16px;
+
+  /* §D Spacing: 4-point base, seven steps. */
+  --vn-s1: 4px; --vn-s2: 8px; --vn-s3: 12px; --vn-s4: 16px;
+  --vn-s6: 24px; --vn-s8: 32px; --vn-s12: 48px;
+
+  /* §E Radii. */
+  --vn-r-sm: 8px; --vn-r-md: 12px; --vn-r-lg: 16px; --vn-r-xl: 24px; --vn-r-pill: 999px;
+
+  /* 13 §1 Breakpoints (min-width). Custom properties cannot be used inside
+     @media, so these are the documented constants that media queries repeat. */
+  --vn-bp-tablet: 600px; --vn-bp-laptop: 1024px; --vn-bp-desktop: 1280px; --vn-bp-wide: 1600px;
+
+  /* §F Surfaces. Galaxy space is always dark in both modes. */
+  --vn-canvas: #f4f6fa;
+  --vn-surface: #ffffff;
+  --vn-surface-2: #eef1f6;
+  --vn-surface-3: #e4e8ef;
+  --vn-elevated: #ffffff;
+  --vn-space: #070b18;
+  --vn-space-2: #0f1630;
+
+  /* §G Elevation (values from the reference prototype proto.css; 11 gives roles only.
+     Dark --vn-e1 is "none" per 11 §G, written as a transparent shadow so it can
+     be combined in a shadow list). */
+  --vn-e1: 0 1px 0 rgb(14 23 38 / 4%);
+  --vn-e2: 0 6px 20px rgb(14 23 38 / 12%), 0 1px 3px rgb(14 23 38 / 8%);
+  --vn-e3: 0 18px 50px rgb(14 23 38 / 22%);
+
+  /* §H Colours. */
+  --vn-ink: #0e1726;
+  --vn-ink-2: #566174;
+  --vn-ink-3: #8790a0;
+  --vn-separator: #e2e6ed;
+  --vn-accent: #2563eb;
+  --vn-accent-soft: #e8f0ff;
+  /* DD-4: violet is IDENTITY ONLY (XP/level, Galaxy entry points, orbit mark,
+     decorative highlights). Never use --vn-xp / --vn-xp-soft for a state,
+     status chip, badge, banner, Attention severity or state dot. */
+  --vn-xp: #6d5dfc;
+  --vn-xp-soft: #eeecff;
+
+  /* §I State colours: graphic · text · soft background. State is never
+     colour-only: always pair with a word and a dot or icon. */
+  --vn-ok: #16a34a;   --vn-ok-text: #15803d;   --vn-ok-soft: #e7f6ec;
+  --vn-info: var(--vn-accent); --vn-info-text: #1d4ed8; --vn-info-soft: var(--vn-accent-soft);
+  --vn-warn: #d97706; --vn-warn-text: #b45309; --vn-warn-soft: #fdf1e1;
+  --vn-crit: #dc2626; --vn-crit-text: #b91c1c; --vn-crit-soft: #fdeaea;
+  --vn-idle: #8790a0; --vn-idle-text: #566174; --vn-idle-soft: var(--vn-surface-2);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-gyst-theme="light"]) {
+    --vn-canvas: #0b111c; --vn-surface: #141c2b; --vn-surface-2: #1b2537; --vn-surface-3: #243047; --vn-elevated: #1a2334;
+    --vn-e1: 0 0 0 transparent; --vn-e2: 0 8px 24px rgb(0 0 0 / 45%); --vn-e3: 0 20px 60px rgb(0 0 0 / 60%);
+    --vn-ink: #eef2f8; --vn-ink-2: #a9b3c4; --vn-ink-3: #7b8699; --vn-separator: #243049;
+    --vn-accent: #6ea8ff; --vn-accent-soft: #15284a;
+    --vn-xp: #a99bff; --vn-xp-soft: #231f45;
+    --vn-ok: #4ade80;   --vn-ok-text: #6ee7a0;   --vn-ok-soft: #10301f;
+    --vn-info: var(--vn-accent); --vn-info-text: #93bdff; --vn-info-soft: var(--vn-accent-soft);
+    --vn-warn: #fbbf24; --vn-warn-text: #fcd062; --vn-warn-soft: #33260c;
+    --vn-crit: #f87171; --vn-crit-text: #fca5a5; --vn-crit-soft: #3a1618;
+    --vn-idle: #7b8699; --vn-idle-text: #a9b3c4; --vn-idle-soft: var(--vn-surface-2);
+  }
+}
+[data-gyst-theme="dark"] {
+  --vn-canvas: #0b111c; --vn-surface: #141c2b; --vn-surface-2: #1b2537; --vn-surface-3: #243047; --vn-elevated: #1a2334;
+  --vn-e1: 0 0 0 transparent; --vn-e2: 0 8px 24px rgb(0 0 0 / 45%); --vn-e3: 0 20px 60px rgb(0 0 0 / 60%);
+  --vn-ink: #eef2f8; --vn-ink-2: #a9b3c4; --vn-ink-3: #7b8699; --vn-separator: #243049;
+  --vn-accent: #6ea8ff; --vn-accent-soft: #15284a;
+  --vn-xp: #a99bff; --vn-xp-soft: #231f45;
+  --vn-ok: #4ade80;   --vn-ok-text: #6ee7a0;   --vn-ok-soft: #10301f;
+  --vn-info: var(--vn-accent); --vn-info-text: #93bdff; --vn-info-soft: var(--vn-accent-soft);
+  --vn-warn: #fbbf24; --vn-warn-text: #fcd062; --vn-warn-soft: #33260c;
+  --vn-crit: #f87171; --vn-crit-text: #fca5a5; --vn-crit-soft: #3a1618;
+  --vn-idle: #7b8699; --vn-idle-text: #a9b3c4; --vn-idle-soft: var(--vn-surface-2);
+}
