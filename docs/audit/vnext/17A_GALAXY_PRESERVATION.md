@@ -34,6 +34,8 @@ The audits found usability problems: small targets, hard to find, preview close 
 
 This is the Galaxy that must be preserved and evolved (as of `dab7995`):
 
+> **Verified and corrected at runtime by GYST-VN-143:** see [`docs/design/galaxy-baseline/README.md`](../../design/galaxy-baseline/README.md) §Q for the claim-by-claim result. Where they differ, the baseline's LIVE findings describe the current Galaxy.
+
 | Area | Current behaviour |
 |---|---|
 | **Entry points** | Projects list "Galaxy" entry tile (`projects_list.html`); command menu "Open Galaxy" (`layout.html`); More destination "Galaxy · Explore your projects as worlds" (`ui_shell.go`); direct `/galaxy`; quick-task `return_to=/galaxy`. Pinned by `navigation_test.go` and `ui_shell_test.go`. |
