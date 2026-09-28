@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 )
 
@@ -21,10 +22,8 @@ func (s *Service) SavePrayerConfig(values url.Values) error {
 	if err != nil || longitude < -180 || longitude > 180 {
 		return fmt.Errorf("longitude must be between -180 and 180")
 	}
-	timezone := strings.TrimSpace(values.Get("timezone"))
-	if _, err := time.LoadLocation(timezone); err != nil {
-		return fmt.Errorf("invalid timezone")
-	}
+	// The prayer timezone is the application timezone (GYST_TIMEZONE); a posted
+	// "timezone" value is ignored and no longer stored (GYST-VN-003).
 	method := strings.ToLower(strings.TrimSpace(values.Get("method")))
 	if _, ok := prayerMethods[method]; !ok {
 		return fmt.Errorf("invalid prayer method")
@@ -44,7 +43,7 @@ func (s *Service) SavePrayerConfig(values url.Values) error {
 	settings := map[string]string{
 		"prayer.latitude":  strconv.FormatFloat(latitude, 'f', -1, 64),
 		"prayer.longitude": strconv.FormatFloat(longitude, 'f', -1, 64),
-		"prayer.timezone":  timezone, "prayer.method": method, "prayer.asr_method": asr,
+		"prayer.method":    method, "prayer.asr_method": asr,
 		"prayer.alert_sound": alertSound, "prayer.athan_file": athanFile,
 	}
 	for _, name := range prayerNames {
@@ -73,8 +72,11 @@ const (
 	AsrMethodHanafi        = "hanafi"
 	defaultPrayerLatitude  = 49.8951
 	defaultPrayerLongitude = -97.1384
-	defaultPrayerTimezone  = "America/Winnipeg"
 )
+
+// defaultPrayerTimezone is the application default; the prayer timezone always
+// follows the application clock.
+const defaultPrayerTimezone = clock.DefaultTimezone
 
 var prayerNames = []string{"fajr", "dhuhr", "asr", "maghrib", "isha"}
 
@@ -96,7 +98,7 @@ func (s *Service) PrayerConfig() (models.PrayerConfig, error) {
 	config := models.PrayerConfig{
 		Latitude:    defaultPrayerLatitude,
 		Longitude:   defaultPrayerLongitude,
-		Timezone:    defaultPrayerTimezone,
+		Timezone:    s.Location().String(),
 		Method:      PrayerMethodISNA,
 		AsrMethod:   AsrMethodShafi,
 		Adjustments: make(map[string]int, len(prayerNames)),
@@ -108,11 +110,6 @@ func (s *Service) PrayerConfig() (models.PrayerConfig, error) {
 	}{
 		{"prayer.latitude", func(value string) { config.Latitude = floatSetting(value, config.Latitude, -90, 90) }},
 		{"prayer.longitude", func(value string) { config.Longitude = floatSetting(value, config.Longitude, -180, 180) }},
-		{"prayer.timezone", func(value string) {
-			if _, err := time.LoadLocation(value); err == nil {
-				config.Timezone = value
-			}
-		}},
 		{"prayer.method", func(value string) {
 			value = strings.ToLower(strings.TrimSpace(value))
 			if _, ok := prayerMethods[value]; ok {
@@ -169,10 +166,7 @@ func (s *Service) PrayerTimes(date time.Time) (models.PrayerSchedule, error) {
 	if err != nil {
 		return models.PrayerSchedule{}, err
 	}
-	location, err := time.LoadLocation(config.Timezone)
-	if err != nil {
-		return models.PrayerSchedule{}, fmt.Errorf("load prayer timezone: %w", err)
-	}
+	location := s.Location()
 	localDate := date.In(location)
 	day := time.Date(localDate.Year(), localDate.Month(), localDate.Day(), 12, 0, 0, 0, location)
 	jd := julianDay(localDate.Year(), localDate.Month(), localDate.Day())

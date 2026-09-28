@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/handlers"
 	"lifeops-tracker/internal/providers/hevy"
@@ -30,12 +31,16 @@ type Config struct {
 	PasswordHash string
 	// AuthDisabled bypasses session enforcement entirely. Emergency use only.
 	AuthDisabled bool
+	// Timezone is the application timezone (GYST_TIMEZONE). Empty means
+	// America/Winnipeg. Every local calendar day is derived from it.
+	Timezone string
 }
 
 type App struct {
 	DB      *sql.DB
 	Handler http.Handler
 	cancel  context.CancelFunc
+	service *services.Service
 }
 
 func (a *App) Close() error {
@@ -46,6 +51,13 @@ func (a *App) Close() error {
 }
 
 func New(config Config) (*App, error) {
+	// Resolve the timezone first: an invalid explicit GYST_TIMEZONE must stop
+	// startup before the database is opened, created or migrated.
+	location, err := clock.Load(config.Timezone)
+	if err != nil {
+		return nil, err
+	}
+
 	database, err := db.Open(config.DBPath)
 	if err != nil {
 		return nil, err
@@ -65,6 +77,9 @@ func New(config Config) (*App, error) {
 
 	repo := repository.New(database)
 	service := services.New(repo)
+	// Set before any goroutine reads the clock.
+	service.Loc = location
+	log.Printf("Application timezone: %s", location)
 	pushContext, cancelPush := context.WithCancel(context.Background())
 	go service.RunPushScheduler(pushContext)
 	if config.HevyAPIKey != "" {
@@ -112,5 +127,5 @@ func New(config Config) (*App, error) {
 	// favicon are matched above and so stay reachable while signed out.
 	mux.Handle("/", webHandler.Authenticated())
 
-	return &App{DB: database, Handler: mux, cancel: cancelPush}, nil
+	return &App{DB: database, Handler: mux, cancel: cancelPush, service: service}, nil
 }

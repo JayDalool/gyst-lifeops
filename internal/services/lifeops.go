@@ -7,14 +7,18 @@ import (
 	"strconv"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 )
 
+// Service embeds the application clock: s.Now() is the instant source and
+// s.Today(), s.TodayString(), s.DateOf() and s.Location() give the local
+// calendar day in the application timezone (GYST-VN-003).
 type Service struct {
+	clock.Clock
 	Training *TrainingSync
 	Repo     *repository.Repository
-	Now      func() time.Time
 }
 
 type DailyStat struct {
@@ -27,18 +31,9 @@ type DailyStat struct {
 
 func New(repo *repository.Repository) *Service {
 	return &Service{
-		Repo: repo,
-		Now:  time.Now,
+		Clock: clock.System(),
+		Repo:  repo,
 	}
-}
-
-func (s *Service) Today() time.Time {
-	now := s.Now()
-	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-}
-
-func (s *Service) TodayString() string {
-	return formatDate(s.Today())
 }
 
 func (s *Service) Dashboard() (models.DashboardData, error) {
@@ -792,7 +787,7 @@ func sameYearDay(start, date time.Time) bool {
 }
 
 func daysInMonth(year int, month time.Month) int {
-	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.Local).Day()
+	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
 }
 
 func isLeapYear(year int) bool {
