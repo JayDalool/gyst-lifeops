@@ -38,7 +38,8 @@ func galleryHTML(t *testing.T) []byte {
 		Ring, EmptyRing UIMetric
 		Metrics         []UIMetric
 		States          []UIStateCard
-	}{Tokens: read("ui-tokens.css"), Components: read("ui-components.css")}
+		VN              vnGallery
+	}{Tokens: read("ui-tokens.css"), Components: read("ui-components.css"), VN: vnGalleryData()}
 	data.Colors = []struct {
 		Name  string
 		Value template.CSS
