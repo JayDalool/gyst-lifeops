@@ -8,7 +8,8 @@ Project rules for the security-guidance plugin. Shared rules live in
   the bearer-token Health API and tokenized `/calendar/feed/*`. A new exempt
   path needs a reason and its own test entry. The session token is stored
   only as a SHA-256 hash; the raw token lives only in the
-  `Secure`/`HttpOnly`/`SameSite=Lax` cookie.
+  `HttpOnly`/`SameSite=Lax` cookie, `Secure` whenever served over HTTPS
+  (`secureCookie()` in internal/handlers/auth.go decides; keep that logic).
 - Calendar feed tokens are credentials: never log them or put them in errors.
 - `/api/health` and `/api/health/*` authenticate only with their own bearer
   token and are write-only. Never add a read endpoint there, never accept the

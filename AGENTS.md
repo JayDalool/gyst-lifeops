@@ -61,6 +61,10 @@ This file and `docs/RULES.md` win over the plugin wherever they differ.
 - `jay-dev:design-review` and the `frontend-design` skill work inside
   `13A_DESIGN_DECISIONS.md`: no new framework, spacing, colours or patterns.
   Their motion rules never override the Galaxy rules below.
+- Paths the skills must use here: the design system is
+  `docs/audit/vnext/13A_DESIGN_DECISIONS.md` (never create
+  `docs/design/DESIGN_SYSTEM.md`); Jay's UI checks and owner actions go in
+  the Issue/PR with `needs:ui-review` / `needs:jay`, never in `docs/jay/`.
 
 ## Non-negotiable product rules
 
