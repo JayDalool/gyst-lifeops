@@ -17,8 +17,8 @@
 </div>
 
 <div class="gyst-card gyst-stack">
-  <div class="gyst-header"><span class="gyst-badge">{{.Project.Project.Status}}</span><strong>{{.Project.Progress}}% complete</strong></div>
-  {{with projectCard .Project}}{{template "gyst.progress" .ProgressView}}{{end}}
+  <div class="gyst-header"><span class="gyst-badge">{{.Project.Project.Status}}</span><strong>{{if .Project.TotalItems}}{{.Project.Progress}}% complete{{else}}No missions yet{{end}}</strong></div>
+  {{if .Project.TotalItems}}{{with projectCard .Project}}{{template "gyst.progress" .ProgressView}}{{end}}{{end}}
   {{if .Stops}}
     <div class="phase-strip mt-16" aria-label="Stops on this trip">
       {{range .Stops}}<i class="{{template "phaseClass" (nodeState .Project.Status .Progress)}}"></i>{{end}}

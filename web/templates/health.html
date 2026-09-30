@@ -16,7 +16,7 @@
   <a href="/health/plan">Plan</a>
 </nav>
 <section id="summary" class="health-dashboard" aria-label="Health summary">
-  <p class="health-preview"><strong>Today · {{.Today.Date}}</strong></p>
+  <p class="health-preview"><strong>Today · {{niceDate .Today.Date}}</strong></p>
   <div class="health-grid">
     {{if not .Today.HasCycle}}
       <section class="card health-wide health-notice">
@@ -27,8 +27,8 @@
     {{end}}
     {{if not .Today.HasSnapshot}}
       <section class="card health-wide health-notice">
-        <h2>No data for {{.Today.Date}}</h2>
-        <p class="meta">Nothing has been recorded for today. Apple Health and MyFitnessPal data arrives through the GYST Health Sync Shortcut, which is not built yet.</p>
+        <h2>No data for {{niceDate .Today.Date}}</h2>
+        <p class="meta">Nothing has synced for today yet. Run GYST Sync All on your iPhone.</p>
       </section>
     {{else if .Today.LastSyncedStale}}
       <section class="card health-wide health-notice is-stale">

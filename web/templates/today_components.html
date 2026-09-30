@@ -1,7 +1,7 @@
 {{define "today.checklist"}}
 <section class="gyst-card today-checklist" id="checklist" aria-label="Today's checklist">
-      <header class="gyst-header"><h2 class="gyst-section-title">Today’s checklist</h2><span class="gyst-caption">{{len .Completed}} done · {{len .Pending}} left</span><a class="today-link" href="{{if .ChecklistOnly}}/today{{else}}/checklist{{end}}">{{if .ChecklistOnly}}Back to Today{{else}}Open checklist{{end}}</a></header>
-      {{if or .Pending .Completed .Skipped}}<progress class="gyst-progress" value="{{.Progress}}" max="100" aria-label="Today’s task completion">{{.Progress}}%</progress><p class="gyst-caption">{{.Progress}}% complete{{if .Skipped}} · {{len .Skipped}} skipped{{end}}</p>{{end}}
+      <header class="gyst-header"><h2 class="gyst-section-title">Today’s checklist</h2><span class="gyst-caption">{{len .Completed}} done · {{len .Pending}} left{{if .Skipped}} · {{len .Skipped}} skipped{{end}}</span><a class="today-link" href="{{if .ChecklistOnly}}/today{{else}}/checklist{{end}}">{{if .ChecklistOnly}}Back to Today{{else}}Open checklist{{end}}</a></header>
+      {{if or .Pending .Completed .Skipped}}<progress class="gyst-progress" value="{{.Progress}}" max="100" aria-label="Today’s task completion">{{.Progress}}%</progress>{{end}}
       {{if or .Pending .Completed .Skipped}}
         <ul class="tasks">
           {{range .ChecklistItems .Pending 4}}

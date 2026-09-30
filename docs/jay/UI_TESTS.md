@@ -1,1 +1,3 @@
 - [ ] #22 · iPhone Galaxy: light window, dark full-bleed, ship clear · https://github.com/JayDalool/gyst-lifeops/pull/27
+- [ ] #24 · iPhone Tasks: tick, Skip/Edit row, filter chips tappable · https://github.com/JayDalool/gyst-lifeops/pull/26
+- [ ] #24 · Health empty day text and date; empty project card · https://github.com/JayDalool/gyst-lifeops/pull/26
