@@ -11,7 +11,9 @@
 :root body.galaxy-page .galaxy-controls { position: absolute; z-index: 4; right: max(16px,var(--gyst-safe-right)); top: 16px; display: flex; gap: 8px; }
 :root body.galaxy-page .galaxy-context { top: 76px; bottom: auto; right: max(16px,var(--gyst-safe-right)); max-height: calc(100% - 150px); overflow: auto; overscroll-behavior: contain; border-radius: 20px; padding: 16px; }
 :root body.galaxy-page .galaxy-context h2 { padding-right: 48px; overflow-wrap: anywhere; }
-:root body.galaxy-page .galaxy-context .galaxy-close { position: absolute; right: 8px; top: 8px; font-size: 1.5rem; }
+:root body.galaxy-page .galaxy-context .galaxy-close { position: absolute; right: 8px; top: 8px; min-width: 44px; min-height: 44px; border: 0; border-radius: 12px; background: transparent; color: #e7f2fb; font-size: 1.5rem; line-height: 1; cursor: pointer; }
+:root body.galaxy-page .galaxy-context .galaxy-close:hover { background: rgba(231,242,251,.1); }
+:root body.galaxy-page .galaxy-context .galaxy-close:focus-visible { outline: 2px solid #8bdcff; outline-offset: 2px; }
 :root body.galaxy-page .galaxy-context [data-galaxy-open] { display: inline-flex; align-items: center; margin-top: 12px; }
 :root body.galaxy-page .galaxy-context [hidden] { display: none; }
 :root body.galaxy-page .galaxy-context :is(.meta,.galaxy-context-summary) { color: #b5c0d0; overflow-wrap: anywhere; }
@@ -64,7 +66,7 @@
  :root body.galaxy-page .galaxy-controls { top:12px; bottom:auto; right:12px; flex-direction:column; align-items:flex-end; gap:6px; }
  :root body.galaxy-page .galaxy-status { left:12px; right:12px; bottom:12px; width:auto; transform:none; text-align:left; font-size:.75rem; }
  :root body.galaxy-page .galaxy-legend { top:12px; bottom:auto; left:12px; right:auto; }
- :root body.galaxy-page .galaxy-context { position:relative; inset:auto; width:auto; max-height:none; margin:12px; padding:16px; }
+ :root body.galaxy-page .galaxy-context { position:relative; inset:auto; width:auto; max-height:none; margin:12px var(--galaxy-gutter,12px); padding:16px; }
  :root body.galaxy-page .galaxy-context[hidden] { display:none; }
  :root body.galaxy-page .galaxy-context :is(button,.btn) { min-height:44px; min-width:44px; }
  :root body.galaxy-page .galaxy-has-selection :is(.galaxy-controls,.galaxy-status,.galaxy-legend) { visibility:visible; }
@@ -72,7 +74,7 @@
 
 /* Light window (#22): the scene stays dark; the page around it follows the theme. */
 :root body.galaxy-page { background: var(--galaxy-page-bg,#03050b); }
-:root body.galaxy-page .galaxy-screen { display:flex; flex-direction:column; height:calc(100svh - var(--gyst-header-clearance) - var(--gyst-nav-clearance)); min-height:420px; }
+:root body.galaxy-page .galaxy-screen { display:flex; flex-direction:column; min-height:max(420px, calc(100svh - var(--gyst-header-clearance) - var(--gyst-nav-clearance))); }
 :root body.galaxy-page .galaxy-screen > .galaxy-hub { flex:none; }
 :root body.galaxy-page .galaxy-screen > .galaxy-stage { flex:1 1 auto; width:auto; height:auto; min-height:280px; max-height:none; margin:0 var(--galaxy-gutter,0px) var(--galaxy-gutter,0px); border-radius:var(--galaxy-radius,0); box-shadow:var(--galaxy-shadow, inset 0 0 120px rgba(20,47,89,.28)); }
 :root[data-gyst-theme="light"] body.galaxy-page {
@@ -99,3 +101,14 @@
   :root:not([data-gyst-theme]) body.galaxy-page .galaxy-hub h1, :root[data-gyst-theme="system"] body.galaxy-page .galaxy-hub h1 { font-size:1.75rem; line-height:1.214; font-weight:700; letter-spacing:-.035em; }
   :root:not([data-gyst-theme]) body.galaxy-page .galaxy-actions a, :root[data-gyst-theme="system"] body.galaxy-page .galaxy-actions a { padding:10px 14px; border:1px solid var(--gyst-border); border-radius:var(--gyst-radius-sm); background:var(--gyst-surface); font-size:.875rem; }
 }
+/* Phones keep the compact hub size in light mode too, so the window gets the height. */
+@media (max-width: 767px) {
+  :root[data-gyst-theme="light"] body.galaxy-page .galaxy-hub h1 { font-size:1.35rem; }
+  :root[data-gyst-theme="light"] body.galaxy-page .galaxy-actions a { padding:8px 10px; font-size:.75rem; }
+}
+@media (max-width: 767px) and (prefers-color-scheme: light) {
+  :root:not([data-gyst-theme]) body.galaxy-page .galaxy-hub h1, :root[data-gyst-theme="system"] body.galaxy-page .galaxy-hub h1 { font-size:1.35rem; }
+  :root:not([data-gyst-theme]) body.galaxy-page .galaxy-actions a, :root[data-gyst-theme="system"] body.galaxy-page .galaxy-actions a { padding:8px 10px; font-size:.75rem; }
+}
+/* The preview card is always dark, so its Open button keeps the dark-theme colours (contrast ≥ 4.5:1 in both themes). */
+:root body.galaxy-page .galaxy-context [data-galaxy-open] { background:#53c6e4; border-color:#53c6e4; color:#08262e; }
