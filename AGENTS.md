@@ -46,6 +46,22 @@ Workflow detail: [`docs/agents/IMPLEMENTATION_WORKFLOW.md`](docs/agents/IMPLEMEN
 review: [`docs/agents/REVIEW_WORKFLOW.md`](docs/agents/REVIEW_WORKFLOW.md) ·
 labels and Issue lifecycle: [`docs/agents/README.md`](docs/agents/README.md).
 
+## Shared tools (jay-dev plugin)
+
+This file and `docs/RULES.md` win over the plugin wherever they differ.
+
+- `/jay-dev:studio [quick|standard|deep|exhaustive] <request>` picks the level
+  and the specialists; code changes still follow the rules above (Issue →
+  task branch from `master` → PR → independent review → Jay merges).
+- `jay-dev:qa` for browser checks: local dev with `seeds/example.sql`, never
+  production health data; light and dark as rule 9 says.
+- `jay-dev:security` for anything touching auth, the session cookie, the
+  bearer-token Health sync (`/api/health/*`), web push or uploads.
+- `jay-dev:db` for migrations (additive, timestamp-prefixed, never edited).
+- `jay-dev:design-review` and the `frontend-design` skill work inside
+  `13A_DESIGN_DECISIONS.md`: no new framework, spacing, colours or patterns.
+  Their motion rules never override the Galaxy rules below.
+
 ## Non-negotiable product rules
 
 - **GYST Galaxy is a protected signature feature. Agents may enhance and refactor it but must not delete, replace, or downgrade the real Three.js Galaxy without explicit product-owner approval.**
