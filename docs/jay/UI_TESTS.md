@@ -1,0 +1,1 @@
+- [ ] #22 · iPhone Galaxy: light window, dark full-bleed, ship clear · https://github.com/JayDalool/gyst-lifeops/pull/27
