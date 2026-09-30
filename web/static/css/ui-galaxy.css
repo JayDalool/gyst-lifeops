@@ -74,7 +74,7 @@
 
 /* Light window (#22): the scene stays dark; the page around it follows the theme. */
 :root body.galaxy-page { background: var(--galaxy-page-bg,#03050b); }
-:root body.galaxy-page .galaxy-screen { display:flex; flex-direction:column; min-height:max(420px, calc(100svh - var(--gyst-header-clearance) - var(--gyst-nav-clearance))); }
+:root body.galaxy-page .galaxy-screen { display:flex; flex-direction:column; height:max(420px, calc(100svh - var(--gyst-header-clearance) - var(--gyst-nav-clearance))); }
 :root body.galaxy-page .galaxy-screen > .galaxy-hub { flex:none; }
 :root body.galaxy-page .galaxy-screen > .galaxy-stage { flex:1 1 auto; width:auto; height:auto; min-height:280px; max-height:none; margin:0 var(--galaxy-gutter,0px) var(--galaxy-gutter,0px); border-radius:var(--galaxy-radius,0); box-shadow:var(--galaxy-shadow, inset 0 0 120px rgba(20,47,89,.28)); }
 :root[data-gyst-theme="light"] body.galaxy-page {
