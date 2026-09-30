@@ -27,3 +27,10 @@ const fs = require('node:fs');
  assert.ok(galaxyCameraFit(90,320,600)>galaxyCameraFit(90,1440,800));
  console.log('Galaxy camera: portrait, landscape and desktop bounds passed');
 })();
+
+(() => {
+ const html = fs.readFileSync('web/templates/galaxy.html','utf8');
+ assert.ok(!html.includes('Drag to explore'), 'galaxy.html must not repeat the status-line hint');
+ assert.ok(html.includes('galaxy-screen'), 'galaxy.html wraps hub and stage in .galaxy-screen');
+ console.log('Galaxy template: single hint and screen wrapper passed');
+})();

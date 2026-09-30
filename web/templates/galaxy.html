@@ -1,9 +1,10 @@
 {{define "content"}}
 <section class="galaxy-shell" data-galaxy aria-labelledby="galaxy-title">
+  <div class="galaxy-screen">
     <section class="galaxy-hub" aria-label="Galaxy hub">
       <p class="kicker">Your project worlds</p>
       <h1 id="galaxy-title">Galaxy</h1>
-      <p>Drag to explore. Pinch or use the zoom controls. Tap a world to preview it.</p>
+      <p>Your active projects, as worlds.</p>
       <div class="galaxy-actions">
         <a class="btn sm ghost" href="#galaxy-projects">Browse worlds</a>
         <a class="btn sm ghost" href="/projects">All projects</a>
@@ -21,6 +22,7 @@
     <div class="galaxy-status" data-galaxy-status role="status">Loading galaxy&hellip;</div>
 
 	<div class="galaxy-legend" aria-label="Project states"><span class="active">Active</span><span class="upcoming">Upcoming</span><span class="locked">Locked</span></div>
+  </div>
   </div>
 	<aside class="galaxy-context" data-galaxy-context aria-label="Selected project" hidden>
       <button type="button" class="galaxy-close" data-galaxy-close aria-label="Close project preview">×</button>
