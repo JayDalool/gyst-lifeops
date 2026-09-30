@@ -4010,6 +4010,7 @@ i.map-node-state {
   letter-spacing: -0.035em;
   line-height: 1.214;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 :root .page-sub { color: var(--muted); margin: 6px 0 0; font-size: 15px; }
 :root .section-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
