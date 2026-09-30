@@ -83,6 +83,9 @@
   /* §E Radii. */
   --vn-r-sm: 8px; --vn-r-md: 12px; --vn-r-lg: 16px; --vn-r-xl: 24px; --vn-r-pill: 999px;
 
+  /* §L Motion. Reduced motion collapses these to ~1 ms (styles.css). */
+  --vn-fast: 150ms; --vn-base: 240ms; --vn-ease: cubic-bezier(.2,.8,.2,1);
+
   /* 13 §1 Breakpoints (min-width). Custom properties cannot be used inside
      @media, so these are the documented constants that media queries repeat. */
   --vn-bp-tablet: 600px; --vn-bp-laptop: 1024px; --vn-bp-desktop: 1280px; --vn-bp-wide: 1600px;

@@ -62,4 +62,16 @@ function themeChecks() {
     }
   }
 }
-(async()=>{await workerChecks();themeChecks();console.log('UI shell: private/offline cache policy and theme persistence passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+function motionChecks() {
+  const code=fs.readFileSync('web/static/js/theme.js','utf8');
+  for(const [value,denied,expected] of [['reduced',false,'reduced'],['',false,undefined],[null,false,undefined],['reduced',true,undefined]]) {
+    const root={dataset:{}};
+    vm.runInNewContext(code,{
+      document:{documentElement:root,querySelector:()=>({}),querySelectorAll:()=>[],dispatchEvent:()=>{},addEventListener:()=>{}},
+      localStorage:{getItem:key=>{if(denied)throw Error('denied');return key==='lifeops-motion'?value:null;},setItem:()=>{}},
+      window:{addEventListener:()=>{}},Event:class{}
+    });
+    assert.equal(root.dataset.motion,expected);
+  }
+}
+(async()=>{await workerChecks();themeChecks();motionChecks();console.log('UI shell: private/offline cache policy, theme persistence and motion preference passed');})().catch(error=>{console.error(error);process.exitCode=1;});

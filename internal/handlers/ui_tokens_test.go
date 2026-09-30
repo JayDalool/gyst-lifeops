@@ -27,6 +27,8 @@ var vnTokens = []vnToken{
 	{"Spacing", "--vn-s12", "48px", ""},
 	{"Radii", "--vn-r-sm", "8px", ""}, {"Radii", "--vn-r-md", "12px", ""}, {"Radii", "--vn-r-lg", "16px", ""},
 	{"Radii", "--vn-r-xl", "24px", ""}, {"Radii", "--vn-r-pill", "999px", ""},
+	{"Motion", "--vn-fast", "150ms", ""}, {"Motion", "--vn-base", "240ms", ""},
+	{"Motion", "--vn-ease", "cubic-bezier(.2,.8,.2,1)", ""},
 	{"Breakpoints", "--vn-bp-tablet", "600px", ""}, {"Breakpoints", "--vn-bp-laptop", "1024px", ""},
 	{"Breakpoints", "--vn-bp-desktop", "1280px", ""}, {"Breakpoints", "--vn-bp-wide", "1600px", ""},
 	{"Surfaces", "--vn-canvas", "#f4f6fa", "#0b111c"}, {"Surfaces", "--vn-surface", "#ffffff", "#141c2b"},
@@ -179,7 +181,7 @@ func vnGalleryData() vnGallery {
 		switch tok.Group {
 		case "ok", "info", "warn", "crit", "idle":
 			add(&g.States, tok)
-		case "Type", "Spacing", "Radii", "Breakpoints":
+		case "Type", "Spacing", "Radii", "Motion", "Breakpoints":
 			add(&g.Scales, tok)
 		default:
 			add(&g.Colors, tok)

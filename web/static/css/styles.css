@@ -1828,7 +1828,7 @@ th {
   box-shadow: var(--shadow);
   opacity: 0;
   transform: translate(-50%, 8px);
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition: opacity var(--vn-base) var(--vn-ease), transform var(--vn-base) var(--vn-ease);
   pointer-events: none;
 }
 
@@ -3430,6 +3430,7 @@ i.map-node-state {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+  ::backdrop { animation: none !important; }
 
   .action-card:hover,
   .signal-card:hover,
@@ -4065,10 +4066,10 @@ i.map-node-state {
   background: var(--accent);
   color: #08262e;
   text-decoration: none;
-  transition: opacity 120ms, transform 120ms, color 120ms;
+  transition: opacity var(--vn-fast) var(--vn-ease), transform var(--vn-fast) var(--vn-ease), color var(--vn-fast) var(--vn-ease);
 }
 :root .btn:hover { opacity: 0.9; }
-:root .btn:active { transform: translateY(1px); }
+:root .btn:not(:disabled):active { transform: scale(.97); }
 :root .btn.ghost {
   background: transparent;
   color: var(--muted);
@@ -4142,6 +4143,7 @@ i.map-node-state {
 :root .galaxy-hub > p:not(.kicker) { margin: 0 0 13px; color: #9fb0c2; font-size: 13px; }
 :root .galaxy-status { position: absolute; left: 16px; bottom: 14px; max-width: calc(100% - 32px); padding: 7px 11px; color: #dce9f4; background: rgba(5, 9, 15, .78); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; font-size: 13px; pointer-events: none; }
 :root .galaxy-context { position: absolute; z-index: 3; top: 18px; right: 18px; width: min(330px, calc(100% - 36px)); padding: 18px; color: #e7f2fb; background: linear-gradient(145deg, rgba(14,23,39,.92), rgba(7,11,20,.84)); border: 1px solid rgba(132,187,228,.24); border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.35); backdrop-filter: blur(16px); }
+:root .galaxy-context:not([hidden]) { animation: gyst-rise var(--vn-base) var(--vn-ease); }
 :root .galaxy-context h2 { margin: 3px 0 8px; font-size: 21px; }
 :root .galaxy-context-summary { margin: 0 0 12px; color: #adbbca; font-size: 13px; line-height: 1.5; }
 :root .galaxy-context-progress { height: 4px; overflow: hidden; margin: 10px 0; border-radius: 4px; background: rgba(255,255,255,.1); }
@@ -4193,18 +4195,18 @@ i.map-node-state {
   cursor: pointer;
   flex: 0 0 auto;
   border: 1.5px solid var(--border-strong);
-  border-radius: 6px;
+  border-radius: 50%;
   background: transparent;
   display: grid;
   place-items: center;
-  transition: background-color 120ms, border-color 120ms;
+  transition: background-color var(--vn-fast) var(--vn-ease), border-color var(--vn-fast) var(--vn-ease);
 }
 :root .task input[type="checkbox"]:hover { border-color: var(--muted); }
 :root .task input[type="checkbox"]:checked {
   background: var(--green);
   border-color: var(--green);
 }
-:root .task input[type="checkbox"]:checked::before {
+:root .task input[type="checkbox"]::before {
   content: "";
   width: 10px;
   height: 6px;
@@ -4212,10 +4214,17 @@ i.map-node-state {
   border-left: 2px solid var(--bg);
   border-bottom: 2px solid var(--bg);
   transform: rotate(-45deg);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path var(--vn-base) var(--vn-ease);
 }
+:root .task input[type="checkbox"]:checked::before { clip-path: inset(0); }
 :root .task input[type="checkbox"]:disabled { cursor: default; }
 :root .task-body { flex: 1; min-width: 0; }
 :root .task-title { font-size: 14.5px; font-weight: 500; }
+:root .task .task-title { transition: opacity var(--vn-base) var(--vn-ease); }
+:root .task.is-completing .task-title { opacity: .55; text-decoration: line-through; animation: gyst-strike var(--vn-base) var(--vn-ease) both; }
+@keyframes gyst-strike { from { text-decoration-color: transparent; } }
+:root .task.is-completing :is(input[type="checkbox"], .today-task-check, .task-check, .project-task-check) { pointer-events: none; }
 :root .task-title a { color: inherit; text-decoration: none; }
 :root .task-title a:hover { color: var(--accent-text); }
 :root .task:has(input:checked) .task-title {
@@ -4735,6 +4744,10 @@ i.map-node-state {
   animation: none !important;
   transition-duration: 0.01ms !important;
 }
+:root[data-motion="reduced"]::view-transition-group(*),
+:root[data-motion="reduced"]::view-transition-old(*),
+:root[data-motion="reduced"]::view-transition-new(*) { animation-duration: 1ms !important; }
+:root[data-motion="reduced"] ::backdrop { animation: none !important; }
 
 /* ---- courses ------------------------------------------------------------------- */
 :root .course-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -4920,7 +4933,7 @@ i.map-node-state {
 }
 
 /* Full-page completion events. They are created only after a successful POST. */
-:root .completion-event { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow: auto; padding: 24px 14px; color: var(--text); background: rgba(2,6,12,.9); opacity: 0; transition: opacity 180ms ease; backdrop-filter: blur(8px); }
+:root .completion-event { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow: auto; padding: 24px 14px; color: var(--text); background: rgba(2,6,12,.9); opacity: 0; transition: opacity var(--vn-base) var(--vn-ease); backdrop-filter: blur(8px); }
 :root .completion-event.is-playing { opacity: 1; }
 :root .completion-event.is-leaving { opacity: 0; pointer-events: none; }
 :root .completion-space { position: absolute; inset: 0; display: grid; place-items: center; transform: translateY(-27%); }
