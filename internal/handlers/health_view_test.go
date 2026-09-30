@@ -246,7 +246,7 @@ func TestHealthPageRendersWithoutData(t *testing.T) {
 	if strings.Contains(body, "executing \"") {
 		t.Fatalf("template error: %s", body)
 	}
-	if !strings.Contains(body, "No data for 2026-09-10") {
+	if !strings.Contains(body, "No data for Sep 10, 2026") {
 		t.Error("empty state is not shown")
 	}
 	// The old demonstration numbers must be gone for good.

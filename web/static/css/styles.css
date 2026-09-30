@@ -4005,11 +4005,13 @@ i.map-node-state {
 }
 :root .kicker { font-size: 13px; color: var(--quiet); margin: 0 0 4px; }
 :root .page-title {
-  font-size: 26px;
-  font-weight: 650;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
+  font-family: var(--gyst-font);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.214;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 :root .page-sub { color: var(--muted); margin: 6px 0 0; font-size: 15px; }
 :root .section-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
@@ -4240,6 +4242,11 @@ i.map-node-state {
   width: 52px;
   flex: 0 0 auto;
 }
+:root .task-check { display: grid; place-items: center; flex: 0 0 44px; width: 44px; min-height: 44px; cursor: pointer; }
+:root .task-check input:disabled { cursor: default; }
+:root .task-late { color: var(--red-text); }
+:root .task-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+:root .task-actions .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 12px; }
 :root .task .btn.quiet { opacity: 0; }
 :root .task:hover .btn.quiet,
 :root .task:focus-within .btn.quiet { opacity: 1; }
@@ -4377,8 +4384,8 @@ i.map-node-state {
 :root .map .node {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 36px;
-  height: 36px;                 /* generous hit area */
+  width: 44px;
+  height: 44px;                 /* 44px minimum touch target */
   display: grid;
   place-items: center;
   background: none;
@@ -4542,12 +4549,17 @@ i.map-node-state {
 :root .pill-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
   margin-top: 24px;
 }
 :root .pill-row a {
-  padding: 6px 10px;
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
   font-size: 13.5px;
   color: var(--muted);
   text-decoration: none;
@@ -4900,8 +4912,9 @@ i.map-node-state {
   :root .rm-layout,
   :root .course-grid,
   :root .form-row { grid-template-columns: 1fr; }
-  :root .page-title { font-size: 22px; }
   :root .task .btn.quiet { opacity: 1; }   /* no hover on touch */
+  :root .task:has(.task-actions) { flex-wrap: wrap; row-gap: 0; }
+  :root .task-actions { flex-basis: 100%; padding-left: 56px; margin-top: -4px; }
   :root .task input[type="checkbox"] { width: 24px; height: 24px; }
   :root .prayer-hero { align-items: flex-start; flex-direction: column; }
 	:root .prayer-alert-panel { align-items: flex-start; }
