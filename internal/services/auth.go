@@ -96,17 +96,27 @@ func (s *Service) CreateSession() (rawToken string, expiresAt time.Time, err err
 // for anything that is not a live session, and extends the rolling expiry at
 // most once per sessionRefreshInterval.
 func (s *Service) ValidateSession(rawToken string) error {
+	_, err := s.CheckSession(rawToken)
+	return err
+}
+
+// CheckSession is ValidateSession for callers that own the cookie. When it
+// rolls the expiry forward it returns the new expiry, so the caller can renew
+// the browser's cookie to match; otherwise the returned time is zero. Without
+// this the server-side session keeps rolling while the cookie still expires
+// 30 days after login, and the browser signs out a session that is live.
+func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err error) {
 	if rawToken == "" {
-		return ErrNoSession
+		return time.Time{}, ErrNoSession
 	}
 	tokenHash := hashSessionToken(rawToken)
 
 	session, err := s.Repo.GetSession(tokenHash)
 	if errors.Is(err, sql.ErrNoRows) {
-		return ErrNoSession
+		return time.Time{}, ErrNoSession
 	}
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
 
 	now := s.Now().UTC()
@@ -114,15 +124,17 @@ func (s *Service) ValidateSession(rawToken string) error {
 		// Clear it on the way past so lapsed rows do not accumulate between
 		// sweeps. A failure here must not deny an otherwise correct decision.
 		_ = s.Repo.DeleteSession(tokenHash)
-		return ErrNoSession
+		return time.Time{}, ErrNoSession
 	}
 
 	if now.Sub(session.LastSeenAt) >= sessionRefreshInterval {
-		if err := s.Repo.TouchSession(tokenHash, now.Add(sessionLifetime), now); err != nil {
-			return err
+		expiresAt := now.Add(sessionLifetime)
+		if err := s.Repo.TouchSession(tokenHash, expiresAt, now); err != nil {
+			return time.Time{}, err
 		}
+		return expiresAt, nil
 	}
-	return nil
+	return time.Time{}, nil
 }
 
 // RevokeSession ends one session. Revoking an unknown token succeeds: logout

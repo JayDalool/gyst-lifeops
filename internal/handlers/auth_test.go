@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -217,6 +218,57 @@ func TestSessionCookieAttributes(t *testing.T) {
 	}
 	if cookie.Path != "/" {
 		t.Errorf("Path = %q, want /", cookie.Path)
+	}
+}
+
+// TestSessionCookieIsRenewedWithTheSession pins the cookie to the rolling
+// server-side expiry. Before this, the session rolled forward on use but the
+// cookie kept its login-time expiry, so the browser dropped a live session.
+func TestSessionCookieIsRenewedWithTheSession(t *testing.T) {
+	h := authHandler(t)
+	base := time.Date(2026, 9, 10, 18, 0, 0, 0, time.UTC)
+	h.Service.Now = func() time.Time { return base }
+	cookie := signIn(t, h)
+
+	visit := func(at time.Time) *http.Cookie {
+		t.Helper()
+		h.Service.Now = func() time.Time { return at }
+		request := httptest.NewRequest(http.MethodGet, "/today", nil)
+		request.Header.Set("X-Forwarded-Proto", "https")
+		request.AddCookie(cookie)
+		recorder := httptest.NewRecorder()
+		h.Authenticated().ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", recorder.Code)
+		}
+		for _, set := range recorder.Result().Cookies() {
+			if set.Name == sessionCookieName {
+				return set
+			}
+		}
+		return nil
+	}
+
+	// Inside the refresh interval nothing is rewritten, cookie included.
+	if renewed := visit(base.Add(time.Hour)); renewed != nil {
+		t.Errorf("cookie re-sent inside the refresh interval, expires %v", renewed.Expires)
+	}
+
+	// Past it, the cookie is re-sent with the session's new expiry and the
+	// same attributes and token as at login.
+	later := base.Add(25 * time.Hour)
+	renewed := visit(later)
+	if renewed == nil {
+		t.Fatal("cookie not renewed when the session rolled forward")
+	}
+	if want := later.Add(30 * 24 * time.Hour); !renewed.Expires.Equal(want.Truncate(time.Second)) {
+		t.Errorf("renewed Expires = %v, want %v", renewed.Expires, want)
+	}
+	if renewed.Value != cookie.Value {
+		t.Error("renewal changed the token; it must only extend the expiry")
+	}
+	if !renewed.HttpOnly || !renewed.Secure || renewed.SameSite != http.SameSiteLaxMode || renewed.Path != "/" {
+		t.Errorf("renewed cookie lost attributes: %+v", renewed)
 	}
 }
 
