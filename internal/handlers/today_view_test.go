@@ -140,3 +140,16 @@ func TestTodayChecklistPreviewKeepsFullDestination(t *testing.T) {
 		t.Fatal("dedicated checklist dropped tasks")
 	}
 }
+
+func TestTodayChecklistHeaderCountsSkippedOnce(t *testing.T) {
+	body := renderBody(t, "today.html", TodayData{Page: "today", Today: "2026-09-11",
+		Pending: []models.TaskOccurrence{{Task: models.Task{ID: 81, Title: "Pending fixture"}, Date: "2026-09-11"}},
+		Skipped: []models.TaskOccurrence{{Task: models.Task{ID: 82, Title: "Skipped fixture"}, Date: "2026-09-11"}},
+	})
+	if !strings.Contains(body, "0 done · 1 left · 1 skipped") || !strings.Contains(body, `class="gyst-progress"`) {
+		t.Error("header caption or progress bar missing")
+	}
+	if strings.Contains(body, "% complete") {
+		t.Error("duplicate percent caption is back")
+	}
+}

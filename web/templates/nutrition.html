@@ -3,7 +3,7 @@
   <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Nutrition</h1><p class="gyst-caption">Your recorded intake and daily targets.</p></div><a class="btn" href="/health/plan">Edit targets</a></header>
   <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition" aria-current="page">Nutrition</a><a href="/health/training">Training</a><a href="/health/progress">Progress</a><a href="/health/plan">Plan</a></nav>
   <section class="card nutrition-context" aria-label="Nutrition data status">
-    <h2>Today · {{.Today.Date}}</h2>
+    <h2>Today · {{niceDate .Today.Date}}</h2>
     {{if not .HasNutrition}}<p class="meta">No nutrition data received for today. Log food in MyFitnessPal and run your Health Sync Shortcut after it reaches Apple Health.</p>{{end}}
     {{if .Today.LastSyncedStale}}<p class="meta nutrition-stale">Data may be out of date. Daily snapshot updated {{.Today.LastSynced}}.</p>{{else if .Today.HasLastSynced}}<p class="meta">Daily snapshot updated {{.Today.LastSynced}}.</p>{{else}}<p class="meta">Update time unavailable.</p>{{end}}
     <p class="meta">This update time covers the daily snapshot. Individual nutrients may have arrived earlier; missing values are shown separately.</p>
