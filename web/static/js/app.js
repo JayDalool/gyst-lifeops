@@ -475,16 +475,18 @@
   function initCheckOff() {
     document.addEventListener("submit", function (event) {
       var form = event.target;
+      // Already on its way: a second toggle during the animation must not post again.
+      if (form.dataset.completing) { event.preventDefault(); return; }
       var box = form.querySelector(".today-task-check > input[type=checkbox], .project-task-check > input[type=checkbox], .task-check > input[type=checkbox]");
       if (!box || !box.checked || !/\/complete$/.test(form.getAttribute("action") || "")) return;
-      if (form.dataset.completing) { event.preventDefault(); return; }
       if (reducedMotion()) return;
       event.preventDefault();
       form.dataset.completing = "1";
+      // Schedule the real submit first so a failure in the animation can't lose it.
+      setTimeout(function () { HTMLFormElement.prototype.submit.call(form); }, motionMs("--vn-base", 240) + 40);
       var row = form.closest("li");
       if (row) row.classList.add("is-completing");
-      easeProgress(form);
-      setTimeout(function () { HTMLFormElement.prototype.submit.call(form); }, motionMs("--vn-base", 240) + 40);
+      try { easeProgress(form); } catch (_) {}
     }, true);
     // Back/forward cache restores the page mid-state; undo it.
     window.addEventListener("pageshow", function (e) {
