@@ -111,9 +111,15 @@ func (h *Handler) Authenticated() http.Handler {
 			return
 		}
 
-		if err := h.Service.ValidateSession(sessionToken(r)); err != nil {
+		token := sessionToken(r)
+		renewedUntil, err := h.Service.CheckSession(token)
+		if err != nil {
 			h.denyUnauthenticated(w, r, path)
 			return
+		}
+		if !renewedUntil.IsZero() {
+			// Keep the cookie's expiry in step with the session it names.
+			h.setSessionCookie(w, r, token, renewedUntil)
 		}
 
 		// Only cookie-authenticated routes need the cross-site guard; the
