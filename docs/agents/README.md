@@ -34,6 +34,14 @@ Exactly one `status:*`, one `priority:*`, one `type:*` and one `risk:*` per open
 | `agent:claude` · `agent:codex` | Intended implementer (intent only; starts nothing) |
 | `agent:ready` | Jay has authorised an agent to start this Issue. **Only Jay sets it.** Never on `risk:not-agent-eligible` Issues or while blocked. |
 | `needs:security-review` | PR/Issue needs an independent security review before Jay's acceptance (always for PRIVILEGED work) |
+| `needs:jay` | Waiting on something only Jay can do: merge authorization, an owner decision, or an owner-run step. Set by the agent or coordinator that hit it; removed once Jay has done it |
+| `needs:ui-review` | Merged and verified by agents; Jay's visual check is pending. Removed when Jay approves |
+| `needs:deploy` | Merged, not yet on production. Removed after the deploy and its post-deploy checks pass |
+| `needs:legal` | Waiting on a lawyer's answer. Set and removed by Jay |
+
+`needs:*` flags add to the single `status:*` label; they never replace it. The
+same flags exist in `samvisionai` and `myfamilyexpenses`, so a cross-repo view
+can list everything waiting on Jay.
 
 GitHub's default labels (`bug`, `enhancement`, `documentation`, …) remain in the
 repository but aren't part of the GYST workflow. Use the `type:*` labels.
