@@ -299,3 +299,52 @@ func TestRoadmapMarkdownStaysCollapsed(t *testing.T) {
 		t.Fatal("markdown <details> is open by default")
 	}
 }
+
+func TestRenderTasksListRow(t *testing.T) {
+	body := renderBody(t, "tasks_list.html", TaskListData{Page: "tasks", Today: "2026-09-30", StatusFilter: "all", Tasks: []models.Task{
+		{ID: 1, Title: "Overdue fixture", Category: "coding", RepeatType: "none", Priority: "high", Status: "pending", DueDate: "2026-09-01"},
+		{ID: 2, Title: "Done fixture", Category: "coding", RepeatType: "none", Priority: "low", Status: "completed"},
+		{ID: 3, Title: "Skipped fixture", Category: "coding", RepeatType: "none", Priority: "low", Status: "skipped"},
+	}})
+	for _, want := range []string{
+		`action="/tasks/1/complete"`, `aria-label="Complete: Overdue fixture"`, `class="task-check"`, `class="task-actions"`,
+		`action="/tasks/1/skip"`, `value="/tasks?status=all#task-1"`, `href="/tasks/1/edit"`,
+		`class="task-late">overdue`, `checked disabled aria-label="Completed: Done fixture"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+	for _, banned := range []string{">Done</button>", `action="/tasks/2/complete"`, `action="/tasks/3/skip"`} {
+		if strings.Contains(body, banned) {
+			t.Errorf("unexpected %s", banned)
+		}
+	}
+}
+
+func TestEmptyProjectShowsNoMissionsYet(t *testing.T) {
+	list := renderBody(t, "projects_list.html", ProjectListData{Page: "projects", RoadmapNames: map[int64]string{}, StatusFilter: "all",
+		Tree: models.ProjectTree{
+			Main: []models.ProjectWithProgress{
+				{Project: models.Project{ID: 1, Name: "Empty Main", Status: "active", ProjectKind: "main"}},
+				{Project: models.Project{ID: 2, Name: "Full Main", Status: "active", ProjectKind: "main"}, Progress: 50, TotalItems: 4, CompletedItems: 2},
+			},
+			Children: map[int64][]models.ProjectWithProgress{},
+		}})
+	for _, want := range []string{"No missions yet", "2 of 4 missions complete"} {
+		if !strings.Contains(list, want) {
+			t.Errorf("list missing %q", want)
+		}
+	}
+	if strings.Contains(list, "0 of 0 missions complete") {
+		t.Error("list shows 0 of 0")
+	}
+	if n := strings.Count(list, `class="gyst-project-progress"`); n != 1 {
+		t.Errorf("progress bars = %d, want 1", n)
+	}
+	detail := renderBody(t, "project_detail.html", ProjectDetailData{Page: "projects",
+		Project: models.ProjectWithProgress{Project: models.Project{ID: 5, Name: "Bare Trip", Status: "active"}}})
+	if !strings.Contains(detail, "No missions yet") || strings.Contains(detail, "0% complete") {
+		t.Error("detail empty-state copy wrong")
+	}
+}

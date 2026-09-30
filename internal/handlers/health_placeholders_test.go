@@ -39,7 +39,8 @@ func TestHealthSummaryHidesUnbuiltControls(t *testing.T) {
 		{
 			name:     "no data",
 			response: models.HealthTodayResponse{Date: "2026-09-10"},
-			want:     []string{"No data for 2026-09-10", "No health plan yet", `<span class="is-absent">No data</span>`},
+			want:     []string{"No data for Sep 10, 2026", "Nothing has synced for today yet. Run GYST Sync All on your iPhone.", "No health plan yet", `<span class="is-absent">No data</span>`},
+			absent:   []string{"which is not built yet"},
 		},
 		{
 			// A recorded zero stays a zero; a missing phone count stays missing.
@@ -48,7 +49,7 @@ func TestHealthSummaryHidesUnbuiltControls(t *testing.T) {
 				HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(0), DietaryCalories: viewFloat(0)},
 			}},
 			want:   []string{"<dt>Watch steps</dt>\n          <dd>0</dd>", "<dt>Phone steps</dt>\n          <dd><span class=\"is-absent\">No data</span></dd>"},
-			absent: []string{"No data for 2026-09-10"},
+			absent: []string{"No data for Sep 10, 2026"},
 		},
 		{
 			name: "full day",
@@ -60,14 +61,14 @@ func TestHealthSummaryHidesUnbuiltControls(t *testing.T) {
 			}, Observed: models.ObservedHealthEnergy{ObservedTotalBurn: viewFloat(2200)}},
 			// Steps are shown per source and never summed (9,000 + 4,000).
 			want:   []string{"2,200 kcal", "9,000", "4,000"},
-			absent: []string{"13,000", "No data for 2026-09-10"},
+			absent: []string{"13,000", "No data for Sep 10, 2026"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			view := buildHealthTodayView(tc.response, viewNow())
 			body := renderBody(t, "health.html", HealthData{Page: "health", Today: view})
 			assertNoUnbuiltHealthMarkup(t, body)
-			for _, want := range append([]string{"Today · 2026-09-10", "Today's energy", "Observed energy", "Workout history", `href="/health/training"`, "Weight trend", `href="/health/progress"`, "Activity", "Watch steps", "Phone steps"}, tc.want...) {
+			for _, want := range append([]string{"Today · Sep 10, 2026", "Today's energy", "Observed energy", "Workout history", `href="/health/training"`, "Weight trend", `href="/health/progress"`, "Activity", "Watch steps", "Phone steps"}, tc.want...) {
 				if !strings.Contains(body, want) {
 					t.Errorf("missing %q", want)
 				}

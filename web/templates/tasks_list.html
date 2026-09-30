@@ -21,28 +21,36 @@
     <ul class="tasks">
       {{range .Tasks}}
         <li class="task" id="task-{{.ID}}">
-          <span class="status {{if eq .Status "completed"}}done{{else if eq .Status "skipped"}}locked{{else if and (eq .Status "pending") .DueDate (lt .DueDate $.Today)}}late{{else}}current{{end}}"><span class="dot"></span></span>
+          {{if eq .Status "pending"}}
+            <form method="post" action="/tasks/{{.ID}}/complete">
+              <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
+              <input type="hidden" name="return_to" value="/tasks?status={{$.StatusFilter}}#task-{{.ID}}">
+              <label class="task-check"><input type="checkbox" aria-label="Complete: {{.Title}}" onchange="this.form.requestSubmit()"></label>
+            </form>
+          {{else if eq .Status "completed"}}
+            <span class="task-check"><input type="checkbox" checked disabled aria-label="Completed: {{.Title}}"></span>
+          {{else}}
+            <span class="task-check"><span class="status locked"><span class="dot"></span></span></span>
+          {{end}}
           <div class="task-body">
             <div class="task-title"><a href="/tasks/{{.ID}}">{{.Title}}</a></div>
             <div class="task-meta">
               {{.Category}} &middot; {{.RepeatType}} &middot; {{.Priority}}
               {{- if .DueDate}} &middot; due {{niceDate .DueDate}}{{end}}
               {{- if ne .Status "pending"}} &middot; {{.Status}}{{end}}
+              {{- if and (eq .Status "pending") .DueDate (lt .DueDate $.Today)}} &middot; <span class="task-late">overdue</span>{{end}}
             </div>
           </div>
-          {{if eq .Status "pending"}}
-            <form method="post" action="/tasks/{{.ID}}/complete">
-              <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
-              <input type="hidden" name="return_to" value="/tasks?status={{$.StatusFilter}}#task-{{.ID}}">
-              <button class="btn quiet sm" type="submit">Done</button>
-            </form>
-            <form method="post" action="/tasks/{{.ID}}/skip">
-              <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
-              <input type="hidden" name="return_to" value="/tasks?status={{$.StatusFilter}}#task-{{.ID}}">
-              <button class="btn quiet sm" type="submit">Skip</button>
-            </form>
-          {{end}}
-          <a class="btn quiet sm" href="/tasks/{{.ID}}/edit">Edit</a>
+          <div class="task-actions">
+            {{if eq .Status "pending"}}
+              <form method="post" action="/tasks/{{.ID}}/skip">
+                <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
+                <input type="hidden" name="return_to" value="/tasks?status={{$.StatusFilter}}#task-{{.ID}}">
+                <button class="btn quiet sm" type="submit" aria-label="Skip {{.Title}}">Skip</button>
+              </form>
+            {{end}}
+            <a class="btn quiet sm" href="/tasks/{{.ID}}/edit" aria-label="Edit {{.Title}}">Edit</a>
+          </div>
         </li>
       {{end}}
     </ul>

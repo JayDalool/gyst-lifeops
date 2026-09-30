@@ -3,8 +3,8 @@
   <span class="gyst-icon-tile">{{template "gyst.icon" .Icon}}</span>
   <span class="gyst-project-copy"><strong>{{.Project.Name}}</strong><span class="gyst-caption">{{.Project.Category}}{{if .Project.ProjectKind}} · {{.Project.ProjectKind}}{{end}}</span></span>
   <span class="gyst-badge">{{.Project.Status}}</span>
-  <span class="gyst-project-summary">{{if .NextDueItem}}Next: {{.NextDueItem}}{{if .NextDueDate}} · {{niceDate .NextDueDate}}{{end}}{{else if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else if or (eq .Project.Status "locked") (eq .Project.Status "upcoming")}}{{if .Project.AutoUnlock}}Unlocks automatically{{else}}Manual unlock{{end}}{{else if .Project.Description}}{{.Project.Description}}{{else}}{{.CompletedItems}} of {{.TotalItems}} missions complete{{end}}</span>
-  <div class="gyst-project-progress">{{template "gyst.progress" .ProgressView}}<span class="gyst-caption">{{.Progress}}%</span></div>
+  <span class="gyst-project-summary">{{if .NextDueItem}}Next: {{.NextDueItem}}{{if .NextDueDate}} · {{niceDate .NextDueDate}}{{end}}{{else if .Project.UnlockNotes}}{{.Project.UnlockNotes}}{{else if or (eq .Project.Status "locked") (eq .Project.Status "upcoming")}}{{if .Project.AutoUnlock}}Unlocks automatically{{else}}Manual unlock{{end}}{{else if .Project.Description}}{{.Project.Description}}{{else}}{{if .TotalItems}}{{.CompletedItems}} of {{.TotalItems}} missions complete{{else}}No missions yet{{end}}{{end}}</span>
+  {{if .TotalItems}}<div class="gyst-project-progress">{{template "gyst.progress" .ProgressView}}<span class="gyst-caption">{{.Progress}}%</span></div>{{end}}
 </a>
 {{end}}
 {{define "projectRowsV2"}}
