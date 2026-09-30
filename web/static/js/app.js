@@ -435,12 +435,6 @@
 	  setTimeout(close, kind === "project" ? 5200 : 2300);
 	}
 
-  try {
-    if (localStorage.getItem("lifeops-motion") === "reduced") {
-      document.documentElement.dataset.motion = "reduced";
-    }
-  } catch (e) {}
-
 	if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("/service-worker.js").catch(function () {}); });
 
   // Navigation may grow with text zoom or safe-area changes. Keep content and
@@ -457,12 +451,61 @@
     observer.observe(nav);
   }
 
+  // §L check-off: animate on the current page, then submit the same form.
+  function motionMs(name, fallback) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(), n = parseFloat(v);
+    return isNaN(n) ? fallback : (/ms$/.test(v) ? n : n * 1000);
+  }
+
+  function easeProgress(form) {
+    var list = form.closest(".today-checklist");
+    if (!list || !/^\/tasks\/\d+\/complete$/.test(form.getAttribute("action"))) return;
+    var bar = list.querySelector(".gyst-progress");
+    if (!bar) return;
+    var d = +list.dataset.done, t = d + (+list.dataset.pending) + (+list.dataset.skipped);
+    if (!t) return;
+    var from = +bar.value, to = Math.floor((d + 1) * 100 / t), dur = motionMs("--vn-base", 240), t0 = performance.now();
+    (function f(now) {
+      var k = Math.min(1, (now - t0) / dur);
+      bar.value = from + (to - from) * (1 - Math.pow(1 - k, 3));
+      if (k < 1) requestAnimationFrame(f);
+    })(t0);
+  }
+
+  function initCheckOff() {
+    document.addEventListener("submit", function (event) {
+      var form = event.target;
+      var box = form.querySelector(".today-task-check > input[type=checkbox], .project-task-check > input[type=checkbox], .task-check > input[type=checkbox]");
+      if (!box || !box.checked || !/\/complete$/.test(form.getAttribute("action") || "")) return;
+      if (form.dataset.completing) { event.preventDefault(); return; }
+      if (reducedMotion()) return;
+      event.preventDefault();
+      form.dataset.completing = "1";
+      var row = form.closest("li");
+      if (row) row.classList.add("is-completing");
+      easeProgress(form);
+      setTimeout(function () { HTMLFormElement.prototype.submit.call(form); }, motionMs("--vn-base", 240) + 40);
+    }, true);
+    // Back/forward cache restores the page mid-state; undo it.
+    window.addEventListener("pageshow", function (e) {
+      if (!e.persisted) return;
+      document.querySelectorAll("form[data-completing]").forEach(function (f) {
+        delete f.dataset.completing;
+        var b = f.querySelector("input[type=checkbox]");
+        if (b) b.checked = false;
+        var r = f.closest("li");
+        if (r) r.classList.remove("is-completing");
+      });
+    });
+  }
+
   function init() {
     document.querySelectorAll("[data-map-v2]").forEach(function (m) { initMap(m); });
     initMisc();
     initShellClearance();
 	initCommandPalette();
 	initCelebration();
+    initCheckOff();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

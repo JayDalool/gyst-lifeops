@@ -18,6 +18,7 @@
   var stored;
   try { stored = localStorage.getItem(key); } catch (_) {}
   apply(stored, false);
+  try { if (localStorage.getItem("lifeops-motion") === "reduced") document.documentElement.dataset.motion = "reduced"; } catch (_) {}
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("[data-theme-toggle]").forEach(function (toggle) {
       toggle.checked = document.documentElement.dataset.gystTheme !== "dark";

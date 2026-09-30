@@ -19,7 +19,8 @@
 .gyst-card--inset { background: var(--gyst-control-bg); box-shadow: none; }
 .gyst-icon { width: 24px; height: 24px; flex-shrink: 0; vertical-align: middle; }
 .gyst-icon-tile { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--gyst-radius-sm); background: var(--gyst-blue-soft); color: var(--gyst-blue); }
-.gyst-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--gyst-space-2); min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: var(--gyst-radius-sm); background: #2563eb; color: #fff; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color var(--gyst-duration); }
+.gyst-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--gyst-space-2); min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: var(--gyst-radius-sm); background: #2563eb; color: #fff; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color var(--gyst-duration), transform var(--vn-fast) var(--vn-ease); }
+.gyst-button:not(:disabled):active { transform: scale(.97); }
 .gyst-button:hover { background: #1d4ed8; }
 .gyst-button--secondary { background: var(--gyst-surface); color: var(--gyst-blue); border-color: var(--gyst-blue); }
 .gyst-button--secondary:hover { background: var(--gyst-blue-soft); }
@@ -85,3 +86,11 @@ a.gyst-row:hover { background: var(--gyst-blue-soft); }
 @media (min-width: 768px) { .gyst-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (min-width: 1024px) { .gyst-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media (prefers-reduced-motion: reduce) { .gyst-scope *, .gyst-scope *::before { transition: none !important; animation: none !important; } }
+
+/* §L Motion: tappable cards, rise-in, page cross-fade. Reduced motion: styles.css + the rule below. */
+:root a.gyst-project-card { transition: transform var(--vn-fast) var(--vn-ease); }
+:root a.gyst-project-card:active { transform: scale(.97); }
+@keyframes gyst-rise { from { opacity: 0; transform: translateY(8px); } }
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--vn-fast); animation-timing-function: var(--vn-ease); }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }

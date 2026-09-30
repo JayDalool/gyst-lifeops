@@ -87,8 +87,13 @@ scale rather than the illustrative values in the written brief.
 Shadows: card `0 1px 2px rgb(15 23 42 / 5%)`, raised
 `0 4px 12px rgb(15 23 42 / 8%)`, floating
 `0 8px 24px rgb(15 23 42 / 12%)`. Default cards need only a thin border;
-no large shadow on the tab bar. Motion: 150–250 ms for small state transitions;
-remove nonessential transitions and animation under reduced motion.
+no large shadow on the tab bar. Motion: tokens `--vn-fast` (150 ms), `--vn-base`
+(240 ms) and `--vn-ease` (`cubic-bezier(.2,.8,.2,1)`) in `ui-tokens.css`. Use them for
+any new transition. Reduced motion has two paths that both collapse motion to about
+1 ms: the OS `prefers-reduced-motion` media query and GYST's own setting
+(`:root[data-motion="reduced"]`, set early by `theme.js` from `localStorage`
+`lifeops-motion`); page view transitions and `::backdrop` animations are covered in
+both. Check-off animation runs only when neither is active.
 
 ## CSS migration and theme compatibility
 

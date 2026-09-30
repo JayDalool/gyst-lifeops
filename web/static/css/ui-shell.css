@@ -57,3 +57,11 @@
 
 @media (max-width: 767px) { .gyst-more-grid { grid-template-columns: minmax(0,1fr); } }
 :root .gyst-command .command-results a[hidden] { display: none; }
+
+/* §L Motion: keep the top bar and nav still during page cross-fades; dialog entrance. */
+.gyst-topbar { view-transition-name: gyst-topbar; }
+.gyst-primary { view-transition-name: gyst-nav; }
+::view-transition-group(gyst-topbar), ::view-transition-group(gyst-nav) { animation: none; }
+:root .command-palette.gyst-command[open] { animation: gyst-rise var(--vn-base) var(--vn-ease); }
+:root .command-palette.gyst-command[open]::backdrop { animation: gyst-fade var(--vn-base) var(--vn-ease); }
+@keyframes gyst-fade { from { opacity: 0; } }
