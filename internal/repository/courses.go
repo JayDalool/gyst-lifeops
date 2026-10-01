@@ -182,6 +182,19 @@ func (r *Repository) SetLearningBlockStatus(courseID, blockID int64, status stri
 	return err
 }
 
+// UndoLearningBlockCompletion returns a completed block to pending. Blocks in
+// any other state (skipped, postponed, already pending) are left alone.
+func (r *Repository) UndoLearningBlockCompletion(courseID, blockID int64) (bool, error) {
+	res, err := r.db.Exec(`UPDATE learning_blocks SET status = 'pending', completed_at = NULL,
+		updated_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1
+		WHERE id = ? AND course_id = ? AND status = 'completed'`, blockID, courseID)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}
+
 func (r *Repository) DeleteLearningBlock(courseID, blockID int64) error {
 	_, err := r.db.Exec(`DELETE FROM learning_blocks WHERE id = ? AND course_id = ?`, blockID, courseID)
 	return err

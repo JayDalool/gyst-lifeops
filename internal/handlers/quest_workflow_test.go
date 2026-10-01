@@ -104,7 +104,7 @@ func TestProjectMissionCompletionHandlerDoesNotDuplicateReward(t *testing.T) {
 	}
 	base := fmt.Sprintf("/projects/%d/items/%d", project.ID, item.ID)
 	first := postQuestForm(t, h, base+"/complete", nil)
-	if location := first.Header().Get("Location"); !strings.Contains(location, "celebrate=project") || !strings.Contains(location, "celebrate_xp=250") {
+	if location := first.Header().Get("Location"); !strings.Contains(location, "celebrate=project") || !strings.Contains(location, "celebrate_xp=270") {
 		t.Fatalf("project completion redirect = %q, want project celebration and XP", location)
 	}
 	postQuestForm(t, h, base+"/reopen", nil)
@@ -132,7 +132,7 @@ func TestRoadmapFinalMissionRedirectsToProjectCelebration(t *testing.T) {
 	path := fmt.Sprintf("/roadmap/projects/%d/items/%d/complete", project.ID, item.ID)
 	rec := postQuestForm(t, h, path, nil)
 	location := rec.Header().Get("Location")
-	if !strings.Contains(location, "celebrate=project") || !strings.Contains(location, "celebrate_xp=250") {
+	if !strings.Contains(location, "celebrate=project") || !strings.Contains(location, "celebrate_xp=285") {
 		t.Fatalf("roadmap completion redirect = %q, want project celebration", location)
 	}
 }

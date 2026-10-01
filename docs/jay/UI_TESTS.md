@@ -1,3 +1,6 @@
+- [ ] #25 · iPhone Today: tick task, toast shows, Undo reopens · PR_URL
+- [ ] #25 · iPhone Project: final mission, brief level-up, tap dismisses · PR_URL
+- [ ] #25 · Reduce motion on: completion toast appears without sliding · PR_URL
 - [ ] #23 · iPhone: tick a task, circle fills, title strikes · https://github.com/JayDalool/gyst-lifeops/pull/28
 - [ ] #23 · iPhone: page change fades, top bar and nav stay · https://github.com/JayDalool/gyst-lifeops/pull/28
 - [ ] #23 · Settings Reduce motion on: tick-off and pages instant · https://github.com/JayDalool/gyst-lifeops/pull/28

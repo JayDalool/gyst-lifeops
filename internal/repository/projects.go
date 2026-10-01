@@ -514,6 +514,25 @@ func (r *Repository) SetProjectItemStatus(projectID, itemID int64, status string
 	return r.reconcileProjectStatus(projectID)
 }
 
+// UndoProjectItemCompletion reverses a mission completion made from the
+// completion toast. It only acts on a completed mission of an active project:
+// once a project is done (or locked/upcoming) other rows depend on it, so the
+// undo is refused and reported as false. Stars are cleared with the status.
+func (r *Repository) UndoProjectItemCompletion(projectID, itemID int64) (bool, error) {
+	res, err := r.db.Exec(`UPDATE project_items SET status = 'pending', completed_at = NULL,
+		stars_awarded = 0, updated_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1
+		WHERE id = ? AND project_id = ? AND status = 'completed'
+		AND EXISTS (SELECT 1 FROM projects WHERE id = ? AND status = 'active')`, itemID, projectID, projectID)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil || n == 0 {
+		return false, err
+	}
+	return true, r.reconcileProjectStatus(projectID)
+}
+
 func (r *Repository) UpdateProjectItemProof(projectID, itemID int64, proofType, proofURL, proofPath string) error {
 	_, err := r.db.Exec(`UPDATE project_items SET
 		proof_type = ?, proof_url = ?, proof_path = ?,

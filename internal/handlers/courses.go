@@ -259,6 +259,20 @@ func (h *Handler) courseBlocks(w http.ResponseWriter, r *http.Request, courseID 
 			serverError(w, err)
 			return
 		}
+		fallback := fmt.Sprintf("/courses/%d#block-%d", courseID, blockID)
+		if block, err := h.Service.Repo.LearningBlockByID(blockID); err == nil {
+			// Study blocks award no XP, so the toast shows none.
+			redirectWithCelebration(w, r, fallback, celebration{
+				Kind: "task", Title: block.Title,
+				Undo: fmt.Sprintf("/courses/%d/blocks/%d/undo", courseID, blockID),
+			})
+			return
+		}
+	case "undo":
+		if _, err := h.Service.Repo.UndoLearningBlockCompletion(courseID, blockID); err != nil {
+			serverError(w, err)
+			return
+		}
 	case "reopen":
 		if err := h.Service.Repo.SetLearningBlockStatus(courseID, blockID, "pending"); err != nil {
 			serverError(w, err)

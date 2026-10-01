@@ -650,6 +650,8 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 		h.setTaskStatus(w, r, id, "completed")
 	case "skip":
 		h.setTaskStatus(w, r, id, "skipped")
+	case "undo":
+		h.undoTaskCompletion(w, r, id)
 	case "archive":
 		h.archiveTask(w, r, id)
 	case "checklist":
@@ -841,6 +843,11 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 		invalidDate(w, "occurrence_date")
 		return
 	}
+	var before models.PlayerStats
+	var haveBefore bool
+	if status == "completed" {
+		before, haveBefore = h.statsSnapshot()
+	}
 	if err := h.Service.Repo.SetTaskOccurrenceStatus(id, date, status); err != nil {
 		serverError(w, err)
 		return
@@ -848,9 +855,36 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 	if status == "completed" {
 		task, err := h.Service.Repo.TaskByID(id)
 		if err == nil {
-			redirectWithCelebration(w, r, fmt.Sprintf("/today#task-%d", id), "task", task.Title, task.StarsReward)
+			gained, level := h.rewardDelta(before, haveBefore)
+			redirectWithCelebration(w, r, fmt.Sprintf("/today#task-%d", id), celebration{
+				Kind: "task", Title: task.Title, XP: gained, Level: level,
+				Undo: fmt.Sprintf("/tasks/%d/undo", id), Date: date,
+			})
 			return
 		}
+	}
+	redirectAfter(w, r, fmt.Sprintf("/today#task-%d", id))
+}
+
+// undoTaskCompletion reverses a completion made from the toast. POST only; the
+// CSRF guard in Authenticated() applies. A second call changes nothing.
+func (h *Handler) undoTaskCompletion(w http.ResponseWriter, r *http.Request, id int64) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		serverError(w, err)
+		return
+	}
+	date, err := h.formLocalDate(r.FormValue("occurrence_date"))
+	if err != nil {
+		invalidDate(w, "occurrence_date")
+		return
+	}
+	if _, err := h.Service.Repo.UndoTaskCompletion(id, date); err != nil {
+		notFoundOrError(w, err)
+		return
 	}
 	redirectAfter(w, r, fmt.Sprintf("/today#task-%d", id))
 }
@@ -1283,12 +1317,14 @@ func (h *Handler) projectStatus(w http.ResponseWriter, r *http.Request, id int64
 	if cleanForm(status, "") == "done" {
 		willUnlock, _ = h.Service.Repo.CountUnlockableDependents(id)
 	}
+	statsBefore, haveStats := h.statsSnapshot()
 	if err := h.Service.Repo.SetProjectStatus(id, status); err != nil {
 		serverError(w, err)
 		return
 	}
 	if cleanForm(status, "") == "done" {
-		redirectWithCelebration(w, r, "/projects", "project", before.Name, xp.ProjectCompletionBonus)
+		gained, level := h.rewardDelta(statsBefore, haveStats)
+		redirectWithCelebration(w, r, "/projects", celebration{Kind: "project", Title: before.Name, XP: gained, Level: level})
 		return
 	}
 	if willUnlock > 0 {
@@ -1330,17 +1366,26 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 
 	projectBefore, _ := h.Service.Repo.ProjectByID(projectID)
 	itemTitle := "Mission complete"
-	itemReward := xp.MissionReward("medium")
 	if items, err := h.Service.Repo.ProjectItems(projectID); err == nil {
 		for _, item := range items {
 			if item.ID == itemID {
-				itemTitle, itemReward = item.Title, item.StarsReward
+				itemTitle = item.Title
 				break
 			}
 		}
 	}
 	action := segments[4]
+	var statsBefore models.PlayerStats
+	var haveStats bool
+	if action == "complete" {
+		statsBefore, haveStats = h.statsSnapshot()
+	}
 	switch action {
+	case "undo":
+		if _, err := h.Service.Repo.UndoProjectItemCompletion(projectID, itemID); err != nil {
+			serverError(w, err)
+			return
+		}
 	case "complete":
 		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
 			serverError(w, err)
@@ -1376,12 +1421,18 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 		return
 	}
 	if action == "complete" {
+		gained, level := h.rewardDelta(statsBefore, haveStats)
 		projectAfter, err := h.Service.Repo.ProjectByID(projectID)
 		if err == nil && projectBefore.Status != "done" && projectBefore.Status != "completed" && (projectAfter.Status == "done" || projectAfter.Status == "completed") {
-			redirectWithCelebration(w, r, fmt.Sprintf("/projects/%d", projectID), "project", projectAfter.Name, xp.ProjectCompletionBonus)
+			// Finishing a project unlocks dependents and adds a bonus that cannot be
+			// reversed safely, so this toast carries no Undo.
+			redirectWithCelebration(w, r, fmt.Sprintf("/projects/%d", projectID), celebration{Kind: "project", Title: projectAfter.Name, XP: gained, Level: level})
 			return
 		}
-		redirectWithCelebration(w, r, fmt.Sprintf("/projects/%d#mission-%d", projectID, itemID), "task", itemTitle, itemReward)
+		redirectWithCelebration(w, r, fmt.Sprintf("/projects/%d#mission-%d", projectID, itemID), celebration{
+			Kind: "task", Title: itemTitle, XP: gained, Level: level,
+			Undo: fmt.Sprintf("/projects/%d/items/%d/undo", projectID, itemID),
+		})
 		return
 	}
 	// Stay on the project detail at the acted-on mission instead of jumping to
@@ -1992,16 +2043,20 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 	}
 	projectBefore, _ := h.Service.Repo.ProjectByID(projectID)
 	itemTitle := "Mission complete"
-	itemReward := xp.MissionReward("medium")
 	if items, err := h.Service.Repo.ProjectItems(projectID); err == nil {
 		for _, item := range items {
 			if item.ID == itemID {
-				itemTitle, itemReward = item.Title, item.StarsReward
+				itemTitle = item.Title
 				break
 			}
 		}
 	}
 	action := segments[5]
+	var statsBefore models.PlayerStats
+	var haveStats bool
+	if action == "complete" {
+		statsBefore, haveStats = h.statsSnapshot()
+	}
 	switch action {
 	case "complete":
 		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
@@ -2018,12 +2073,18 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 		return
 	}
 	if action == "complete" {
+		gained, level := h.rewardDelta(statsBefore, haveStats)
 		projectAfter, err := h.Service.Repo.ProjectByID(projectID)
 		if err == nil && projectBefore.Status != "done" && projectBefore.Status != "completed" && (projectAfter.Status == "done" || projectAfter.Status == "completed") {
-			redirectWithCelebration(w, r, "/roadmap", "project", projectAfter.Name, xp.ProjectCompletionBonus)
+			redirectWithCelebration(w, r, "/roadmap", celebration{Kind: "project", Title: projectAfter.Name, XP: gained, Level: level})
 			return
 		}
-		redirectWithCelebration(w, r, "/roadmap", "task", itemTitle, itemReward)
+		// The Undo route lives under /projects; the toast's return_to brings the
+		// user back to /roadmap.
+		redirectWithCelebration(w, r, "/roadmap", celebration{
+			Kind: "task", Title: itemTitle, XP: gained, Level: level,
+			Undo: fmt.Sprintf("/projects/%d/items/%d/undo", projectID, itemID),
+		})
 		return
 	}
 	redirectAfter(w, r, "/roadmap")
@@ -2514,7 +2575,18 @@ func redirectAfter(w http.ResponseWriter, r *http.Request, fallback string) {
 	redirectBack(w, r, fallback)
 }
 
-func redirectWithCelebration(w http.ResponseWriter, r *http.Request, fallback, kind, title string, reward int) {
+// celebration is what the completion toast is built from after a redirect.
+// Kind is "task" or "project"; Undo is the same-origin POST path that reverses
+// this completion (empty when no safe reversal exists); XP is the real stars
+// gained and Level is the new level when this completion crossed one.
+type celebration struct {
+	Kind, Title, Undo, Date string
+	XP, Level               int
+}
+
+const celebrationTitleRunes = 80
+
+func redirectWithCelebration(w http.ResponseWriter, r *http.Request, fallback string, c celebration) {
 	destination := safeReturnTo(r)
 	if destination == "" {
 		destination = fallback
@@ -2523,12 +2595,53 @@ func redirectWithCelebration(w http.ResponseWriter, r *http.Request, fallback, k
 	if err != nil {
 		parsed, _ = url.Parse(fallback)
 	}
+	title := []rune(c.Title)
+	if len(title) > celebrationTitleRunes {
+		title = title[:celebrationTitleRunes]
+	}
 	query := parsed.Query()
-	query.Set("celebrate", kind)
-	query.Set("celebrate_title", title)
-	query.Set("celebrate_xp", strconv.Itoa(reward))
+	for _, key := range []string{"celebrate", "celebrate_title", "celebrate_xp", "celebrate_level", "celebrate_undo", "celebrate_date"} {
+		query.Del(key)
+	}
+	query.Set("celebrate", c.Kind)
+	query.Set("celebrate_title", string(title))
+	query.Set("celebrate_xp", strconv.Itoa(c.XP))
+	if c.Level > 0 {
+		query.Set("celebrate_level", strconv.Itoa(c.Level))
+	}
+	if c.Undo != "" {
+		query.Set("celebrate_undo", c.Undo)
+	}
+	if c.Date != "" {
+		query.Set("celebrate_date", c.Date)
+	}
 	parsed.RawQuery = query.Encode()
 	http.Redirect(w, r, parsed.String(), http.StatusSeeOther)
+}
+
+// statsSnapshot reads the player's totals before a write so the toast can show
+// the stars the write really added. ok is false when the read fails; the write
+// is still honoured and the toast simply shows no XP.
+func (h *Handler) statsSnapshot() (models.PlayerStats, bool) {
+	stats, err := h.Service.Repo.PlayerStats()
+	return stats, err == nil
+}
+
+// rewardDelta returns the stars gained (never negative) and, when the level
+// went up, the new level.
+func (h *Handler) rewardDelta(before models.PlayerStats, ok bool) (xpGained, level int) {
+	if !ok {
+		return 0, 0
+	}
+	after, ok := h.statsSnapshot()
+	if !ok {
+		return 0, 0
+	}
+	xpGained = max(0, after.TotalStars-before.TotalStars)
+	if after.CurrentLevel > before.CurrentLevel {
+		level = after.CurrentLevel
+	}
+	return xpGained, level
 }
 
 func methodNotAllowed(w http.ResponseWriter) {

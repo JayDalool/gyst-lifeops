@@ -48,7 +48,7 @@ lists additional reusable patterns. Paths marked proposed do not exist yet.
 | Screen / route family | Existing behavior | New navigation / preservation |
 |---|---|---|
 | `/tasks`, `/tasks/new`, `/tasks/{id}`, `/tasks/{id}/edit` | Filtered task list; create/detail/edit; recurrence, proof and checklist | More → All tasks; page-level create; use shared fields/rows |
-| `/tasks/quick`, task complete/skip/archive/checklist actions | Existing form/JS workflows | Keep action URLs, occurrence dates, return anchors and quick-capture parsing |
+| `/tasks/quick`, task complete/skip/undo/archive/checklist actions | Existing form/JS workflows | Keep action URLs, occurrence dates, return anchors and quick-capture parsing |
 | `/projects/new`, `/projects/{id}/edit` and status/archive/items actions | Hierarchy, roadmap assignment, dependencies, proof/rewards, external links | Projects actions and detail menus; no change to unlock rules |
 | `/roadmap`, `/roadmaps/new`, `/roadmaps/{id}/edit` | Roadmap map/forms, selection, weekly review, import/export, project/milestone completion | Projects and More → Roadmaps; retain route map and all operations |
 | `/goals`, `/goals/new`, `/goals/{id}` and progress/archive actions | Real goals and logged progress | More; Health links to health-category goals |

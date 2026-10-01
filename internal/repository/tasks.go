@@ -328,6 +328,47 @@ func (r *Repository) SetTaskOccurrenceStatus(taskID int64, occurrenceDate, statu
 	return tx.Commit()
 }
 
+// UndoTaskCompletion reverses one completion made from the completion toast.
+// It deletes the completed task_completions row for the date (the table's
+// CHECK only allows completed/skipped, so pending means "no row") and, for a
+// one-off task, returns the task itself to pending with no stars. Skipped
+// occurrences are untouched. It reports whether anything was reverted, so a
+// second call is a no-op.
+func (r *Repository) UndoTaskCompletion(taskID int64, occurrenceDate string) (bool, error) {
+	task, err := r.TaskByID(taskID)
+	if err != nil {
+		return false, err
+	}
+	if occurrenceDate == "" {
+		occurrenceDate = task.DueDate
+	}
+	tx, err := r.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec(`DELETE FROM task_completions
+		WHERE task_id = ? AND occurrence_date = ? AND status = 'completed'`, taskID, occurrenceDate)
+	if err != nil {
+		return false, err
+	}
+	n1, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if task.RepeatType == "none" && n1 > 0 {
+		if _, err := tx.Exec(`UPDATE tasks SET status = 'pending', completed_at = NULL,
+			stars_awarded = 0, updated_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1
+			WHERE id = ? AND status = 'completed'`, taskID); err != nil {
+			return false, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return n1 > 0, nil
+}
+
 func (r *Repository) PlayerStats() (models.PlayerStats, error) {
 	var stats models.PlayerStats
 	if err := r.db.QueryRow(`SELECT
