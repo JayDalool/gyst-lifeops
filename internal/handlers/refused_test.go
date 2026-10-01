@@ -135,3 +135,20 @@ func TestDoneProjectPageOffersNoMissionCheckbox(t *testing.T) {
 		t.Error("done project page doesn't explain why its missions are disabled")
 	}
 }
+
+func TestTaskWithoutRequiredProofIsRefusedWithAWayBack(t *testing.T) {
+	h := testHandler(t)
+	task := models.Task{Title: "Needs a link", DueDate: "2026-06-24", ProofRequired: true, ProofType: "link"}
+	if err := h.Service.Repo.CreateTask(&task); err != nil {
+		t.Fatal(err)
+	}
+	rec := postRaw(h, fmt.Sprintf("/tasks/%d/complete", task.ID), url.Values{"occurrence_date": {"2026-06-24"}})
+	assertRefusedPage(t, rec, fmt.Sprintf("/today#task-%d", task.ID), "needs proof")
+	got, err := h.Service.Repo.TaskByID(task.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != "pending" || got.StarsAwarded != 0 {
+		t.Fatalf("refused task changed: %+v", got)
+	}
+}

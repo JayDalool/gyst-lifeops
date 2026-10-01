@@ -78,7 +78,7 @@
       <h2 class="section-title">Tasks</h2>
     </section>
     <div class="gyst-card">
-      {{if and .Items (eq .Project.Project.Status "done")}}<p class="meta project-done-note">This project is done, so its open missions can't be marked done. Reopen the project to keep working on it.</p>{{end}}
+      {{if and .Items (or (eq .Project.Project.Status "done") (eq .Project.Project.Status "completed"))}}<p class="meta project-done-note">This project is done, so its open missions can't be marked done. Reopen the project to keep working on it.</p>{{end}}
       {{if .Items}}
         <ul class="tasks">
           {{range .Items}}
