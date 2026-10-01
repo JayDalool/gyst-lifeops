@@ -260,7 +260,7 @@ func (h *Handler) courseBlocks(w http.ResponseWriter, r *http.Request, courseID 
 			return
 		}
 		fallback := fmt.Sprintf("/courses/%d#block-%d", courseID, blockID)
-		if block, err := h.Service.Repo.LearningBlockByID(blockID); err == nil {
+		if block, err := h.Service.Repo.LearningBlockByID(blockID); err == nil && block.CourseID == courseID {
 			// Study blocks award no XP, so the toast shows none.
 			redirectWithCelebration(w, r, fallback, celebration{
 				Kind: "task", Title: block.Title,

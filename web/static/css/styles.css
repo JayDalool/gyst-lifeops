@@ -4978,6 +4978,8 @@ i.map-node-state {
   background: color-mix(in srgb, var(--vn-canvas) 55%, transparent);
   opacity: 0;
   transition: opacity var(--vn-base) var(--vn-ease);
+  /* Let taps through to the toast's Undo; the document-level listener still dismisses it. */
+  pointer-events: none;
 }
 .levelup-event.is-visible { opacity: 1; }
 .levelup-card {
