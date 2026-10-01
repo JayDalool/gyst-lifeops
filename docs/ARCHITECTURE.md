@@ -221,7 +221,7 @@ through Caddy unchanged on both sites, so it is trusted **only** when the
 normalised `Host` is exactly `gyst.zaylolabs.com` (the public Caddy site).
 Hosts ending in a `.ts.net` label use the tailnet bucket; every other or empty
 Host is treated as public (fail safe). Keys: `pub|<cf ip>` (IPv6 grouped by
-/64), `pub-peer|<ip>`, `ts|<ip>`, or `unknown` (one shared key). The key is for
+/64), `pub-peer|<ip>`, `ts|<ip>`, or `<bucket>|unknown` (one shared key per bucket). The key is for
 rate limiting only, never authorisation.
 
 **State is in memory and is lost on restart or deploy**, which gives an

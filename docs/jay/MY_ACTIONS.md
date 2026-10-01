@@ -1,3 +1,3 @@
 - [ ] #4 · Before deploy: check Cloudflare WAF and rate-limit rules · https://github.com/JayDalool/gyst-lifeops/issues/4
-- [ ] #4 · Before deploy: confirm Nginx Proxy Manager has no host for gyst-caddy:8081 · https://github.com/JayDalool/gyst-lifeops/issues/4
-- [ ] #4 · Before deploy: confirm tailnet source IPs reach Caddy (not one shared address) · https://github.com/JayDalool/gyst-lifeops/issues/4
+- [ ] #4 · Before deploy: no NPM host for gyst-caddy:8081 · https://github.com/JayDalool/gyst-lifeops/issues/4
+- [ ] #4 · Before deploy: tailnet devices reach Caddy with own IPs · https://github.com/JayDalool/gyst-lifeops/issues/4
