@@ -163,14 +163,7 @@ func (h *Handler) denyUnauthenticated(w http.ResponseWriter, r *http.Request, pa
 // rooted path: anything scheme-relative ("//evil.example") or absolute would
 // turn the login page into an open redirect.
 func safeNextPath(candidate string) string {
-	if candidate == "" || !strings.HasPrefix(candidate, "/") || strings.HasPrefix(candidate, "//") {
-		return ""
-	}
-	if strings.ContainsAny(candidate, "\r\n") {
-		return ""
-	}
-	parsed, err := url.Parse(candidate)
-	if err != nil || parsed.Scheme != "" || parsed.Host != "" {
+	if !isLocalPath(candidate) {
 		return ""
 	}
 	return candidate
