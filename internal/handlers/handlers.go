@@ -2574,7 +2574,7 @@ func redirectBack(w http.ResponseWriter, r *http.Request, fallback string) {
 // relative ("//host") or absolute URLs. Returns "" when absent or unsafe.
 func safeReturnTo(r *http.Request) string {
 	rt := r.FormValue("return_to")
-	if rt == "" || !strings.HasPrefix(rt, "/") || strings.HasPrefix(rt, "//") {
+	if !isLocalPath(rt) {
 		return ""
 	}
 	return rt
