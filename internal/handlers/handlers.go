@@ -2561,12 +2561,11 @@ func greeting(hour int) string {
 	}
 }
 
+// redirectBack sends the user back to the page they came from, using only the
+// path, query and fragment of a same-host Referer (see sameHostReferer). A
+// missing, cross-host or non-local Referer goes to fallback instead.
 func redirectBack(w http.ResponseWriter, r *http.Request, fallback string) {
-	back := r.Header.Get("Referer")
-	if back == "" {
-		back = fallback
-	}
-	http.Redirect(w, r, back, http.StatusSeeOther)
+	http.Redirect(w, r, sameHostReferer(r, fallback), http.StatusSeeOther)
 }
 
 // safeReturnTo returns the form's return_to value only when it is a same-origin
@@ -2582,7 +2581,7 @@ func safeReturnTo(r *http.Request) string {
 
 // redirectAfter sends the user back to the exact page+section they acted from.
 // It prefers an explicit return_to (carries a #fragment so the browser lands on
-// the item), then the Referer, then the fallback — so the no-JS POST never
+// the item), then a same-host Referer, then the fallback — so the no-JS POST never
 // dead-ends at the top of a generic list.
 func redirectAfter(w http.ResponseWriter, r *http.Request, fallback string) {
 	if rt := safeReturnTo(r); rt != "" {

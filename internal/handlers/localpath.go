@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"net/url"
 	"strings"
 )
@@ -25,4 +26,41 @@ func isLocalPath(candidate string) bool {
 	}
 	parsed, err := url.Parse(candidate)
 	return err == nil && parsed.Scheme == "" && parsed.Host == ""
+}
+
+// sameHostReferer returns the request's Referer as a local path (path, query
+// and fragment) only when the Referer is on the same host as the request, or
+// is itself a path. Anything else, such as an empty, unparsable, cross-host,
+// non-http(s) or non-local Referer, yields fallback, so redirectBack can never
+// become an open redirect even if a GET caller is added later.
+func sameHostReferer(r *http.Request, fallback string) string {
+	ref := r.Header.Get("Referer")
+	if ref == "" {
+		return fallback
+	}
+	u, err := url.Parse(ref)
+	if err != nil || u.Opaque != "" {
+		return fallback
+	}
+	if u.Host != "" {
+		if (u.Scheme != "http" && u.Scheme != "https") || !strings.EqualFold(u.Host, r.Host) {
+			return fallback
+		}
+	} else if u.Scheme != "" {
+		return fallback
+	}
+	candidate := u.EscapedPath()
+	if candidate == "" {
+		candidate = "/"
+	}
+	if u.RawQuery != "" {
+		candidate += "?" + u.RawQuery
+	}
+	if u.Fragment != "" {
+		candidate += "#" + u.EscapedFragment()
+	}
+	if !isLocalPath(candidate) {
+		return fallback
+	}
+	return candidate
 }

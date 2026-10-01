@@ -65,3 +65,45 @@ func TestNextPathRejectsBackslashRedirects(t *testing.T) {
 		}
 	}
 }
+
+func TestSameHostReferer(t *testing.T) {
+	const host = "gyst.example.test"
+	cases := []struct {
+		name, referer, want string
+	}{
+		{"empty", "", "/today"},
+		{"same host keeps path query fragment", "https://gyst.example.test/tasks?status=all#task-3", "/tasks?status=all#task-3"},
+		{"same host http", "http://gyst.example.test/projects/4", "/projects/4"},
+		{"same host no path", "https://gyst.example.test", "/"},
+		{"host differs only in case", "https://GYST.Example.Test/health?period=week", "/health?period=week"},
+		{"cross host", "https://evil.example/tasks", "/today"},
+		{"cross host with same-host prefix", "https://gyst.example.test.evil.example/tasks", "/today"},
+		{"userinfo trick", "https://gyst.example.test@evil.example/tasks", "/today"},
+		{"scheme relative", "//evil.example", "/today"},
+		{"scheme relative same host path", "//evil.example/gyst.example.test", "/today"},
+		{"backslash path", "https://gyst.example.test/\\evil.example", "/today"},
+		{"encoded backslash path", "https://gyst.example.test/%5Cevil.example", "/today"},
+		{"double slash path", "https://gyst.example.test//evil.example", "/today"},
+		{"javascript scheme", "javascript:alert(1)", "/today"},
+		{"non-http scheme same host", "ftp://gyst.example.test/tasks", "/today"},
+		{"unparsable", "http://[::1", "/today"},
+		{"path only kept", "/courses/2#block-5", "/courses/2#block-5"},
+		{"path only hostile", "/\\evil.example", "/today"},
+		{"bare host", "evil.example/x", "/today"},
+	}
+	for _, tc := range cases {
+		req := httptest.NewRequest(http.MethodPost, "/x", nil)
+		req.Host = host
+		if tc.referer != "" {
+			req.Header.Set("Referer", tc.referer)
+		}
+		if got := sameHostReferer(req, "/today"); got != tc.want {
+			t.Errorf("%s: sameHostReferer(%q) = %q, want %q", tc.name, tc.referer, got, tc.want)
+		}
+		rec := httptest.NewRecorder()
+		redirectBack(rec, req, "/today")
+		if loc := rec.Header().Get("Location"); loc != tc.want || rec.Code != http.StatusSeeOther {
+			t.Errorf("%s: redirectBack Location = %q (%d), want %q", tc.name, loc, rec.Code, tc.want)
+		}
+	}
+}
