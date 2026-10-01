@@ -471,11 +471,11 @@ func (r *Repository) SetProjectItemStatus(projectID, itemID int64, status string
 	}
 	item.ProofRequired = proofRequired == 1
 	if status == "completed" && projectStatus != "active" {
-		return fmt.Errorf("project %d is %s; only active project missions can be completed", projectID, projectStatus)
+		return fmt.Errorf("%w: project %d is %s; only active project missions can be completed", ErrProjectNotActive, projectID, projectStatus)
 	}
 	validProof := proofIsValid(item.ProofType, item.ProofURL, item.ProofPath)
 	if status == "completed" && item.ProofRequired && !validProof {
-		return fmt.Errorf("mission %d requires valid %s proof before completion", itemID, item.ProofType)
+		return fmt.Errorf("%w: mission %d requires valid %s proof before completion", ErrProofRequired, itemID, item.ProofType)
 	}
 
 	completedAt := "NULL"

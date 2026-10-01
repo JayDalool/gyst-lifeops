@@ -262,7 +262,7 @@
                     <span class="grow">{{.Title}}<small>{{niceDate .DueDate}} &middot; {{.Priority}}</small></span>
                     {{if eq .Status "completed"}}
                       <form method="post" action="/roadmap/projects/{{$project.Project.Project.ID}}/items/{{.ID}}/reopen"><button class="btn quiet sm" type="submit">Reopen</button></form>
-                    {{else}}
+                    {{else if eq $project.Project.Project.Status "active"}}
                       <form method="post" action="/roadmap/projects/{{$project.Project.Project.ID}}/items/{{.ID}}/complete"><button class="btn quiet sm" type="submit">Done</button></form>
                     {{end}}
                   </li>

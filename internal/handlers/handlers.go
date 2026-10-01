@@ -849,6 +849,9 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 		before, haveBefore = h.statsSnapshot()
 	}
 	if err := h.Service.Repo.SetTaskOccurrenceStatus(id, date, status); err != nil {
+		if refuseCompletion(w, r, err, fmt.Sprintf("/today#task-%d", id)) {
+			return
+		}
 		serverError(w, err)
 		return
 	}
@@ -1388,6 +1391,9 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 		}
 	case "complete":
 		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
+			if refuseCompletion(w, r, err, fmt.Sprintf("/projects/%d", projectID)) {
+				return
+			}
 			serverError(w, err)
 			return
 		}
@@ -2060,6 +2066,9 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 	switch action {
 	case "complete":
 		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
+			if refuseCompletion(w, r, err, fmt.Sprintf("/projects/%d", projectID)) {
+				return
+			}
 			serverError(w, err)
 			return
 		}
