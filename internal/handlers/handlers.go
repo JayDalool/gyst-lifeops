@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"lifeops-tracker/internal/authlimit"
 	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
@@ -35,6 +36,9 @@ type Handler struct {
 	// AuthDisabled is an emergency escape hatch for a lockout. It serves every
 	// route unauthenticated and logs loudly on each request; never leave it on.
 	AuthDisabled bool
+	// loginLimiter throttles failed sign-ins (GYST-VN-006). It is built in New.
+	// A nil limiter makes POST /login fail closed rather than run unthrottled.
+	loginLimiter *authlimit.Limiter
 }
 
 type TodayData struct {
@@ -261,7 +265,11 @@ type RoadmapFormData struct {
 }
 
 func New(service *services.Service, templateDir string) *Handler {
-	return &Handler{Service: service, TemplateDir: templateDir}
+	return &Handler{
+		Service:      service,
+		TemplateDir:  templateDir,
+		loginLimiter: authlimit.New(clock.System().Now, authlimit.DefaultPolicy),
+	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

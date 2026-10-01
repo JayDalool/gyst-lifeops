@@ -6,10 +6,37 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
+	"lifeops-tracker/internal/authlimit"
 	"lifeops-tracker/internal/services"
 )
+
+// throttledMessage is the one fixed text for every throttle refusal (decision
+// D4). It carries no counts, times, Retry-After or hint about the password, so
+// a refusal looks identical whether the submitted password was right or wrong.
+const throttledMessage = "Too many sign-in attempts. Try again later."
+
+var limiterMissingLogged atomic.Bool
+
+// admitLogin reserves a password check for this request's client. A nil
+// attempt means the request was refused and the caller must not check the
+// password. It fails closed when no limiter is configured.
+func (h *Handler) admitLogin(r *http.Request) *authlimit.Attempt {
+	if h.loginLimiter == nil {
+		if limiterMissingLogged.CompareAndSwap(false, true) {
+			log.Printf("SECURITY: login throttle: limiter missing; login refused")
+		}
+		return nil
+	}
+	bucket, key, label := loginClient(r)
+	attempt, decision := h.loginLimiter.Admit(bucket, key, label)
+	if decision != authlimit.Allow {
+		return nil
+	}
+	return attempt
+}
 
 type loginPageData struct {
 	Error string
@@ -110,11 +137,22 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Throttle before the password is compared, so a refusal can never depend
+	// on whether the password was right. The 403, 400 and 503 paths above are
+	// not attempts and are never counted.
+	attempt := h.admitLogin(r)
+	if attempt == nil {
+		h.renderLogin(w, http.StatusTooManyRequests, loginPageData{Error: throttledMessage, Next: next})
+		return
+	}
+	defer attempt.Release() // a server error or panic must not leak the slot
+
 	if err := h.Auth.VerifyPassword(r.PostForm.Get("password")); err != nil {
 		if !errors.Is(err, services.ErrInvalidCredentials) {
 			serverError(w, err)
 			return
 		}
+		attempt.Fail()
 		h.renderLogin(w, http.StatusUnauthorized, loginPageData{Error: "Incorrect password.", Next: next})
 		return
 	}
@@ -124,6 +162,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	attempt.Succeed()
 	h.setSessionCookie(w, r, token, expires)
 	http.Redirect(w, r, defaultIfEmpty(next, "/"), http.StatusSeeOther)
 }
