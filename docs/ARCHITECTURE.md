@@ -181,6 +181,83 @@ push payloads. `push_subscriptions` stores browser endpoints/keys, while the
 unique `push_deliveries` key prevents duplicate sends across scheduler ticks and
 restarts. Invalid or expired endpoints are removed on HTTP 404/410 responses.
 
+## Login throttling (GYST-VN-006)
+
+`POST /login` is throttled by `internal/authlimit` (no HTTP dependency), called
+from `login()` in `internal/handlers/auth.go` after the same-origin, form-parse
+and "password configured" checks and **before** the password is compared. A
+refusal therefore never depends on whether the password was right.
+
+```mermaid
+flowchart LR
+    Req[POST /login] --> Key[loginClient: bucket + key]
+    Key --> Admit{Limiter.Admit}
+    Admit -- refused --> R429[429 fixed message]
+    Admit -- allowed --> Pw[VerifyPassword]
+    Pw -- wrong --> Fail[Fail: 401 unchanged]
+    Pw -- right --> OK[Succeed: session + 303]
+```
+
+**Limits (code constants in `authlimit.DefaultPolicy`; no environment
+variables):**
+
+| Layer | Rule |
+|---|---|
+| Per key | One password check in flight. After failure 1, 2, 3, 4 the next attempt is not admitted for 1 s, 2 s, 4 s, 8 s (a "not before" timestamp, never a sleep). The 5th failure inside 15 min blocks the key for 15 min. |
+| Per ingress bucket (`public`, `tailnet`) | Once 50 failures are inside the last hour (in-flight attempts count), admissions must be at least 75 s apart. The gate applies to every login in that bucket, including the correct password. |
+| Memory | At most 10,000 keys. Expired keys are pruned lazily (no goroutine). When full of blocked or in-flight keys, new keys are refused (fail closed). |
+
+All windows are half-open: a failure counts while `now - window < t <= now`. A
+success clears only its own key, never the bucket. Refused requests are not
+counted and never extend a block. A refusal is HTTP 429 with the fixed text
+"Too many sign-in attempts. Try again later." and no counts, times or
+`Retry-After`. The 401 text is unchanged. A nil limiter fails closed.
+
+**Client key.** The app only ever sees Caddy as its peer. Caddy replaces any
+client `X-Forwarded-For` with its immediate peer (verified by probe P1 against
+`caddy:2.10.2` with the committed Caddyfile), so the rightmost
+`X-Forwarded-For` element is the address Caddy saw. `CF-Connecting-IP` passes
+through Caddy unchanged on both sites, so it is trusted **only** when the
+normalised `Host` is exactly `gyst.zaylolabs.com` (the public Caddy site).
+Hosts ending in a `.ts.net` label use the tailnet bucket; every other or empty
+Host is treated as public (fail safe). Keys: `pub|<cf ip>` (IPv6 grouped by
+/64), `pub-peer|<ip>`, `ts|<ip>`, or `unknown` (one shared key). The key is for
+rate limiting only, never authorisation.
+
+**State is in memory and is lost on restart or deploy**, which gives an
+attacker a fresh budget. This is accepted for a single process.
+
+**If public sign-in is blocked, in order:**
+
+1. An existing session keeps working. Throttling only affects new sign-ins.
+2. Use the tailnet URL. It has its own buckets and its own (host-only) cookie.
+3. Restart the container (resets all throttle state; needs host access).
+4. `GYST_AUTH_DISABLED=1` is the emergency hatch (see
+   `docs/tasks/A4-application-auth.md`). Unset it immediately afterwards.
+
+There is no bypass: no IP allowlist, header, cookie, query parameter or
+tailnet exemption.
+
+**Residuals (accepted, decision D1):**
+
+- A container on the shared `proxy` Docker network, or a misconfigured Nginx
+  Proxy Manager host pointed at `gyst-caddy:8081`, can forge `CF-Connecting-IP`.
+  That can evade the per-client limit (still bounded by the bucket gate) or
+  target a known IP for a 15-minute block. It is never an authentication
+  bypass. Tracked through the dual-listener / network-hardening work (for
+  example GYST-VN-073).
+- Under a sustained attack the public gate never disengages, so new public
+  sign-ins are effectively unavailable (use the recovery order above).
+- Shared keys (`pub-peer`, `unknown`, and `ts` if tailnet source addresses are
+  not preserved) mean one client's success resets the key for everyone on it.
+- A refused attempt answers faster than a checked one (no bcrypt). That reveals
+  only "throttled", never password correctness.
+- Local development has no Caddy in front: the rightmost `X-Forwarded-For` is
+  client-controlled there, and `localhost` classifies as public keyed by peer.
+- Logs carry only transitions (key blocked, gate engaged/disengaged, limiter
+  missing), with IPs truncated to /24 (IPv4) or /48 (IPv6). Per-failure audit
+  events belong to the later audit-log work.
+
 ## Designed for later
 
 The data model supports a future mobile sync client. AI roadmap and quest logic
