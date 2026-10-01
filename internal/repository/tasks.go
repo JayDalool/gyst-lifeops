@@ -254,7 +254,7 @@ func (r *Repository) SetTaskOccurrenceStatus(taskID int64, occurrenceDate, statu
 		occurrenceDate = task.DueDate
 	}
 	if status == "completed" && task.ProofRequired && !taskHasProof(task) {
-		return fmt.Errorf("task %d requires valid %s proof before completion", task.ID, task.ProofType)
+		return fmt.Errorf("%w: task %d requires valid %s proof before completion", ErrProofRequired, task.ID, task.ProofType)
 	}
 
 	tx, err := r.db.Begin()

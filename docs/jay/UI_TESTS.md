@@ -1,3 +1,4 @@
+- [ ] #32 · iPhone: done project's missions disabled; refused page Go back works · https://github.com/JayDalool/gyst-lifeops/issues/32
 - [ ] #25 · iPhone Today: tick task, toast shows, Undo reopens · https://github.com/JayDalool/gyst-lifeops/pull/31
 - [ ] #25 · iPhone Project: final mission, brief level-up, tap dismisses · https://github.com/JayDalool/gyst-lifeops/pull/31
 - [ ] #25 · Reduce motion on: completion toast appears without sliding · https://github.com/JayDalool/gyst-lifeops/pull/31

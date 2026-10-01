@@ -78,6 +78,7 @@
       <h2 class="section-title">Tasks</h2>
     </section>
     <div class="gyst-card">
+      {{if and .Items (eq .Project.Project.Status "done")}}<p class="meta project-done-note">This project is done, so its open missions can't be marked done. Reopen the project to keep working on it.</p>{{end}}
       {{if .Items}}
         <ul class="tasks">
           {{range .Items}}
@@ -89,6 +90,8 @@
                   <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
                   <label class="project-task-check"><input type="checkbox" checked aria-label="Reopen: {{.Title}}" onchange="this.form.requestSubmit()"></label>
                 </form>
+              {{else if ne $.Project.Project.Status "active"}}
+                <input type="checkbox" disabled aria-label="Project is {{$.Project.Project.Status}}, can't mark done: {{.Title}}">
               {{else}}
                 <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/complete">
                   <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">

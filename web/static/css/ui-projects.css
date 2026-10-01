@@ -70,3 +70,5 @@
 .gyst-project-card[data-color="emerald"] .gyst-icon-tile { color: var(--gyst-positive-text); }
 .gyst-project-card[data-color="amber"] .gyst-icon-tile, .gyst-project-card[data-color="orange"] .gyst-icon-tile { color: var(--gyst-warning-text); }
 .gyst-project-card[data-color="rose"] .gyst-icon-tile { color: var(--gyst-danger-text); }
+/* #32: explains why a done project's open missions are disabled. */
+.project-done-note { margin: 0 0 var(--vn-s3); }
