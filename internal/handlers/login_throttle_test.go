@@ -119,6 +119,8 @@ func TestThrottleFailuresOneToFive(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), wrongText) {
 		t.Fatalf("fifth failure body lacks %q", wrongText)
 	}
+	// Five failures were allowed, and the throttle is what stops a sixth.
+	want(t, "sixth", pub(h, wrongPW, "203.0.113.10"), http.StatusTooManyRequests)
 }
 
 func TestThrottleSixthAttemptBlocked(t *testing.T) {
@@ -244,6 +246,7 @@ func TestThrottleGlobalGapIsAtLeast75Seconds(t *testing.T) {
 func TestThrottleGlobalClearsAfterWindow(t *testing.T) {
 	h, clk := throttledHandler(t)
 	engageGlobal(t, h, clk)
+	want(t, "gated while engaged", pub(h, wrongPW, "203.0.113.199"), http.StatusTooManyRequests)
 	clk.Advance(time.Hour)
 	want(t, "first", pub(h, wrongPW, "203.0.113.200"), http.StatusUnauthorized)
 	want(t, "second, back to back", pub(h, wrongPW, "203.0.113.201"), http.StatusUnauthorized)
