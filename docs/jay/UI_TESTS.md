@@ -1,3 +1,6 @@
+- [ ] #25 · iPhone Today: tick task, toast shows, Undo reopens · https://github.com/JayDalool/gyst-lifeops/pull/31
+- [ ] #25 · iPhone Project: final mission, brief level-up, tap dismisses · https://github.com/JayDalool/gyst-lifeops/pull/31
+- [ ] #25 · Reduce motion on: completion toast appears without sliding · https://github.com/JayDalool/gyst-lifeops/pull/31
 - [ ] #23 · iPhone: tick a task, circle fills, title strikes · https://github.com/JayDalool/gyst-lifeops/pull/28
 - [ ] #23 · iPhone: page change fades, top bar and nav stay · https://github.com/JayDalool/gyst-lifeops/pull/28
 - [ ] #23 · Settings Reduce motion on: tick-off and pages instant · https://github.com/JayDalool/gyst-lifeops/pull/28

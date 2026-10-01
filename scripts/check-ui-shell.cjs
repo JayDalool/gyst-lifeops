@@ -74,4 +74,76 @@ function motionChecks() {
     assert.equal(root.dataset.motion,expected);
   }
 }
-(async()=>{await workerChecks();themeChecks();motionChecks();console.log('UI shell: private/offline cache policy, theme persistence and motion preference passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+// Completion toast (#25): parse and build run in a fake DOM that records any innerHTML write.
+function toastChecks() {
+  const code=fs.readFileSync('web/static/js/completion-toast.js','utf8');
+  const innerHTMLWrites=[];
+  class Node {
+    constructor(tag){this.tag=tag;this.children=[];this.attrs={};this.listeners={};this.className='';this._text='';this.classList={add:()=>{},remove:()=>{}};}
+    set innerHTML(v){innerHTMLWrites.push(v);}
+    set textContent(v){this._text=String(v);}
+    get textContent(){return this._text+this.children.map(c=>c.textContent).join('');}
+    setAttribute(k,v){this.attrs[k]=v;}
+    getAttribute(k){return this.attrs[k];}
+    appendChild(c){this.children.push(c);return c;}
+    addEventListener(n,f){this.listeners[n]=f;}
+    find(pred,out=[]){if(pred(this))out.push(this);this.children.forEach(c=>c.find(pred,out));return out;}
+  }
+  const doc={readyState:'complete',documentElement:{},body:new Node('body'),createElement:t=>new Node(t),addEventListener:()=>{}};
+  const sandbox={document:doc,location:{search:'',pathname:'/today',hash:''},history:{replaceState:()=>{}},getComputedStyle:()=>({getPropertyValue:()=>'240ms'}),requestAnimationFrame:()=>{},setTimeout:()=>0,clearTimeout:()=>{},URLSearchParams,Array,parseInt,parseFloat,isNaN};
+  sandbox.window=sandbox;
+  vm.runInNewContext(code,sandbox);
+  const T=sandbox.GystCompletionToast;
+  assert(T,'GystCompletionToast exposed');
+  assert.equal(innerHTMLWrites.length,0);
+
+  // Parse and build from redirect params.
+  const q='?celebrate=task&celebrate_title=Write%20report&celebrate_xp=20&celebrate_undo=%2Ftasks%2F7%2Fundo&celebrate_date=2026-06-24&keep=1';
+  const data=T.parse(q);
+  assert.equal(data.kind,'task');assert.equal(data.xp,20);assert.equal(data.undo,'/tasks/7/undo');assert.equal(data.date,'2026-06-24');
+  const returnTo=T.cleanUrl({pathname:'/today',search:q,hash:'#task-7'});
+  assert.equal(returnTo,'/today?keep=1#task-7');
+  const toast=T.build(doc,data,returnTo);
+  assert.equal(toast.attrs.role,'status');assert.equal(toast.attrs['aria-live'],'polite');
+  assert(toast.className.includes('completion-toast'));
+  assert(toast.textContent.includes('Done · Write report'));
+  assert(toast.textContent.includes('+20 XP'));
+  const [form]=toast.find(n=>n.tag==='form');
+  assert.equal(form.attrs.action,'/tasks/7/undo');assert.equal(form.attrs.method,'post');
+  const inputs=form.find(n=>n.tag==='input');
+  assert.equal(inputs.find(i=>i.name==='occurrence_date').value,'2026-06-24');
+  assert.equal(inputs.find(i=>i.name==='return_to').value,'/today?keep=1#task-7');
+  assert(!inputs.find(i=>i.name==='return_to').value.includes('celebrate'));
+  assert.equal(form.find(n=>n.tag==='button')[0].type,'submit');
+
+  // XSS: the title is literal text, never markup.
+  const evil='<img src=x onerror=alert(1)>';
+  const xss=T.build(doc,T.parse('?celebrate=task&celebrate_title='+encodeURIComponent(evil)+'&celebrate_xp=5'),'/today');
+  assert(xss.textContent.includes(evil));
+  assert(!xss.find(n=>n.tag==='img').length);
+  assert.equal(innerHTMLWrites.length,0);
+
+  // Undo allowlist.
+  for (const bad of ['/projects/1/items/2/delete','//evil.example/tasks/1/undo','javascript:alert(1)','/tasks/1/undo?x','https://evil.example/tasks/1/undo']) {
+    const d=T.parse('?celebrate=task&celebrate_title=x&celebrate_undo='+encodeURIComponent(bad));
+    assert.equal(d.undo,'');
+    assert.equal(T.build(doc,d,'/today').find(n=>n.tag==='form').length,0,'no form for '+bad);
+  }
+  for (const good of ['/projects/1/items/2/undo','/courses/3/blocks/4/undo']) assert.equal(T.parse('?celebrate=task&celebrate_undo='+encodeURIComponent(good)).undo,good);
+
+  // XP and title handling.
+  for (const v of ['0','-5','abc']) {
+    assert(!T.build(doc,T.parse('?celebrate=task&celebrate_title=x&celebrate_xp='+v),'/').textContent.includes('XP'),'xp '+v);
+  }
+  assert.equal(T.parse('?celebrate=other'),null);
+  assert.equal(T.parse(''),null);
+  assert(Array.from(T.parse('?celebrate=task&celebrate_title='+'a'.repeat(100)).title).length<=61);
+
+  // Level-up card.
+  const lu=T.buildLevelUp(doc,T.parse('?celebrate=task&celebrate_title=x&celebrate_xp=100&celebrate_level=3'));
+  assert(lu.className.includes('levelup-event'));assert.equal(lu.attrs.role,'status');
+  assert(lu.textContent.includes('Level 3'));
+  assert.equal(T.parse('?celebrate=task&celebrate_level=1').level,0);
+  assert.equal(innerHTMLWrites.length,0);
+}
+(async()=>{await workerChecks();themeChecks();motionChecks();toastChecks();console.log('UI shell: private/offline cache policy, theme persistence, motion preference and completion toast passed');})().catch(error=>{console.error(error);process.exitCode=1;});
