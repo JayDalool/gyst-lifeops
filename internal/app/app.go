@@ -122,6 +122,9 @@ func New(config Config) (*App, error) {
 		w.Header().Set("Cache-Control", "public, max-age=86400")
 		http.ServeFile(w, r, faviconPath)
 	})
+	// Liveness probe: unauthenticated by design, exact path only. Other
+	// spellings (/healthz/, /HEALTHZ) fall through to the session middleware.
+	mux.Handle("/healthz", healthzHandler(database))
 	// Everything the mux has not already claimed goes through session
 	// enforcement. Static assets, the manifest, the service worker and the
 	// favicon are matched above and so stay reachable while signed out.

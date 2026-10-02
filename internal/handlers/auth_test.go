@@ -155,6 +155,9 @@ func TestNonExemptPathsRequireASession(t *testing.T) {
 		"/", "/today", "/projects", "/health", "/health/plan",
 		"/settings", "/analytics", "/api/push/vapid-key",
 		"/calendar.ics", "/calendar/feedback",
+		// /healthz is served by the app mux ahead of this middleware; it is
+		// deliberately not on the exempt list.
+		"/healthz", "/healthz/", "/HEALTHZ",
 	} {
 		t.Run(path, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, path, nil)
