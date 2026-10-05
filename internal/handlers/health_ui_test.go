@@ -23,16 +23,15 @@ func TestHealthIntakeGraphicRequiresObservedIntakeAndTarget(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			view := buildHealthTodayView(models.HealthTodayResponse{Date: "2026-09-12", HealthCycle: tc.cycle, Snapshot: &models.DailyHealthSnapshot{HealthMetrics: models.HealthMetrics{DietaryCalories: tc.intake}}}, viewNow())
 			body := renderBody(t, "health.html", HealthData{Page: "health", Today: view})
-			if strings.Contains(body, `class="health-intake-progress"`) != tc.bar {
-				t.Fatal("intake graphic misrepresents availability")
+			// Health v3 (#53): the ring's value arc appears only when both
+			// intake and target were observed; otherwise the track is dashed.
+			if strings.Contains(body, `class="val" cx="60"`) != tc.bar {
+				t.Fatal("calorie ring misrepresents availability")
 			}
-			if strings.Contains(body, `class="health-ring"`) {
-				t.Fatal("decorative ring still implies measured progress")
-			}
-			if tc.name == "over target" && !strings.Contains(body, "3,000") {
+			if tc.name == "over target" && (!strings.Contains(body, "3,000") || !strings.Contains(body, "kcal over budget")) {
 				t.Fatal("actual over-target intake was hidden")
 			}
-			for _, want := range []string{`health-observed`, `food calories remaining`, `Observed energy balance`, `Watch steps`, `Phone steps`, `/health/plan`, `/goals/new`} {
+			for _, want := range []string{`Burned so far`, `Balance so far`, `Steps`, `Phone`, `href="/health/progress#log"`, `href="/health/nutrition"`} {
 				if !strings.Contains(body, want) {
 					t.Errorf("missing %s", want)
 				}

@@ -240,6 +240,9 @@ type HealthData struct {
 	// Today carries real observations. Absent metrics render as "No data";
 	// nothing here is projected or synthesized.
 	Today HealthTodayView
+	// Health v3 (#53).
+	HealthTab string
+	Weight    healthWeightView
 }
 
 type ArchiveData struct {
@@ -332,6 +335,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.nutrition(w, r)
 		} else if len(segments) == 2 && segments[1] == "plan" {
 			h.healthPlan(w, r)
+		} else if len(segments) == 2 && segments[1] == "more" {
+			h.healthMore(w, r)
 		} else {
 			http.NotFound(w, r)
 		}
@@ -1644,15 +1649,24 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
 		methodNotAllowed(w)
 		return
 	}
+	data, ok := h.healthBase(w)
+	if !ok {
+		return
+	}
+	data.HealthTab = "today"
+	h.render(w, "health.html", data)
+}
+
+// healthBase loads everything the Health landing page and More show.
+func (h *Handler) healthBase(w http.ResponseWriter) (HealthData, bool) {
+	fail := func(err error) (HealthData, bool) { serverError(w, err); return HealthData{}, false }
 	goals, err := h.Service.Repo.ListGoals(false)
 	if err != nil {
-		serverError(w, err)
-		return
+		return fail(err)
 	}
 	tasks, err := h.Service.Repo.ListTasks(false)
 	if err != nil {
-		serverError(w, err)
-		return
+		return fail(err)
 	}
 	healthGoals := make([]models.GoalWithProgress, 0)
 	for _, goal := range goals {
@@ -1669,30 +1683,36 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
 	}
 	mission, err := h.Service.DailyMission()
 	if err != nil {
-		serverError(w, err)
-		return
+		return fail(err)
 	}
 	bodyRhythm, err := h.Service.BodyRhythmChart()
 	if err != nil {
-		serverError(w, err)
-		return
+		return fail(err)
 	}
 	// Read through the service rather than this app's own HTTP API: an internal
 	// round-trip would buy nothing and add a second error and auth path.
 	today, err := h.Service.HealthToday()
 	if err != nil {
-		serverError(w, err)
-		return
+		return fail(err)
 	}
-
-	h.render(w, "health.html", HealthData{
+	weights, err := h.Service.ListHealthWeightEntries()
+	if err != nil {
+		return fail(err)
+	}
+	view := buildHealthTodayView(today, h.Service.Now())
+	cycleStart := ""
+	if today.HealthCycle != nil {
+		cycleStart = today.HealthCycle.StartDate
+	}
+	return HealthData{
 		Page:        "health",
 		HealthGoals: healthGoals,
 		HealthTasks: healthTasks,
 		Mission:     mission,
 		BodyRhythm:  bodyRhythm,
-		Today:       buildHealthTodayView(today, h.Service.Now()),
-	})
+		Today:       view,
+		Weight:      buildHealthWeight(weights, cycleStart, h.Service.Now(), h.Service.Location()),
+	}, true
 }
 
 func (h *Handler) archive(w http.ResponseWriter, r *http.Request) {
@@ -2242,6 +2262,7 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		"niceDate":       niceDate,
 		"niceDateTime":   niceDateTime,
 		"niceNumber":     niceNumber,
+		"healthTab":      healthTab,
 		"greeting": func() string {
 			return greeting(h.appClock().Now().In(h.appClock().Location()).Hour())
 		},

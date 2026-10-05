@@ -1,49 +1,116 @@
 {{define "content"}}
-<div class="gyst-scope health-ui training-ui">
- <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Training</h1><p class="gyst-caption">Your routines. Your sessions. Your focus.</p></div>{{if .Connected}}<form method="post" action="/health/training/sync"><button class="btn" type="submit">Sync now</button></form>{{end}}</header>
- <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training" aria-current="page">Training</a><a href="/health/progress">Progress</a><a href="/health/plan">Plan</a></nav>
- <section class="card training-connection">
- {{if .Connected}}<p class="kicker">Hevy · {{if .HasData}}Connected{{else}}Awaiting first sync{{end}}</p>{{else}}<p class="kicker">Hevy · Not connected</p>{{end}}
- {{if .HasData}}<p class="meta">Last imported {{.LastSync}}{{if .Stale}} · Update overdue{{end}}. {{len .Routines}} routines. Showing your 30 most recent sessions below.</p>{{else}}<h2>Workout history unavailable</h2><p class="meta">Connect Hevy to bring your routines, exercises and logged sets into GYST.</p>{{end}}
- {{if .Error}}<p role="status">{{.Error}}. Your last successful import is kept.</p>{{end}}
- {{if not .Connected}}<details><summary>Connect Hevy</summary><p>Get your API key from <a href="https://hevy.com/settings?developer" target="_blank" rel="noopener noreferrer">Hevy developer settings</a> (Hevy Pro required). Add it to the server’s private <code>HEVY_API_KEY</code> setting and restart GYST. Keep the key private.</p><p class="meta">Once connected, GYST imports automatically every 37 minutes. Continue logging workouts in Hevy.</p></details>{{end}}
- </section>
- {{if .HasData}}
- <div class="training-overview">
- <section class="card training-week" aria-labelledby="week-title">
-  <div class="training-week-top"><h2 id="week-title">This week</h2><p class="training-week-count"><strong>{{.Week.Workouts}}</strong>{{if .Week.Target}} / {{.Week.Target}}{{end}} workouts</p></div>
-  <ol class="training-days">{{range .Week.Days}}<li{{if .IsToday}} class="is-today"{{end}}><span class="training-day{{if .Done}} done{{end}}" aria-hidden="true"></span><span aria-hidden="true">{{.Letter}}</span><span class="sr-only">{{.Name}}: {{if .Done}}workout logged{{else if .Future}}upcoming{{else}}no workout{{end}}</span></li>{{end}}</ol>
-  <dl class="training-week-stats"><div><dt>Volume</dt><dd>{{.Week.Volume}}</dd></div><div><dt>Training time</dt><dd>{{if .Week.Time}}{{.Week.Time}}{{else}}—{{end}}</dd>{{if .Week.UnknownTime}}<p class="meta">{{.Week.UnknownTime}} without an end time</p>{{end}}</div></dl>
- </section>
- <section class="card training-progress" aria-labelledby="progress-title">
-  <h2 id="progress-title">Top progress · 12 weeks</h2>
-  {{if .Progress}}<ul class="training-trends">{{range .Progress}}<li><span class="training-trend-name"><strong>{{.Name}}</strong><span class="meta">Best {{.BestSet}} · {{.Sessions}} sessions</span></span><svg viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"><polyline points="{{.Points}}"/></svg><span class="training-trend-change{{if .Up}} up{{end}}">{{.Change}}</span></li>{{end}}</ul>
-  <p class="meta">Change in estimated 1-rep max, first to latest session.</p>
-  {{else}}<p class="meta">Progress appears once an exercise has been logged in two or more sessions.</p>{{end}}
- </section>
- {{if .Groups}}<section class="card training-groups" aria-labelledby="groups-title">
-  <h2 id="groups-title">Muscle groups · 30 days</h2>
-  <ul>{{range .Groups}}<li><span>{{.Name}}</span><strong>{{.Percent}}%</strong><span class="training-bar" aria-hidden="true"><i style="width:{{.Percent}}%"></i></span></li>{{end}}</ul>
-  <p class="meta">Share of primary work sets; warmups excluded.</p>
- </section>{{end}}
- </div>
- <section class="card training-focus" aria-labelledby="focus-title">
- <div><p class="kicker">Muscle focus</p><h2 id="focus-title">{{if eq .Mode "planned"}}What your routines target{{else}}What you trained{{end}}</h2></div>
- <form method="get" class="training-filters">
- <label>View<select name="mode"><option value="planned" {{if eq .Mode "planned"}}selected{{end}}>Routine targets</option><option value="7" {{if eq .Mode "7"}}selected{{end}}>Logged · last 7 days</option><option value="30" {{if eq .Mode "30"}}selected{{end}}>Logged · last 30 days</option></select></label>
- <label>Routine (planned view)<select name="routine"><option value="">All routines</option>{{range .Routines}}<option value="{{.ID}}" {{if eq $.Routine .ID}}selected{{end}}>{{.Title}}</option>{{end}}</select></label><button class="btn" type="submit">Show</button>
- </form>
- <p class="meta">{{if eq .Mode "planned"}}One pass through {{.Summary.Entries}} selected routines. This is planned work, not a weekly schedule.{{else}}{{.Summary.Entries}} sessions in this rolling period.{{end}} {{.Summary.Sets}} work sets; warmups excluded.</p>
- <div class="training-focus-grid">
- <div class="training-map"><svg viewBox="0 0 400 360" role="img" aria-labelledby="muscle-map-title muscle-map-desc"><title id="muscle-map-title">Primary muscle focus, front and back</title><desc id="muscle-map-desc">Darker blue means more primary work sets within this selection. Exact counts and secondary involvement are listed alongside. Uncoloured regions have no counted primary sets.</desc>
- {{template "training.body" .}}
- </svg><p class="training-legend"><span>No primary sets</span><i class="heat-0"></i><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><span>More sets</span></p></div>
- <div>{{if .Summary.Muscles}}<table class="training-muscles"><caption>Sets by muscle group</caption><thead><tr><th scope="col">Muscle</th><th scope="col">Primary</th><th scope="col">Secondary</th></tr></thead><tbody>{{range .Summary.Muscles}}<tr><th scope="row"><span class="training-dot heat-{{.Level}}"></span>{{.Name}}</th><td>{{.Primary}}</td><td>{{.Secondary}}</td></tr>{{end}}</tbody></table>{{else}}<p>No mapped work sets in this selection.</p>{{end}}<p class="meta">Secondary counts show involvement; they are not added to primary sets. This map does not measure effort, recovery or muscle growth.</p>{{if .Summary.Unclassified}}<p class="meta">{{.Summary.Unclassified}} work sets have no muscle mapping.</p>{{end}}<p class="meta">Cardio, full body and other classifications appear in the table only.</p></div>
- </div></section>
- <div class="health-grid training-library"><section class="card"><p class="kicker">Plan</p><h2>Your routines</h2>{{range .Routines}}<details class="training-entry"><summary>{{.Title}} <span class="meta">{{len .Exercises}} exercises</span></summary><a href="/health/training?mode=planned&amp;routine={{.ID}}">View muscle focus</a>{{template "training.exercises" .}}</details>{{else}}<p class="meta">No routines received. Create a routine in Hevy, then sync.</p>{{end}}</section>
- <section class="card"><p class="kicker">History</p><h2>Recent workouts</h2>{{range .Workouts}}<details class="training-entry"><summary>{{.Title}}<span class="meta">{{.Date}}</span></summary>{{template "training.exercises" .}}</details>{{else}}<p class="meta">No workouts received yet.</p>{{end}}</section></div>
- {{end}}
- <section class="card"><details><summary>Your gym week · manual check-ins</summary><p class="meta">These gym-day check-ins are separate from Hevy workout sessions. Tap a day to change done, not done or rest.</p>{{template "health.gymWeek" .}}<a href="/health/plan">Manage health plan</a><noscript><p class="meta">Enable JavaScript to update gym days.</p></noscript></details></section>
+{{/* Health v3 · Workout (#53; design approved in #45). Hevy is read-only here:
+     no logging, no Start workout. */}}
+<div class="gyst-scope hv3 training-ui">
+<header class="hv3-ph">
+  <div class="hv3-ph-copy">
+    <p class="hv3-eyebrow">{{if .Connected}}Hevy{{if .HasData}} · synced {{.LastSync}}{{end}}{{else}}Hevy · Not connected{{end}}</p>
+    <h1>Workout</h1>
+  </div>
+  {{if .Connected}}<form method="post" action="/health/training/sync"><button class="hv3-btn secondary small" type="submit">{{template "gyst.icon" "refresh-cw"}}Sync now</button></form>{{end}}
+</header>
+{{if .Error}}<p class="hv3-banner warn" role="status">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}. Your last successful import is kept.</span></p>{{end}}
+{{if and .HasData .Stale}}<p class="hv3-banner warn" role="status">{{template "gyst.icon" "refresh-cw"}}<span>Hevy update overdue</span><span class="hv3-chip warn">Stale</span></p>{{end}}
+
+{{if not .HasData}}
+<section class="hv3-card hv3-empty" aria-labelledby="hevy-title">
+  <span class="hv3-tile">{{template "gyst.icon" "dumbbell"}}</span>
+  <h2 id="hevy-title">Workout history unavailable</h2>
+  <p>Log workouts in Hevy. GYST shows your consistency, focus and progress here.</p>
+  {{if not .Connected}}<details class="hv3-disclose"><summary>{{template "gyst.icon" "info"}}Connect Hevy</summary><p>Get your API key from <a href="https://hevy.com/settings?developer" target="_blank" rel="noopener noreferrer">Hevy developer settings</a> (Hevy Pro required). Add it to the server’s private <code>HEVY_API_KEY</code> setting and restart GYST. Keep the key private.</p><p>Once connected, GYST imports automatically every 37 minutes. Keep logging workouts in Hevy.</p></details>{{end}}
+</section>
+{{else}}
+<nav class="hv3-seg" aria-label="Workout view">
+  <a href="/health/training"{{if eq .View "overview"}} aria-current="page"{{end}}>Overview</a>
+  <a href="/health/training?view=progress&amp;period={{.Period}}"{{if eq .View "progress"}} aria-current="page"{{end}}>Progress</a>
+</nav>
+
+{{if eq .View "overview"}}
+<div class="hv3-wk">
+  <section class="hv3-card hv3-week hv3-span" aria-labelledby="week-title">
+    <div class="hv3-card-h"><h2 id="week-title" class="hv3-k">This week</h2>{{if .Week.Target}}<span class="hv3-chip">Target {{.Week.Target}} a week</span>{{end}}</div>
+    <p class="hv3-count"><strong>{{.Week.Workouts}}</strong>{{if .Week.Target}} / {{.Week.Target}}{{end}} workouts</p>
+    <ol class="hv3-days">{{range .Week.Days}}<li{{if .IsToday}} class="is-today"{{end}}><span class="hv3-day{{if .Done}} done{{end}}" aria-hidden="true">{{if .Done}}{{template "gyst.icon" "check"}}{{end}}</span><span aria-hidden="true">{{.Letter}}</span><span class="hv3-sr">{{.Name}}: {{if .Done}}workout logged{{else if .Future}}upcoming{{else}}no workout{{end}}</span></li>{{end}}</ol>
+  </section>
+  <div class="hv3-grid2 hv3-span">
+    <div class="hv3-card hv3-stat"><p class="hv3-k">{{template "gyst.icon" "dumbbell"}}Volume</p><p class="hv3-v">{{.Week.Volume}}</p><p class="hv3-s">This week · work sets</p></div>
+    <div class="hv3-card hv3-stat"><p class="hv3-k">{{template "gyst.icon" "timer"}}Training time</p><p class="hv3-v">{{if .Week.Time}}{{.Week.Time}}{{else}}<span class="hv3-absent">—</span>{{end}}</p><p class="hv3-s">{{if .Week.UnknownTime}}{{.Week.UnknownTime}} without an end time{{else}}This week{{end}}</p></div>
+  </div>
+
+  <section class="hv3-section hv3-span" aria-labelledby="top-title">
+    <div class="hv3-section-h"><h2 id="top-title">Top progress · 12 weeks</h2>{{if .Progress}}<a href="/health/training?view=progress&amp;period=12">All</a>{{end}}</div>
+    {{if .Progress}}
+    <ul class="hv3-carousel">{{range .Progress}}
+      <li class="hv3-card hv3-prog"><span class="hv3-prog-name">{{.Name}}</span><span class="hv3-prog-pct{{if not .Up}} flat{{end}}">{{.Change}}</span>
+        <svg class="hv3-spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"><polyline points="{{.Points}}"/></svg>
+        <span class="hv3-s">Best {{.BestSet}}</span></li>{{end}}
+    </ul>
+    {{else}}<div class="hv3-card hv3-empty-sm"><p class="hv3-strong">Not enough history yet</p><p class="hv3-s">Progress appears once an exercise is logged in two or more sessions.</p></div>{{end}}
+  </section>
+
+  <section class="hv3-card hv3-focus" aria-labelledby="focus-title">
+    <div class="hv3-card-h"><h2 id="focus-title" class="hv3-k">Muscle focus</h2><span class="hv3-s">{{if eq .Mode "planned"}}Routine targets{{else if eq .Mode "7"}}Last 7 days{{else}}Last 30 days{{end}}</span></div>
+    <div class="hv3-focus-body">
+      <svg class="hv3-body" viewBox="20 0 360 340" role="img" aria-labelledby="map-title"><title id="map-title">Primary muscle focus, front and back. Darker means more primary work sets.</title>{{template "training.body" .}}</svg>
+      {{if and (ne .Mode "planned") .Groups}}<ul class="hv3-groups">{{range .Groups}}<li><span>{{.Name}}</span><b>{{.Percent}}%</b><span class="hv3-bar" aria-hidden="true"><i style="width:{{.Percent}}%"></i></span></li>{{end}}</ul>
+      {{else if eq .Mode "planned"}}<p class="hv3-s">One pass through {{.Summary.Entries}} routine{{if ne .Summary.Entries 1}}s{{end}} · {{.Summary.Sets}} work sets.</p>
+      {{else}}<div><p class="hv3-strong">No workouts in this period</p><p class="hv3-s"><a href="/health/training?mode=planned">See what your routines target</a></p></div>{{end}}
+    </div>
+    <details class="hv3-disclose">
+      <summary>{{template "gyst.icon" "chevron-right"}}Details</summary>
+      <form method="get" class="hv3-filters">
+        <label>View<select name="mode"><option value="30" {{if eq .Mode "30"}}selected{{end}}>Logged · last 30 days</option><option value="7" {{if eq .Mode "7"}}selected{{end}}>Logged · last 7 days</option><option value="planned" {{if eq .Mode "planned"}}selected{{end}}>Routine targets</option></select></label>
+        <label>Routine<select name="routine"><option value="">All routines</option>{{range .Routines}}<option value="{{.ID}}" {{if eq $.Routine .ID}}selected{{end}}>{{.Title}}</option>{{end}}</select></label>
+        <button class="hv3-btn secondary small" type="submit">Show</button>
+      </form>
+      {{if .Summary.Muscles}}<table class="hv3-table"><caption class="hv3-sr">Work sets by muscle</caption><thead><tr><th scope="col">Muscle</th><th scope="col">Primary</th><th scope="col">Secondary</th></tr></thead><tbody>{{range .Summary.Muscles}}<tr><th scope="row">{{.Name}}</th><td>{{.Primary}}</td><td>{{.Secondary}}</td></tr>{{end}}</tbody></table>{{else}}<p class="hv3-s">No mapped work sets in this selection.</p>{{end}}
+      <p class="hv3-s">Primary sets only; warmups excluded. Secondary counts show involvement and aren't added in.{{if .Summary.Unclassified}} {{.Summary.Unclassified}} work sets have no muscle mapping.{{end}}</p>
+    </details>
+  </section>
+
+  <section class="hv3-section" aria-labelledby="latest-title">
+    <div class="hv3-section-h"><h2 id="latest-title">Latest workout</h2></div>
+    {{with .Latest}}
+    <div class="hv3-card">
+      <div class="hv3-row"><span class="hv3-tile">{{template "gyst.icon" "dumbbell"}}</span><span class="hv3-row-copy"><span class="hv3-strong">{{.Title}}</span><span class="hv3-s">{{if .Duration}}{{.Duration}} · {{end}}{{len .Exercises}} exercise{{if ne (len .Exercises) 1}}s{{end}} · {{.When}}</span></span></div>
+      <details class="hv3-disclose"><summary>{{template "gyst.icon" "chevron-right"}}Exercises and sets</summary>{{template "training.exercises" .}}</details>
+    </div>
+    {{else}}<div class="hv3-card hv3-empty-sm"><p class="hv3-s">No workouts received yet.</p></div>{{end}}
+  </section>
+
+  <section class="hv3-section" aria-labelledby="routines-title">
+    <div class="hv3-section-h"><h2 id="routines-title">Routines</h2></div>
+    <ul class="hv3-group">{{range .Routines}}<li><details><summary class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Title}}</span><span class="hv3-s">{{len .Exercises}} exercises</span></span>{{template "gyst.icon" "chevron-right"}}</summary><div class="hv3-group-body"><a href="/health/training?mode=planned&amp;routine={{.ID}}">Muscle focus for this routine</a>{{template "training.exercises" .}}</div></details></li>{{else}}<li class="hv3-row"><span class="hv3-s">No routines received. Create one in Hevy, then sync.</span></li>{{end}}</ul>
+  </section>
+</div>
+{{else}}
+<div class="hv3-wk">
+  <nav class="hv3-seg hv3-span" aria-label="Progress period">
+    <a href="/health/training?view=progress&amp;period=4"{{if eq .Period 4}} aria-current="page"{{end}}>4 wk</a>
+    <a href="/health/training?view=progress&amp;period=12"{{if eq .Period 12}} aria-current="page"{{end}}>12 wk</a>
+    <a href="/health/training?view=progress&amp;period=26"{{if eq .Period 26}} aria-current="page"{{end}}>6 mo</a>
+  </nav>
+  <section class="hv3-card" aria-labelledby="perweek-title">
+    <div class="hv3-card-h"><h2 id="perweek-title" class="hv3-k">Workouts per week</h2><span class="hv3-s">{{.PerWeekTotal}} in {{.PeriodLabel}}</span></div>
+    <div class="hv3-weekbars" role="img" aria-label="Workouts per week, oldest first:{{range .PerWeek}} {{.Count}}{{end}}">{{range .PerWeek}}<span class="{{if not .Count}}zero{{end}}" style="height:{{.Height}}%"></span>{{end}}</div>
+    <div class="hv3-axis"><span>{{(index .PerWeek 0).Label}}</span><span>This week</span></div>
+  </section>
+  <section class="hv3-card" aria-labelledby="ex-title">
+    <h2 id="ex-title" class="hv3-k">Exercise progress · {{.PeriodLabel}}</h2>
+    {{if .AllProgress}}<ul class="hv3-plist">{{range .AllProgress}}<li><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">Best {{.BestSet}} · {{.Sessions}} sessions</span></span><svg class="hv3-spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"><polyline points="{{.Points}}"/></svg><b class="{{if not .Up}}flat{{end}}">{{.Change}}</b></li>{{end}}</ul>
+    {{else}}<p class="hv3-s">No exercise was logged in two or more sessions in this period.</p>{{end}}
+    <p class="hv3-s hv3-note-line">Change in estimated 1-rep max, first to latest session.</p>
+  </section>
+</div>
+{{end}}
+{{end}}
+
+<details class="hv3-card hv3-disclose hv3-gym">
+  <summary>{{template "gyst.icon" "check"}}Gym check-ins · manual</summary>
+  <p class="hv3-s">Your own gym-day check-ins, separate from Hevy. Tap a day to change done, not done or rest.</p>
+  {{template "health.gymWeek" .}}
+  <noscript><p class="hv3-s">Enable JavaScript to update gym days.</p></noscript>
+</details>
 </div>
 {{end}}
 {{define "training.exercises"}}<ol class="training-exercises">{{range .Exercises}}<li><strong>{{.Name}}</strong><small>{{.Muscles}}</small><ul>{{range .Sets}}<li>{{.}}</li>{{else}}<li>No sets received</li>{{end}}</ul></li>{{else}}<li>No exercises received</li>{{end}}</ol>{{end}}

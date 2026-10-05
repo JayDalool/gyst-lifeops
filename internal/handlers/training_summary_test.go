@@ -58,7 +58,7 @@ func TestTrainingPageShowsSummary(t *testing.T) {
 		t.Fatalf("status %d", w.Code)
 	}
 	body := w.Body.String()
-	for _, want := range []string{"This week", "<strong>1</strong> workouts", "1,180 kg", "45 min", "Top progress · 12 weeks", "Leg Press", `training-trend-change up">&#43;18%`, "Best 118 kg × 10 · 2 sessions", "Muscle groups · 30 days", "Legs", "100%", "workout logged"} {
+	for _, want := range []string{"This week", "<strong>1</strong> workouts", "1,180 kg", "45 min", "Top progress · 12 weeks", "Leg Press", `hv3-prog-pct">&#43;18%`, "Best 118 kg × 10", "Muscle focus", "Legs", "100%", "workout logged", "Latest workout", "45 min · 1 exercise"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("training page missing %q", want)
 		}

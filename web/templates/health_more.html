@@ -1,0 +1,48 @@
+{{define "content"}}
+{{/* Health v3 · More (#53). Everything here moved from the old Health page. */}}
+<div class="gyst-scope hv3">
+<header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow">Health</p><h1>More</h1></div></header>
+<div class="hv3-more">
+  <section class="hv3-section" aria-labelledby="plan-title">
+    <div class="hv3-section-h"><h2 id="plan-title">Health plan</h2></div>
+    <ul class="hv3-group">
+      <li><a class="hv3-row" href="/health/plan"><span class="hv3-tile sm">{{template "gyst.icon" "heart"}}</span><span class="hv3-row-copy"><span class="hv3-strong">{{if .Today.CycleTitle}}{{.Today.CycleTitle}}{{else}}No plan yet{{end}}</span><span class="hv3-s">{{if .Today.CalorieTarget.Present}}{{.Today.CalorieTarget.Value}} kcal a day{{else}}Goal period and targets{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+    </ul>
+  </section>
+  <section class="hv3-section" aria-labelledby="weight-title">
+    <div class="hv3-section-h"><h2 id="weight-title">Weight</h2></div>
+    <ul class="hv3-group">
+      <li><a class="hv3-row" href="/health/progress#log"><span class="hv3-tile sm">{{template "gyst.icon" "plus"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Log weight</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+      <li><a class="hv3-row" href="/health/progress"><span class="hv3-tile sm">{{template "gyst.icon" "weight"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Weight history</span><span class="hv3-s">{{if .Weight.Present}}Latest {{.Weight.Latest}} kg · {{.Weight.LatestAt}}{{else}}No readings yet{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+    </ul>
+  </section>
+  <section class="hv3-section" aria-labelledby="sources-title">
+    <div class="hv3-section-h"><h2 id="sources-title">Data sources</h2></div>
+    <ul class="hv3-group">
+      <li class="hv3-row"><span class="hv3-app mfp" aria-hidden="true">MFP</span><span class="hv3-row-copy"><span class="hv3-strong">MyFitnessPal</span><span class="hv3-s">Food logging, shared through Apple Health</span></span></li>
+      <li class="hv3-row"><span class="hv3-app ah" aria-hidden="true">AH</span><span class="hv3-row-copy"><span class="hv3-strong">Apple Health</span><span class="hv3-s">Food totals, steps, exercise, energy</span></span><span class="hv3-state"><span class="hv3-dot{{if .Today.HasLastSynced}}{{if .Today.LastSyncedStale}} warn{{else}} ok{{end}}{{end}}" aria-hidden="true"></span>{{if .Today.HasLastSynced}}{{.Today.LastSynced}}{{else}}Nothing today{{end}}</span></li>
+      <li class="hv3-row"><span class="hv3-app hv" aria-hidden="true">HV</span><span class="hv3-row-copy"><span class="hv3-strong">Hevy</span><span class="hv3-s">Routines and workouts</span></span><span class="hv3-state"><span class="hv3-dot{{if .HevySynced}} ok{{end}}" aria-hidden="true"></span>{{if .HevySynced}}{{.HevySynced}}{{else if .HevyConnected}}Awaiting sync{{else}}Not connected{{end}}</span></li>
+    </ul>
+    <p class="hv3-foot">Log food in MyFitnessPal and workouts in Hevy. GYST reads them and doesn't log anything twice.</p>
+  </section>
+  <section class="hv3-section" aria-labelledby="goals-title">
+    <div class="hv3-section-h"><h2 id="goals-title">Health goals</h2><a href="/goals/new">New goal</a></div>
+    <ul class="hv3-group">
+      {{range .HealthGoals}}<li><a class="hv3-row" href="/goals/{{.Goal.ID}}"><span class="hv3-row-copy"><span class="hv3-strong">{{.Goal.Title}}</span><span class="hv3-s">{{niceNumber .Goal.CurrentValue}} of {{niceNumber .Goal.TargetValue}} {{.Goal.Unit}}</span></span><span class="hv3-state">{{.Progress}}%</span>{{template "gyst.icon" "chevron-right"}}</a></li>
+      {{else}}<li class="hv3-row"><span class="hv3-s">No health goals yet.</span></li>{{end}}
+    </ul>
+  </section>
+  <section class="hv3-section" aria-labelledby="tasks-title">
+    <div class="hv3-section-h"><h2 id="tasks-title">Health tasks</h2></div>
+    <ul class="hv3-group">
+      {{range .HealthTasks}}<li><a class="hv3-row" href="/tasks/{{.ID}}"><span class="hv3-row-copy"><span class="hv3-strong">{{.Title}}</span><span class="hv3-s">{{.RepeatType}} · {{.Priority}}{{if .DueDate}} · {{niceDate .DueDate}}{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+      {{else}}<li class="hv3-row"><span class="hv3-s">No health tasks in the active queue.</span></li>{{end}}
+    </ul>
+  </section>
+  <section class="hv3-section hv3-span" aria-labelledby="trend-title">
+    <div class="hv3-section-h"><h2 id="trend-title">Gym check-in trend</h2></div>
+    <div class="hv3-card"><canvas class="chart" data-chart="line" data-max="100" data-labels="{{join .BodyRhythm.Labels "|"}}" data-values="{{joinInts .BodyRhythm.Values "|"}}" data-empty="Log gym days to build the trend."></canvas></div>
+  </section>
+</div>
+</div>
+{{end}}

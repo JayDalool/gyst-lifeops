@@ -246,7 +246,7 @@ func TestHealthPageRendersWithoutData(t *testing.T) {
 	if strings.Contains(body, "executing \"") {
 		t.Fatalf("template error: %s", body)
 	}
-	if !strings.Contains(body, "No data for Sep 10, 2026") {
+	if !strings.Contains(body, "Waiting for today&#39;s Apple Health sync") || !strings.Contains(body, "No food logged yet") {
 		t.Error("empty state is not shown")
 	}
 	// The old demonstration numbers must be gone for good.
@@ -298,7 +298,7 @@ func TestHealthPageRendersWithData(t *testing.T) {
 		}
 	}
 	// The two energy concepts must both be present and labelled distinctly.
-	if !strings.Contains(body, "food calories remaining") || !strings.Contains(body, "Observed energy balance") {
+	if !strings.Contains(body, "Budget left") || !strings.Contains(body, "Balance so far") || !strings.Contains(body, "Observed, not final") {
 		t.Error("food budget and observed balance are not both labelled")
 	}
 	// Steps are never summed: 7421+6210=13631 must not appear.
