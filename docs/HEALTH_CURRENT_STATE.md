@@ -38,7 +38,7 @@ Three pages implemented, replacing old Health view:
 - **Stale data warning:** flagged when Hevy data is >2 hours old
 
 #### 3. Health → More (`/health/more`)
-- Framework exists; awaiting Daily Checklist + My Foods & Products features
+- Health plan, log weight and weight history, data sources with sync state, health goals, health tasks, gym check-in trend. Checklist and My Foods settings will be added here.
 
 ### Weight Logging (PR #48 merged)
 **Page:** Health → Progress (`/health/progress`, `web/templates/health_progress.html`)
@@ -83,8 +83,8 @@ Three pages implemented, replacing old Health view:
 - GYST does not and will not replace MyFitnessPal as the food logger
 
 **Planned lightweight support:**
-- **My Foods & Products:** Quick reference for frequently-logged items (for Health Coach context only)
-- **Meal suggestions:** Portion sizes + hydration reminders (powered by Health Coach)
+- **My Foods & Products:** a lightweight list of foods Jay usually has (name, serving, kcal, macros, notes, active), managed in More and later used by the Coach
+- **Portion/meal suggestions:** ways to close the day's gaps using My Foods, delivered through the Coach
 - **Not:** Full food database, recipe import, or competitive food logging
 
 **Implementation status:**
@@ -177,7 +177,7 @@ Three pages implemented, replacing old Health view:
 - **Top progress** = change in best estimated 1-rep max (Epley, 1–12 reps) from first to latest session, exercises with 2+ sessions, over 4 wk / 12 wk / 6 mo
 - **Weekly target** = the active plan's strength sessions per week (never hardcoded)
 - **Muscle focus** = primary work sets by muscle group (excluding warmups)
-- All period-aware (last 7/30/84+ days configurable)
+- Windows: muscle focus and group shares 30 days (or 7 / routine targets via Details); top-progress card 12 weeks; Progress view 4 wk / 12 wk / 6 mo
 
 ---
 
