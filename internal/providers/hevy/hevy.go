@@ -29,6 +29,7 @@ type template struct {
 type entry struct {
 	ID, Title string
 	Start     string `json:"start_time"`
+	End       string `json:"end_time"`
 	Exercises []struct {
 		Title    string
 		Template string `json:"exercise_template_id"`
@@ -120,6 +121,11 @@ func (c *Client) Fetch(ctx context.Context) ([]models.TrainingEntry, error) {
 					e.StartedAt, err = time.Parse(time.RFC3339, v.Start)
 					if err != nil {
 						return err
+					}
+					// A missing or inconsistent end time leaves the duration unknown
+					// rather than failing the import or inventing a zero.
+					if end, err := time.Parse(time.RFC3339, v.End); err == nil && end.After(e.StartedAt) {
+						e.EndedAt = end
 					}
 				}
 				for _, x := range v.Exercises {

@@ -15,7 +15,9 @@ type TrainingExercise struct {
 type TrainingEntry struct {
 	ID, Kind, Title string
 	StartedAt       time.Time
-	Exercises       []TrainingExercise
+	// EndedAt is zero when the provider sent no usable end time.
+	EndedAt   time.Time `json:",omitzero"`
+	Exercises []TrainingExercise
 }
 type TrainingCache struct {
 	Entries  []TrainingEntry
