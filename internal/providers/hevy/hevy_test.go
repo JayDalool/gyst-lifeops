@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestImportPagesAndNullableSets(t *testing.T) {
@@ -22,7 +23,9 @@ func TestImportPagesAndNullableSets(t *testing.T) {
 		case "/v1/routines":
 			fmt.Fprint(w, `{"page":1,"page_count":1,"routines":[{"id":"r1","title":"Push","exercises":[{"title":"Bench","exercise_template_id":"bench","sets":[{"type":"normal","weight_kg":0,"rep_range":{"start":8,"end":12}},{"type":"warmup"}]}]}]}`)
 		case "/v1/workouts":
-			fmt.Fprintf(w, `{"page":%s,"page_count":2,"workouts":[{"id":"w%s","title":"Session","start_time":"2026-09-23T12:00:00Z","exercises":[]}]}`, r.URL.Query().Get("page"), r.URL.Query().Get("page"))
+			// Page 1 has a valid end time; page 2 ends before it starts, which must stay unknown.
+			end := map[string]string{"1": "2026-09-23T12:45:00Z", "2": "2026-09-23T11:00:00Z"}[r.URL.Query().Get("page")]
+			fmt.Fprintf(w, `{"page":%s,"page_count":2,"workouts":[{"id":"w%s","title":"Session","start_time":"2026-09-23T12:00:00Z","end_time":"%s","exercises":[]}]}`, r.URL.Query().Get("page"), r.URL.Query().Get("page"), end)
 		default:
 			t.Error("unexpected endpoint")
 		}
@@ -36,6 +39,12 @@ func TestImportPagesAndNullableSets(t *testing.T) {
 	}
 	if calls != 4 || len(entries) != 3 {
 		t.Fatalf("calls=%d entries=%d", calls, len(entries))
+	}
+	if got := entries[1].EndedAt.Sub(entries[1].StartedAt); got != 45*time.Minute {
+		t.Fatalf("workout duration %v", got)
+	}
+	if !entries[2].EndedAt.IsZero() || !entries[0].EndedAt.IsZero() {
+		t.Fatal("invalid or routine end time stored")
 	}
 	ex := entries[0].Exercises[0]
 	if ex.PrimaryMuscle != "chest" || ex.SecondaryMuscles[0] != "triceps" {

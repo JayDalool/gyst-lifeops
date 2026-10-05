@@ -9,6 +9,24 @@
  {{if not .Connected}}<details><summary>Connect Hevy</summary><p>Get your API key from <a href="https://hevy.com/settings?developer" target="_blank" rel="noopener noreferrer">Hevy developer settings</a> (Hevy Pro required). Add it to the server’s private <code>HEVY_API_KEY</code> setting and restart GYST. Keep the key private.</p><p class="meta">Once connected, GYST imports automatically every 37 minutes. Continue logging workouts in Hevy.</p></details>{{end}}
  </section>
  {{if .HasData}}
+ <div class="training-overview">
+ <section class="card training-week" aria-labelledby="week-title">
+  <div class="training-week-top"><h2 id="week-title">This week</h2><p class="training-week-count"><strong>{{.Week.Workouts}}</strong>{{if .Week.Target}} / {{.Week.Target}}{{end}} workouts</p></div>
+  <ol class="training-days">{{range .Week.Days}}<li{{if .IsToday}} class="is-today"{{end}}><span class="training-day{{if .Done}} done{{end}}" aria-hidden="true"></span><span aria-hidden="true">{{.Letter}}</span><span class="sr-only">{{.Name}}: {{if .Done}}workout logged{{else if .Future}}upcoming{{else}}no workout{{end}}</span></li>{{end}}</ol>
+  <dl class="training-week-stats"><div><dt>Volume</dt><dd>{{.Week.Volume}}</dd></div><div><dt>Training time</dt><dd>{{if .Week.Time}}{{.Week.Time}}{{else}}—{{end}}</dd>{{if .Week.UnknownTime}}<p class="meta">{{.Week.UnknownTime}} without an end time</p>{{end}}</div></dl>
+ </section>
+ <section class="card training-progress" aria-labelledby="progress-title">
+  <h2 id="progress-title">Top progress · 12 weeks</h2>
+  {{if .Progress}}<ul class="training-trends">{{range .Progress}}<li><span class="training-trend-name"><strong>{{.Name}}</strong><span class="meta">Best {{.BestSet}} · {{.Sessions}} sessions</span></span><svg viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"><polyline points="{{.Points}}"/></svg><span class="training-trend-change{{if .Up}} up{{end}}">{{.Change}}</span></li>{{end}}</ul>
+  <p class="meta">Change in estimated 1-rep max, first to latest session.</p>
+  {{else}}<p class="meta">Progress appears once an exercise has been logged in two or more sessions.</p>{{end}}
+ </section>
+ {{if .Groups}}<section class="card training-groups" aria-labelledby="groups-title">
+  <h2 id="groups-title">Muscle groups · 30 days</h2>
+  <ul>{{range .Groups}}<li><span>{{.Name}}</span><strong>{{.Percent}}%</strong><span class="training-bar" aria-hidden="true"><i style="width:{{.Percent}}%"></i></span></li>{{end}}</ul>
+  <p class="meta">Share of primary work sets; warmups excluded.</p>
+ </section>{{end}}
+ </div>
  <section class="card training-focus" aria-labelledby="focus-title">
  <div><p class="kicker">Muscle focus</p><h2 id="focus-title">{{if eq .Mode "planned"}}What your routines target{{else}}What you trained{{end}}</h2></div>
  <form method="get" class="training-filters">

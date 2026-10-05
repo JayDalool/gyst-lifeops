@@ -29,3 +29,33 @@
 .training-ui .training-exercises ul { padding-left:18px; font-size:.85rem; line-height:1.8; }
 .training-ui .training-library { margin-block:20px; align-items:start; }
 @media(max-width:650px) { .training-ui .training-focus-grid { grid-template-columns:minmax(0,1fr); gap:16px; } .training-ui .training-map { max-width:350px; } }
+
+/* Training summary (Issue #49) */
+.training-ui .training-overview { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px; margin-block:16px; align-items:start; }
+.training-ui .training-overview .card { margin:0; min-width:0; }
+.training-ui .training-overview h2 { font-size:1rem; margin:0 0 12px; }
+.training-ui .training-week-top { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.training-ui .training-week-count { margin:0; color:var(--gyst-text-secondary); }
+.training-ui .training-week-count strong { font-size:2rem; color:var(--gyst-text); font-variant-numeric:tabular-nums; }
+.training-ui .training-days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; list-style:none; padding:0; margin:8px 0 16px; text-align:center; font-size:.75rem; color:var(--gyst-text-secondary); }
+.training-ui .training-days li { display:grid; justify-items:center; gap:4px; }
+.training-ui .training-day { width:26px; height:26px; border-radius:50%; background:var(--gyst-control-bg); }
+.training-ui .training-day.done { background:var(--gyst-blue); }
+.training-ui .training-days .is-today { color:var(--gyst-blue); font-weight:700; }
+.training-ui .training-days .is-today .training-day { box-shadow:0 0 0 2px var(--gyst-surface),0 0 0 3.5px var(--gyst-blue); }
+.training-ui .training-week-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0; }
+.training-ui .training-week-stats dt { font-size:.8rem; color:var(--gyst-text-secondary); }
+.training-ui .training-week-stats dd { margin:2px 0 0; font-weight:650; font-size:1.15rem; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.training-ui .training-week-stats .meta { margin:2px 0 0; font-size:.75rem; }
+.training-ui .training-trends { list-style:none; padding:0; margin:0 0 8px; }
+.training-ui .training-trends li { display:grid; grid-template-columns:minmax(0,1fr) 72px auto; align-items:center; gap:12px; padding-block:10px; border-bottom:1px solid var(--gyst-border); }
+.training-ui .training-trend-name { display:grid; gap:2px; min-width:0; overflow-wrap:anywhere; }
+.training-ui .training-trend-name .meta { font-size:.8rem; }
+.training-ui .training-trends svg { width:72px; height:28px; overflow:visible; }
+.training-ui .training-trends polyline { fill:none; stroke:var(--gyst-blue); stroke-width:2; vector-effect:non-scaling-stroke; stroke-linejoin:round; stroke-linecap:round; }
+.training-ui .training-trend-change { font-weight:700; font-variant-numeric:tabular-nums; min-width:3.5em; text-align:right; }
+.training-ui .training-groups ul { list-style:none; padding:0; margin:0 0 8px; display:grid; gap:10px; }
+.training-ui .training-groups li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 8px; font-size:.9rem; }
+.training-ui .training-bar { grid-column:1/-1; height:6px; border-radius:999px; background:var(--gyst-control-bg); overflow:hidden; }
+.training-ui .training-bar i { display:block; height:100%; border-radius:inherit; background:var(--gyst-blue); }
+.training-ui .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
