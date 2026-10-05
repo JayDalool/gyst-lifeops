@@ -320,6 +320,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.health(w, r)
 		} else if len(segments) == 2 && segments[1] == "progress" {
 			h.healthProgress(w, r)
+		} else if len(segments) == 2 && segments[1] == "weight" {
+			h.healthWeight(w, r)
+		} else if len(segments) == 4 && segments[1] == "weight" && segments[3] == "undo" {
+			h.healthWeightUndo(w, r, segments[2])
 		} else if len(segments) == 3 && segments[1] == "training" && segments[2] == "sync" {
 			h.trainingSync(w, r)
 		} else if len(segments) == 2 && segments[1] == "training" {

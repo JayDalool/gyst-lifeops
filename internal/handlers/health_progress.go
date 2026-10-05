@@ -18,6 +18,10 @@ type healthProgressData struct {
 	Page, Range, Timezone                         string
 	Points                                        []weightPoint
 	Latest, Minimum, Maximum, FirstDate, LastDate string
+	// Log weight form state.
+	Error, WeightValue, MeasuredValue, MaxMeasured string
+	Logged                                         *loggedWeight
+	Undone                                         bool
 }
 
 // Plot observations at their actual times, without filling unobserved days.
@@ -99,10 +103,30 @@ func (h *Handler) healthProgress(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "range must be 30, 90 or all", http.StatusBadRequest)
 		return
 	}
+	h.renderHealthProgress(w, period, http.StatusOK, func(data *healthProgressData) {
+		data.Undone = r.URL.Query().Get("undone") == "1"
+		if id, err := strconv.ParseInt(r.URL.Query().Get("logged"), 10, 64); err == nil && id > 0 {
+			if entry, err := h.Service.UndoableWeightEntry(id); err == nil {
+				data.Logged = &loggedWeight{ID: entry.ID, Value: strconv.FormatFloat(entry.WeightKg, 'f', -1, 64)}
+			}
+		}
+	})
+}
+
+// renderHealthProgress renders the Progress page; edit fills form state.
+func (h *Handler) renderHealthProgress(w http.ResponseWriter, period string, status int, edit func(*healthProgressData)) {
 	entries, err := h.Service.ListHealthWeightEntries()
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	h.render(w, "health_progress.html", buildHealthProgress(entries, period, h.Service.Now(), h.Service.Location()))
+	now, location := h.Service.Now(), h.Service.Location()
+	data := buildHealthProgress(entries, period, now, location)
+	data.MaxMeasured = now.In(location).Format(localDateTime)
+	data.MeasuredValue = data.MaxMeasured
+	edit(&data)
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
+	h.render(w, "health_progress.html", data)
 }

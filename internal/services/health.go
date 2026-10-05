@@ -177,6 +177,29 @@ func (s *Service) CreateHealthWeightEntry(w *models.HealthWeightEntry) error {
 	w.MeasuredAt = measured.UTC().Format("2006-01-02T15:04:05.000000000Z")
 	return s.Repo.CreateHealthWeightEntry(w)
 }
+
+// WeightUndoWindow is how long after logging a manual reading it can be undone.
+const WeightUndoWindow = 10 * time.Minute
+
+// UndoableWeightEntry returns a manual reading that is still inside the undo
+// window. Anything else (unknown id, synced reading, too old) is sql.ErrNoRows.
+func (s *Service) UndoableWeightEntry(id int64) (models.HealthWeightEntry, error) {
+	entry, err := s.Repo.GetHealthWeightEntry(id)
+	if err != nil {
+		return entry, err
+	}
+	created, err := time.ParseInLocation("2006-01-02 15:04:05", entry.CreatedAt, time.UTC)
+	if err != nil || entry.Source != "manual" || s.Now().Sub(created) > WeightUndoWindow || created.Sub(s.Now()) > time.Minute {
+		return entry, sql.ErrNoRows
+	}
+	return entry, nil
+}
+func (s *Service) UndoManualWeightEntry(id int64) error {
+	if _, err := s.UndoableWeightEntry(id); err != nil {
+		return err
+	}
+	return s.Repo.DeleteManualHealthWeightEntry(id)
+}
 func (s *Service) ListHealthWeightEntries() ([]models.HealthWeightEntry, error) {
 	return s.Repo.ListHealthWeightEntries()
 }
