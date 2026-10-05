@@ -1,4 +1,5 @@
 - [ ] #47 · iPhone Progress: log weight, Undo works, reading shows · https://gyst.zaylolabs.com/health/progress
+- [ ] #45 · Approve Health v3 prototype on iPhone and desktop · https://claude.ai/artifact/F6V2tSzvfzeN6Cu1bH8Psz
 - [ ] #25 · iPhone Today: tick task, toast shows, Undo reopens · https://github.com/JayDalool/gyst-lifeops/pull/31
 - [ ] #25 · iPhone Project: final mission, brief level-up, tap dismisses · https://github.com/JayDalool/gyst-lifeops/pull/31
 - [ ] #25 · Reduce motion on: completion toast appears without sliding · https://github.com/JayDalool/gyst-lifeops/pull/31
