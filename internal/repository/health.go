@@ -86,6 +86,25 @@ func (r *Repository) GetDailyHealthSnapshot(date string) (models.DailyHealthSnap
 	return scanHealthSnapshot(r.db.QueryRow(`SELECT `+healthSnapshotColumns+` FROM daily_health_snapshots WHERE date = ?`, date))
 }
 
+// ListDailyHealthSnapshots returns the stored days from..to inclusive
+// (YYYY-MM-DD), oldest first. Days with no row are simply absent.
+func (r *Repository) ListDailyHealthSnapshots(from, to string) ([]models.DailyHealthSnapshot, error) {
+	rows, err := r.db.Query(`SELECT `+healthSnapshotColumns+` FROM daily_health_snapshots WHERE date >= ? AND date <= ? ORDER BY date`, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.DailyHealthSnapshot{}
+	for rows.Next() {
+		s, err := scanHealthSnapshot(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
 const upsertHealthSnapshotSQL = `INSERT INTO daily_health_snapshots (` + healthSnapshotColumns + `)
  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
  ON CONFLICT(date) DO UPDATE SET

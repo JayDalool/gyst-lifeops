@@ -234,7 +234,31 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-e2 .hv3-bal dt, .hv3-e2 .hv3-bal p { color: var(--vn-info-text); }
 @media (min-width: 600px) { .hv3-eaten { justify-content: flex-start; } }
 
+/* ---------- Nutrition (#55) ---------- */
+.hv3-nut { display: grid; gap: var(--hv3-gap); min-width: 0; }
+@media (min-width: 1024px) { .hv3-nut { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } .hv3-nut .hv3-span { grid-column: 1 / -1; } .hv3-nut .hv3-grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.hv3-kcal { display: grid; gap: var(--vn-s3); }
+.hv3-kcal-v { font: 700 var(--vn-t-display)/1.05 var(--vn-font-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hv3-kcal-v small { font: 500 var(--vn-t-body)/1 var(--vn-font); color: var(--vn-ink-2); letter-spacing: 0; }
+.hv3-bar.lg { height: 12px; }
+.hv3-bar.ok i { background: var(--vn-ok); }
+.hv3-bar.warn i { background: var(--vn-warn); }
+.hv3-bar.empty { background: repeating-linear-gradient(90deg, var(--vn-surface-3) 0 4px, transparent 4px 8px); }
+.hv3-mtile { display: grid; gap: var(--vn-s2); align-content: start; }
+.hv3-kbars { position: relative; display: flex; align-items: flex-end; gap: 8px; height: 112px; margin-top: var(--vn-s3); }
+.hv3-kbars span { flex: 1; border-radius: 6px 6px 2px 2px; background: color-mix(in srgb, var(--vn-accent) 55%, var(--vn-surface-3)); }
+.hv3-kbars span.today { background: var(--vn-accent); }
+.hv3-kbars span.over { background: var(--vn-warn); }
+.hv3-kbars span.none { background: transparent; border: 1.5px dashed var(--vn-surface-3); }
+.hv3-tline { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--vn-ink-3); pointer-events: none; }
+.hv3-kdays { display: flex; gap: 8px; margin: 6px 0 var(--vn-s2); }
+.hv3-kdays span { flex: 1; text-align: center; font-size: var(--vn-t-caption); color: var(--vn-ink-3); font-weight: 600; }
+.hv3-kdays span.today { color: var(--vn-accent); }
+.hv3-src { display: flex; align-items: center; gap: var(--vn-s3); padding: var(--vn-s3) var(--vn-s4); border-radius: var(--vn-r-lg); background: var(--vn-surface-2); min-width: 0; }
 /* Earlier workouts (#54 review) */
 .hv3-earlier { margin-top: var(--vn-s3); }
 .hv3-earlier > ul > li { border-top: 1px solid var(--vn-separator); }
 .hv3-earlier details[open] > summary > .gyst-icon, .hv3-earlier[open] > summary > .gyst-icon { transform: rotate(90deg); }
+/* `.hv3 a` outranks `.hv3-btn`; keep filled link-buttons readable. */
+.hv3 a.hv3-btn:not(.secondary) { color: #fff; }
+[data-gyst-theme="dark"] .hv3 a.hv3-btn:not(.secondary) { color: #06101f; }
