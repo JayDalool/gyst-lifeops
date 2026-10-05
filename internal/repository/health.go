@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"errors"
 
 	"lifeops-tracker/internal/models"
@@ -147,6 +148,26 @@ func (r *Repository) CreateHealthWeightEntry(w *models.HealthWeightEntry) error 
 	}
 	w.ID, err = result.LastInsertId()
 	return err
+}
+func (r *Repository) GetHealthWeightEntry(id int64) (models.HealthWeightEntry, error) {
+	var w models.HealthWeightEntry
+	err := r.db.QueryRow(`SELECT id, measured_at, weight_kg, source, created_at FROM health_weight_entries WHERE id = ?`, id).Scan(&w.ID, &w.MeasuredAt, &w.WeightKg, &w.Source, &w.CreatedAt)
+	return w, err
+}
+
+// DeleteManualHealthWeightEntry removes one manually entered reading. Synced
+// readings are never deleted here; a missing or non-manual id is sql.ErrNoRows.
+func (r *Repository) DeleteManualHealthWeightEntry(id int64) error {
+	result, err := r.db.Exec(`DELETE FROM health_weight_entries WHERE id = ? AND source = 'manual'`, id)
+	if err != nil {
+		return err
+	}
+	if n, err := result.RowsAffected(); err != nil {
+		return err
+	} else if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 func (r *Repository) ListHealthWeightEntries() ([]models.HealthWeightEntry, error) {
 	rows, err := r.db.Query(`SELECT id, measured_at, weight_kg, source, created_at FROM health_weight_entries ORDER BY measured_at DESC, id DESC`)
