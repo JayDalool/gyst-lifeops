@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Nutrition · prototype</title>
+<meta name="description" content="GYST Health v3 design prototype. Fictional data, no backend.">
+<link rel="stylesheet" href="assets/health-v3.css">
+</head>
+<body data-page="nutrition">
+<a class="skip" href="#main">Skip to content</a>
+<div class="app">
+  <aside class="sidebar" aria-label="GYST">
+    <div class="brand">GYST <i aria-hidden="true"></i></div>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="../../audit/vnext/prototypes/today.html"><span data-icon="home"></span>Today</a>
+      <a href="../../audit/vnext/prototypes/projects.html"><span data-icon="folder"></span>Projects</a>
+      <a class="parent" data-keep href="index.html"><span data-icon="heart"></span>Health</a>
+      <div class="sub" role="group" aria-label="Health"><a data-keep href="index.html">Today</a><a data-keep href="workout.html">Workout</a><a data-keep href="nutrition.html" aria-current="page">Nutrition</a><a data-keep href="coach.html">Coach</a><a data-keep href="settings.html">Settings</a></div>
+      <a href="../../audit/vnext/prototypes/learn.html"><span data-icon="book"></span>Learn</a>
+    </nav>
+    <nav class="side-nav side-foot" aria-label="More"><a href="../../audit/vnext/prototypes/more.html"><span data-icon="menu"></span>More</a></nav>
+  </aside>
+  <main class="main" id="main" tabindex="-1">
+    <header class="topbar"><div class="lead"><a class="back" href="../../audit/vnext/prototypes/today.html"><span data-icon="chevL"></span>GYST</a></div><div class="t" aria-hidden="true">Nutrition</div><div class="trail"></div></header>
+    <div class="content" id="view"><noscript><p>This prototype needs JavaScript.</p></noscript></div>
+  </main>
+</div>
+<nav class="tabbar" aria-label="Health"><a data-keep href="index.html"><span data-icon="today"></span>Today</a><a data-keep href="workout.html"><span data-icon="dumbbell"></span>Workout</a><a data-keep href="nutrition.html" aria-current="page"><span data-icon="apple"></span>Nutrition</a><a data-keep href="coach.html"><span data-icon="chat"></span>Coach</a><a data-keep href="settings.html"><span data-icon="more"></span>More</a></nav>
+<dialog class="sheet" id="sheet"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="assets/health-v3.js"></script>
+</body>
+</html>
