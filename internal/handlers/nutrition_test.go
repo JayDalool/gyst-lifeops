@@ -55,8 +55,8 @@ func TestNutritionObservationStates(t *testing.T) {
 					t.Errorf("missing %q", want)
 				}
 			}
-			if !tc.hasNutrition && strings.Contains(body, `hv3-bar lg"`) {
-				t.Fatal("missing intake rendered a calorie bar")
+			if !tc.hasNutrition && (!strings.Contains(body, `hv3-bar lg empty"`) || strings.Contains(body, `hv3-bar lg warn"`)) {
+				t.Fatal("missing intake must render only the empty calorie track")
 			}
 		})
 	}
@@ -93,6 +93,12 @@ func TestNutritionWeek(t *testing.T) {
 	}
 	if data.TargetLine <= 0 || !strings.Contains(data.WeekLabel, "not logged") || !strings.Contains(data.WeekLabel, "target 2,250") {
 		t.Fatalf("label %q line %d", data.WeekLabel, data.TargetLine)
+	}
+	// 2250.4 of 2250 displays as 2,250 and is neither over nor outside target.
+	edge := nutritionData{}
+	buildNutritionWeek(&edge, []models.DailyHealthSnapshot{{Date: "2026-09-09", HealthMetrics: models.HealthMetrics{DietaryCalories: viewFloat(2250.4)}}}, "2026-09-10", 2250)
+	if edge.Week[5].Over || edge.WeekWithin != 1 {
+		t.Fatal("rounding differs from the Today card")
 	}
 	empty := nutritionData{}
 	buildNutritionWeek(&empty, nil, "2026-09-10", 0)
