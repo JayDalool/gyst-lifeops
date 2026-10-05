@@ -13,7 +13,7 @@
 }
 @media (min-width: 1024px) {
   .gyst-health-sub { display: grid; gap: 2px; margin: -4px 0 4px; padding-left: 44px; }
-  .gyst-health-sub > a { display: flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 10px; color: var(--gyst-text-secondary); font-size: .875rem; text-decoration: none; }
+  .gyst-health-sub > a { display: flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; color: var(--gyst-text-secondary); font-size: .875rem; text-decoration: none; }
   .gyst-health-sub > a:hover { color: var(--gyst-blue); }
   .gyst-health-sub > a[aria-current="page"] { background: var(--gyst-blue-soft); color: var(--gyst-blue); font-weight: 600; }
 }
@@ -233,3 +233,8 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-e2 .hv3-bal { background: var(--vn-accent-soft); }
 .hv3-e2 .hv3-bal dt, .hv3-e2 .hv3-bal p { color: var(--vn-info-text); }
 @media (min-width: 600px) { .hv3-eaten { justify-content: flex-start; } }
+
+/* Earlier workouts (#54 review) */
+.hv3-earlier { margin-top: var(--vn-s3); }
+.hv3-earlier > ul > li { border-top: 1px solid var(--vn-separator); }
+.hv3-earlier details[open] > summary > .gyst-icon, .hv3-earlier[open] > summary > .gyst-icon { transform: rotate(90deg); }

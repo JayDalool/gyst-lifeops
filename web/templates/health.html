@@ -94,7 +94,7 @@
     <div class="hv3-weight-body">
       <div>
         <p class="hv3-v">{{.Weight.Latest}} <small>kg</small></p>
-        {{if .Weight.HasChange}}<p class="hv3-delta">{{.Weight.Change}} since {{.Weight.Since}}</p>{{else}}<p class="hv3-s">First reading</p>{{end}}
+        {{if .Weight.HasChange}}<p class="hv3-delta">{{.Weight.Change}} since {{.Weight.Since}}</p>{{else if .Weight.NoneSincePlan}}<p class="hv3-s">No reading since plan start ({{.Weight.Since}})</p>{{else if eq .Weight.Readings 1}}<p class="hv3-s">First reading</p>{{else}}<p class="hv3-s">Latest reading</p>{{end}}
       </div>
       {{if .Weight.Points}}<svg class="hv3-spark" viewBox="0 0 100 32" preserveAspectRatio="none" role="img" aria-label="{{.Weight.SparkDescription}}"><polyline points="{{.Weight.Points}}"/></svg>{{end}}
     </div>

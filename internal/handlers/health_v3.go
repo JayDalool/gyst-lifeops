@@ -59,6 +59,8 @@ type healthWeightView struct {
 	Present          bool
 	Latest, LatestAt string
 	HasChange, Down  bool
+	// NoneSincePlan: readings exist, but none since the plan started.
+	NoneSincePlan    bool
 	Change, Since    string
 	Points           string
 	Readings         int
@@ -101,6 +103,9 @@ func buildHealthWeight(entries []models.HealthWeightEntry, cycleStart string, no
 			baseline = &readings[i]
 		}
 		spark = append(spark, readings[i].kg)
+	}
+	if baseline == nil && label != "" {
+		v.NoneSincePlan, v.Since = true, label
 	}
 	if baseline != nil && baseline.at.Before(latest.at) {
 		diff := math.Round((latest.kg-baseline.kg)*10) / 10
