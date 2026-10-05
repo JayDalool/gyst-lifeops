@@ -50,6 +50,9 @@ type HealthMacroView struct {
 	State string
 	// Note is the short line under a macro: "58 g to go", "Target met", "12 g over".
 	Note string
+	// Over is decided from the numbers at displayed precision, so 2000.3 of
+	// 2000 is not "over" (#54 review).
+	Over bool
 }
 
 // HealthTodayView is everything the Day view renders.
@@ -107,6 +110,9 @@ const staleAfter = 8 * time.Hour
 
 func formatThousands(value float64) string {
 	rounded := strconv.FormatFloat(math.Round(value), 'f', 0, 64)
+	if rounded == "-0" { // −0.3 rounds to zero; never show a signed zero
+		rounded = "0"
+	}
 	negative := strings.HasPrefix(rounded, "-")
 	rounded = strings.TrimPrefix(rounded, "-")
 
@@ -165,6 +171,7 @@ func buildMacro(label string, consumed *float64, target float64, unit string) He
 
 	remaining := target - *consumed
 	macro.Remaining = HealthMetricView{Value: formatThousands(remaining), Unit: unit, Present: true}
+	macro.Over = math.Round(*consumed) > math.Round(target)
 	macro.Percent = int(math.Round((*consumed / target) * 100))
 	if macro.Percent < 0 {
 		macro.Percent = 0
@@ -265,7 +272,7 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 		if !m.HasBar {
 			continue
 		}
-		over := strings.HasPrefix(m.Remaining.Value, "−")
+		over := m.Over
 		left := strings.TrimPrefix(m.Remaining.Value, "−")
 		switch {
 		case over && limits[m.Label]:
@@ -288,7 +295,7 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 	}
 	if view.Calories.HasBar {
 		view.CaloriePercent = int(math.Min(100, float64(view.Calories.Percent)))
-		view.CaloriesOver = strings.HasPrefix(view.Calories.Remaining.Value, "−")
+		view.CaloriesOver = view.Calories.Over
 	}
 	view.ActiveEnergy = metricFromFloat(snapshot.ActiveEnergyKcal, "kcal")
 	view.RestingEnergy = metricFromFloat(snapshot.RestingEnergyKcal, "kcal")

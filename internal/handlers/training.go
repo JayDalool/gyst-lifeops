@@ -39,6 +39,7 @@ type trainingData struct {
 	PerWeek      []trainingWeekBar
 	PerWeekTotal int
 	Latest       *trainingEntryView
+	Earlier      []trainingEntryView // the rest of the 30 most recent sessions
 }
 
 type trainingWeekBar struct {
@@ -262,6 +263,7 @@ func (h *Handler) training(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(data.Workouts) > 0 {
 		data.Latest = &data.Workouts[0]
+		data.Earlier = data.Workouts[1:]
 	}
 	h.render(w, "training.html", data)
 }

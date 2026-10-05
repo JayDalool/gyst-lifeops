@@ -64,7 +64,7 @@
         <button class="hv3-btn secondary small" type="submit">Show</button>
       </form>
       {{if .Summary.Muscles}}<table class="hv3-table"><caption class="hv3-sr">Work sets by muscle</caption><thead><tr><th scope="col">Muscle</th><th scope="col">Primary</th><th scope="col">Secondary</th></tr></thead><tbody>{{range .Summary.Muscles}}<tr><th scope="row">{{.Name}}</th><td>{{.Primary}}</td><td>{{.Secondary}}</td></tr>{{end}}</tbody></table>{{else}}<p class="hv3-s">No mapped work sets in this selection.</p>{{end}}
-      <p class="hv3-s">Primary sets only; warmups excluded. Secondary counts show involvement and aren't added in.{{if .Summary.Unclassified}} {{.Summary.Unclassified}} work sets have no muscle mapping.{{end}}</p>
+      <p class="hv3-s">Darker areas had more primary work sets. Primary sets only; warmups excluded. Secondary counts show involvement and aren't added in. Cardio, full body and other classifications appear in the table only. The map doesn't measure effort, recovery or muscle growth.{{if .Summary.Unclassified}} {{.Summary.Unclassified}} work sets have no muscle mapping.{{end}}</p>
     </details>
   </section>
 
@@ -76,6 +76,11 @@
       <details class="hv3-disclose"><summary>{{template "gyst.icon" "chevron-right"}}Exercises and sets</summary>{{template "training.exercises" .}}</details>
     </div>
     {{else}}<div class="hv3-card hv3-empty-sm"><p class="hv3-s">No workouts received yet.</p></div>{{end}}
+    {{if .Earlier}}
+    <details class="hv3-group hv3-earlier"><summary class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">Earlier workouts</span><span class="hv3-s">{{len .Earlier}} more from Hevy</span></span>{{template "gyst.icon" "chevron-right"}}</summary>
+      <ul>{{range .Earlier}}<li><details><summary class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Title}}</span><span class="hv3-s">{{.When}}{{if .Duration}} · {{.Duration}}{{end}} · {{len .Exercises}} exercise{{if ne (len .Exercises) 1}}s{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</summary><div class="hv3-group-body">{{template "training.exercises" .}}</div></details></li>{{end}}</ul>
+    </details>
+    {{end}}
   </section>
 
   <section class="hv3-section" aria-labelledby="routines-title">
