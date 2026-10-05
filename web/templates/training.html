@@ -80,7 +80,7 @@
 
   <section class="hv3-section" aria-labelledby="routines-title">
     <div class="hv3-section-h"><h2 id="routines-title">Routines</h2></div>
-    <ul class="hv3-group">{{range .Routines}}<li><details><summary class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Title}}</span><span class="hv3-s">{{len .Exercises}} exercises</span></span>{{template "gyst.icon" "chevron-right"}}</summary><div class="hv3-group-body"><a href="/health/training?mode=planned&amp;routine={{.ID}}">Muscle focus for this routine</a>{{template "training.exercises" .}}</div></details></li>{{else}}<li class="hv3-row"><span class="hv3-s">No routines received. Create one in Hevy, then sync.</span></li>{{end}}</ul>
+    <ul class="hv3-group">{{range .Routines}}<li><details><summary class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Title}}</span><span class="hv3-s">{{len .Exercises}} exercise{{if ne (len .Exercises) 1}}s{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</summary><div class="hv3-group-body"><a href="/health/training?mode=planned&amp;routine={{.ID}}">Muscle focus for this routine</a>{{template "training.exercises" .}}</div></details></li>{{else}}<li class="hv3-row"><span class="hv3-s">No routines received. Create one in Hevy, then sync.</span></li>{{end}}</ul>
   </section>
 </div>
 {{else}}
