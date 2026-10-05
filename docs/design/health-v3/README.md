@@ -16,9 +16,11 @@ Screenshots: [`screenshots/`](screenshots/).
 
 1. **One number first.** Today leads with calories left in a ring. Eaten, target
    and active sit under it, and energy balance comes last.
-2. **"So far", never "deficit".** Balance = eaten − (resting + active), labelled
-   "Energy balance so far · Observed today, not a final deficit". The formula is
-   in an info sheet, not on the card.
+2. **Four numbers, "so far", never "deficit".** Under the ring: Eaten,
+   Budget left (target − eaten), Burned so far (resting + active, shown as
+   its parts) and Balance so far (eaten − burned, highlighted, "Observed,
+   not final"). The ring center repeats the budget left. The formula is in
+   "How this is counted".
 3. **Honest data.** Missing values show "—" with a dashed ring or bar. A recorded
    zero shows "0" with "Recorded zero today". Watch and phone steps stay separate
    and are never added together. Steps are never turned into calories.

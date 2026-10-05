@@ -25,14 +25,14 @@
   const weightSeries = (start, end, n) => Array.from({ length: n }, (_, i) => +(start + (end - start) * (i / (n - 1)) + (i % 3 === 1 ? 0.3 : i % 4 === 2 ? -0.2 : 0)).toFixed(1));
 
   const full = () => ({
-    plan: { title: 'Fat loss', day: 13, days: 182, start: 'Sep 22', end: 'Mar 22' },
-    targets: { kcal: 2290, protein: 190, carbs: 220, fat: 70, fiber: 30, steps: 10000, workouts: 3, water: 3.0 },
-    food: { kcal: 1450, protein: 132, carbs: 140, fat: 48, fiber: 18 },
-    energy: { active: 420, resting: 1450 },
+    plan: { title: 'Fat loss', day: 13, days: 195, start: 'Sep 22', end: 'Apr 4' },
+    targets: { kcal: 2250, protein: 180, carbs: 225, fat: 70, fiber: 35, steps: 10000, workouts: 3, water: 3.0 },
+    food: { kcal: 1500, protein: 124, carbs: 140, fat: 50, fiber: 18 },
+    energy: { active: 1020, resting: 2100 },
     steps: { watch: 7840, phone: 6920 },
     exercise: { min: 46, week: [30, 0, 52, 0, 0, 38, 46] },
     water: 1.8,
-    weight: { start: 95.5, startLabel: 'Sep 22', series: weightSeries(95.5, 92.4, 12), lastLabel: 'Today' },
+    weight: { start: 136.2, goal: 110, startLabel: 'Sep 22', series: weightSeries(136.2, 134.5, 12), lastLabel: 'Today' },
     sync: { apple: '6:40 PM', stale: false },
     meals: [['Breakfast', 420], ['Lunch', 610], ['Snacks', 420]],
     history: [2210, 2380, 1980, 2150, 2420, 2090],
@@ -61,7 +61,7 @@
       const d = full();
       d.food = null; d.energy = { active: 180, resting: null }; d.steps = { watch: 2140, phone: null };
       d.exercise = { min: 0, week: [30, 0, 52, 0, 0, 38, 0] }; d.water = null; d.meals = null; d.history = [2210, null, 1980];
-      d.weight = { start: 92.4, startLabel: 'Today', series: [92.4], lastLabel: 'Today' };
+      d.weight = { start: 134.5, goal: 110, startLabel: 'Today', series: [134.5], lastLabel: 'Today' };
       d.hevy = { ...d.hevy, doneOffsets: [3], volume: 5120, timeMin: 44, progress: [], latest: { ...d.hevy.latest, when: 'Thursday' }, weeks: [0, 0, 0, 1] };
       return d;
     },
@@ -212,7 +212,7 @@
     const cur = w.series[w.series.length - 1], diff = +(cur - w.start).toFixed(1);
     return `<section class="card stat" aria-labelledby="w-h"><p class="card-k" id="w-h">${ic('scale', 'i-16')}Weight</p>
       <div class="weight"><div><p class="card-v num">${n(cur, 1)} <small>kg</small></p>
-        <p class="delta">${w.series.length > 1 ? `${ic(diff <= 0 ? 'down' : 'up', 'i-16')}${signed(diff, 1)} kg since ${esc(w.startLabel)}` : 'First reading'}</p></div>
+        <p class="delta">${w.series.length > 1 ? `${ic(diff <= 0 ? 'down' : 'up', 'i-16')}${signed(diff, 1)} kg since ${esc(w.startLabel)}` : 'First reading'}</p>${w.goal ? `<p class="card-s num">${n(Math.max(0, cur - w.goal), 1)} kg to goal (${n(w.goal)} kg)</p>` : ''}</div>
         <div>${spark(w.series, 40, `Weight trend, ${n(w.start, 1)} to ${n(cur, 1)} kg`)}</div></div>
       <div class="card-actions"><span class="card-s">${esc(w.lastLabel)}</span><button class="btn small secondary" type="button" data-act="log-weight">${ic('plus', 'i-16')}Log weight</button></div></section>`;
   }
@@ -244,19 +244,20 @@
     } else {
       const left = t && f ? t.kcal - f.kcal : null, over = left != null && left < 0;
       const balance = f && e && e.resting != null && e.active != null ? f.kcal - (e.resting + e.active) : null;
+      const burned = e && e.resting != null && e.active != null ? e.resting + e.active : null;
       const center = !f ? `<span class="big missing">—</span><span class="big-l">No food logged yet</span>`
-        : t ? `<span class="big num">${n(Math.abs(left))}</span><span class="big-l">${over ? 'kcal over' : 'kcal left'}</span>`
+        : t ? `<span class="big num">${n(Math.abs(left))}</span><span class="big-l">${over ? 'kcal over budget' : 'food budget left'}</span><span class="big-s num">of ${n(t.kcal)}</span>`
           : `<span class="big num">${n(f.kcal)}</span><span class="big-l">kcal eaten</span>`;
+      const miss = '<span class="missing">—</span>';
       hero = `<section class="card hero" aria-labelledby="cal-h"><h2 class="sr" id="cal-h">Calories</h2><div class="cal">
-        ${ring({ value: f && t ? pct(f.kcal, t.kcal) : null, size: 184, sw: 14, cls: over ? 'warn' : '', label: !f ? 'Calories: no food logged yet' : t ? `${n(f.kcal)} of ${n(t.kcal)} calories eaten` : `${n(f.kcal)} calories eaten, no target set`, center })}
-        <dl class="cal-stats">
-          <div><dt>Eaten</dt><dd class="num">${f ? n(f.kcal) : '<span class="missing">—</span>'}</dd></div>
-          <div><dt>Target</dt><dd class="num">${t ? n(t.kcal) : '<span class="missing">Not set</span>'}</dd></div>
-          <div><dt>Active</dt><dd class="num">${e && e.active != null ? n(e.active) : '<span class="missing">—</span>'}</dd></div>
+        ${ring({ value: f && t ? pct(f.kcal, t.kcal) : null, size: 184, sw: 14, cls: over ? 'warn' : '', label: !f ? 'Calories: no food logged yet' : t ? `${n(f.kcal)} of ${n(t.kcal)} calorie budget eaten` : `${n(f.kcal)} calories eaten, no target set`, center })}
+        <dl class="e4">
+          <div><dt>Eaten</dt><dd class="num">${f ? n(f.kcal) : miss}</dd></div>
+          <div><dt>${over ? 'Over budget' : 'Budget left'}</dt><dd class="num">${left != null ? n(Math.abs(left)) : miss}</dd></div>
+          <div><dt>Burned so far</dt><dd class="num">${burned != null ? n(burned) : miss}</dd><span>${burned != null ? `${n(e.resting)} resting + ${n(e.active)} active` : e && e.active != null ? `${n(e.active)} active · resting not received` : 'Not received'}</span></div>
+          <div class="bal"><dt>Balance so far</dt><dd class="num">${balance == null ? miss : `${signed(balance)}`}</dd><span>${balance == null ? (f ? 'Waiting for burn data' : 'Needs food and burn data') : 'Observed, not final'}</span></div>
         </dl>
-        <div class="balance"><div class="l"><b>Energy balance so far</b><span>${balance == null ? (f ? 'Waiting for resting energy' : 'Needs food and energy data') : 'Observed today, not a final deficit'}</span></div>
-          <div style="display:flex;align-items:center;gap:4px"><span class="v num">${balance == null ? '<span class="missing">—</span>' : `${signed(balance)} kcal`}</span>
-          <button class="icon-btn quiet" type="button" data-act="energy-info" aria-label="How energy balance is calculated">${ic('info')}</button></div></div>
+        <button class="btn plain small e4-info" type="button" data-act="energy-info">${ic('info', 'i-16')}How this is counted</button>
       </div></section>`;
     }
 

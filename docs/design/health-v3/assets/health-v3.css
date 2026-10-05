@@ -487,3 +487,15 @@ dialog.sheet[open] { animation: up var(--base) var(--ease); }
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
 }
 .pfocus .kcal-top { width: 100%; }
+
+/* Today calorie card: four numbers */
+.cal .big-s { font-size: var(--t-foot); color: var(--ink-3); margin-top: 2px; }
+.e4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); width: 100%; }
+.e4 > div { display: grid; gap: 2px; align-content: start; padding: var(--s3); border-radius: var(--r-md); background: var(--surface-2); min-width: 0; }
+.e4 dt { font-size: var(--t-foot); color: var(--ink-2); font-weight: 550; }
+.e4 dd { font: 650 var(--t-section)/1.2 var(--font-display); letter-spacing: -.015em; overflow-wrap: anywhere; }
+.e4 span { font-size: var(--t-caption); color: var(--ink-2); overflow-wrap: anywhere; }
+.e4 .bal { background: var(--accent-soft); }
+.e4 .bal dt, .e4 .bal span { color: var(--accent-ink); }
+.e4-info { justify-self: center; }
+@media (min-width: 600px) { .cal .e4-info { grid-column: 1 / -1; justify-self: start; } }
