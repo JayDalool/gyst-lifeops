@@ -1,0 +1,40 @@
+{{define "content"}}
+{{/* My foods & products (#59): what Jay usually has, per serving. Not a
+     food log (MyFitnessPal) and not a pantry. */}}
+<div class="gyst-scope hv3">
+<header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow"><a href="/health/more">More</a></p><h1>My foods &amp; products</h1></div></header>
+{{if .Error}}<p class="hv3-banner warn" role="alert" id="food-error">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}</span></p>{{end}}
+<section class="hv3-section" aria-labelledby="foods-title">
+  <div class="hv3-section-h"><h2 id="foods-title">Foods</h2></div>
+  <ul class="hv3-group">
+    {{range .Foods}}
+    <li><a class="hv3-row{{if not .Active}} inactive{{end}}" href="/health/foods/{{.ID}}"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{template "health.foodMeta" .}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+    {{else}}
+    <li class="hv3-row"><span class="hv3-s">No foods yet. Add what you usually have, like a protein powder or Greek yogurt.</span></li>
+    {{end}}
+  </ul>
+</section>
+<section class="hv3-card" aria-labelledby="add-food-title">
+  <h2 id="add-food-title" class="hv3-k">Add a food</h2>
+  {{template "health.foodForm" .}}
+</section>
+</div>
+{{end}}
+
+{{define "health.foodMeta"}}{{if .Serving}}{{.Serving}} · {{end}}{{if .Kcal}}{{niceNumber (deref .Kcal)}} kcal{{else}}kcal unknown{{end}}{{if .ProteinG}} · {{niceNumber (deref .ProteinG)}} g protein{{end}}{{if not .Active}} · inactive{{end}}{{end}}
+
+{{define "health.foodForm"}}
+<form class="hv3-form" method="post" action="{{if .FoodID}}/health/foods/{{.FoodID}}{{else}}/health/foods{{end}}">
+  <label class="hv3-field wide"><span>Name</span><input name="name" maxlength="120" required autocomplete="off" value="{{.Form.Name}}"{{if .Error}} aria-describedby="food-error"{{end}}></label>
+  <label class="hv3-field wide"><span>Serving</span><input name="serving" maxlength="80" autocomplete="off" placeholder="e.g. 1 scoop (30 g)" value="{{.Form.Serving}}"></label>
+  <label class="hv3-field"><span>Calories</span><input name="kcal" inputmode="decimal" autocomplete="off" value="{{.Form.Kcal}}"></label>
+  <label class="hv3-field"><span>Protein (g)</span><input name="protein" inputmode="decimal" autocomplete="off" value="{{.Form.Protein}}"></label>
+  <label class="hv3-field"><span>Carbs (g)</span><input name="carbs" inputmode="decimal" autocomplete="off" value="{{.Form.Carbs}}"></label>
+  <label class="hv3-field"><span>Fat (g)</span><input name="fat" inputmode="decimal" autocomplete="off" value="{{.Form.Fat}}"></label>
+  <label class="hv3-field"><span>Fiber (g)</span><input name="fiber" inputmode="decimal" autocomplete="off" value="{{.Form.Fiber}}"></label>
+  {{if .FoodID}}<label class="hv3-field"><span>Status</span><select name="active"><option value="1"{{if .Form.Active}} selected{{end}}>Active</option><option value="0"{{if not .Form.Active}} selected{{end}}>Inactive</option></select></label>{{end}}
+  <label class="hv3-field wide"><span>Notes</span><textarea name="notes" maxlength="500" rows="2">{{.Form.Notes}}</textarea></label>
+  <button class="hv3-btn" type="submit">{{if .FoodID}}Save{{else}}Add food{{end}}</button>
+</form>
+<p class="hv3-s">Values per serving. Leave a value blank if you don't know it.</p>
+{{end}}

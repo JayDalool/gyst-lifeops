@@ -243,6 +243,7 @@ type HealthData struct {
 	// Health v3 (#53).
 	HealthTab string
 	Weight    healthWeightView
+	Checklist []healthChecklistRow
 }
 
 type ArchiveData struct {
@@ -337,6 +338,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.healthPlan(w, r)
 		} else if len(segments) == 2 && segments[1] == "more" {
 			h.healthMore(w, r)
+		} else if len(segments) == 2 && segments[1] == "checklist" {
+			h.healthChecklist(w, r)
+		} else if len(segments) == 4 && segments[1] == "checklist" {
+			h.healthChecklistItemAction(w, r, segments[2], segments[3])
+		} else if len(segments) == 2 && segments[1] == "foods" {
+			h.healthFoods(w, r)
+		} else if len(segments) == 3 && segments[1] == "foods" {
+			h.healthFood(w, r, segments[2])
 		} else {
 			http.NotFound(w, r)
 		}
@@ -1700,6 +1709,10 @@ func (h *Handler) healthBase(w http.ResponseWriter) (HealthData, bool) {
 		return fail(err)
 	}
 	view := buildHealthTodayView(today, h.Service.Now())
+	items, err := h.Service.Repo.ListHealthChecklistItems(today.Date)
+	if err != nil {
+		return fail(err)
+	}
 	cycleStart := ""
 	if today.HealthCycle != nil {
 		cycleStart = today.HealthCycle.StartDate
@@ -1712,6 +1725,7 @@ func (h *Handler) healthBase(w http.ResponseWriter) (HealthData, bool) {
 		BodyRhythm:  bodyRhythm,
 		Today:       view,
 		Weight:      buildHealthWeight(weights, cycleStart, h.Service.Now(), h.Service.Location()),
+		Checklist:   buildChecklistRows(items, view),
 	}, true
 }
 
@@ -2263,6 +2277,13 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		"niceDateTime":   niceDateTime,
 		"niceNumber":     niceNumber,
 		"healthTab":      healthTab,
+		// deref reads an optional number; templates guard with {{if}} first.
+		"deref": func(v *float64) float64 {
+			if v == nil {
+				return 0
+			}
+			return *v
+		},
 		"greeting": func() string {
 			return greeting(h.appClock().Now().In(h.appClock().Location()).Hour())
 		},
