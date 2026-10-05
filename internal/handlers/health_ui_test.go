@@ -31,7 +31,7 @@ func TestHealthIntakeGraphicRequiresObservedIntakeAndTarget(t *testing.T) {
 			if tc.name == "over target" && (!strings.Contains(body, "3,000") || !strings.Contains(body, "kcal over budget")) {
 				t.Fatal("actual over-target intake was hidden")
 			}
-			for _, want := range []string{`Burned so far`, `Balance so far`, `Steps`, `Phone`, `href="/health/progress#log"`, `href="/health/nutrition"`} {
+			for _, want := range []string{`Burned so far`, `Balance so far`, `Steps`, `No steps received yet`, `href="/health/progress#log"`, `href="/health/nutrition"`} {
 				if !strings.Contains(body, want) {
 					t.Errorf("missing %s", want)
 				}

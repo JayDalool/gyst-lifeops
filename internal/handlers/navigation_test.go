@@ -120,7 +120,7 @@ func TestHealthFoundation(t *testing.T) {
 		}
 		// Health v3 (#53): Health's own sections, the four-number energy card,
 		// and the rest of the old page reachable from More.
-		for _, text := range []string{"Health sections", `href="/health/training"`, `href="/health/nutrition"`, `href="/health/more"`, "Budget left", "Burned so far", "Balance so far", "Macros", "Activity", "Weight", "viewport-fit=cover"} {
+		for _, text := range []string{"Health sections", `href="/health/training"`, `href="/health/nutrition"`, `href="/health/more"`, "No food logged yet", "Burned so far", "Balance so far", "Macros", "Activity", "Weight", "viewport-fit=cover"} {
 			if !strings.Contains(body, text) {
 				t.Errorf("health missing %q", text)
 			}

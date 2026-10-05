@@ -80,8 +80,15 @@ type HealthTodayView struct {
 	ObservedEnergy HealthMetricView
 	TargetEnergy   HealthMetricView
 
-	StepTarget      HealthMetricView
-	StepPercent     int // Watch steps against the target; 0 when either is absent
+	StepTarget HealthMetricView
+	// Steps is the one count shown large: Apple Watch when observed,
+	// otherwise iPhone. StepsSource names it; StepsOther is the other source,
+	// shown separately when both exist. The two are never added together.
+	Steps           HealthMetricView
+	StepsSource     string
+	StepsOther      HealthMetricView
+	OtherSource     string
+	StepPercent     int // Steps against the target; 0 when either is absent
 	CaloriePercent  int // for the ring: eaten against target, capped at 100
 	CaloriesOver    bool
 	BudgetAbs       string // FoodRemaining without its sign, for "120 kcal over"
@@ -243,8 +250,14 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 	view.StepsWatch = metricFromInt(snapshot.StepsWatch, "")
 	view.StepsPhone = metricFromInt(snapshot.StepsPhone, "")
 	view.StepTarget = metricFromTarget(float64(cycle.StepTarget), "")
-	if snapshot.StepsWatch != nil && cycle.StepTarget > 0 {
-		view.StepPercent = int(math.Min(100, math.Round(float64(*snapshot.StepsWatch)/float64(cycle.StepTarget)*100)))
+	primary := snapshot.StepsWatch
+	view.Steps, view.StepsSource, view.StepsOther, view.OtherSource = view.StepsWatch, "Apple Watch", view.StepsPhone, "iPhone"
+	if snapshot.StepsWatch == nil && snapshot.StepsPhone != nil {
+		primary = snapshot.StepsPhone
+		view.Steps, view.StepsSource, view.StepsOther, view.OtherSource = view.StepsPhone, "iPhone", view.StepsWatch, "Apple Watch"
+	}
+	if primary != nil && cycle.StepTarget > 0 {
+		view.StepPercent = int(math.Min(100, math.Round(float64(*primary)/float64(cycle.StepTarget)*100)))
 	}
 	limits := map[string]bool{"Calories": true, "Carbohydrates": true, "Fat": true}
 	for i := range view.Macros {

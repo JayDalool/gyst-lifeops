@@ -104,13 +104,6 @@
 .hv3-today { display: grid; gap: var(--hv3-gap); min-width: 0; }
 .hv3-energy { padding: var(--vn-s6) var(--vn-s4) var(--vn-s2); }
 .hv3-energy-body { display: grid; gap: var(--vn-s6); justify-items: center; }
-.hv3-e4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--vn-s3); width: 100%; }
-.hv3-e4 > div { display: grid; gap: 2px; align-content: start; padding: var(--vn-s3); border-radius: var(--vn-r-md); background: var(--vn-surface-2); min-width: 0; }
-.hv3-e4 dt { font-size: var(--vn-t-foot); color: var(--vn-ink-2); font-weight: 550; }
-.hv3-e4 dd { font: 650 var(--vn-t-section)/1.2 var(--vn-font-display); letter-spacing: -.015em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.hv3-e4 p { font-size: var(--vn-t-caption); color: var(--vn-ink-2); overflow-wrap: anywhere; }
-.hv3-e4 .hv3-bal { background: var(--vn-accent-soft); }
-.hv3-e4 .hv3-bal dt, .hv3-e4 .hv3-bal p { color: var(--vn-info-text); }
 .hv3-energy .hv3-disclose { margin-top: var(--vn-s2); }
 @media (min-width: 600px) { .hv3-energy-body { grid-template-columns: auto minmax(0, 1fr); align-items: center; justify-items: stretch; } }
 .hv3-macro { display: flex; align-items: center; gap: var(--vn-s3); }
@@ -224,3 +217,19 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-group summary .hv3-strong { font-weight: 600; }
 .hv3-focus-body a { display: inline-flex; align-items: center; min-height: 44px; }
 @media (max-width: 1023px) { .hv3 { padding-bottom: calc(var(--gyst-tab-height) + var(--gyst-safe-bottom) + var(--vn-s4)); } }
+
+/* Calorie card hierarchy (#54 review): the ring value leads; eaten and
+   target are one quiet line; burned and balance are smaller tiles. */
+.hv3-ring-lg { width: 200px; height: 200px; }
+.hv3-ring-lg .hv3-big { font-size: 44px; }
+.hv3-energy-side { display: grid; gap: var(--vn-s3); width: 100%; min-width: 0; }
+.hv3-eaten { display: flex; justify-content: center; flex-wrap: wrap; gap: 0 var(--vn-s2); font-size: var(--vn-t-sub); color: var(--vn-ink-2); font-variant-numeric: tabular-nums; }
+.hv3-eaten b { color: var(--vn-ink); font-weight: 600; }
+.hv3-e2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--vn-s3); }
+.hv3-e2 > div { display: grid; gap: 2px; align-content: start; padding: var(--vn-s3); border-radius: var(--vn-r-md); background: var(--vn-surface-2); min-width: 0; }
+.hv3-e2 dt { font-size: var(--vn-t-foot); color: var(--vn-ink-2); font-weight: 550; text-transform: none; letter-spacing: 0; }
+.hv3-e2 dd { font: 650 17px/1.3 var(--vn-font); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hv3-e2 p { font-size: var(--vn-t-caption); color: var(--vn-ink-2); overflow-wrap: anywhere; }
+.hv3-e2 .hv3-bal { background: var(--vn-accent-soft); }
+.hv3-e2 .hv3-bal dt, .hv3-e2 .hv3-bal p { color: var(--vn-info-text); }
+@media (min-width: 600px) { .hv3-eaten { justify-content: flex-start; } }

@@ -25,22 +25,23 @@
         <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false"><circle class="track{{if not .Today.Calories.HasBar}} empty{{end}}" cx="60" cy="60" r="52" pathLength="100"/>{{if .Today.Calories.HasBar}}<circle class="val" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="{{.Today.CaloriePercent}} 100"/>{{end}}</svg>
         <div class="hv3-ring-center">
           {{if .Today.Calories.HasBar}}
-            <strong class="hv3-big">{{.Today.BudgetAbs}}</strong><span>{{if .Today.CaloriesOver}}kcal over budget{{else}}food budget left{{end}}</span>{{if .Today.CalorieTarget.Present}}<small>of {{.Today.CalorieTarget.Value}}</small>{{end}}
+            <strong class="hv3-big">{{.Today.BudgetAbs}}</strong><span>{{if .Today.CaloriesOver}}kcal over budget{{else}}food budget left{{end}}</span>
           {{else if .Today.Calories.Consumed.Present}}
             <strong class="hv3-big">{{.Today.Calories.Consumed.Value}}</strong><span>kcal eaten</span><small>No target set</small>
           {{else}}
-            <strong class="hv3-big hv3-absent">—</strong><span>No food logged yet</span>{{if .Today.CalorieTarget.Present}}<small>Budget {{.Today.CalorieTarget.Value}}</small>{{end}}
+            <strong class="hv3-big hv3-absent">—</strong><span>No food logged yet</span>
           {{end}}
         </div>
       </div>
-      <dl class="hv3-e4">
-        <div><dt>Eaten</dt><dd>{{if .Today.Calories.Consumed.Present}}{{.Today.Calories.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd></div>
-        <div><dt>{{if .Today.CaloriesOver}}Over budget{{else}}Budget left{{end}}</dt><dd>{{if .Today.Calories.HasBar}}{{.Today.BudgetAbs}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd></div>
-        <div><dt>Burned so far</dt><dd>{{if .Today.ObservedBurn.Present}}{{.Today.ObservedBurn.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
-          <p>{{if and .Today.RestingEnergy.Present .Today.ActiveEnergy.Present}}{{.Today.RestingEnergy.Value}} resting + {{.Today.ActiveEnergy.Value}} active{{else if .Today.ActiveEnergy.Present}}{{.Today.ActiveEnergy.Value}} active · resting not received{{else}}Not received{{end}}</p></div>
-        <div class="hv3-bal"><dt>Balance so far</dt><dd>{{if .Today.ObservedEnergy.Present}}{{.Today.ObservedEnergy.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
-          <p>{{if .Today.ObservedEnergy.Present}}Observed, not final{{else}}Needs food and burn data{{end}}</p></div>
-      </dl>
+      <div class="hv3-energy-side">
+        <p class="hv3-eaten"><span><b>{{if .Today.Calories.Consumed.Present}}{{.Today.Calories.Consumed.Value}}{{else}}—{{end}}</b> eaten</span><span aria-hidden="true">·</span><span><b>{{if .Today.CalorieTarget.Present}}{{.Today.CalorieTarget.Value}}{{else}}—{{end}}</b> {{if .Today.CalorieTarget.Present}}target{{else}}no target{{end}}</span></p>
+        <dl class="hv3-e2">
+          <div><dt>Burned so far</dt><dd>{{if .Today.ObservedBurn.Present}}{{.Today.ObservedBurn.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
+            <p>{{if and .Today.RestingEnergy.Present .Today.ActiveEnergy.Present}}{{.Today.RestingEnergy.Value}} resting + {{.Today.ActiveEnergy.Value}} active{{else if .Today.ActiveEnergy.Present}}{{.Today.ActiveEnergy.Value}} active · resting not received{{else}}Not received{{end}}</p></div>
+          <div class="hv3-bal"><dt>Balance so far</dt><dd>{{if .Today.ObservedEnergy.Present}}{{.Today.ObservedEnergy.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
+            <p>{{if .Today.ObservedEnergy.Present}}Observed, not final{{else}}Needs food and burn data{{end}}</p></div>
+        </dl>
+      </div>
     </div>
     <details class="hv3-disclose">
       <summary>{{template "gyst.icon" "info"}}How this is counted</summary>
@@ -75,9 +76,9 @@
     <div class="hv3-grid2">
       <div class="hv3-card hv3-stat">
         <p class="hv3-k">{{template "gyst.icon" "footprints"}}Steps</p>
-        <p class="hv3-v">{{if .Today.StepsWatch.Present}}{{.Today.StepsWatch.Value}} <small>Watch</small>{{else}}<span class="hv3-absent">—</span>{{end}}</p>
-        {{if and .Today.StepsWatch.Present .Today.StepTarget.Present}}<div class="hv3-bar" role="img" aria-label="{{.Today.StepsWatch.Value}} of {{.Today.StepTarget.Value}} Watch steps"><i style="width:{{.Today.StepPercent}}%"></i></div>{{end}}
-        <p class="hv3-s">{{if .Today.StepsPhone.Present}}Phone {{.Today.StepsPhone.Value}} · counted separately{{else}}Phone · not received{{end}}</p>
+        <p class="hv3-v">{{if .Today.Steps.Present}}{{.Today.Steps.Value}} <small>{{.Today.StepsSource}}</small>{{else}}<span class="hv3-absent">—</span>{{end}}</p>
+        {{if and .Today.Steps.Present .Today.StepTarget.Present}}<div class="hv3-bar" role="img" aria-label="{{.Today.Steps.Value}} of {{.Today.StepTarget.Value}} steps, {{.Today.StepsSource}}"><i style="width:{{.Today.StepPercent}}%"></i></div>{{end}}
+        <p class="hv3-s">{{if not .Today.Steps.Present}}No steps received yet{{else if .Today.StepsOther.Present}}{{.Today.OtherSource}} {{.Today.StepsOther.Value}} · counted separately{{else}}{{.Today.OtherSource}} · not received{{end}}</p>
       </div>
       <div class="hv3-card hv3-stat">
         <p class="hv3-k">{{template "gyst.icon" "timer"}}Exercise</p>

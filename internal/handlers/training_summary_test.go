@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -65,5 +66,28 @@ func TestTrainingPageShowsSummary(t *testing.T) {
 	}
 	if strings.Contains(body, "5,000 kg") || strings.Contains(body, "6,180 kg") {
 		t.Fatal("warmup counted in volume")
+	}
+}
+
+// The weekly target is read from the active health plan, never fixed (#54).
+func TestWorkoutTargetFollowsHealthPlan(t *testing.T) {
+	for _, target := range []int64{2, 3} {
+		h := testHandler(t)
+		now := time.Date(2026, 10, 7, 12, 0, 0, 0, h.Service.Location())
+		h.Service.Clock.Now = func() time.Time { return now }
+		cycle := models.HealthCycle{Title: "Fat loss", PrimaryGoal: "Lose weight", StartDate: "2026-09-22", EndDate: "2027-04-04", StrengthSessionsPerWeek: target}
+		if err := h.Service.CreateHealthCycle(&cycle); err != nil {
+			t.Fatal(err)
+		}
+		if err := h.Service.Repo.SaveTraining("hevy", []models.TrainingEntry{{ID: "r", Kind: "routine", Title: "A"}}, now); err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health/training", nil))
+		body := w.Body.String()
+		want := fmt.Sprintf("<strong>0</strong> / %d workouts", target)
+		if !strings.Contains(body, want) || !strings.Contains(body, fmt.Sprintf("Target %d a week", target)) {
+			t.Fatalf("target %d not shown from the plan", target)
+		}
 	}
 }

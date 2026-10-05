@@ -39,7 +39,7 @@ func TestHealthSummaryHidesUnbuiltControls(t *testing.T) {
 		{
 			name:     "no data",
 			response: models.HealthTodayResponse{Date: "2026-09-10"},
-			want:     []string{"Waiting for today&#39;s Apple Health sync", "nothing synced today. Run GYST Sync All on your iPhone.", "No health plan yet", `<span class="hv3-absent">—</span>`, "Phone · not received"},
+			want:     []string{"Waiting for today&#39;s Apple Health sync", "nothing synced today. Run GYST Sync All on your iPhone.", "No health plan yet", `<span class="hv3-absent">—</span>`, "No steps received yet"},
 			absent:   []string{"which is not built yet"},
 		},
 		{
@@ -48,8 +48,18 @@ func TestHealthSummaryHidesUnbuiltControls(t *testing.T) {
 			response: models.HealthTodayResponse{Date: "2026-09-10", HealthCycle: &cycle, Snapshot: &models.DailyHealthSnapshot{
 				HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(0), DietaryCalories: viewFloat(0)},
 			}},
-			want:   []string{`<p class="hv3-v">0 <small>Watch</small></p>`, "Phone · not received"},
+			want:   []string{`<p class="hv3-v">0 <small>Apple Watch</small></p>`, "iPhone · not received"},
 			absent: []string{"nothing synced today"},
+		},
+		{
+			// No Watch count: the iPhone count is shown large and labelled,
+			// never a large dash, and never added to anything.
+			name: "phone steps only",
+			response: models.HealthTodayResponse{Date: "2026-09-10", HealthCycle: func() *models.HealthCycle { c := viewCycle(); c.StepTarget = 10000; return &c }(), Snapshot: &models.DailyHealthSnapshot{
+				HealthMetrics: models.HealthMetrics{StepsPhone: viewInt(5834)},
+			}},
+			want:   []string{`<p class="hv3-v">5,834 <small>iPhone</small></p>`, "Apple Watch · not received", `of 10,000 steps, iPhone`},
+			absent: []string{"No steps received yet"},
 		},
 		{
 			name: "full day",
@@ -60,7 +70,7 @@ func TestHealthSummaryHidesUnbuiltControls(t *testing.T) {
 				},
 			}, Observed: models.ObservedHealthEnergy{ObservedTotalBurn: viewFloat(2200)}},
 			// Steps are shown per source and never summed (9,000 + 4,000).
-			want:   []string{"<dd>2,200</dd>", "1,700 resting + 500 active", "9,000 <small>Watch</small>", "Phone 4,000 · counted separately"},
+			want:   []string{"<dd>2,200</dd>", "1,700 resting + 500 active", "9,000 <small>Apple Watch</small>", "iPhone 4,000 · counted separately"},
 			absent: []string{"13,000", "nothing synced today"},
 		},
 	} {
