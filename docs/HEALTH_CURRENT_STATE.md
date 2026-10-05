@@ -1,8 +1,8 @@
 # GYST Health — Current State (2026-10-05)
 
-**Master branch HEAD:** `6efa27e` (2026-09-14)  
-**Last updated:** Operator reality audit  
-**Status:** Health v3 UI live; integrations operational; next: Nutrition v3, Daily Checklist, My Foods & Products, Health Coach
+**Production:** `6efa27e` (PR #54, merged and deployed 2026-10-05)  
+**Last updated:** 2026-10-05, corrected against code and production (read-only checks)  
+**Status:** Health v3 Today, Workout and More are live; integrations operational. Remaining: Nutrition v3, Daily Checklist, My Foods & Products, lightweight portion support, Health Coach, final real-device QA.
 
 **Note:** This document reflects the **production state** of implemented features. Production has already reported successful Hevy syncs and Apple Health data ingestion. Treat operational features as running unless proven otherwise.
 
@@ -15,7 +15,8 @@
 - Parses: dietary calories, macros (protein, carbs, fat, fiber), activity (steps, exercise minutes), energy (resting + active)
 - Distinguishes NULL (not received) vs 0 (observed zero)
 - Health sync state tracked; stale data flagged (>8 hours)
-- **Current state:** Existing Shortcut sends activity data to GYST; nutrition flow partially complete
+- **Current state:** An existing, working Shortcut (see `docs/HEALTH_SHORTCUT_SETUP.md`) already sends data to GYST. Production has today's dietary calories as well as activity, so nutrition totals are arriving.
+- **Remaining operator task:** finish/verify the MyFitnessPal → Apple Health → Shortcut flow and compare real values end-to-end against MyFitnessPal.
 
 ### Health v3 UI (PR #54 merged, commit `6efa27e`)
 Three pages implemented, replacing old Health view:
@@ -37,7 +38,7 @@ Three pages implemented, replacing old Health view:
 - **Stale data warning:** flagged when Hevy data is >2 hours old
 
 #### 3. Health → More (`/health/more`)
-- Framework exists; awaiting Daily Checklist + My Foods & Products features
+- Health plan, log weight and weight history, data sources with sync state, health goals, health tasks, gym check-in trend. Checklist and My Foods settings will be added here.
 
 ### Weight Logging (PR #48 merged)
 **Page:** Health → Progress (`/health/progress`, `web/templates/health_progress.html`)
@@ -82,12 +83,13 @@ Three pages implemented, replacing old Health view:
 - GYST does not and will not replace MyFitnessPal as the food logger
 
 **Planned lightweight support:**
-- **My Foods & Products:** Quick reference for frequently-logged items (for Health Coach context only)
-- **Meal suggestions:** Portion sizes + hydration reminders (powered by Health Coach)
+- **My Foods & Products:** a lightweight list of foods Jay usually has (name, serving, kcal, macros, notes, active), managed in More and later used by the Coach
+- **Portion/meal suggestions:** ways to close the day's gaps using My Foods, delivered through the Coach
 - **Not:** Full food database, recipe import, or competitive food logging
 
 **Implementation status:**
-- Not yet started; depends on Health Coach context layer
+- Not started. My Foods & Products is built **before** the Coach and becomes part of its context; it isn't blocked by the Coach.
+- Food and product support is planned, not out of scope; only full food logging stays in MyFitnessPal.
 
 ### Hevy Logging / Workout Entry in GYST
 **By design:** Hevy is read-only  
@@ -97,7 +99,7 @@ Three pages implemented, replacing old Health view:
 
 ### Health Coach (LLM Layer)
 **Status:** Not implemented  
-**Planned shape:** Live GYST context (today's health state) + safe tools (target setter, daily log query)  
+**Planned shape:** Live GYST context + retrieval + allowlisted **read-only** tools first (today, plan, weight trend, training, foods, checklist). Any later write needs explicit user confirmation. Provider-neutral (OpenAI or Anthropic), keys server-side only.  
 - Not model fine-tuning on Jay's data
 - Not scheduled work
 - Backend architecture unbuilt
@@ -106,27 +108,27 @@ Three pages implemented, replacing old Health view:
 
 ## Real Gaps (Feature Work Remaining)
 
-**Phase 2 complete (Today, Workout, More pages live with Health v3 UI)**
+**Implemented: Health v3 Today, Workout and More. Not yet complete:** the items below.
 
-**Phase 3 — Remaining features:**
+**Remaining features:**
 
-1. **Nutrition v3 redesign** — Current Nutrition page exists but has not been redesigned to Health v3 standards (layout, components, real-time sync status)
+1. **Nutrition v3 redesign** — The current Nutrition page (`/health/nutrition`) exists and works, but has **not** yet received the Health v3 redesign. Issue #55; a local work-in-progress branch exists (not yet a PR).
 
-2. **Daily Checklist** — Water intake, supplement log, sleep notes (appears in `/health/more`)
-   - Database tables exist; UI not yet built
-   - Manual entry + daily streak tracking
+2. **Daily Checklist** — user-configured habits on Today
+   - **No database tables yet**; needs an additive migration
+   - Binary habits (e.g. creatine taken) are ticked; measured targets (protein 132 / 180 g, water) fill from data
+   - No supplement doses or medical advice
 
-3. **My Foods & Products** — Quick reference for frequently-logged items + meal suggestions
-   - Blocked on Health Coach context layer
-   - Portion size suggestions
+3. **My Foods & Products** — lightweight list of foods Jay usually has (name, serving, kcal, macros, notes, active)
+   - Not blocked; feeds the Coach later
+   - Not a pantry or food logger
 
-4. **Lightweight Portion Support** — Hydration reminders, meal size suggestions
-   - Blocked on Health Coach
+4. **Lightweight portion/meal support** — suggestions that close the day's gaps using My Foods
+   - Needs My Foods; delivered through the Coach
 
-5. **Health Coach context + safe tools** — LLM-powered live context
-   - Safe tools: set targets, query daily logs
-   - Not: fine-tuning on Jay's data, scheduled work
-   - Backend architecture unbuilt
+5. **Health Coach context + read-only tools, then provider integration**
+   - Not started
+   - Not: fine-tuning on Jay's data, sending the whole database, or browser-side keys
 
 6. **Real device QA** — End-to-end testing on iPhone + Watch
    - Apple Health Shortcut nutrition flow
@@ -165,16 +167,17 @@ Three pages implemented, replacing old Health view:
 - Targets default to 0 → displays as absent in UI, not target
 
 ### Steps  
-- **Watch and Phone tracked separately**, never summed
-- Both shown on Today card with notation of source
-- Step target used only for progress ring
+- **Watch and iPhone tracked separately**, never summed
+- Today shows Apple Watch steps when observed, otherwise iPhone steps, labelled with the source; the other source is listed separately
+- The plan's step target drives the bar
 
 ### Training
-- **Volume** = sum of working-set kg weight
-- **Training time** = sum of (end - start) minutes per session
-- **Top progress** = exercises with largest improvement in weight × reps across last 12 weeks
+- **Volume** = sum of load × reps over work sets (normal, failure, dropset) that have both; warmups and bodyweight sets excluded
+- **Training time** = sum of (end − start) for workouts with an end time; others counted as unknown, not zero
+- **Top progress** = change in best estimated 1-rep max (Epley, 1–12 reps) from first to latest session, exercises with 2+ sessions, over 4 wk / 12 wk / 6 mo
+- **Weekly target** = the active plan's strength sessions per week (never hardcoded)
 - **Muscle focus** = primary work sets by muscle group (excluding warmups)
-- All period-aware (last 7/30/84+ days configurable)
+- Windows: muscle focus and group shares 30 days (or 7 / routine targets via Details); top-progress card 12 weeks; Progress view 4 wk / 12 wk / 6 mo
 
 ---
 
@@ -191,45 +194,50 @@ Three pages implemented, replacing old Health view:
 2. **Real device QA (iPhone + Watch):**
    - Verify Hevy syncs workouts every 37 minutes
    - Check weight logging UX (form, undo, chart accuracy)
-   - Test Daily Checklist when available (Water, sleep, supplements)
+   - Test Daily Checklist when available
    - Monitor stale-data warnings (>8 hours without sync)
 
 **For Agent (Feature Work):**
 
 1. **Nutrition v3** — Redesign the current Nutrition page to Health v3 UI standards
-2. **Daily Checklist** — Build UI for Water/Supplements/Sleep in `/health/more`
-3. **My Foods & Products** — Quick reference UI (blocked on Health Coach)
-4. **Health Coach context layer** — Safe tools for live AI interaction
-5. **Real device testing** — Smoke tests on production iPhone/Watch
+2. **Daily Checklist** — additive tables + Today card + settings in More
+3. **My Foods & Products** — lightweight list in More
+4. **Lightweight portion/meal support**
+5. **Health Coach** — context + read-only tools, then one provider adapter
+6. **Real device testing** — production iPhone/Watch
 
 ---
 
 ## Summary
 
-**Phase 2 (Health v3 UI redesign) is live and operational.**
+**Health v3 Today, Workout and More are live. Nutrition v3, Checklist, My Foods, portion support and the Coach remain.**
 
 - **Today page:** Real calories, macros, activity, weight data via Apple Health + manual entry
 - **Workout page:** Real Hevy training syncing every 37 minutes; exercise progress analytics live
-- **More page:** Framework exists; awaiting Daily Checklist + My Foods & Products features
+- **More page:** plan, log weight and weight history, data sources with sync state, health goals, health tasks, gym check-in trend. Checklist and My Foods settings will be added here.
 - **Weight logging:** Live with undo, history chart, trend tracking
 
 **Integrations are operational:**
 - Hevy: Syncing automatically, production tested
-- Apple Health: Activity data reaching GYST; nutrition flow partially complete (MyFitnessPal sync verification needed)
+- Apple Health: activity, energy and daily nutrition totals reaching GYST; MyFitnessPal end-to-end comparison still to verify
 
 **Next feature sequence:**
 1. Verify Apple Health nutrition end-to-end
 2. Nutrition v3 page redesign
-3. Daily Checklist (Water, Supplements, Sleep)
-4. My Foods & Products lightweight support
-5. Health Coach LLM context layer
-6. Real device QA
+3. Daily Checklist
+4. My Foods & Products
+5. Lightweight portion/meal support
+6. Health Coach context + read-only tools
+7. AI provider integration
+8. Real iPhone/PWA QA
 
 ---
 
 ## Code References
 
-- **Health Today:** `internal/handlers/health.go` + `health_view.go` + `web/templates/health.html`
+- **Health Today / More:** `internal/handlers/handlers.go` (`health`, `healthBase`) + `health_v3.go` + `health_view.go` + `web/templates/health.html`, `health_more.html`
+- **Health v3 styles:** `web/static/css/ui-health-v3.css`; tab bar and sidebar sub-links in `web/templates/ui_shell.html`
+- **Training summaries:** `internal/services/training_progress.go`
 - **Hevy Sync:** `internal/providers/hevy/`, `internal/services/training.go`, `internal/handlers/training.go`
 - **Weight:** `internal/handlers/health_progress.go` + `web/templates/health_progress.html`
 - **Models:** `internal/models/health.go`, `internal/models/training.go`
