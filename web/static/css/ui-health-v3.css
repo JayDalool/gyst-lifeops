@@ -259,3 +259,6 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-earlier { margin-top: var(--vn-s3); }
 .hv3-earlier > ul > li { border-top: 1px solid var(--vn-separator); }
 .hv3-earlier details[open] > summary > .gyst-icon, .hv3-earlier[open] > summary > .gyst-icon { transform: rotate(90deg); }
+/* `.hv3 a` outranks `.hv3-btn`; keep filled link-buttons readable. */
+.hv3 a.hv3-btn:not(.secondary) { color: #fff; }
+[data-gyst-theme="dark"] .hv3 a.hv3-btn:not(.secondary) { color: #06101f; }
