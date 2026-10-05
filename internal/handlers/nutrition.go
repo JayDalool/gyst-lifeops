@@ -65,11 +65,12 @@ func buildNutritionWeek(data *nutritionData, history []models.DailyHealthSnapsho
 			nd.Present, nd.Value = true, formatThousands(*v)
 			shown = nd.Value
 			nd.Height = max(2, int(math.Round(*v/top*100)))
-			nd.Over = target > 0 && *v > target
+			// Same rule as the Today card: compare at displayed precision.
+			nd.Over = target > 0 && math.Round(*v) > math.Round(target)
 			if i < 6 {
 				data.WeekLogged++
 				sum += *v
-				if target > 0 && *v <= target {
+				if target > 0 && math.Round(*v) <= math.Round(target) {
 					data.WeekWithin++
 				}
 			}
@@ -81,7 +82,7 @@ func buildNutritionWeek(data *nutritionData, history []models.DailyHealthSnapsho
 		data.WeekAvg = formatThousands(sum / float64(data.WeekLogged))
 	}
 	if target > 0 {
-		data.TargetLine = int(math.Round(target / top * 100))
+		data.TargetLine = max(1, int(math.Round(target/top*100)))
 		data.WeekLabel += fmt.Sprintf(" target %s.", formatThousands(target))
 	}
 }
