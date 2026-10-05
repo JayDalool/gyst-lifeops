@@ -19,6 +19,8 @@ type trainingExerciseView struct {
 type trainingEntryView struct {
 	ID, Title, Date string
 	Exercises       []trainingExerciseView
+	// Health v3 (#53): short labels for the latest-workout card.
+	When, Duration string
 }
 type trainingData struct {
 	HealthData
@@ -29,6 +31,20 @@ type trainingData struct {
 	Week                           trainingWeekView
 	Progress                       []trainingTrendView
 	Groups                         []services.MuscleGroupShare
+	// Health v3 (#53).
+	View         string // overview or progress
+	Period       int    // progress window in weeks: 4, 12 or 26
+	PeriodLabel  string
+	AllProgress  []trainingTrendView
+	PerWeek      []trainingWeekBar
+	PerWeekTotal int
+	Latest       *trainingEntryView
+	Earlier      []trainingEntryView // the rest of the 30 most recent sessions
+}
+
+type trainingWeekBar struct {
+	Count, Height int
+	Label         string
 }
 
 type trainingDayView struct {
@@ -177,10 +193,22 @@ func (h *Handler) training(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	data := trainingData{HealthData: HealthData{Page: "health", Mission: mission}, Connected: h.Service.Training != nil, HasData: !cache.SyncedAt.IsZero(), Error: cache.Error, Mode: r.URL.Query().Get("mode"), Routine: r.URL.Query().Get("routine")}
-	if data.Mode != "7" && data.Mode != "30" {
-		data.Mode = "planned"
+	q := r.URL.Query()
+	data := trainingData{HealthData: HealthData{Page: "health", Mission: mission, HealthTab: "workout"}, Connected: h.Service.Training != nil, HasData: !cache.SyncedAt.IsZero(), Error: cache.Error, Mode: q.Get("mode"), Routine: q.Get("routine"), View: "overview", Period: 12}
+	// The muscle map now opens on logged work; routine targets are one choice away.
+	if data.Mode != "7" && data.Mode != "planned" {
+		data.Mode = "30"
 	}
+	if q.Get("view") == "progress" {
+		data.View = "progress"
+	}
+	switch q.Get("period") {
+	case "4":
+		data.Period = 4
+	case "26":
+		data.Period = 26
+	}
+	data.PeriodLabel = map[int]string{4: "4 weeks", 12: "12 weeks", 26: "6 months"}[data.Period]
 	if data.HasData {
 		data.LastSync = cache.SyncedAt.UTC().Format("Jan 2, 15:04 UTC")
 		data.Stale = h.Service.Now().Sub(cache.SyncedAt) > 2*time.Hour
@@ -194,7 +222,12 @@ func (h *Handler) training(w http.ResponseWriter, r *http.Request) {
 				valid = true
 			}
 		} else if len(data.Workouts) < 30 {
-			data.Workouts = append(data.Workouts, trainingView(e))
+			v := trainingView(e)
+			v.When = dayLabel(e.StartedAt, h.Service.Now(), h.Service.Location())
+			if !e.EndedAt.IsZero() {
+				v.Duration = fmt.Sprintf("%d min", int(math.Round(e.EndedAt.Sub(e.StartedAt).Minutes())))
+			}
+			data.Workouts = append(data.Workouts, v)
 		}
 	}
 	if !valid {
@@ -212,5 +245,25 @@ func (h *Handler) training(w http.ResponseWriter, r *http.Request) {
 	data.Week = trainingWeekViewOf(services.SummarizeTrainingWeek(cache.Entries, now, location), target)
 	data.Progress = trainingTrendViews(services.ExerciseProgress(cache.Entries, now, 84), 3)
 	data.Groups = services.MuscleGroupShares(cache.Entries, now, 30)
+	data.AllProgress = trainingTrendViews(services.ExerciseProgress(cache.Entries, now, data.Period*7), 50)
+	counts := services.WorkoutsPerWeek(cache.Entries, now, location, data.Period)
+	most := 1
+	for _, c := range counts {
+		most = max(most, c)
+		data.PerWeekTotal += c
+	}
+	for i, c := range counts {
+		bar := trainingWeekBar{Count: c, Height: max(4, c*100/most)}
+		if i == 0 {
+			bar.Label = fmt.Sprintf("%d wk ago", data.Period-1)
+		} else if i == len(counts)-1 {
+			bar.Label = "This week"
+		}
+		data.PerWeek = append(data.PerWeek, bar)
+	}
+	if len(data.Workouts) > 0 {
+		data.Latest = &data.Workouts[0]
+		data.Earlier = data.Workouts[1:]
+	}
 	h.render(w, "training.html", data)
 }

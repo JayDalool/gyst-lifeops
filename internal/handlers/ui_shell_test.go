@@ -28,6 +28,13 @@ func TestUIShellFiveLinksAndNestedSelection(t *testing.T) {
 			t.Fatalf("%s: %d", tt.path, rec.Code)
 		}
 		nav := primaryMarkup(t, rec.Body.String())
+		// Inside Health the sidebar also lists Health's own sections in a
+		// labelled group (#53, approved design C5). The five primary
+		// destinations and their single current item are checked without it.
+		if i := strings.Index(nav, `<div class="gyst-health-sub"`); i >= 0 {
+			end := strings.Index(nav[i:], "</div>")
+			nav = nav[:i] + nav[i+end+len("</div>"):]
+		}
 		if strings.Count(nav, "<a ") != 5 || strings.Count(nav, `aria-current="page"`) != 1 {
 			t.Fatalf("invalid nav: %s", nav)
 		}

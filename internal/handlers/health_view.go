@@ -45,6 +45,14 @@ type HealthMacroView struct {
 	Percent      int
 	HasBar       bool // only when both sides are known
 	ProgressAria string
+	// State is "ok" when a minimum (protein, fiber) is met and "warn" when a
+	// limit (calories, carbs, fat) is exceeded; empty otherwise.
+	State string
+	// Note is the short line under a macro: "58 g to go", "Target met", "12 g over".
+	Note string
+	// Over is decided from the numbers at displayed precision, so 2000.3 of
+	// 2000 is not "over" (#54 review).
+	Over bool
 }
 
 // HealthTodayView is everything the Day view renders.
@@ -75,6 +83,19 @@ type HealthTodayView struct {
 	ObservedEnergy HealthMetricView
 	TargetEnergy   HealthMetricView
 
+	StepTarget HealthMetricView
+	// Steps is the one count shown large: Apple Watch when observed,
+	// otherwise iPhone. StepsSource names it; StepsOther is the other source,
+	// shown separately when both exist. The two are never added together.
+	Steps           HealthMetricView
+	StepsSource     string
+	StepsOther      HealthMetricView
+	OtherSource     string
+	StepPercent     int // Steps against the target; 0 when either is absent
+	CaloriePercent  int // for the ring: eaten against target, capped at 100
+	CaloriesOver    bool
+	BudgetAbs       string // FoodRemaining without its sign, for "120 kcal over"
+	Nutrients       []HealthMacroView
 	StepsWatch      HealthMetricView
 	StepsPhone      HealthMetricView
 	ActiveEnergy    HealthMetricView
@@ -89,6 +110,9 @@ const staleAfter = 8 * time.Hour
 
 func formatThousands(value float64) string {
 	rounded := strconv.FormatFloat(math.Round(value), 'f', 0, 64)
+	if rounded == "-0" { // −0.3 rounds to zero; never show a signed zero
+		rounded = "0"
+	}
 	negative := strings.HasPrefix(rounded, "-")
 	rounded = strings.TrimPrefix(rounded, "-")
 
@@ -147,6 +171,7 @@ func buildMacro(label string, consumed *float64, target float64, unit string) He
 
 	remaining := target - *consumed
 	macro.Remaining = HealthMetricView{Value: formatThousands(remaining), Unit: unit, Present: true}
+	macro.Over = math.Round(*consumed) > math.Round(target)
 	macro.Percent = int(math.Round((*consumed / target) * 100))
 	if macro.Percent < 0 {
 		macro.Percent = 0
@@ -154,6 +179,22 @@ func buildMacro(label string, consumed *float64, target float64, unit string) He
 	macro.HasBar = true
 	macro.ProgressAria = fmt.Sprintf("%s: %s of %s %s", label, macro.Consumed.Value, macro.Target.Value, unit)
 	return macro
+}
+
+// Short is the label for small tiles ("Carbs" rather than "Carbohydrates").
+func (m HealthMacroView) Short() string {
+	if m.Label == "Carbohydrates" {
+		return "Carbs"
+	}
+	return m.Label
+}
+
+// Unit is the macro's unit, whichever side carries it.
+func (m HealthMacroView) Unit() string {
+	if m.Target.Unit != "" {
+		return m.Target.Unit
+	}
+	return m.Consumed.Unit
 }
 
 // buildHealthTodayView turns the service response into presentation values.
@@ -215,6 +256,47 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 	// double-counts. This is an architectural rule, not a display preference.
 	view.StepsWatch = metricFromInt(snapshot.StepsWatch, "")
 	view.StepsPhone = metricFromInt(snapshot.StepsPhone, "")
+	view.StepTarget = metricFromTarget(float64(cycle.StepTarget), "")
+	primary := snapshot.StepsWatch
+	view.Steps, view.StepsSource, view.StepsOther, view.OtherSource = view.StepsWatch, "Apple Watch", view.StepsPhone, "iPhone"
+	if snapshot.StepsWatch == nil && snapshot.StepsPhone != nil {
+		primary = snapshot.StepsPhone
+		view.Steps, view.StepsSource, view.StepsOther, view.OtherSource = view.StepsPhone, "iPhone", view.StepsWatch, "Apple Watch"
+	}
+	if primary != nil && cycle.StepTarget > 0 {
+		view.StepPercent = int(math.Min(100, math.Round(float64(*primary)/float64(cycle.StepTarget)*100)))
+	}
+	limits := map[string]bool{"Calories": true, "Carbohydrates": true, "Fat": true}
+	for i := range view.Macros {
+		m := &view.Macros[i]
+		if !m.HasBar {
+			continue
+		}
+		over := m.Over
+		left := strings.TrimPrefix(m.Remaining.Value, "−")
+		switch {
+		case over && limits[m.Label]:
+			m.State, m.Note = "warn", left+" "+m.Unit()+" over"
+		case over || m.Remaining.Value == "0":
+			m.Note = "Target met"
+			if !limits[m.Label] {
+				m.State = "ok"
+			}
+		default:
+			m.Note = left + " " + m.Unit() + " to go"
+		}
+	}
+	view.Calories = view.Macros[0]
+	view.Nutrients = view.Macros[1:]
+	// The ring and tiles use the calorie row's own target − eaten, so they
+	// need both observations and nothing else.
+	if view.Calories.HasBar {
+		view.BudgetAbs = strings.TrimPrefix(view.Calories.Remaining.Value, "−")
+	}
+	if view.Calories.HasBar {
+		view.CaloriePercent = int(math.Min(100, float64(view.Calories.Percent)))
+		view.CaloriesOver = view.Calories.Over
+	}
 	view.ActiveEnergy = metricFromFloat(snapshot.ActiveEnergyKcal, "kcal")
 	view.RestingEnergy = metricFromFloat(snapshot.RestingEnergyKcal, "kcal")
 	view.ExerciseMinutes = metricFromFloat(snapshot.ExerciseMinutes, "min")

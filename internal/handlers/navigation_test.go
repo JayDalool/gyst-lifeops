@@ -118,7 +118,9 @@ func TestHealthFoundation(t *testing.T) {
 				t.Errorf("health page shows a projection it does not compute: %q", banned)
 			}
 		}
-		for _, text := range []string{"Health sections", "Summary", "Nutrition", "Training", "Progress", "Plan", "Today's energy", "food calories remaining", "Observed energy balance", "Activity", "Weight trend", "Health goals", "Health tasks", "Gym week", "Live app data", "viewport-fit=cover"} {
+		// Health v3 (#53): Health's own sections, the four-number energy card,
+		// and the rest of the old page reachable from More.
+		for _, text := range []string{"Health sections", `href="/health/training"`, `href="/health/nutrition"`, `href="/health/more"`, "No food logged yet", "Burned so far", "Balance so far", "Macros", "Activity", "Weight", "viewport-fit=cover"} {
 			if !strings.Contains(body, text) {
 				t.Errorf("health missing %q", text)
 			}
@@ -134,13 +136,14 @@ func TestHealthFoundation(t *testing.T) {
 	}
 }
 
+// Goals, tasks and the gym trend moved from the old Health page to More (#53).
 func TestHealthPreservesLiveContent(t *testing.T) {
-	body := renderBody(t, "health.html", HealthData{
+	body := renderBody(t, "health_more.html", healthMoreData{HealthData: HealthData{
 		Page:        "health",
 		HealthGoals: []models.GoalWithProgress{{Goal: models.Goal{ID: 72, Title: "Weekly walking goal", TargetValue: 5, CurrentValue: 2}, Progress: 40}},
 		HealthTasks: []models.Task{{ID: 83, Title: "Evening stretch", RepeatType: "daily", Priority: "medium"}},
-	})
-	for _, text := range []string{"Weekly walking goal", `href="/goals/72"`, "Evening stretch", `href="/tasks/83"`, "40%"} {
+	}})
+	for _, text := range []string{"Weekly walking goal", `href="/goals/72"`, "Evening stretch", `href="/tasks/83"`, "40%", `href="/goals/new"`, `href="/health/plan"`, `data-chart="line"`, "Gym check-in trend"} {
 		if !strings.Contains(body, text) {
 			t.Errorf("live health content missing %q", text)
 		}

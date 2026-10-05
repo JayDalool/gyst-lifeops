@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -58,12 +59,35 @@ func TestTrainingPageShowsSummary(t *testing.T) {
 		t.Fatalf("status %d", w.Code)
 	}
 	body := w.Body.String()
-	for _, want := range []string{"This week", "<strong>1</strong> workouts", "1,180 kg", "45 min", "Top progress · 12 weeks", "Leg Press", `training-trend-change up">&#43;18%`, "Best 118 kg × 10 · 2 sessions", "Muscle groups · 30 days", "Legs", "100%", "workout logged"} {
+	for _, want := range []string{"This week", "<strong>1</strong> workouts", "1,180 kg", "45 min", "Top progress · 12 weeks", "Leg Press", `hv3-prog-pct">&#43;18%`, "Best 118 kg × 10", "Muscle focus", "Legs", "100%", "workout logged", "Latest workout", "45 min · 1 exercise"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("training page missing %q", want)
 		}
 	}
 	if strings.Contains(body, "5,000 kg") || strings.Contains(body, "6,180 kg") {
 		t.Fatal("warmup counted in volume")
+	}
+}
+
+// The weekly target is read from the active health plan, never fixed (#54).
+func TestWorkoutTargetFollowsHealthPlan(t *testing.T) {
+	for _, target := range []int64{2, 3} {
+		h := testHandler(t)
+		now := time.Date(2026, 10, 7, 12, 0, 0, 0, h.Service.Location())
+		h.Service.Clock.Now = func() time.Time { return now }
+		cycle := models.HealthCycle{Title: "Fat loss", PrimaryGoal: "Lose weight", StartDate: "2026-09-22", EndDate: "2027-04-04", StrengthSessionsPerWeek: target}
+		if err := h.Service.CreateHealthCycle(&cycle); err != nil {
+			t.Fatal(err)
+		}
+		if err := h.Service.Repo.SaveTraining("hevy", []models.TrainingEntry{{ID: "r", Kind: "routine", Title: "A"}}, now); err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health/training", nil))
+		body := w.Body.String()
+		want := fmt.Sprintf("<strong>0</strong> / %d workouts", target)
+		if !strings.Contains(body, want) || !strings.Contains(body, fmt.Sprintf("Target %d a week", target)) {
+			t.Fatalf("target %d not shown from the plan", target)
+		}
 	}
 }

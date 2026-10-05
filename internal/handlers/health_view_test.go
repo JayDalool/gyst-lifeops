@@ -246,7 +246,7 @@ func TestHealthPageRendersWithoutData(t *testing.T) {
 	if strings.Contains(body, "executing \"") {
 		t.Fatalf("template error: %s", body)
 	}
-	if !strings.Contains(body, "No data for Sep 10, 2026") {
+	if !strings.Contains(body, "Waiting for today&#39;s Apple Health sync") || !strings.Contains(body, "No food logged yet") {
 		t.Error("empty state is not shown")
 	}
 	// The old demonstration numbers must be gone for good.
@@ -298,11 +298,38 @@ func TestHealthPageRendersWithData(t *testing.T) {
 		}
 	}
 	// The two energy concepts must both be present and labelled distinctly.
-	if !strings.Contains(body, "food calories remaining") || !strings.Contains(body, "Observed energy balance") {
+	if !strings.Contains(body, "food budget left") || !strings.Contains(body, "Balance so far") || !strings.Contains(body, "Observed, not final") {
 		t.Error("food budget and observed balance are not both labelled")
 	}
 	// Steps are never summed: 7421+6210=13631 must not appear.
 	if strings.Contains(body, "13,631") {
 		t.Error("watch and phone steps were summed")
+	}
+}
+
+// Steps shown large prefer the Watch, fall back to the iPhone, and are never
+// added together (#54 review).
+func TestStepsPreferWatchThenIPhone(t *testing.T) {
+	cycle := viewCycle()
+	cycle.StepTarget = 10000
+	for _, tc := range []struct {
+		name                  string
+		watch, phone          *int64
+		value, source, other  string
+		percent               int
+		present, otherPresent bool
+	}{
+		{"both", viewInt(7000), viewInt(9000), "7,000", "Apple Watch", "iPhone", 70, true, true},
+		{"watch zero, phone present", viewInt(0), viewInt(9000), "0", "Apple Watch", "iPhone", 0, true, true},
+		{"phone only", nil, viewInt(5834), "5,834", "iPhone", "Apple Watch", 58, true, false},
+		{"neither", nil, nil, "", "Apple Watch", "iPhone", 0, false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			snap := models.DailyHealthSnapshot{HealthMetrics: models.HealthMetrics{StepsWatch: tc.watch, StepsPhone: tc.phone}}
+			v := buildHealthTodayView(models.HealthTodayResponse{Date: "2026-09-10", Snapshot: &snap, HealthCycle: &cycle}, viewNow())
+			if v.Steps.Present != tc.present || v.Steps.Value != tc.value || v.StepsSource != tc.source || v.OtherSource != tc.other || v.StepPercent != tc.percent || v.StepsOther.Present != tc.otherPresent {
+				t.Fatalf("got steps %+v source %q other %+v %q percent %d", v.Steps, v.StepsSource, v.StepsOther, v.OtherSource, v.StepPercent)
+			}
+		})
 	}
 }
