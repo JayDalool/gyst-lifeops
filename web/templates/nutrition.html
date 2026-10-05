@@ -1,27 +1,58 @@
 {{define "content"}}
-<div class="gyst-scope health-ui nutrition-ui">
-  <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Nutrition</h1><p class="gyst-caption">Your recorded intake and daily targets.</p></div><a class="btn" href="/health/plan">Edit targets</a></header>
-  <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition" aria-current="page">Nutrition</a><a href="/health/training">Training</a><a href="/health/progress">Progress</a><a href="/health/plan">Plan</a></nav>
-  <section class="card nutrition-context" aria-label="Nutrition data status">
-    <h2>Today · {{niceDate .Today.Date}}</h2>
-    {{if not .HasNutrition}}<p class="meta">No nutrition data received for today. Log food in MyFitnessPal and run your Health Sync Shortcut after it reaches Apple Health.</p>{{end}}
-    {{if .Today.LastSyncedStale}}<p class="meta nutrition-stale">Data may be out of date. Daily snapshot updated {{.Today.LastSynced}}.</p>{{else if .Today.HasLastSynced}}<p class="meta">Daily snapshot updated {{.Today.LastSynced}}.</p>{{else}}<p class="meta">Update time unavailable.</p>{{end}}
-    <p class="meta">This update time covers the daily snapshot. Individual nutrients may have arrived earlier; missing values are shown separately.</p>
-    {{if .Today.HasCycle}}<p class="meta">Targets: {{.Today.CycleTitle}}</p>{{else}}<p class="meta">No current health plan. <a href="/health/plan">Set your targets</a> to compare intake.</p>{{end}}
-  </section>
-  <div class="nutrition-grid">
-    {{range .Metrics}}
-    <section class="card nutrition-metric" aria-label="{{.Label}}">
-      <h2>{{.Label}}</h2>
-      {{if eq .Label "Calories"}}<div class="gyst-ring nutrition-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="gyst-ring-track" cx="60" cy="60" r="52"/>{{if .HasBar}}<circle class="gyst-ring-fill" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="{{.Progress.Fill}} 100"/>{{end}}</svg><div class="gyst-ring-copy">{{if .Consumed.Present}}<strong>{{.Consumed.Value}}</strong><span>{{.Consumed.Unit}} consumed</span>{{else}}<span>No data</span>{{end}}</div></div>
-      {{else}}<p class="nutrition-value">{{if .Consumed.Present}}<strong>{{.Consumed.Value}}</strong> <span>{{.Consumed.Unit}} consumed</span>{{else}}<span>No data</span>{{end}}</p>{{end}}
-      <p class="meta">{{if .Target.Present}}Target: {{.Target.Value}} {{.Target.Unit}}{{else}}Target not set{{end}}</p>
-      {{if .HasBar}}{{template "gyst.progress" .Progress}}<p class="nutrition-difference">{{.Difference}} {{.Remaining.Unit}} {{.DifferenceLabel}}</p>
-      {{else}}<p class="meta">{{if not .Consumed.Present}}Not received yet{{else}}Set a target to show progress{{end}}</p>{{end}}
-    </section>
+{{/* Health v3 · Nutrition (#55). Daily totals from MyFitnessPal via Apple
+     Health; absent values read "—", never 0. No meals: the data has none. */}}
+<div class="gyst-scope hv3">
+<header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow">{{niceDate .Today.Date}}</p><h1>Nutrition</h1></div></header>
+
+{{if not .Today.HasCycle}}
+<p class="hv3-banner">{{template "gyst.icon" "info"}}<span>No health plan yet, so intake isn't compared against targets.</span><a href="/health/plan">Set targets</a></p>
+{{end}}
+{{if and .Today.HasSnapshot .Today.LastSyncedStale}}
+<p class="hv3-banner warn" role="status">{{template "gyst.icon" "refresh-cw"}}<span>Apple Health last synced {{.Today.LastSynced}}</span><span class="hv3-chip warn">Stale</span></p>
+{{end}}
+
+<div class="hv3-nut">
+  <section class="hv3-card hv3-kcal hv3-span" aria-labelledby="kcal-title">
+    {{with .Today.Calories}}
+    <div class="hv3-card-h"><h2 id="kcal-title" class="hv3-k">{{template "gyst.icon" "flame"}}Calories</h2>{{if .HasBar}}<span class="hv3-chip{{if $.Today.CaloriesOver}} warn{{end}}">{{$.Today.BudgetAbs}} kcal {{if $.Today.CaloriesOver}}over{{else}}left{{end}}</span>{{end}}</div>
+    <p class="hv3-kcal-v">{{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}<small>{{if .Target.Present}} / {{.Target.Value}} kcal{{else}} kcal{{end}}</small></p>
+    {{if .Target.Present}}<div class="hv3-bar lg{{if not .HasBar}} empty{{else if eq .State "warn"}} warn{{end}}" role="img" aria-label="{{.ProgressAria}}"><i style="width:{{if .HasBar}}{{if gt .Percent 100}}100{{else}}{{.Percent}}{{end}}{{else}}0{{end}}%"></i></div>{{end}}
+    <p class="hv3-s">{{if .Consumed.Present}}Eaten today, from MyFitnessPal{{else}}No food logged yet today{{end}}</p>
     {{end}}
-  </div>
-  <p class="gyst-caption">Remaining = target − consumed. Observed energy balance is shown separately in <a href="/health#summary">Health summary</a>.</p>
-  <section class="card"><h2>Meals &amp; planning</h2><p class="meta">GYST receives daily nutrition totals, not individual meals. Keep logging meals in MyFitnessPal.</p><p class="meta">Meal history, recipes, food search and portion planning are not available in GYST yet.</p></section>
+  </section>
+
+  <section class="hv3-section hv3-span" aria-labelledby="macro-title">
+    <h2 id="macro-title" class="hv3-sr">Macros</h2>
+    <div class="hv3-grid4">
+      {{range .Today.Nutrients}}
+      <div class="hv3-card hv3-mtile">
+        <span class="hv3-label">{{.Short}}</span>
+        <p class="hv3-v">{{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}<small>{{if .Target.Present}} / {{.Target.Value}} g{{else}} g{{end}}</small></p>
+        {{if .Target.Present}}<div class="hv3-bar{{if not .HasBar}} empty{{else if .State}} {{.State}}{{end}}" role="img" aria-label="{{.ProgressAria}}"><i style="width:{{if .HasBar}}{{if gt .Percent 100}}100{{else}}{{.Percent}}{{end}}{{else}}0{{end}}%"></i></div>{{end}}
+        <span class="hv3-note{{if eq .State "warn"}} warn{{end}}">{{if .Note}}{{.Note}}{{else if not .Consumed.Present}}Not received{{else}}No target{{end}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  {{if .Week}}
+  <section class="hv3-card hv3-span" aria-labelledby="week-title">
+    <div class="hv3-card-h"><h2 id="week-title" class="hv3-k">Last 7 days</h2>{{if .WeekAvg}}<span class="hv3-s">Avg {{.WeekAvg}} kcal</span>{{end}}</div>
+    <div class="hv3-kbars" role="img" aria-label="{{.WeekLabel}}">
+      {{if .TargetLine}}<i class="hv3-tline" style="bottom:{{.TargetLine}}%"></i>{{end}}
+      {{range .Week}}<span class="{{if not .Present}}none{{else if .Over}}over{{end}}{{if .IsToday}} today{{end}}" style="height:{{if .Present}}{{.Height}}{{else}}4{{end}}%"></span>{{end}}
+    </div>
+    <div class="hv3-kdays" aria-hidden="true">{{range .Week}}<span{{if .IsToday}} class="today"{{end}}>{{.Letter}}</span>{{end}}</div>
+    <p class="hv3-s">{{if .WeekLogged}}{{if .TargetLine}}{{.WeekWithin}} of {{.WeekLogged}} logged days within target · {{end}}today so far{{else}}No food logged in the previous six days{{end}}</p>
+  </section>
+  {{end}}
+
+  <section class="hv3-src hv3-span" aria-label="Where nutrition comes from">
+    <span class="hv3-app mfp" aria-hidden="true">MFP</span>
+    <span class="hv3-row-copy"><span class="hv3-strong">MyFitnessPal → Apple Health</span><span class="hv3-s">{{if .Today.HasLastSynced}}Synced {{.Today.LastSynced}}{{else if .Today.HasSnapshot}}Synced today{{else}}Nothing synced today{{end}}{{if .Today.LastSyncedStale}} · <span class="hv3-chip warn">Stale</span>{{end}}</span></span>
+    <a class="hv3-btn small" href="https://www.myfitnesspal.com/" target="_blank" rel="noopener noreferrer">Open {{template "gyst.icon" "external-link"}}<span class="hv3-sr">MyFitnessPal (opens in a new tab)</span></a>
+  </section>
+</div>
+<p class="hv3-foot">Daily totals only. Log meals in MyFitnessPal; GYST reads the totals and doesn't log food.</p>
 </div>
 {{end}}
