@@ -2,6 +2,17 @@
 <div class="gyst-scope health-ui">
  <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Progress</h1><p class="gyst-caption">Your recorded measurements over time.</p></div><a class="btn" href="/health/plan">Manage health plan</a></header>
  <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training">Training</a><a href="/health/progress" aria-current="page">Progress</a><a href="/health/plan">Plan</a></nav>
+ <section class="card weight-log" id="log" aria-labelledby="log-title">
+  <h2 id="log-title">Log weight</h2>
+  {{if .Logged}}<div class="weight-logged" role="status"><p>Logged <strong>{{.Logged.Value}} kg</strong></p><form method="post" action="/health/weight/{{.Logged.ID}}/undo"><button class="btn quiet" type="submit">Undo</button></form></div>{{end}}
+  {{if .Undone}}<p class="weight-logged" role="status">Reading removed.</p>{{end}}
+  {{if .Error}}<p class="weight-error" role="alert" id="weight-error">{{.Error}}</p>{{end}}
+  <form class="weight-form" method="post" action="/health/weight">
+   <label class="gyst-field"><span>Weight (kg)</span><input name="weight_kg" inputmode="decimal" autocomplete="off" required value="{{.WeightValue}}"{{if .Error}} aria-invalid="true" aria-describedby="weight-error"{{end}}></label>
+   <label class="gyst-field"><span>Measured</span><input type="datetime-local" name="measured_at" value="{{.MeasuredValue}}" max="{{.MaxMeasured}}"></label>
+   <button class="btn" type="submit">Save</button>
+  </form>
+ </section>
  <section class="card">
   <h2>Weight history</h2>
   <nav class="health-links" aria-label="Weight history range"><a href="?range=30" {{if eq .Range "30"}}aria-current="page"{{end}}>30 days</a><a href="?range=90" {{if eq .Range "90"}}aria-current="page"{{end}}>90 days</a><a href="?range=all" {{if eq .Range "all"}}aria-current="page"{{end}}>All time</a></nav>

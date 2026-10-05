@@ -120,3 +120,12 @@
 :root .health-cycle-list .health-cycle-selected { color: var(--gyst-blue); }
 @media (min-width: 600px) { :root .health-plan-fields { grid-template-columns: repeat(2,minmax(0,1fr)); } :root .health-plan-wide { grid-column: 1 / -1; } }
 @media (min-width: 1024px) { :root .health-plan-layout { grid-template-columns: minmax(0,640px) minmax(0,1fr); } }
+
+/* Log weight (Issue #47) */
+:root .weight-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: var(--gyst-space-3); align-items: end; }
+:root .weight-form input { min-height: 44px; font-size: 16px; }
+:root .weight-form .btn { min-height: 44px; }
+:root .weight-logged { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+:root .weight-logged p, :root p.weight-logged { margin: 0; }
+:root .weight-logged .btn { min-height: 44px; }
+:root .weight-error { margin: 0 0 12px; color: var(--gyst-danger-text); font-weight: 600; }
