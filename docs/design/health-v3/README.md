@@ -33,10 +33,19 @@ Screenshots: [`screenshots/`](screenshots/).
    The only manual input is weight, because no source supplies it today.
 7. **Progressive disclosure.** Muscle table, workout sets, energy formula, food
    details and "What the coach can see" sit behind a tap.
-8. **Checklist is the user's.** Supplements are user-added checkboxes with no
-   doses. Protein and water are measured targets (132 / 190 g), not checkboxes.
-9. **Coach shows its sources.** Each reply ends with "Used: …" listing the data
-   it drew on.
+8. **Checklist lives on Today.** One simple card. Supplements are user-added
+   checkboxes with no doses. Protein and water tick themselves when the
+   measured value reaches the target (dashed circle until then).
+9. **Coach is a chat, not a dashboard.** A row of chips shows what it knows
+   today (kcal left, protein to go, workouts, weight; tap for the full list).
+   Empty state: one question and grouped suggestions (Food, Training). Replies
+   are plain text with an avatar, plus structured parts where useful: meal
+   cards from My foods with protein and kcal, small stat tiles, follow-up
+   chips, and a "Based on …" line. "New chat" clears the thread.
+10. **Nutrition answers "what's left and how to close it".** Calories as one
+    big number and bar, four macro tiles (to go / met / over), a "Close the
+    protein gap" card using My foods, a 7-day calorie chart against the target
+    line, and a one-line MyFitnessPal source row with Open.
 
 ## Conflicts with the vNext design documents (need Jay's decision)
 
@@ -63,6 +72,8 @@ If approved, these become a new entry in `13A_DESIGN_DECISIONS.md`.
 | Muscle focus as % per group | Existing `SummarizeTraining` counts sets per muscle; a grouping to Legs/Back/… is new |
 | Water target | No water field in the daily sync or plan |
 | Meals | The sync stores daily totals only. The section is conditional and hidden when absent |
+| Nutrition 7-day chart | Supported: `daily_health_snapshots` already keeps one row per day |
+| Protein gap suggestions | Needs My foods (below) |
 | Daily checklist, My foods & products | No tables |
 | Health Coach | No provider, context builder or storage |
 | Status line ("On track so far") | Rule needs agreeing (calorie target only, today) |

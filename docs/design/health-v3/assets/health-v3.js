@@ -35,6 +35,7 @@
     weight: { start: 95.5, startLabel: 'Sep 22', series: weightSeries(95.5, 92.4, 12), lastLabel: 'Today' },
     sync: { apple: '6:40 PM', stale: false },
     meals: [['Breakfast', 420], ['Lunch', 610], ['Snacks', 420]],
+    history: [2210, 2380, 1980, 2150, 2420, 2090],
     hevy: {
       connected: true, synced: '7:05 PM', doneOffsets: [0, 3], volume: 14820, timeMin: 92,
       progress: [
@@ -59,18 +60,18 @@
     partial: () => {
       const d = full();
       d.food = null; d.energy = { active: 180, resting: null }; d.steps = { watch: 2140, phone: null };
-      d.exercise = { min: 0, week: [30, 0, 52, 0, 0, 38, 0] }; d.water = null; d.meals = null;
+      d.exercise = { min: 0, week: [30, 0, 52, 0, 0, 38, 0] }; d.water = null; d.meals = null; d.history = [2210, null, 1980];
       d.weight = { start: 92.4, startLabel: 'Today', series: [92.4], lastLabel: 'Today' };
       d.hevy = { ...d.hevy, doneOffsets: [3], volume: 5120, timeMin: 44, progress: [], latest: { ...d.hevy.latest, when: 'Thursday' }, weeks: [0, 0, 0, 1] };
       return d;
     },
     empty: () => ({
       plan: null, targets: null, food: null, energy: null, steps: null, exercise: null, water: null, weight: null,
-      sync: null, meals: null, hevy: { connected: false }, checks: [], foods: []
+      sync: null, meals: null, history: null, hevy: { connected: false }, checks: [], foods: []
     }),
     long: () => {
       const d = full();
-      d.food = { kcal: 12345, protein: 1234, carbs: 2210, fat: 970, fiber: 305 };
+      d.food = { kcal: 12345, protein: 1234, carbs: 2210, fat: 970, fiber: 305 }; d.history = [12000, 2380, 98765, 2150, 2420, 2090]; d.checks.push({ id: 'lg', name: 'Stretch hamstrings and hips for ten minutes after the evening walk', done: false });
       d.energy = { active: 12450, resting: 2100 }; d.steps = { watch: 123456, phone: 98765 };
       d.exercise = { min: 1234, week: [300, 0, 520, 0, 0, 380, 1234] };
       d.weight = { start: 199.9, startLabel: 'Sep 22', series: weightSeries(199.9, 188.8, 12), lastLabel: 'Today' };
@@ -277,7 +278,8 @@
         ${hero}
         ${D.sync ? `<section class="section macros" aria-labelledby="mac-h"><div class="section-h"><h2 id="mac-h">Macros</h2><a href="nutrition.html">Nutrition</a></div><div class="grid-4">${macroTiles()}</div></section>` : ''}
         ${activity}
-        <div class="span">${weightCard()}</div>
+        ${weightCard()}
+        ${checklistCard()}
       </div>${protoBar()}`;
   }
 
@@ -355,6 +357,11 @@
   }
 
   /* ---------- Nutrition ---------- */
+  function macroLeft(k, v, tg) {
+    if (v == null || !tg) return '';
+    if (LIMIT[k] && v > tg) return `${n(v - tg)} g over`;
+    return v >= tg ? 'Target met' : `${n(tg - v)} g to go`;
+  }
   function renderNutrition() {
     const t = D.targets, f = D.food;
     if (!D.sync) {
@@ -362,86 +369,137 @@
         <section class="card hero empty"><span class="tile idle">${ic('apple')}</span><h2 class="title">No food data yet</h2><p>Log food in MyFitnessPal and share it with Apple Health.</p><a class="btn" href="settings.html#sources">Set up sources</a></section>${protoBar()}`;
       return;
     }
-    const over = t && f && f.kcal > t.kcal;
-    const hero = `<section class="card hero" aria-labelledby="nc-h"><h2 class="sr" id="nc-h">Calories</h2><div class="cal">
-      ${ring({ value: f && t ? pct(f.kcal, t.kcal) : null, size: 168, sw: 14, cls: over ? 'warn' : '', label: f ? `${n(f.kcal)} of ${t ? n(t.kcal) : 'no target'} calories` : 'No food logged yet',
-        center: f ? `<span class="big num">${n(f.kcal)}</span><span class="big-l">${t ? `of ${n(t.kcal)} kcal` : 'kcal'}</span>` : `<span class="big missing">—</span><span class="big-l">No food logged yet</span>` })}
-      <dl class="cal-stats"><div><dt>Consumed</dt><dd class="num">${f ? n(f.kcal) : '<span class="missing">—</span>'}</dd></div>
-        <div><dt>${over ? 'Over' : 'Left'}</dt><dd class="num">${f && t ? n(Math.abs(t.kcal - f.kcal)) : '<span class="missing">—</span>'}</dd></div>
-        <div><dt>Target</dt><dd class="num">${t ? n(t.kcal) : '<span class="missing">Not set</span>'}</dd></div></dl></div></section>`;
-    const rows = [['Protein', 'protein'], ['Carbs', 'carbs'], ['Fat', 'fat'], ['Fiber', 'fiber']].map(([l, k]) => {
-      const v = f ? f[k] : null, tg = t ? t[k] : null, p = pct(v, tg);
-      return `<li class="measure"><div class="copy"><div class="top"><span class="title">${l}</span><span class="num">${v == null ? '<span class="missing">— not received</span>' : `<b>${n(v)}</b>${tg ? ` / ${n(tg)} g` : ' g'}`}</span></div>
-        ${tg ? `<div class="bar${v == null ? ' missing' : ' ' + macroState(k, v, tg)}" aria-hidden="true"><i style="--v:${p || 0}%"></i></div>` : ''}
-        ${v != null && tg ? `<span class="card-s num">${v > tg && LIMIT[k] ? `${n(v - tg)} g over` : v >= tg ? 'Target met' : `${n(tg - v)} g left`}</span>` : ''}</div></li>`;
+    const over = t && f && f.kcal > t.kcal, left = t && f ? t.kcal - f.kcal : null;
+    const hero = `<section class="card hero kcal span" aria-labelledby="nc-h">
+      <div class="kcal-top"><h2 class="card-k" id="nc-h">${ic('flame', 'i-16')}Calories</h2>${left != null ? `<span class="chip ${over ? 'warn' : 'nodot'} num">${over ? `${n(-left)} over` : `${n(left)} left`}</span>` : ''}</div>
+      <p class="kcal-v num">${f ? n(f.kcal) : '<span class="missing">—</span>'}<small>${t ? ` / ${n(t.kcal)} kcal` : ' kcal'}</small></p>
+      ${t ? `<div class="bar lg${f ? (over ? ' warn' : '') : ' missing'}" role="img" aria-label="${f ? `${n(f.kcal)} of ${n(t.kcal)} calories` : 'No food logged yet'}"><i style="--v:${f ? pct(f.kcal, t.kcal) : 0}%"></i></div>` : ''}
+      <p class="card-s">${f ? 'Eaten today, from MyFitnessPal' : 'No food logged yet today'}</p></section>`;
+    const tiles = [['Protein', 'protein'], ['Carbs', 'carbs'], ['Fat', 'fat'], ['Fiber', 'fiber']].map(([l, k]) => {
+      const v = f ? f[k] : null, tg = t ? t[k] : null, st = macroState(k, v, tg);
+      return `<div class="card mtile"><span class="name">${l}</span><p class="mv num">${v == null ? '<span class="missing">—</span>' : n(v)}<small>${tg ? ` / ${n(tg)} g` : ' g'}</small></p>
+        ${tg ? `<div class="bar${v == null ? ' missing' : ' ' + st}" aria-hidden="true"><i style="--v:${pct(v, tg) || 0}%"></i></div>` : ''}
+        <span class="card-s num${st === 'warn' ? ' warn-text' : ''}">${v == null ? 'Not received' : macroLeft(k, v, tg) || 'No target'}</span></div>`;
     }).join('');
-    const meals = D.meals ? `<section class="section" aria-labelledby="ml-h"><div class="section-h"><h2 id="ml-h">Meals</h2><span class="tag">Only when the source sends meals</span></div>
-      <ul class="group">${D.meals.map(([m, k]) => `<li class="row"><span class="copy"><span class="title">${m}</span></span><span class="trail"><span class="value">${n(k)} kcal</span></span></li>`).join('')}</ul></section>` : '';
+    const pLeft = t && f ? t.protein - f.protein : null;
+    const picks = pickProtein(pLeft);
+    const focus = pLeft > 0 && picks.length ? `<section class="card pfocus" aria-labelledby="pf-h"><div class="kcal-top"><h2 class="card-k" id="pf-h">${ic('target', 'i-16')}Close the protein gap</h2><span class="chip nodot num">${n(pLeft)} g to go</span></div>
+      <ul class="picks">${picks.map((x) => `<li><span class="copy"><span class="title">${esc(x.name)}</span><span class="card-s num">${esc(x.serving)} · ${n(x.kcal)} kcal</span></span><b class="num">+${n(x.p)} g</b></li>`).join('')}</ul>
+      <a class="btn small secondary" href="coach.html" data-keep>${ic('chat', 'i-16')}Ask the coach</a></section>` : '';
+    const hist = D.history;
+    let week = '';
+    if (hist && hist.length) {
+      const all = [...hist, f ? f.kcal : null], max = Math.max(...all.filter((x) => x != null), t ? t.kcal : 0) * 1.1;
+      const logged = hist.filter((x) => x != null), avg = logged.length ? Math.round(logged.reduce((a, b) => a + b, 0) / logged.length) : null;
+      const within = t ? logged.filter((x) => x <= t.kcal).length : null;
+      const days = Array.from({ length: all.length }, (_, i) => new Date(Date.now() - (all.length - 1 - i) * 864e5).toLocaleDateString('en-US', { weekday: 'narrow' }));
+      week = `<section class="card" aria-labelledby="wk7-h"><div class="kcal-top"><h2 class="card-k" id="wk7-h">Last 7 days</h2><span class="card-s num">${avg ? `Avg ${n(avg)} kcal` : ''}</span></div>
+        <div class="kbars" role="img" aria-label="Calories per day: ${all.map((x) => x == null ? 'not logged' : n(x)).join(', ')}${t ? `; target ${n(t.kcal)}` : ''}">
+          ${t ? `<i class="tline" style="bottom:${(t.kcal / max) * 100}%"></i>` : ''}
+          ${all.map((x, i) => `<span class="${x == null ? 'none' : t && x > t.kcal ? 'over' : ''}${i === all.length - 1 ? ' today' : ''}" style="height:${x == null ? 4 : (x / max) * 100}%"></span>`).join('')}</div>
+        <div class="kdays" aria-hidden="true">${days.map((d) => `<span>${d}</span>`).join('')}</div>
+        ${within != null ? `<p class="card-s num">${within} of ${logged.length} logged days within target · today so far</p>` : ''}</section>`;
+    }
+    const meals = D.meals ? `<section class="section" aria-labelledby="ml-h"><div class="section-h"><h2 id="ml-h">Meals</h2><span class="tag">When MyFitnessPal sends meals</span></div>
+      <ul class="group">${D.meals.map(([m, k]) => `<li class="row compact"><span class="copy"><span class="title">${m}</span></span><span class="trail"><span class="value">${n(k)} kcal</span></span></li>`).join('')}</ul></section>` : '';
     view.innerHTML = `${header('Nutrition', dateLabel())}
-      <div class="wk-grid">${hero}
-        <section class="section" aria-labelledby="mc-h"><div class="section-h"><h2 id="mc-h">Macros</h2></div><ul class="group">${rows}</ul></section>
-        <section class="card" aria-labelledby="src-h"><h2 class="card-k" id="src-h" style="margin-bottom:12px">Source</h2>
-          <p class="flow"><span class="app-tile mfp" aria-hidden="true">MFP</span><b>MyFitnessPal</b>${ic('chevR', 'i-16')}<span class="app-tile ah" aria-hidden="true">AH</span><b>Apple Health</b>${ic('chevR', 'i-16')}<b>GYST</b></p>
-          <p class="card-s" style="margin-top:12px">Last sync ${esc(D.sync.apple)} ${D.sync.stale ? '<span class="chip warn">Stale</span>' : ''}</p>
-          <a class="btn block" style="margin-top:16px" href="https://www.myfitnesspal.com/" target="_blank" rel="noopener noreferrer">Open MyFitnessPal ${ic('ext', 'i-16')}</a></section>
-        ${meals}</div>${protoBar()}`;
+      <div class="nut">${hero}
+        <section class="section span" aria-labelledby="mc-h"><h2 class="sr" id="mc-h">Macros</h2><div class="grid-4">${tiles}</div></section>
+        ${focus}${week}${meals}
+        <section class="src span" aria-label="Source"><span class="app-tile mfp" aria-hidden="true">MFP</span><span class="copy"><span class="title">MyFitnessPal → Apple Health</span><span class="card-s">Synced ${esc(D.sync.apple)} ${D.sync.stale ? '<span class="chip warn">Stale</span>' : ''}</span></span>
+          <a class="btn small" href="https://www.myfitnesspal.com/" target="_blank" rel="noopener noreferrer">Open ${ic('ext', 'i-16')}<span class="sr">MyFitnessPal</span></a></section>
+      </div>${protoBar()}`;
+  }
+  function pickProtein(gap) {
+    if (!gap || gap <= 0) return [];
+    return [...D.foods].filter((x) => x.p >= 10).sort((a, b) => b.p / b.kcal - a.p / a.kcal).slice(0, 3);
+  }
+
+  /* ---------- Checklist (Today) ---------- */
+  function checklistItems() {
+    const t = D.targets, f = D.food, items = [];
+    if (t) items.push({ auto: true, name: 'Protein', v: f ? f.protein : null, tg: t.protein, unit: 'g' });
+    if (t) items.push({ auto: true, name: 'Water', v: D.water, tg: t.water, unit: 'L', digits: 1 });
+    D.checks.forEach((c) => items.push(c));
+    return items;
+  }
+  const isDone = (i) => i.auto ? i.v != null && i.v >= i.tg : i.done;
+  function checklistCard() {
+    const items = checklistItems();
+    if (!items.length) return `<section class="card empty" aria-labelledby="cl-h"><h2 class="title" id="cl-h">Daily checklist</h2><p>Add the habits you want to tick off each day.</p><a class="btn small secondary" href="settings.html#checklist" data-keep>Set up checklist</a></section>`;
+    const done = items.filter(isDone).length;
+    return `<section class="section" aria-labelledby="cl-h"><div class="section-h"><h2 id="cl-h">Checklist</h2><span class="card-s num" id="cl-count">${done} of ${items.length}</span></div>
+      <ul class="group cl">${items.map((i) => i.auto
+        ? `<li class="check auto${isDone(i) ? ' is-done' : ''}"><span class="box" aria-hidden="true">${ic('check', 'i-16')}</span><span class="copy"><span class="title">${i.name}</span></span><span class="cl-v num">${i.v == null ? '—' : n(i.v, i.digits || 0)} / ${n(i.tg, i.digits || 0)} ${i.unit}</span><span class="sr">${isDone(i) ? 'met' : 'not met yet'}, measured automatically</span></li>`
+        : `<li><label class="check"><input type="checkbox" data-check="${i.id}"${i.done ? ' checked' : ''}><span class="box">${ic('check', 'i-16')}</span><span class="copy"><span class="title">${esc(i.name)}</span></span></label></li>`).join('')}</ul></section>`;
   }
 
   /* ---------- Coach ---------- */
-  const PROMPTS = ["I haven't eaten breakfast. What should I have?", 'How much protein do I have left today?', 'What should I eat for lunch?', 'How has my training been this month?', "I'm sore. Should I train today?", 'What muscle groups have I neglected?'];
+  const PROMPT_GROUPS = [
+    ['Food', 'apple', ["I haven't eaten breakfast. What should I have?", 'How much protein do I have left today?', 'What should I eat for lunch?']],
+    ['Training', 'dumbbell', ['How has my training been this month?', "I'm sore. Should I train today?", 'What muscle groups have I neglected?']]
+  ];
   const chatLog = [];
-  let clOpen = null;
   function coachReply(q) {
     const s = q.toLowerCase(), t = D.targets, f = D.food, h = D.hevy;
     const pLeft = t && f ? Math.max(0, t.protein - f.protein) : null, kLeft = t && f ? t.kcal - f.kcal : null;
-    const byProtein = [...D.foods].sort((a, b) => b.p / b.kcal - a.p / a.kcal).slice(0, 2);
-    if (!D.sync && !h.connected) return { text: 'I don\'t have any of your health data yet. Connect MyFitnessPal, Apple Health and Hevy in More, then ask again.', ctx: 'None available' };
-    if (/breakfast/.test(s)) return { text: `You have ${n(kLeft)} kcal and ${n(pLeft)} g protein left today. From foods you keep:`, list: byProtein.map((x) => `${x.name} · ${x.serving} · ${n(x.kcal)} kcal, ${n(x.p)} g protein`), ctx: 'Calories, protein, My foods' };
-    if (/protein/.test(s)) return { text: pLeft == null ? 'No food has synced today, so I can\'t tell yet.' : `${n(pLeft)} g left of your ${n(t.protein)} g target (${n(f.protein)} g so far).`, list: pLeft ? byProtein.map((x) => `${x.name}: ${n(x.p)} g per ${x.serving}`) : null, ctx: 'Protein, protein target, My foods' };
-    if (/lunch/.test(s)) return { text: `About ${n(kLeft)} kcal left. A lunch of 500–650 kcal with 40 g+ protein keeps dinner open. Options from your foods:`, list: ['High-protein wrap + turkey breast (100 g) · 270 kcal, 36 g protein', 'Greek yogurt + protein powder · 225 kcal, 42 g protein'], ctx: 'Calories, macros, My foods' };
-    if (/train|month|workout/.test(s)) return { text: 'Last 30 days: 11 workouts, about 2.6 a week against your target of 3. Most work went to legs (35%) and back (25%). Leg press is up 18% over 12 weeks.', ctx: 'Hevy workouts, muscle focus, progress' };
-    if (/sore/.test(s)) return { text: 'Your last session was heavy on legs. A lighter upper-body day or a walk keeps you moving without loading the same muscles. If pain is sharp, or lasts more than a few days, check with a professional.', ctx: 'Latest Hevy workout, muscle focus' };
-    if (/neglect|muscle/.test(s)) return { text: 'Over 30 days, core got no primary sets and arms and shoulders 10% each. Adding 2–3 sets of a core exercise to each session would balance it.', ctx: 'Muscle focus, Hevy workouts' };
-    return { text: 'In the working version I\'ll answer this from your health data. This prototype only has sample replies for the suggested questions.', ctx: 'Prototype' };
+    const food = (ids) => ids.map((id) => D.foods.find((x) => x.id === id)).filter(Boolean);
+    if (!D.sync && !h.connected) return { text: "I don't have any of your health data yet. Connect MyFitnessPal, Apple Health and Hevy in More, then ask again.", ctx: [] };
+    if (/breakfast/.test(s)) return { text: `You have ${n(kLeft)} kcal and ${n(pLeft)} g protein left. Two high-protein options from food you have:`, foods: [food(['gy', 'pp']), food(['wr', 'tb'])], follow: ['Make it under 300 kcal', 'What about lunch?'], ctx: ['Calories', 'Protein', 'My foods'] };
+    if (/protein/.test(s)) return pLeft == null ? { text: "No food has synced today, so I can't tell yet.", ctx: ['Protein'] }
+      : { text: `${n(pLeft)} g to go.`, stats: [['Eaten', `${n(f.protein)} g`], ['Target', `${n(t.protein)} g`], ['Left', `${n(pLeft)} g`]], foods: [food(['tb', 'gy'])], follow: ['What should I eat for lunch?'], ctx: ['Protein', 'Protein target', 'My foods'] };
+    if (/lunch/.test(s)) return { text: `About ${n(kLeft)} kcal left. A 500–650 kcal lunch with 40 g+ protein keeps dinner open:`, foods: [food(['wr', 'tb']), food(['gy', 'pp'])], follow: ['Something without a wrap', 'How much protein do I have left today?'], ctx: ['Calories', 'Macros', 'My foods'] };
+    if (/train|month|workout/.test(s)) return { text: 'Steady month. You trained about 2.6 times a week against a target of 3. Legs and back got most of the work.', stats: [['Workouts', '11'], ['Per week', '2.6 / 3'], ['Leg press', '+18%']], follow: ['What muscle groups have I neglected?'], ctx: ['Hevy workouts', 'Progress'] };
+    if (/sore/.test(s)) return { text: 'Your last session was leg-heavy. An upper-body day or a 30–40 minute walk keeps you moving without loading the same muscles. If pain is sharp, or lasts more than a few days, check with a professional.', follow: ['Suggest an upper-body session'], ctx: ['Latest Hevy workout', 'Muscle focus'] };
+    if (/neglect|muscle/.test(s)) return { text: 'Core got no primary sets in 30 days. Arms and shoulders got 10% each. Two or three core sets per session would even it out.', stats: [['Core', '0%'], ['Arms', '10%'], ['Shoulders', '10%']], ctx: ['Muscle focus', 'Hevy workouts'] };
+    return { text: "In the working version I'll answer this from your health data. This prototype only has sample replies for the suggested questions.", ctx: [] };
   }
-  function checklistHTML() {
-    const t = D.targets, f = D.food;
-    const measured = [];
-    if (t) measured.push({ name: 'Protein target', v: f ? f.protein : null, tg: t.protein, unit: 'g', src: 'MyFitnessPal' });
-    if (t) measured.push({ name: 'Water target', v: D.water, tg: t.water, unit: 'L', src: 'Apple Health', digits: 1 });
-    const met = measured.filter((m) => m.v != null && m.v >= m.tg).length + D.checks.filter((c) => c.done).length;
-    const total = measured.length + D.checks.length;
-    if (!total) return `<div class="empty" style="padding:16px"><p class="title">No checklist yet</p><p>Add your own daily habits.</p><a class="btn small secondary" href="settings.html#checklist">Set up checklist</a></div>`;
-    return `<p class="card-s" id="cl-count" style="padding:0 16px">${met} of ${total} done</p><ul>
-      ${measured.map((m) => `<li class="measure"><span class="tile sm ${m.v != null && m.v >= m.tg ? 'ok' : 'idle'}">${ic(m.unit === 'L' ? 'drop' : 'target')}</span><div class="copy"><div class="top"><span class="title">${m.name}</span><span class="num">${m.v == null ? '<span class="missing">—</span>' : `<b>${n(m.v, m.digits || 0)}</b>`} / ${n(m.tg, m.digits || 0)} ${m.unit}</span></div>
-        <div class="bar${m.v == null ? ' missing' : m.v >= m.tg ? ' ok' : ''}" aria-hidden="true"><i style="--v:${pct(m.v, m.tg) || 0}%"></i></div><span class="card-s">From ${m.src}</span></div></li>`).join('')}
-      ${D.checks.map((c) => `<li><label class="check"><input type="checkbox" data-check="${c.id}"${c.done ? ' checked' : ''}><span class="box">${ic('check', 'i-16')}</span><span class="copy"><span class="title">${esc(c.name)}</span></span></label></li>`).join('')}</ul>`;
+  function contextChips() {
+    const t = D.targets, f = D.food, h = D.hevy, w = D.weight, out = [];
+    if (t && f) out.push([ic('flame', 'i-16'), `${n(t.kcal - f.kcal)} kcal left`]);
+    if (t && f) out.push([ic('target', 'i-16'), `${n(Math.max(0, t.protein - f.protein))} g protein to go`]);
+    if (h.connected) out.push([ic('dumbbell', 'i-16'), `${h.doneOffsets.length} / ${t ? t.workouts : '—'} workouts`]);
+    if (w) out.push([ic('scale', 'i-16'), `${n(w.series[w.series.length - 1], 1)} kg`]);
+    return out;
+  }
+  function replyHTML(m) {
+    const meal = (items) => { const k = items.reduce((a, x) => a + x.kcal, 0), p = items.reduce((a, x) => a + x.p, 0);
+      return `<li class="meal"><span class="copy"><span class="title">${items.map((x) => esc(x.name)).join(' + ')}</span><span class="card-s">${items.map((x) => esc(x.serving)).join(' · ')}</span></span><span class="mm num"><b>${n(p)} g</b><span>${n(k)} kcal</span></span></li>`; };
+    return `<div class="ai"><span class="av" aria-hidden="true">${ic('chat', 'i-16')}</span><div class="ai-b">
+      <p>${esc(m.text)}</p>
+      ${m.stats ? `<dl class="kv num">${m.stats.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+      ${m.foods ? `<ul class="meals">${m.foods.map(meal).join('')}</ul>` : ''}
+      ${m.ctx && m.ctx.length ? `<p class="used">Based on ${m.ctx.map(esc).join(', ')} · prototype reply</p>` : '<p class="used">Prototype reply</p>'}
+      ${m.follow ? `<div class="follow">${m.follow.map((x) => `<button type="button" class="pill" data-prompt="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}</div></div>`;
   }
   function renderCoach() {
-    const wide = clOpen ?? matchMedia('(min-width: 1024px)').matches;
-    const msgs = chatLog.map((m) => m.me ? `<p class="msg me">${esc(m.text)}</p>`
-      : m.typing ? `<div class="msg ai" aria-label="Coach is typing"><span class="typing"><i></i><i></i><i></i></span></div>`
-        : `<div class="msg ai"><p>${esc(m.text)}</p>${m.list ? `<ul>${m.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}<p class="ctx">Used: ${esc(m.ctx)} · prototype reply</p></div>`).join('');
-    view.innerHTML = `${header('Health Coach', '', '<p class="status-line">Your nutrition &amp; training assistant</p>')}
-      <div class="coach">
-        <div class="side"><details class="card" style="padding:0" ${wide ? 'open' : ''} id="checklist"><summary class="row" style="border-radius:16px"><span class="tile sm">${ic('list')}</span><span class="copy"><span class="title">Today's checklist</span></span>${ic('chevR', 'chev')}</summary><div style="padding-bottom:8px">${checklistHTML()}</div></details></div>
-        <section class="chat" aria-label="Conversation">
-          ${!D.sync && !D.hevy.connected ? `<div class="banner">${ic('info')}<span class="grow">Connect your sources so the coach has context.</span></div>` : ''}
-          <div class="chat" role="log" aria-live="polite" id="log">${msgs}</div>
-          ${chatLog.length ? '' : `<div class="prompts">${PROMPTS.map((p) => `<button class="prompt" type="button" data-prompt="${esc(p)}">${ic('chat', 'i-16')}<span>${esc(p)}</span></button>`).join('')}</div>`}
-          <form class="composer" id="composer"><label class="sr" for="q">Ask the Health Coach</label><textarea id="q" rows="1" placeholder="Ask about food, training or progress"></textarea>
-            <button class="icon-btn" type="submit" aria-label="Send" disabled>${ic('send')}</button></form>
-        </section>
-      </div>${protoBar()}`;
-    const cl = $('#checklist'); if (cl) cl.addEventListener('toggle', () => { clOpen = cl.open; });
+    const chips = contextChips();
+    const msgs = chatLog.map((m) => m.me ? `<p class="me">${esc(m.text)}</p>`
+      : m.typing ? `<div class="ai" aria-label="Coach is typing"><span class="av" aria-hidden="true">${ic('chat', 'i-16')}</span><span class="typing"><i></i><i></i><i></i></span></div>` : replyHTML(m)).join('');
+    const empty = `<div class="hello"><span class="av lg" aria-hidden="true">${ic('chat')}</span><h2>What can I help with?</h2><p class="card-s">I know today's food, activity, weight and Hevy training.</p></div>
+      <div class="pgroups">${PROMPT_GROUPS.map(([g, icon, ps]) => `<section class="section" aria-label="${g} questions"><div class="section-h"><h2>${g}</h2></div><ul class="group">${ps.map((p) => `<li><button class="row" type="button" data-prompt="${esc(p)}"><span class="tile sm">${ic(icon)}</span><span class="copy"><span class="title">${esc(p)}</span></span>${ic('chevR', 'chev')}</button></li>`).join('')}</ul></section>`).join('')}</div>`;
+    view.innerHTML = `<header class="ph coach-h"><div class="copy"><h1>Health Coach</h1><p class="eyebrow">Your nutrition &amp; training assistant</p></div>
+        ${chatLog.length ? `<button class="btn small secondary" type="button" data-act="new-chat">${ic('plus', 'i-16')}New chat</button>` : ''}</header>
+      ${chips.length ? `<button class="ctx" type="button" data-act="coach-context" aria-label="What the coach can see: ${chips.map((c) => c[1]).join(', ')}">${chips.map(([i, l]) => `<span class="chip nodot">${i}${l}</span>`).join('')}</button>`
+        : `<div class="banner">${ic('info')}<span class="grow">Connect your sources so the coach has context.</span></div>`}
+      <section class="thread" aria-label="Conversation"><div class="log" role="log" aria-live="polite" id="log">${msgs}</div>${chatLog.length ? '' : empty}</section>
+      <form class="composer" id="composer"><label class="sr" for="q">Ask the Health Coach</label><textarea id="q" rows="1" placeholder="Ask about food, training or progress"></textarea>
+        <button class="icon-btn" type="submit" aria-label="Send" disabled>${ic('send')}</button></form>
+      <p class="foot coach-foot">General guidance, not medical advice.</p>
+      ${protoBar()}`;
+    const log = $('#log'); if (log && chatLog.length) log.lastElementChild.scrollIntoView({ block: 'nearest' });
   }
   function ask(q) {
     chatLog.push({ me: true, text: q }, { typing: true });
     renderCoach();
     setTimeout(() => {
       chatLog.pop(); chatLog.push(coachReply(q)); renderCoach();
-      const box = $('#q'); if (box) box.focus();
+      const box = $('#q'); if (box) box.focus({ preventScroll: true });
     }, 700);
+  }
+  function coachContextSheet() {
+    openSheet('What the coach can see', `<ul class="group">${['Today\'s calories, macros and targets', 'Steps, exercise and weight trend', 'Plan goal and dates', 'Hevy routines, workouts, progress and muscle focus', 'My foods and checklist'].map((x) => `<li class="row compact"><span class="tile sm ok">${ic('check')}</span><span class="copy"><span class="title">${x}</span></span></li>`).join('')}</ul>
+      <p class="meta">Never sent: passwords, keys, other GYST areas or the whole database.</p>`);
   }
 
   /* ---------- Settings (More) ---------- */
@@ -565,10 +623,8 @@
     const cb = e.target.closest('[data-check]');
     if (cb) {
       const c = D.checks.find((x) => x.id === cb.dataset.check); if (c) c.done = cb.checked;
-      const t = D.targets, f = D.food, count = $('#cl-count');
-      const measured = t ? [[f ? f.protein : null, t.protein], [D.water, t.water]] : [];
-      const met = measured.filter(([v, tg]) => v != null && v >= tg).length + D.checks.filter((x) => x.done).length;
-      if (count) count.textContent = `${met} of ${measured.length + D.checks.length} done`;
+      const items = checklistItems(), count = $('#cl-count');
+      if (count) count.textContent = `${items.filter(isDone).length} of ${items.length}`;
     }
   });
 
@@ -581,6 +637,8 @@
       else if (act === 'workout-detail') workoutSheet();
       else if (act === 'add-food') addFoodSheet();
       else if (act === 'add-check') addCheckSheet();
+      else if (act === 'new-chat') { chatLog.length = 0; render(); $('#q').focus(); }
+      else if (act === 'coach-context') coachContextSheet();
       else if (act === 'sync') toast('Synced with Hevy · prototype');
       else if (act === 'to-progress') { wkView = 'progress'; render(); $('#tab-progress').focus(); }
       return;
@@ -607,5 +665,4 @@
   const topbar = $('.topbar');
   const onScroll = () => topbar && topbar.classList.toggle('scrolled', scrollY > 40);
   addEventListener('scroll', onScroll, { passive: true }); onScroll();
-  matchMedia('(min-width: 1024px)').addEventListener('change', () => { if (page === 'coach') render(); });
-})();
+  })();
