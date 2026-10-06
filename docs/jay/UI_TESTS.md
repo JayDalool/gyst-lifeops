@@ -1,3 +1,4 @@
+- [ ] #64 · If Coach enabled: profile page, Coach chat, dark buttons · https://gyst.zaylolabs.com/health/coach
 - [ ] #62 · iPhone Nutrition: protein gap card, foods, budget · https://gyst.zaylolabs.com/health/nutrition
 - [ ] #59 · iPhone: tick checklist, add a food, edit it · https://gyst.zaylolabs.com/health
 - [ ] #55 · iPhone Nutrition: calories, macros, 7 days, Open MFP · https://gyst.zaylolabs.com/health/nutrition

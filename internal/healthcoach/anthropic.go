@@ -37,6 +37,9 @@ func newAnthropic(apiKey, model string, extra ...option.RequestOption) *Anthropi
 		model = DefaultAnthropicModel
 	}
 	opts := append([]option.RequestOption{
+		// Pinned so an environment variable (ANTHROPIC_BASE_URL) can't redirect
+		// health data and the key elsewhere. Tests override it explicitly.
+		option.WithBaseURL("https://api.anthropic.com/"),
 		option.WithAPIKey(apiKey),
 		option.WithRequestTimeout(60 * time.Second),
 		option.WithMaxRetries(1),

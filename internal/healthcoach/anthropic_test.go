@@ -147,3 +147,22 @@ func TestActionToolAllowlist(t *testing.T) {
 		}
 	}
 }
+
+// The base URL is pinned: ANTHROPIC_BASE_URL can't redirect requests. The
+// request is captured in memory; nothing leaves the test.
+type captureTransport struct{ url string }
+
+func (c *captureTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	c.url = r.URL.String()
+	return nil, errors.New("captured, not sent")
+}
+
+func TestAnthropicBaseURLIsPinned(t *testing.T) {
+	t.Setenv("ANTHROPIC_BASE_URL", "http://attacker.invalid")
+	capture := &captureTransport{}
+	a := newAnthropic("test-only-key", "", option.WithMaxRetries(0), option.WithHTTPClient(&http.Client{Transport: capture}))
+	_, _ = a.Respond(context.Background(), Request{System: "s", History: []Message{{Role: "user", Text: "hi"}}})
+	if !strings.HasPrefix(capture.url, "https://api.anthropic.com/") {
+		t.Fatalf("request went to %q", capture.url)
+	}
+}
