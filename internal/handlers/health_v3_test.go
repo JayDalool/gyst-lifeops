@@ -64,7 +64,7 @@ func TestTinyOvershootIsNotOver(t *testing.T) {
 	cycle.DailyCalorieTarget = 2000
 	snap := models.DailyHealthSnapshot{HealthMetrics: models.HealthMetrics{DietaryCalories: viewFloat(2000.3)}}
 	v := buildHealthTodayView(models.HealthTodayResponse{Date: "2026-09-10", Snapshot: &snap, HealthCycle: &cycle}, viewNow())
-	if v.CaloriesOver || v.BudgetAbs != "0" || v.Calories.Remaining.Value != "0" || v.Status().Tone == "warn" {
+	if v.CaloriesOver || v.BudgetAbs != "0" || v.Calories.Remaining.Value != "0" || v.CalState.Key == "over" {
 		t.Fatalf("2000.3 of 2000 reads as over: %+v", v.Calories)
 	}
 	snap.DietaryCalories = viewFloat(2001)

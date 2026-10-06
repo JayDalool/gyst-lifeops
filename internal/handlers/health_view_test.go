@@ -246,7 +246,7 @@ func TestHealthPageRendersWithoutData(t *testing.T) {
 	if strings.Contains(body, "executing \"") {
 		t.Fatalf("template error: %s", body)
 	}
-	if !strings.Contains(body, "Waiting for today&#39;s Apple Health sync") || !strings.Contains(body, "No food logged yet") {
+	if !strings.Contains(body, "Waiting for sync") || !strings.Contains(body, "No food logged yet") {
 		t.Error("empty state is not shown")
 	}
 	// The old demonstration numbers must be gone for good.

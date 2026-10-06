@@ -101,6 +101,12 @@ type HealthTodayView struct {
 	ActiveEnergy    HealthMetricView
 	RestingEnergy   HealthMetricView
 	ExerciseMinutes HealthMetricView
+
+	// CalState is the calorie card's status (#70).
+	CalState healthCalorieState
+	// caloriesLeft is target − eaten at displayed precision; only meaningful
+	// when Calories.HasBar.
+	caloriesLeft float64
 }
 
 // staleAfter is when the day's data stops being described as current. A
@@ -169,7 +175,9 @@ func buildMacro(label string, consumed *float64, target float64, unit string) He
 		return macro
 	}
 
-	remaining := target - *consumed
+	// Both sides are rounded first, so the remainder always matches the two
+	// numbers on screen (2,000 − 1,501 shows 499).
+	remaining := math.Round(target) - math.Round(*consumed)
 	macro.Remaining = HealthMetricView{Value: formatThousands(remaining), Unit: unit, Present: true}
 	macro.Over = math.Round(*consumed) > math.Round(target)
 	macro.Percent = int(math.Round((*consumed / target) * 100))
@@ -300,6 +308,25 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 	view.ActiveEnergy = metricFromFloat(snapshot.ActiveEnergyKcal, "kcal")
 	view.RestingEnergy = metricFromFloat(snapshot.RestingEnergyKcal, "kcal")
 	view.ExerciseMinutes = metricFromFloat(snapshot.ExerciseMinutes, "min")
+
+	// Burned and balance are shown from the rounded parts, so 1,851 resting +
+	// 421 active reads 2,272, never 2,271 (#70). Same formula as the
+	// service: burn = resting + active; balance = eaten − burn.
+	if snapshot.ActiveEnergyKcal != nil && snapshot.RestingEnergyKcal != nil {
+		burn := math.Round(*snapshot.RestingEnergyKcal) + math.Round(*snapshot.ActiveEnergyKcal)
+		view.ObservedBurn = HealthMetricView{Value: formatThousands(burn), Unit: "kcal", Present: true}
+		if snapshot.DietaryCalories != nil {
+			balance := math.Round(*snapshot.DietaryCalories) - burn
+			view.ObservedEnergy = HealthMetricView{Value: formatThousands(balance), Unit: "kcal", Present: true}
+			if balance > 0 { // a surplus reads "+400", so the sign is never guessed
+				view.ObservedEnergy.Value = "+" + view.ObservedEnergy.Value
+			}
+		}
+	}
+	if view.Calories.HasBar {
+		view.caloriesLeft = math.Round(cycle.DailyCalorieTarget) - math.Round(*snapshot.DietaryCalories)
+	}
+	view.CalState = buildCalorieState(view, cycle.DailyCalorieTarget)
 
 	return view
 }

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-gyst-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GYST Health Today · prototype</title>
+<!-- Prototype for #70. Uses the real production stylesheets; fictional data
+     only. States: ?state=A..G, theme: ?theme=dark|light. -->
+<link rel="stylesheet" href="../../../web/static/css/ui-tokens.css">
+<link rel="stylesheet" href="../../../web/static/css/ui-health-v3.css">
+<style>
+  body { margin: 0; background: var(--vn-canvas); font-family: var(--vn-font); }
+  .proto-wrap { padding: 16px; }
+  .proto-label { max-width: 1120px; margin: 0 auto 8px; font: 600 12px/1.4 var(--vn-font); color: var(--vn-ink-3); text-transform: uppercase; letter-spacing: .06em; }
+</style>
+</head>
+<body>
+<div class="proto-wrap">
+  <p class="proto-label" id="label"></p>
+  <main class="gyst-scope hv3" id="view"></main>
+</div>
+<script>
+const ICON = {
+  utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  footprints: '<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/>',
+  waves: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
+  bike: '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+  weight: '<circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>', chev: '<path d="m9 18 6-6-6-6"/>', plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>', heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>'
+};
+const ic = n => `<svg class="gyst-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
+const fmt = v => v == null ? null : Math.round(v).toLocaleString('en-US');
+const signed = v => (v < 0 ? '−' : v > 0 ? '+' : '') + Math.abs(Math.round(v)).toLocaleString('en-US');
+
+const base = () => ({
+  hour: 15, target: 2250, eaten: 1500, rest: 1700, act: 520, stale: false, synced: '25 min ago', snapshot: true,
+  macros: { protein: [132, 180], carbs: [140, 225], fat: [48, 70], fiber: [18, 35] },
+  watch: 7840, phone: 6920, stepTarget: 10000, exercise: 46, workout: null,
+  weight: { latest: 96.4, change: '−0.6 kg this week', series: [97.7, 97.5, 97.6, 97.2, 97.0, 96.9, 96.4] },
+  checks: [['Creatine', true, 'habit'], ['Magnesium', false, 'habit'], ['Fish oil', true, 'habit'], ['Vitamin C', false, 'habit'], ['Protein target', false, 'measured', '132 / 180 g'], ['Multivitamin', true, 'habit']]
+});
+const STATES = {
+  A: ['Normal day', base()],
+  B: ['Near food target', Object.assign(base(), { eaten: 2120, macros: { protein: [176, 180], carbs: [210, 225], fat: [66, 70], fiber: [31, 35] } })],
+  C: ['Over food target, lightly active', Object.assign(base(), { eaten: 2500, hour: 18, watch: 6100, exercise: 20, macros: { protein: [150, 180], carbs: [260, 225], fat: [88, 70], fiber: [22, 35] } })],
+  D: ['Low activity day', Object.assign(base(), { hour: 16, watch: 2140, phone: 1900, exercise: 8, act: 160 })],
+  E: ['Workout completed (Hevy)', Object.assign(base(), { hour: 17, watch: null, phone: 3020, exercise: 12, workout: 'Leg Day' })],
+  F: ['Stale Apple Health data', Object.assign(base(), { stale: true, synced: '11 hours ago', eaten: 900, rest: 1100, act: 200, watch: 3000, exercise: 0 })],
+  G: ['No nutrition logged yet', Object.assign(base(), { eaten: null, hour: 11, watch: 1800, exercise: 0, macros: { protein: [null, 180], carbs: [null, 225], fat: [null, 70], fiber: [null, 35] }, checks: [] , weight: null })],
+};
+
+function calState(d) {
+  if (d.eaten == null || !d.target) return ['idle', 'No food logged', 'info'];
+  const left = Math.round(d.target) - Math.round(d.eaten);
+  if (left < 0) return ['over', 'Over budget', 'alert'];
+  if (left <= Math.max(150, d.target * 0.1)) return ['watch', 'Close to budget', 'info'];
+  return ['ok', 'Within budget', 'check'];
+}
+function nudge(d) {
+  if (!d.snapshot || d.stale || d.hour < 11 || d.hour >= 21) return null;
+  const steps = d.watch ?? d.phone;
+  if (steps == null && d.exercise == null) return null;
+  if ((d.exercise ?? 0) >= 30 || (steps != null && d.stepTarget && steps >= d.stepTarget)) return null;
+  if (d.workout) return { kind: 'recovery', title: `Nice work on ${d.workout}`, body: 'Strength work done. An easy walk later helps recovery; no extra workout needed.' };
+  const gap = steps != null && d.stepTarget ? `${fmt(d.stepTarget - steps)} steps to your ${fmt(d.stepTarget)} goal. ` : '';
+  return { kind: 'move', title: 'A little movement would help', body: `${gap}A 30–45 min walk or an easy swim would round out your day.` };
+}
+function render(key, theme) {
+  const [label, d] = STATES[key];
+  document.documentElement.dataset.gystTheme = theme;
+  document.getElementById('label').textContent = `State ${key} · ${label} · ${theme}`;
+  const [st, stText, stIcon] = calState(d);
+  const left = d.eaten != null ? Math.round(d.target) - Math.round(d.eaten) : null;
+  const burn = Math.round(d.rest) + Math.round(d.act);
+  const bal = d.eaten != null ? Math.round(d.eaten) - burn : null;
+  const pct = d.eaten != null ? Math.min(100, Math.round(d.eaten / d.target * 100)) : 0;
+  const steps = d.watch ?? d.phone, src = d.watch != null ? 'Apple Watch' : 'iPhone';
+  const n = nudge(d);
+  const done = d.checks.filter(c => c[1]).length;
+  const mac = (k, name) => { const [v, t] = d.macros[k]; const over = v != null && (k === 'carbs' || k === 'fat') && v > t; const met = v != null && (k === 'protein' || k === 'fiber') && v >= t;
+    return `<div class="hv3-card hv3-mac ${k}"><span class="hv3-mac-h"><span class="hv3-mac-dot" aria-hidden="true"></span>${name}</span>
+      <div class="hv3-bar${v == null ? ' empty' : ''}" role="img" aria-label="${name}: ${v == null ? 'not received' : v + ' of ' + t + ' grams'}"><i style="width:${v == null ? 0 : Math.min(100, Math.round(v / t * 100))}%"></i></div>
+      <span class="hv3-mac-v">${v == null ? '<span class="hv3-absent">—</span>' : v}<small> / ${t} g</small></span>
+      ${over ? `<span class="hv3-mac-note warn">${ic('alert')}${v - t} g over</span>` : met ? '<span class="hv3-mac-note">Target met</span>' : ''}</div>`; };
+  const spark = s => { const lo = Math.min(...s), hi = Math.max(...s); return s.map((v, i) => `${(100 * i / (s.length - 1)).toFixed(1)},${(hi > lo ? 28 - 24 * (v - lo) / (hi - lo) : 16).toFixed(1)}`).join(' '); };
+  document.getElementById('view').innerHTML = `
+  <header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow">Health · Mon, Oct 5</p><h1>Today</h1></div></header>
+  ${d.stale ? `<p class="hv3-banner warn" role="status">${ic('refresh')}<span>Apple Health last synced ${d.synced}</span><span class="hv3-chip warn">Stale</span></p>` : ''}
+  <div class="hv3-home">
+   <div class="hv3-col">
+    <section class="hv3-card hv3-cal" aria-labelledby="cal-h">
+      <div class="hv3-cal-head"><h2 id="cal-h">Calories today</h2><span class="hv3-cstate ${st}">${ic(stIcon)}${stText}</span></div>
+      <div class="hv3-cal-body">
+        <div class="hv3-ring ${st}"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track${d.eaten == null ? ' empty' : ''}" cx="60" cy="60" r="52" pathLength="100"/>${d.eaten != null ? `<circle class="val" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="${pct} 100"/>` : ''}</svg>
+          <div class="hv3-ring-center">${d.eaten == null ? '<strong class="hv3-big hv3-absent">—</strong><span>No food logged yet</span>' : `<strong class="hv3-big">${fmt(Math.abs(left))}</strong><span>${left < 0 ? 'kcal over budget' : 'food budget left'}</span>`}</div></div>
+        <dl class="hv3-cal-stats">
+          <div class="eaten"><span class="hv3-cal-ico" aria-hidden="true">${ic('utensils')}</span><dt>Eaten</dt><dd>${d.eaten == null ? '<span class="hv3-absent">—</span>' : fmt(d.eaten)}</dd><p>of ${fmt(d.target)} target</p></div>
+          <div class="burn"><span class="hv3-cal-ico" aria-hidden="true">${ic('flame')}</span><dt>Burned so far</dt><dd>${fmt(burn)}</dd><p>${fmt(d.rest)} resting + ${fmt(d.act)} active</p></div>
+          <div class="bal"><span class="hv3-cal-ico" aria-hidden="true">${ic('chart')}</span><dt>Balance so far</dt><dd>${bal == null ? '<span class="hv3-absent">—</span>' : signed(bal)}</dd><p>${bal == null ? 'Needs food and burn data' : 'Observed, not final'}</p></div>
+        </dl>
+      </div>
+      <details class="hv3-disclose"><summary>${ic('info')}How this is counted</summary></details>
+    </section>
+    ${n ? `<section class="hv3-nudge ${n.kind}" aria-labelledby="nudge-h"><span class="hv3-nudge-ico" aria-hidden="true">${ic(n.kind === 'recovery' ? 'heart' : 'footprints')}</span><div><h2 id="nudge-h">${n.title}</h2><p>${n.body}</p></div>
+      ${n.kind === 'move' ? `<ul class="hv3-nudge-opts" aria-label="Ideas"><li>${ic('footprints')}Walk</li><li>${ic('waves')}Swim</li><li>${ic('bike')}Bike</li></ul>` : ''}</section>` : ''}
+   </div>
+   <div class="hv3-col">
+    <section aria-labelledby="mac-h"><h2 id="mac-h" class="hv3-sr">Macros</h2><div class="hv3-macs">${mac('protein', 'Protein')}${mac('carbs', 'Carbs')}${mac('fat', 'Fat')}${mac('fiber', 'Fiber')}</div></section>
+    <div class="hv3-duo">
+      <section class="hv3-card hv3-tile-card" aria-labelledby="st-h"><div class="hv3-tile-h"><h2 id="st-h" class="hv3-k">${ic('footprints')}Steps</h2></div>
+        <p class="hv3-tile-v">${steps == null ? '<span class="hv3-absent">—</span>' : fmt(steps)}</p>
+        ${steps != null ? `<div class="hv3-bar" role="img" aria-label="${fmt(steps)} of ${fmt(d.stepTarget)} steps"><i style="width:${Math.min(100, Math.round(steps / d.stepTarget * 100))}%"></i></div>` : ''}
+        <p class="hv3-s">${steps == null ? 'No steps yet' : `of ${fmt(d.stepTarget)} · ${src}`}</p>${d.exercise != null ? `<p class="hv3-s">${d.exercise} min exercise</p>` : ''}</section>
+      <section class="hv3-card hv3-tile-card" aria-labelledby="wt-h"><div class="hv3-tile-h"><h2 id="wt-h" class="hv3-k">${ic('weight')}Weight</h2><a href="#" aria-label="Weight history">${ic('chev')}</a></div>
+        ${d.weight ? `<p class="hv3-tile-v">${d.weight.latest}<small> kg</small></p><p class="hv3-s">${d.weight.change}</p><svg class="hv3-spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"><polyline points="${spark(d.weight.series)}"/></svg>` : '<p class="hv3-tile-v"><span class="hv3-absent">—</span></p><p class="hv3-s">No readings yet</p>'}
+        <a class="hv3-logw" href="#">${ic('plus')}Log weight</a></section>
+    </div>
+   </div>
+   <section class="hv3-card hv3-cl2 hv3-span" aria-labelledby="cl-h">
+    ${d.checks.length ? `<div class="hv3-cl2-h"><span class="hv3-cl2-badge${done === d.checks.length ? ' done' : ''}" aria-hidden="true">${ic('check')}</span><div><h2 id="cl-h">Daily checklist</h2><p class="hv3-s">${done} of ${d.checks.length} complete</p></div><a href="#" aria-label="Edit checklist">${ic('chev')}</a></div>
+      <div class="hv3-bar" aria-hidden="true"><i style="width:${Math.round(done / d.checks.length * 100)}%"></i></div>
+      <ul class="hv3-cl2-items">${d.checks.map(c => `<li>${c[2] === 'habit' ? `<button class="hv3-dot-btn${c[1] ? ' done' : ''}" type="button" aria-pressed="${c[1]}" aria-label="${c[0]}: ${c[1] ? 'done' : 'not done'}">${ic('check')}</button>` : `<span class="hv3-dot-btn measured${c[1] ? ' done' : ''}" aria-hidden="true">${ic('check')}</span>`}<span class="lbl" title="${c[0]}">${c[0]}</span>${c[3] ? `<span class="val">${c[3]}</span>` : ''}</li>`).join('')}</ul>`
+    : `<div class="hv3-cl2-h"><span class="hv3-cl2-badge" aria-hidden="true">${ic('check')}</span><div><h2 id="cl-h">Daily checklist</h2><p class="hv3-s">Add your own daily habits and a protein target.</p></div><a href="#" aria-label="Set up checklist">${ic('chev')}</a></div>`}
+   </section>
+  </div>
+  <p class="hv3-foot">${d.snapshot ? `Apple Health · updated ${d.synced}` : 'Apple Health · nothing synced today'}</p>`;
+}
+const q = new URLSearchParams(location.search);
+render(q.get('state') || 'A', q.get('theme') || 'light');
+</script>
+</body>
+</html>

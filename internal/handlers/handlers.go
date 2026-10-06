@@ -249,6 +249,9 @@ type HealthData struct {
 	HealthTab string
 	Weight    healthWeightView
 	Checklist []healthChecklistRow
+	// Today redesign (#70).
+	ChecklistDone int
+	Nudge         *HealthNudge
 }
 
 type ArchiveData struct {
@@ -1728,15 +1731,37 @@ func (h *Handler) healthBase(w http.ResponseWriter) (HealthData, bool) {
 	if today.HealthCycle != nil {
 		cycleStart = today.HealthCycle.StartDate
 	}
+	// The nudge is optional: if the Hevy cache can't be read, Today, More and
+	// Coach still render, just without a nudge (we can't tell whether a
+	// workout happened, so suggesting more movement could be wrong).
+	training, trainingErr := h.Service.Repo.TrainingCache("hevy")
+	nudge := nudgeInput{
+		Hour:        h.Service.Now().In(h.Service.Location()).Hour(),
+		HasSnapshot: view.HasSnapshot,
+		Stale:       view.LastSyncedStale,
+		Workout:     todayWorkoutTitle(training.Entries, today.Date, h.Service.Location()),
+	}
+	if s := today.Snapshot; s != nil {
+		nudge.Steps, nudge.Exercise = s.StepsWatch, s.ExerciseMinutes
+		if nudge.Steps == nil {
+			nudge.Steps = s.StepsPhone
+		}
+	}
+	if c := today.HealthCycle; c != nil {
+		nudge.StepTarget = c.StepTarget
+	}
+	rows := buildChecklistRows(items, view)
 	return HealthData{
-		Page:        "health",
-		HealthGoals: healthGoals,
-		HealthTasks: healthTasks,
-		Mission:     mission,
-		BodyRhythm:  bodyRhythm,
-		Today:       view,
-		Weight:      buildHealthWeight(weights, cycleStart, h.Service.Now(), h.Service.Location()),
-		Checklist:   buildChecklistRows(items, view),
+		Page:          "health",
+		HealthGoals:   healthGoals,
+		HealthTasks:   healthTasks,
+		Mission:       mission,
+		BodyRhythm:    bodyRhythm,
+		Today:         view,
+		Weight:        buildHealthWeight(weights, cycleStart, h.Service.Now(), h.Service.Location()),
+		Checklist:     rows,
+		ChecklistDone: checklistDone(rows),
+		Nudge:         nudgeUnlessErr(buildHealthNudge(nudge), trainingErr),
 	}, true
 }
 

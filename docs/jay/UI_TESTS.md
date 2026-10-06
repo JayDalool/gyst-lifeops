@@ -1,3 +1,4 @@
+- [ ] #70 · iPhone Today: calorie card, nudge, macros, checklist · https://gyst.zaylolabs.com/health
 - [ ] #67 · Workout: lb sets show 43.1 kg, not long decimals · https://gyst.zaylolabs.com/health/training
 - [ ] #64 · If Coach enabled: profile page, Coach chat, dark buttons · https://gyst.zaylolabs.com/health/coach
 - [ ] #62 · iPhone Nutrition: protein gap card, foods, budget · https://gyst.zaylolabs.com/health/nutrition
