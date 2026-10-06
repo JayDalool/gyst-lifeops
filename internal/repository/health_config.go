@@ -48,33 +48,32 @@ func (r *Repository) DeactivateHealthChecklistItem(id int64) error {
 
 // ToggleHealthHabit flips a habit's tick for one local date and reports the
 // new state. Only active habits can be ticked; anything else is ErrNoRows.
+// Each statement is atomic on its own (no read-then-write transaction), so a
+// double tap can't fail with SQLITE_BUSY; the primary key prevents duplicates.
 func (r *Repository) ToggleHealthHabit(id int64, date string) (bool, error) {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return false, err
-	}
-	defer tx.Rollback()
 	var kind string
-	if err := tx.QueryRow(`SELECT kind FROM health_checklist_items WHERE id = ? AND active = 1`, id).Scan(&kind); err != nil {
+	if err := r.db.QueryRow(`SELECT kind FROM health_checklist_items WHERE id = ? AND active = 1`, id).Scan(&kind); err != nil {
 		return false, err
 	}
 	if kind != "habit" {
 		return false, sql.ErrNoRows
 	}
-	result, err := tx.Exec(`DELETE FROM health_checklist_log WHERE item_id = ? AND date = ?`, id, date)
+	result, err := r.db.Exec(`DELETE FROM health_checklist_log WHERE item_id = ? AND date = ?`, id, date)
 	if err != nil {
 		return false, err
 	}
-	removed, err := result.RowsAffected()
-	if err != nil {
+	if removed, err := result.RowsAffected(); err != nil || removed > 0 {
 		return false, err
 	}
-	if removed == 0 {
-		if _, err := tx.Exec(`INSERT INTO health_checklist_log (item_id, date) VALUES (?, ?)`, id, date); err != nil {
-			return false, err
-		}
-	}
-	return removed == 0, tx.Commit()
+	_, err = r.db.Exec(`INSERT INTO health_checklist_log (item_id, date) VALUES (?, ?) ON CONFLICT DO NOTHING`, id, date)
+	return err == nil, err
+}
+
+// HasActiveProteinItem reports whether a measured protein item already exists.
+func (r *Repository) HasActiveProteinItem() (bool, error) {
+	var n int
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM health_checklist_items WHERE kind = 'protein' AND active = 1`).Scan(&n)
+	return n > 0, err
 }
 
 const healthFoodColumns = `id, name, serving, kcal, protein_g, carbs_g, fat_g, fiber_g, notes, active`

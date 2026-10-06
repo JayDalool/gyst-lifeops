@@ -60,6 +60,9 @@ func TestChecklistLifecycle(t *testing.T) {
 	if strings.Contains(settings, `value="protein"`) {
 		t.Fatal("a second protein target should not be offered")
 	}
+	if w := cfgPost(h, "/health/checklist", url.Values{"name": {"Protein again"}, "kind": {"protein"}}, ""); w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "already have a protein target") {
+		t.Fatalf("second protein item: %d", w.Code)
+	}
 
 	// Toggle a habit for today, then undo; the measured row can't be toggled.
 	creatine, protein := idString(items[0].ID), idString(items[2].ID)
@@ -220,5 +223,30 @@ func TestHealthConfigConstraints(t *testing.T) {
 	}
 	if err := h.Service.Repo.CreateHealthChecklistItem(&models.HealthChecklistItem{Name: "   ", Kind: "habit"}); err == nil {
 		t.Fatal("blank name accepted by the database")
+	}
+}
+
+// Concurrent toggles never fail and never leave a duplicate tick (#61 review).
+func TestChecklistToggleConcurrent(t *testing.T) {
+	h := testHandler(t)
+	item, err := h.Service.AddHealthChecklistItem("Creatine", "habit")
+	if err != nil {
+		t.Fatal(err)
+	}
+	errs := make(chan error, 40)
+	for i := 0; i < 40; i++ {
+		go func() {
+			_, err := h.Service.Repo.ToggleHealthHabit(item.ID, "2026-10-07")
+			errs <- err
+		}()
+	}
+	for i := 0; i < 40; i++ {
+		if err := <-errs; err != nil {
+			t.Fatalf("toggle failed: %v", err)
+		}
+	}
+	items, _ := h.Service.Repo.ListHealthChecklistItems("2026-10-07")
+	if len(items) != 1 {
+		t.Fatalf("items %+v", items)
 	}
 }
