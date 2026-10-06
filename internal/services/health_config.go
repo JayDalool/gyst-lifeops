@@ -23,6 +23,15 @@ func (s *Service) AddHealthChecklistItem(name, kind string) (models.HealthCheckl
 	if kind != "habit" && kind != "protein" {
 		return item, healthInvalid("Choose a habit or the protein target")
 	}
+	if kind == "protein" {
+		exists, err := s.Repo.HasActiveProteinItem()
+		if err != nil {
+			return item, err
+		}
+		if exists {
+			return item, healthInvalid("You already have a protein target")
+		}
+	}
 	return item, s.Repo.CreateHealthChecklistItem(&item)
 }
 
