@@ -17,6 +17,7 @@
     <a href="/health"{{if eq $tab "today"}} aria-current="page"{{end}}>Today</a>
     <a href="/health/training"{{if eq $tab "workout"}} aria-current="page"{{end}}>Workout</a>
     <a href="/health/nutrition"{{if eq $tab "nutrition"}} aria-current="page"{{end}}>Nutrition</a>
+    {{if coachEnabled}}<a href="/health/coach"{{if eq $tab "coach"}} aria-current="page"{{end}}>Coach</a>{{end}}
     <a href="/health/more"{{if eq $tab "more"}} aria-current="page"{{end}}>More</a>
   </div>{{end}}
   <a href="/courses" {{if eq $section "courses"}}aria-current="page"{{end}}>{{template "gyst.icon" "book-open"}}<span>Courses</span></a>
@@ -27,6 +28,7 @@
   <a href="/health"{{if eq $tab "today"}} aria-current="page"{{end}}>{{template "gyst.icon" "sun"}}<span>Today</span></a>
   <a href="/health/training"{{if eq $tab "workout"}} aria-current="page"{{end}}>{{template "gyst.icon" "dumbbell"}}<span>Workout</span></a>
   <a href="/health/nutrition"{{if eq $tab "nutrition"}} aria-current="page"{{end}}>{{template "gyst.icon" "apple"}}<span>Nutrition</span></a>
+  {{if coachEnabled}}<a href="/health/coach"{{if eq $tab "coach"}} aria-current="page"{{end}}>{{template "gyst.icon" "message-circle"}}<span>Coach</span></a>{{end}}
   <a href="/health/more"{{if eq $tab "more"}} aria-current="page"{{end}}>{{template "gyst.icon" "ellipsis"}}<span>More</span></a>
 </nav>{{end}}
 {{end}}

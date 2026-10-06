@@ -43,8 +43,14 @@ func Run() {
 	allowPublicFeeds, _ := strconv.ParseBool(os.Getenv("ALLOW_PUBLIC_CALENDAR_FEEDS"))
 
 	lifeOps, err := New(Config{
-		DBPath:           *dbPath,
-		HevyAPIKey:       os.Getenv("HEVY_API_KEY"),
+		DBPath:     *dbPath,
+		HevyAPIKey: os.Getenv("HEVY_API_KEY"),
+		HealthAI: HealthAIConfig{
+			Provider:     os.Getenv("HEALTH_AI_PROVIDER"),
+			AnthropicKey: os.Getenv("ANTHROPIC_API_KEY"),
+			OpenAIKey:    os.Getenv("OPENAI_API_KEY"),
+			Model:        os.Getenv("HEALTH_AI_MODEL"),
+		},
 		MigrationsDir:    *migrationsDir,
 		SeedPath:         *seedPath,
 		TemplateDir:      *templateDir,

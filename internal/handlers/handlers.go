@@ -18,6 +18,7 @@ import (
 
 	"lifeops-tracker/internal/authlimit"
 	"lifeops-tracker/internal/clock"
+	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
 	"lifeops-tracker/internal/xp"
@@ -39,6 +40,10 @@ type Handler struct {
 	// loginLimiter throttles failed sign-ins (GYST-VN-006). It is built in New.
 	// A nil limiter makes POST /login fail closed rather than run unthrottled.
 	loginLimiter *authlimit.Limiter
+	// Coach answers Health questions (Issue #64). Nil means no AI provider is
+	// configured: the Coach page shows that state and the rest of Health works.
+	Coach      healthcoach.Provider
+	coachLimit coachLimiter
 }
 
 type TodayData struct {
@@ -342,6 +347,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.healthChecklist(w, r)
 		} else if len(segments) == 4 && segments[1] == "checklist" {
 			h.healthChecklistItemAction(w, r, segments[2], segments[3])
+		} else if len(segments) == 2 && segments[1] == "coach" {
+			h.healthCoach(w, r)
+		} else if len(segments) == 3 && segments[1] == "coach" && segments[2] == "clear" {
+			h.healthCoachClear(w, r)
+		} else if len(segments) == 2 && segments[1] == "profile" {
+			h.healthProfile(w, r)
 		} else if len(segments) == 2 && segments[1] == "foods" {
 			h.healthFoods(w, r)
 		} else if len(segments) == 3 && segments[1] == "foods" {
@@ -2277,6 +2288,7 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		"niceDateTime":   niceDateTime,
 		"niceNumber":     niceNumber,
 		"healthTab":      healthTab,
+		"coachEnabled":   func() bool { return h.Coach != nil },
 		// deref reads an optional number; templates guard with {{if}} first.
 		"deref": func(v *float64) float64 {
 			if v == nil {
