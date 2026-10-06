@@ -284,3 +284,9 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .hv3-ph .hv3-eyebrow a { display: inline-flex; align-items: center; min-height: 44px; }
 /* `.hv3 a` outranks `.hv3-row`; row links read as rows, not blue text. */
 .hv3 a.hv3-row { color: var(--vn-ink); }
+
+/* Close the protein gap (#62) */
+.hv3-gap { display: grid; gap: var(--vn-s3); }
+.hv3-gap-list li { display: flex; align-items: center; gap: var(--vn-s3); padding: var(--vn-s2) 0; border-top: 1px solid var(--vn-separator); }
+.hv3-gap-list li:first-child { border-top: 0; }
+.hv3-gap-p { color: var(--vn-ok-text); font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }

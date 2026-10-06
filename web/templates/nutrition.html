@@ -35,6 +35,17 @@
     </div>
   </section>
 
+  {{if .ShowGap}}
+  <section class="hv3-card hv3-gap hv3-span" aria-labelledby="gap-title">
+    <div class="hv3-card-h"><h2 id="gap-title" class="hv3-k">{{template "gyst.icon" "check"}}Close the protein gap</h2><span class="hv3-chip">{{.GapLeft}} g to go</span></div>
+    {{if .GapFoods}}
+    <ul class="hv3-gap-list">{{range .GapFoods}}<li><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{if .Serving}}{{.Serving}} · {{end}}{{if .Kcal}}{{.Kcal}} kcal{{else}}kcal unknown{{end}}{{if and .BudgetKnown .Kcal}}{{if .Fits}} · fits your budget{{else}} · over your budget left{{end}}{{end}}</span></span><b class="hv3-gap-p">+{{.Protein}} g</b></li>{{end}}</ul>
+    <p class="hv3-s">From your foods, per serving, best protein per calorie first. <a href="/health/foods">My foods</a></p>
+    {{else}}
+    <p class="hv3-s">{{if .HasFoods}}None of your active foods lists 5 g of protein or more per serving.{{else}}Add foods you usually have and GYST will suggest ways to close the gap.{{end}} <a href="/health/foods">My foods</a></p>
+    {{end}}
+  </section>
+  {{end}}
   {{if .Week}}
   <section class="hv3-card hv3-span" aria-labelledby="week-title">
     <div class="hv3-card-h"><h2 id="week-title" class="hv3-k">Last 7 days</h2>{{if .WeekAvg}}<span class="hv3-s">Avg {{.WeekAvg}} kcal</span>{{end}}</div>
