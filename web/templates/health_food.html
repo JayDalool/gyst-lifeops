@@ -1,0 +1,7 @@
+{{define "content"}}
+<div class="gyst-scope hv3">
+<header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow"><a href="/health/foods">My foods &amp; products</a></p><h1>{{if .Form.Name}}{{.Form.Name}}{{else}}Food{{end}}</h1></div></header>
+{{if .Error}}<p class="hv3-banner warn" role="alert" id="food-error">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}</span></p>{{end}}
+<section class="hv3-card">{{template "health.foodForm" .}}</section>
+</div>
+{{end}}

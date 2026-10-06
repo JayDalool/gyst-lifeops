@@ -1,0 +1,22 @@
+{{define "content"}}
+{{/* My foods & products (#59): what Jay usually has, per serving. Not a
+     food log (MyFitnessPal) and not a pantry. */}}
+<div class="gyst-scope hv3">
+<header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow"><a href="/health/more">More</a></p><h1>My foods &amp; products</h1></div></header>
+{{if .Error}}<p class="hv3-banner warn" role="alert" id="food-error">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}</span></p>{{end}}
+<section class="hv3-section" aria-labelledby="foods-title">
+  <div class="hv3-section-h"><h2 id="foods-title">Foods</h2></div>
+  <ul class="hv3-group">
+    {{range .Foods}}
+    <li><a class="hv3-row{{if not .Active}} inactive{{end}}" href="/health/foods/{{.ID}}"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{template "health.foodMeta" .}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+    {{else}}
+    <li class="hv3-row"><span class="hv3-s">No foods yet. Add what you usually have, like a protein powder or Greek yogurt.</span></li>
+    {{end}}
+  </ul>
+</section>
+<section class="hv3-card" aria-labelledby="add-food-title">
+  <h2 id="add-food-title" class="hv3-k">Add a food</h2>
+  {{template "health.foodForm" .}}
+</section>
+</div>
+{{end}}

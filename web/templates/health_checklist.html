@@ -1,0 +1,32 @@
+{{define "content"}}
+{{/* Daily checklist settings (#59). The user's own items; GYST gives no
+     supplement or dose advice. */}}
+<div class="gyst-scope hv3">
+<header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow"><a href="/health/more">More</a></p><h1>Daily checklist</h1></div></header>
+{{if .Error}}<p class="hv3-banner warn" role="alert" id="checklist-error">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}</span></p>{{end}}
+<section class="hv3-section" aria-labelledby="items-title">
+  <div class="hv3-section-h"><h2 id="items-title">Items</h2></div>
+  <ul class="hv3-group">
+    {{range .Items}}
+    <li class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{if eq .Kind "protein"}}Measured · protein eaten vs your plan{{else}}Habit · tick it each day{{end}}</span></span>
+      <form method="post" action="/health/checklist/{{.ID}}/remove"><button class="hv3-btn secondary small" type="submit" aria-label="Remove {{.Name}}">Remove</button></form></li>
+    {{else}}
+    <li class="hv3-row"><span class="hv3-s">No items yet. Add habits like creatine or magnesium, and the protein target.</span></li>
+    {{end}}
+  </ul>
+  <p class="hv3-foot">Removing an item hides it; its history is kept.</p>
+</section>
+<section class="hv3-card" aria-labelledby="add-title">
+  <h2 id="add-title" class="hv3-k">Add an item</h2>
+  <form class="hv3-form" method="post" action="/health/checklist">
+    <label class="hv3-field"><span>Name</span><input name="name" maxlength="80" required autocomplete="off" value="{{.Name}}"{{if .Error}} aria-invalid="true" aria-describedby="checklist-error"{{end}}></label>
+    <label class="hv3-field"><span>Type</span><select name="kind">
+      <option value="habit"{{if eq .Kind "habit"}} selected{{end}}>Habit</option>
+      {{if not .HasProtein}}<option value="protein"{{if eq .Kind "protein"}} selected{{end}}>Protein target</option>{{end}}
+    </select></label>
+    <button class="hv3-btn" type="submit">Add</button>
+  </form>
+  <p class="hv3-s">These are your own reminders. GYST doesn't recommend supplements or doses.</p>
+</section>
+</div>
+{{end}}

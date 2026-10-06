@@ -103,6 +103,28 @@
     {{end}}
     <div class="hv3-card-foot"><span class="hv3-s">{{if .Weight.Present}}{{.Weight.LatestAt}} · <a href="/health/progress">History</a>{{end}}</span><a class="hv3-btn secondary small" href="/health/progress#log">{{template "gyst.icon" "plus"}}Log weight</a></div>
   </section>
+
+  <section class="hv3-section hv3-span" id="checklist" aria-labelledby="checklist-title">
+    <div class="hv3-section-h"><h2 id="checklist-title">Checklist</h2><a href="/health/checklist">Edit</a></div>
+    {{if .Checklist}}
+    <ul class="hv3-group hv3-checklist">
+      {{range .Checklist}}
+      <li class="hv3-check-row">
+        {{if .Habit}}
+        <form method="post" action="/health/checklist/{{.ID}}/toggle"><button class="hv3-check{{if .Done}} done{{end}}" type="submit" aria-pressed="{{if .Done}}true{{else}}false{{end}}" aria-label="{{.Name}}: {{if .Done}}done, tap to undo{{else}}not done, tap to mark done{{end}}">{{template "gyst.icon" "check"}}</button></form>
+        <span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span></span>
+        {{else}}
+        <span class="hv3-check measured{{if .Done}} done{{end}}" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
+        <span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">Measured from food logged{{if .Done}} · target met{{end}}</span></span>
+        <span class="hv3-state">{{.Value}}</span>
+        {{end}}
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <div class="hv3-card hv3-empty-sm"><p class="hv3-strong">No checklist yet</p><p class="hv3-s">Add your own daily habits and a protein target. <a href="/health/checklist">Set up checklist</a></p></div>
+    {{end}}
+  </section>
 </div>
 
 <p class="hv3-foot">{{if .Today.HasLastSynced}}Apple Health · updated {{.Today.LastSynced}}{{else if .Today.HasSnapshot}}Apple Health · synced today{{else}}Apple Health · nothing synced today. Run GYST Sync All on your iPhone.{{end}}</p>
