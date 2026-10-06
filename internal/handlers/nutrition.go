@@ -41,7 +41,6 @@ type nutritionData struct {
 }
 
 type gapFood struct {
-	ID            int64
 	Name, Serving string
 	Protein, Kcal string
 	Fits          bool // kcal known and within today's budget left
@@ -83,8 +82,9 @@ func buildProteinGap(data *nutritionData, foods []models.HealthFood) {
 		if len(data.GapFoods) == 3 {
 			break
 		}
-		g := gapFood{ID: f.ID, Name: f.Name, Serving: f.Serving, Protein: niceNumber(*f.ProteinG), BudgetKnown: budgetKnown}
-		if f.Kcal != nil {
+		g := gapFood{Name: f.Name, Serving: f.Serving, Protein: niceNumber(*f.ProteinG), BudgetKnown: budgetKnown}
+		// 0 kcal is treated as unknown, as in the ordering above.
+		if f.Kcal != nil && *f.Kcal > 0 {
 			g.Kcal = formatThousands(*f.Kcal)
 			g.Fits = budgetKnown && *f.Kcal <= budget
 		}

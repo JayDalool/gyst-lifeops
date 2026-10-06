@@ -66,3 +66,26 @@ func TestProteinGap(t *testing.T) {
 		t.Fatal("budget claimed without calorie data")
 	}
 }
+
+// Review follow-ups: comma budgets, calories over, foods that don't qualify.
+func TestProteinGapEdges(t *testing.T) {
+	f := func(v float64) *float64 { return &v }
+	cycle := viewCycle()
+	cycle.DailyCalorieTarget = 3500
+	snap := models.DailyHealthSnapshot{HealthMetrics: models.HealthMetrics{ProteinG: f(50), DietaryCalories: f(1000)}}
+	d := buildNutritionData(buildHealthTodayView(models.HealthTodayResponse{Date: "2026-09-10", Snapshot: &snap, HealthCycle: &cycle}, viewNow()))
+	buildProteinGap(&d, []models.HealthFood{{Name: "Big shake", Kcal: f(2400), ProteinG: f(50), Active: true}, {Name: "Zero", Kcal: f(0), ProteinG: f(10), Active: true}})
+	if !d.GapFoods[0].Fits || d.GapFoods[1].Kcal != "" || d.GapFoods[1].Fits {
+		t.Fatalf("2,500 kcal budget must parse; 0 kcal is unknown: %+v", d.GapFoods)
+	}
+	over := gapView(f(50), f(2400)) // 2,400 of 2,300: over budget
+	buildProteinGap(&over, []models.HealthFood{{Name: "Turkey", Kcal: f(110), ProteinG: f(24), Active: true}})
+	if body := renderBody(t, "nutrition.html", over); strings.Contains(body, "fits your budget") || strings.Contains(body, "over your budget left") {
+		t.Fatal("budget claim made while over target")
+	}
+	none := gapView(f(50), f(1000))
+	buildProteinGap(&none, []models.HealthFood{{Name: "Rice", Kcal: f(200), ProteinG: f(4), Active: true}})
+	if body := renderBody(t, "nutrition.html", none); !strings.Contains(body, "None of your active foods lists 5 g") {
+		t.Fatal("no-qualifying-food message missing")
+	}
+}
