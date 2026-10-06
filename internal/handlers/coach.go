@@ -291,7 +291,7 @@ func bestSetText(sets []models.TrainingSet) string {
 			continue
 		}
 		if v := *s.LoadKG * (1 + *s.Reps/30); v > best {
-			best, text = v, fmt.Sprintf("%g kg × %g", *s.LoadKG, *s.Reps)
+			best, text = v, fmt.Sprintf("%s kg × %g", services.FormatLoadKG(*s.LoadKG), *s.Reps)
 		}
 	}
 	return text
