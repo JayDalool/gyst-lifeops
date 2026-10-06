@@ -282,3 +282,5 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .hv3-field :focus { outline: 2px solid var(--vn-accent); outline-offset: 0; }
 .hv3-field [aria-invalid="true"] { border-color: var(--vn-crit); }
 .hv3-ph .hv3-eyebrow a { display: inline-flex; align-items: center; min-height: 44px; }
+/* `.hv3 a` outranks `.hv3-row`; row links read as rows, not blue text. */
+.hv3 a.hv3-row { color: var(--vn-ink); }

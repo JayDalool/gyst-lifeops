@@ -21,8 +21,8 @@
   <form class="hv3-form" method="post" action="/health/checklist">
     <label class="hv3-field"><span>Name</span><input name="name" maxlength="80" required autocomplete="off" value="{{.Name}}"{{if .Error}} aria-invalid="true" aria-describedby="checklist-error"{{end}}></label>
     <label class="hv3-field"><span>Type</span><select name="kind">
-      <option value="habit"{{if eq .Kind "habit"}} selected{{end}}>Habit (tick it each day)</option>
-      {{if not .HasProtein}}<option value="protein"{{if eq .Kind "protein"}} selected{{end}}>Protein target (measured)</option>{{end}}
+      <option value="habit"{{if eq .Kind "habit"}} selected{{end}}>Habit</option>
+      {{if not .HasProtein}}<option value="protein"{{if eq .Kind "protein"}} selected{{end}}>Protein target</option>{{end}}
     </select></label>
     <button class="hv3-btn" type="submit">Add</button>
   </form>
