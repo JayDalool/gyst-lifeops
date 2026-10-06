@@ -261,7 +261,7 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-earlier details[open] > summary > .gyst-icon, .hv3-earlier[open] > summary > .gyst-icon { transform: rotate(90deg); }
 /* `.hv3 a` outranks `.hv3-btn`; keep filled link-buttons readable. */
 .hv3 a.hv3-btn:not(.secondary) { color: #fff; }
-[data-gyst-theme="dark"] .hv3 a.hv3-btn:not(.secondary) { color: #06101f; }
+[data-gyst-theme="dark"] .hv3 .hv3-btn:not(.secondary) { color: #06101f; }
 
 /* ---------- Checklist & My foods (#59) ---------- */
 .hv3-check-row { display: flex; align-items: center; gap: var(--vn-s3); min-height: 56px; padding: var(--vn-s2) var(--vn-s4); }
