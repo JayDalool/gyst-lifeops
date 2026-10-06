@@ -143,7 +143,7 @@ func trainingView(e models.TrainingEntry) trainingEntryView {
 				parts = append(parts, fmt.Sprintf("%g–%g reps", *s.MinReps, *s.MaxReps))
 			}
 			if s.LoadKG != nil {
-				parts = append(parts, fmt.Sprintf("%g kg", *s.LoadKG))
+				parts = append(parts, services.FormatLoadKG(*s.LoadKG)+" kg")
 			}
 			if s.DistanceM != nil {
 				parts = append(parts, fmt.Sprintf("%g m", *s.DistanceM))

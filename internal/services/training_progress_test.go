@@ -1,6 +1,7 @@
 package services
 
 import (
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -127,5 +128,17 @@ func TestMuscleGroupShares(t *testing.T) {
 	}
 	if MuscleGroupShares(nil, now, 30) != nil {
 		t.Fatal("no sets should give no shares")
+	}
+}
+
+// Hevy pound entries arrive as long kilogram floats; display rounds to 0.1 kg.
+func TestFormatLoadKG(t *testing.T) {
+	for in, want := range map[float64]string{43.0913263963858: "43.1", 24.9476100189602: "24.9", 104.5: "104.5", 18: "18", 0.04: "0", -0.04: "0", math.Copysign(0, -1): "0", -20.41: "-20.4"} {
+		if got := FormatLoadKG(in); got != want {
+			t.Errorf("FormatLoadKG(%v) = %q, want %q", in, got, want)
+		}
+	}
+	if got := formatSet(set("normal", 43.0913263963858, 12)); got != "43.1 kg × 12" {
+		t.Fatalf("best set %q", got)
 	}
 }

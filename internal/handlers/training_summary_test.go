@@ -91,3 +91,15 @@ func TestWorkoutTargetFollowsHealthPlan(t *testing.T) {
 		}
 	}
 }
+
+// The set list shows loads to 0.1 kg (#67).
+func TestTrainingViewRoundsLoads(t *testing.T) {
+	kg, reps := 43.0913263963858, 12.0
+	v := trainingView(models.TrainingEntry{Kind: "workout", Exercises: []models.TrainingExercise{{Name: "Incline Bench Press", PrimaryMuscle: "chest", Sets: []models.TrainingSet{{Kind: "normal", LoadKG: &kg, Reps: &reps}}}}})
+	if got := v.Exercises[0].Sets[0]; got != "normal · 12 reps · 43.1 kg" {
+		t.Fatalf("set %q", got)
+	}
+	if got := bestSetText([]models.TrainingSet{{Kind: "normal", LoadKG: &kg, Reps: &reps}}); got != "43.1 kg × 12" {
+		t.Fatalf("coach best set %q", got)
+	}
+}
