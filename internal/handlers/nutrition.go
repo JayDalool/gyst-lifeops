@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"lifeops-tracker/internal/models"
@@ -29,6 +32,64 @@ type nutritionData struct {
 	WeekAvg      string // average of logged days before today; empty when none
 	WeekLogged   int
 	WeekWithin   int
+	// Close-the-gap suggestions (#62): shown only when protein eaten and a
+	// protein target are both known and eaten is below target.
+	ShowGap  bool
+	GapLeft  string
+	GapFoods []gapFood
+	HasFoods bool
+}
+
+type gapFood struct {
+	ID            int64
+	Name, Serving string
+	Protein, Kcal string
+	Fits          bool // kcal known and within today's budget left
+	BudgetKnown   bool
+}
+
+// buildProteinGap picks up to three active foods with at least 5 g protein
+// per serving, best protein per kcal first (unknown kcal last).
+func buildProteinGap(data *nutritionData, foods []models.HealthFood) {
+	data.HasFoods = len(foods) > 0
+	var protein HealthMacroView
+	for _, m := range data.Today.Nutrients {
+		if m.Label == "Protein" {
+			protein = m
+		}
+	}
+	if !protein.HasBar || protein.State == "ok" || protein.Over {
+		return
+	}
+	data.ShowGap, data.GapLeft = true, strings.TrimPrefix(protein.Remaining.Value, "−")
+	budget, budgetKnown := 0.0, data.Today.Calories.HasBar && !data.Today.CaloriesOver
+	if budgetKnown {
+		budget, _ = strconv.ParseFloat(strings.ReplaceAll(data.Today.BudgetAbs, ",", ""), 64)
+	}
+	candidates := []models.HealthFood{}
+	for _, f := range foods {
+		if f.Active && f.ProteinG != nil && *f.ProteinG >= 5 {
+			candidates = append(candidates, f)
+		}
+	}
+	ratio := func(f models.HealthFood) float64 {
+		if f.Kcal == nil || *f.Kcal <= 0 {
+			return -1
+		}
+		return *f.ProteinG / *f.Kcal
+	}
+	sort.SliceStable(candidates, func(i, j int) bool { return ratio(candidates[i]) > ratio(candidates[j]) })
+	for _, f := range candidates {
+		if len(data.GapFoods) == 3 {
+			break
+		}
+		g := gapFood{ID: f.ID, Name: f.Name, Serving: f.Serving, Protein: niceNumber(*f.ProteinG), BudgetKnown: budgetKnown}
+		if f.Kcal != nil {
+			g.Kcal = formatThousands(*f.Kcal)
+			g.Fits = budgetKnown && *f.Kcal <= budget
+		}
+		data.GapFoods = append(data.GapFoods, g)
+	}
 }
 
 // buildNutritionWeek lays out the six days before today plus today, from
@@ -120,5 +181,11 @@ func (h *Handler) nutrition(w http.ResponseWriter, r *http.Request) {
 		}
 		buildNutritionWeek(&data, history, today.Date, target)
 	}
+	foods, err := h.Service.Repo.ListHealthFoods(false)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	buildProteinGap(&data, foods)
 	h.render(w, "nutrition.html", data)
 }
