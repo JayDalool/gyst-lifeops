@@ -125,7 +125,13 @@ func trimFloat(v float64) string { return strconv.FormatFloat(v, 'f', -1, 64) }
 // FormatLoadKG shows a load to 0.1 kg. Hevy stores pound entries as long
 // kilogram floats (95 lb = 43.0913263963858 kg); calculations keep full
 // precision, only the display is rounded (#67).
-func FormatLoadKG(kg float64) string { return trimFloat(math.Round(kg*10) / 10) }
+func FormatLoadKG(kg float64) string {
+	r := math.Round(kg*10) / 10
+	if r == 0 {
+		r = 0 // never "-0"
+	}
+	return trimFloat(r)
+}
 
 // ExerciseProgress returns exercises logged in 2+ sessions within the last
 // `days`, sorted by change (largest first), then name.
