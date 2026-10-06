@@ -1,8 +1,8 @@
 # GYST Health — Current State (2026-10-05)
 
-**Production:** `6efa27e` (PR #54, merged and deployed 2026-10-05)  
+**Production:** `c2c8ae7` (PR #63, merged and deployed 2026-10-06)  
 **Last updated:** 2026-10-05, corrected against code and production (read-only checks)  
-**Status:** Health v3 Today, Workout and More are live; integrations operational. Remaining: Nutrition v3, Daily Checklist, My Foods & Products, lightweight portion support, Health Coach, final real-device QA.
+**Status:** Health v3 Today, Workout, Nutrition and More are live, with the Daily checklist, My foods & products and protein-gap suggestions. Integrations operational. Remaining: Health Coach (PR #65, awaiting Jay), water target (#60), final real-device QA.
 
 **Note:** This document reflects the **production state** of implemented features. Production has already reported successful Hevy syncs and Apple Health data ingestion. Treat operational features as running unless proven otherwise.
 
@@ -112,23 +112,18 @@ Three pages implemented, replacing old Health view:
 
 **Remaining features:**
 
-1. **Nutrition v3 redesign** — The current Nutrition page (`/health/nutrition`) exists and works, but has **not** yet received the Health v3 redesign. Issue #55; a local work-in-progress branch exists (not yet a PR).
+Done since the last update (all merged and deployed 2026-10-06):
 
-2. **Daily Checklist** — user-configured habits on Today
-   - **No database tables yet**; needs an additive migration
-   - Binary habits (e.g. creatine taken) are ticked; measured targets (protein 132 / 180 g, water) fill from data
-   - No supplement doses or medical advice
+- **Nutrition v3** (#55, PR #58): calories vs plan, macro tiles, last 7 days vs target, MyFitnessPal → Apple Health source row.
+- **Daily checklist** (#59, PR #61): habits ticked per local day on Today; protein measured from food logged. Settings at `/health/checklist`. Migration `20261006010000_health_checklist_foods.sql`.
+- **My foods & products** (#59, PR #61): `/health/foods`, per-serving nutrition with unknown kept blank.
+- **Portion support** (#62, PR #63): "Close the protein gap" card on Nutrition from My foods, best protein per kcal, fits-budget flag. No AI.
 
-3. **My Foods & Products** — lightweight list of foods Jay usually has (name, serving, kcal, macros, notes, active)
-   - Not blocked; feeds the Coach later
-   - Not a pantry or food logger
+Still open:
 
-4. **Lightweight portion/meal support** — suggestions that close the day's gaps using My Foods
-   - Needs My Foods; delivered through the Coach
+1. **Health Coach** (#64, PR #65): provider-neutral backend, read-only Health tools, Anthropic adapter, GYST-owned memory. Elevated risk: **Jay decides the merge and the key**. See `docs/HEALTH_COACH.md` on that branch. The OpenAI adapter is a follow-up.
 
-5. **Health Coach context + read-only tools, then provider integration**
-   - Not started
-   - Not: fine-tuning on Jay's data, sending the whole database, or browser-side keys
+2. **Water target** (#60): needs a water field in the Apple Health sync, a plan target and a Shortcut update.
 
 6. **Real device QA** — End-to-end testing on iPhone + Watch
    - Apple Health Shortcut nutrition flow
@@ -199,22 +194,20 @@ Three pages implemented, replacing old Health view:
 
 **For Agent (Feature Work):**
 
-1. **Nutrition v3** — Redesign the current Nutrition page to Health v3 UI standards
-2. **Daily Checklist** — additive tables + Today card + settings in More
-3. **My Foods & Products** — lightweight list in More
-4. **Lightweight portion/meal support**
-5. **Health Coach** — context + read-only tools, then one provider adapter
-6. **Real device testing** — production iPhone/Watch
+1. **Health Coach**: address Jay's review of PR #65; then the OpenAI adapter
+2. **Water target** (#60), after Jay adds water to the Shortcut
+3. **Real device testing**: production iPhone/Watch
 
 ---
 
 ## Summary
 
-**Health v3 Today, Workout and More are live. Nutrition v3, Checklist, My Foods, portion support and the Coach remain.**
+**Health v3 Today, Workout, Nutrition and More are live, with the checklist, My foods and protein-gap suggestions. The Coach awaits Jay's decision.**
 
 - **Today page:** Real calories, macros, activity, weight data via Apple Health + manual entry
 - **Workout page:** Real Hevy training syncing every 37 minutes; exercise progress analytics live
-- **More page:** plan, log weight and weight history, data sources with sync state, health goals, health tasks, gym check-in trend. Checklist and My Foods settings will be added here.
+- **Nutrition page:** calories vs plan, macro tiles, last 7 days, protein-gap suggestions from My foods
+- **More page:** plan, log weight and weight history, Daily checklist, My foods & products, data sources with sync state, health goals, health tasks, gym check-in trend
 - **Weight logging:** Live with undo, history chart, trend tracking
 
 **Integrations are operational:**
@@ -222,14 +215,11 @@ Three pages implemented, replacing old Health view:
 - Apple Health: activity, energy and daily nutrition totals reaching GYST; MyFitnessPal end-to-end comparison still to verify
 
 **Next feature sequence:**
-1. Verify Apple Health nutrition end-to-end
-2. Nutrition v3 page redesign
-3. Daily Checklist
-4. My Foods & Products
-5. Lightweight portion/meal support
-6. Health Coach context + read-only tools
-7. AI provider integration
-8. Real iPhone/PWA QA
+1. Verify Apple Health / MyFitnessPal nutrition end-to-end (Jay)
+2. Health Coach: Jay's decision on PR #65, then the provider key
+3. OpenAI adapter (follow-up to #64)
+4. Water target (#60)
+5. Real iPhone/PWA QA
 
 ---
 
@@ -239,6 +229,8 @@ Three pages implemented, replacing old Health view:
 - **Health v3 styles:** `web/static/css/ui-health-v3.css`; tab bar and sidebar sub-links in `web/templates/ui_shell.html`
 - **Training summaries:** `internal/services/training_progress.go`
 - **Hevy Sync:** `internal/providers/hevy/`, `internal/services/training.go`, `internal/handlers/training.go`
-- **Weight:** `internal/handlers/health_progress.go` + `web/templates/health_progress.html`
+- **Weight:** `internal/handlers/health_progress.go`, `health_weight.go` + `web/templates/health_progress.html`
+- **Nutrition:** `internal/handlers/nutrition.go` (week, protein gap) + `web/templates/nutrition.html`
+- **Checklist & foods:** `internal/handlers/health_config.go`, `internal/services/health_config.go`, `internal/repository/health_config.go`, templates `health_checklist.html`, `health_foods.html`, `health_food.html`, `health_components.html`
 - **Models:** `internal/models/health.go`, `internal/models/training.go`
 - **DB:** `internal/repository/` (health_* and training_* tables)
