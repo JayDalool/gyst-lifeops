@@ -6,17 +6,22 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/handlers"
+	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/providers/hevy"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 )
 
 type Config struct {
-	HevyAPIKey    string
+	HevyAPIKey string
+	// HealthAI selects the Health Coach provider (Issue #64). Keys stay here
+	// and in the provider client; they are never rendered or logged.
+	HealthAI      HealthAIConfig
 	DBPath        string
 	MigrationsDir string
 	SeedPath      string
@@ -91,6 +96,7 @@ func New(config Config) (*App, error) {
 	webHandler.HealthSyncToken = config.HealthSyncToken
 	webHandler.Auth = services.AuthConfig{PasswordHash: config.PasswordHash}
 	webHandler.AuthDisabled = config.AuthDisabled
+	webHandler.Coach = healthCoachProvider(config.HealthAI)
 
 	if config.AuthDisabled {
 		log.Println("=======================================================")
@@ -131,4 +137,33 @@ func New(config Config) (*App, error) {
 	mux.Handle("/", webHandler.Authenticated())
 
 	return &App{DB: database, Handler: mux, cancel: cancelPush, service: service}, nil
+}
+
+// HealthAIConfig is read from HEALTH_AI_PROVIDER, ANTHROPIC_API_KEY,
+// OPENAI_API_KEY and HEALTH_AI_MODEL.
+type HealthAIConfig struct {
+	Provider     string
+	AnthropicKey string
+	OpenAIKey    string
+	Model        string
+}
+
+// healthCoachProvider returns nil (Coach disabled) unless a supported provider
+// and its key are both set. The OpenAI adapter isn't built yet (follow-up
+// Issue), so "openai" stays disabled rather than half-working.
+func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
+	switch strings.ToLower(strings.TrimSpace(c.Provider)) {
+	case "anthropic":
+		if c.AnthropicKey != "" {
+			log.Printf("Health Coach: provider anthropic enabled")
+			return healthcoach.NewAnthropic(c.AnthropicKey, c.Model)
+		}
+		log.Printf("Health Coach: disabled (ANTHROPIC_API_KEY not set)")
+	case "openai":
+		log.Printf("Health Coach: disabled (OpenAI adapter not available yet)")
+	case "":
+	default:
+		log.Printf("Health Coach: disabled (unknown HEALTH_AI_PROVIDER)")
+	}
+	return nil
 }

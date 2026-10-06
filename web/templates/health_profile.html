@@ -1,0 +1,14 @@
+{{define "content"}}
+<div class="gyst-scope hv3">
+<header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow"><a href="/health/more">More</a></p><h1>Profile for the coach</h1></div></header>
+{{if .Saved}}<p class="hv3-banner" role="status">{{template "gyst.icon" "check"}}<span>Saved.</span></p>{{end}}
+{{if .Error}}<p class="hv3-banner warn" role="alert">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}</span></p>{{end}}
+<section class="hv3-card">
+  <form class="hv3-form" method="post" action="/health/profile">
+    {{range .Fields}}<label class="hv3-field{{if or (eq .Name "food_rules") (eq .Name "notes")}} wide{{end}}"><span>{{.Label}}</span><input name="{{.Name}}" maxlength="300" autocomplete="off" placeholder="{{.Hint}}" value="{{.Value}}"></label>{{end}}
+    <button class="hv3-btn" type="submit">Save</button>
+  </form>
+  <p class="hv3-s">Only used to tailor Health Coach answers. Leave anything blank. Targets come from your Health plan.</p>
+</section>
+</div>
+{{end}}

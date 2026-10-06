@@ -1,0 +1,42 @@
+{{define "content"}}
+{{/* Health Coach (#64). Replies are plain text (escaped, line breaks kept).
+     Buttons come only from the server's allowlist, never from model text. */}}
+<div class="gyst-scope hv3 hv3-coach">
+<header class="hv3-ph">
+  <div class="hv3-ph-copy"><h1>Health Coach</h1><p class="hv3-eyebrow">Your nutrition &amp; training assistant</p></div>
+  {{if .Turns}}<form method="post" action="/health/coach/clear"><button class="hv3-btn secondary small" type="submit">Clear chat</button></form>{{end}}
+</header>
+{{if not .Configured}}
+<section class="hv3-card hv3-empty" aria-labelledby="coach-off">
+  <span class="hv3-tile">{{template "gyst.icon" "info"}}</span>
+  <h2 id="coach-off">AI provider not configured</h2>
+  <p>The Health Coach needs a server-side AI provider. Everything else in Health works without it.</p>
+</section>
+{{else}}
+{{if .Error}}<p class="hv3-banner warn" role="alert" id="coach-error">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}</span></p>{{end}}
+<section class="hv3-thread" aria-label="Conversation">
+  {{if .Turns}}
+  <ol class="hv3-log" role="log" aria-live="polite">
+    {{range $t := .Turns}}
+    <li class="hv3-turn {{$t.Role}}"{{if $t.Last}} id="latest"{{end}}>
+      {{if eq $t.Role "user"}}<p class="hv3-me">{{$t.Text}}</p>
+      {{else}}<div class="hv3-ai"><span class="hv3-av" aria-hidden="true">{{template "gyst.icon" "heart"}}</span><div class="hv3-ai-b"><p class="hv3-reply">{{$t.Text}}</p>{{if $t.ActionPath}}<a class="hv3-btn secondary small" href="{{$t.ActionPath}}">{{$t.ActionLabel}}</a>{{end}}</div></div>{{end}}
+    </li>
+    {{end}}
+  </ol>
+  {{else}}
+  <div class="hv3-hello"><h2>What can I help with?</h2><p class="hv3-s">I can see today's food, activity, weight, your plan, Hevy training, your foods and checklist.</p></div>
+  <div class="hv3-prompts">
+    {{range .Prompts}}<form method="post" action="/health/coach"><input type="hidden" name="q" value="{{.}}"><button class="hv3-prompt" type="submit">{{.}}</button></form>{{end}}
+  </div>
+  {{end}}
+</section>
+<form class="hv3-composer" method="post" action="/health/coach">
+  <label class="hv3-sr" for="coach-q">Ask the Health Coach</label>
+  <textarea id="coach-q" name="q" rows="2" maxlength="1000" required placeholder="Ask about food, training or progress"{{if .Error}} aria-describedby="coach-error"{{end}}>{{.Question}}</textarea>
+  <button class="hv3-btn" type="submit">Send</button>
+</form>
+<p class="hv3-foot">General guidance, not medical advice. Answers use only your Health data; replies can take a few seconds. <a href="/health/profile">Profile for the coach</a></p>
+{{end}}
+</div>
+{{end}}

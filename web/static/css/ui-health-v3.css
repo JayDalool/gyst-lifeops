@@ -6,7 +6,7 @@
 .hv3-tabbar, .gyst-health-sub { display: none; }
 @media (max-width: 1023px) {
   .is-health .gyst-primary { display: none; }
-  .hv3-tabbar { position: fixed; z-index: 100; inset: auto 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0 max(8px, var(--gyst-safe-right)) var(--gyst-safe-bottom) max(8px, var(--gyst-safe-left)); background: color-mix(in srgb, var(--vn-surface) 90%, transparent); backdrop-filter: saturate(1.6) blur(16px); -webkit-backdrop-filter: saturate(1.6) blur(16px); border-top: 1px solid var(--vn-separator); }
+  .hv3-tabbar { position: fixed; z-index: 100; inset: auto 0 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 0 max(8px, var(--gyst-safe-right)) var(--gyst-safe-bottom) max(8px, var(--gyst-safe-left)); background: color-mix(in srgb, var(--vn-surface) 90%, transparent); backdrop-filter: saturate(1.6) blur(16px); -webkit-backdrop-filter: saturate(1.6) blur(16px); border-top: 1px solid var(--vn-separator); }
   .hv3-tabbar > a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: var(--gyst-tab-height); color: var(--vn-ink-3); font-size: 11px; font-weight: 500; text-decoration: none; }
   .hv3-tabbar > a[aria-current="page"] { color: var(--vn-accent); }
   .hv3-tabbar .gyst-icon { width: 24px; height: 24px; }
@@ -284,3 +284,28 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .hv3-ph .hv3-eyebrow a { display: inline-flex; align-items: center; min-height: 44px; }
 /* `.hv3 a` outranks `.hv3-row`; row links read as rows, not blue text. */
 .hv3 a.hv3-row { color: var(--vn-ink); }
+
+/* ---------- Health Coach (#64) ---------- */
+.hv3-coach { max-width: 760px; }
+.hv3-thread { display: grid; gap: var(--vn-s6); min-height: 30vh; align-content: start; }
+.hv3-log { display: grid; gap: var(--vn-s6); }
+.hv3-me { justify-self: end; margin-left: auto; max-width: 82%; padding: 10px var(--vn-s4); border-radius: 20px 20px 6px 20px; background: var(--vn-accent); color: #fff; overflow-wrap: anywhere; white-space: pre-wrap; width: fit-content; }
+.hv3-turn.user { display: flex; justify-content: flex-end; }
+.hv3-ai { display: flex; gap: var(--vn-s3); align-items: flex-start; min-width: 0; }
+.hv3-av { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--vn-accent-soft); color: var(--vn-accent); }
+.hv3-av .gyst-icon { width: 16px; height: 16px; }
+.hv3-ai-b { flex: 1; min-width: 0; display: grid; gap: var(--vn-s3); justify-items: start; }
+.hv3-reply { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.hv3-hello { display: grid; gap: var(--vn-s2); text-align: center; justify-items: center; padding-top: var(--vn-s4); }
+.hv3-hello h2 { font: 650 var(--vn-t-section)/1.25 var(--vn-font-display); }
+.hv3-prompts { display: grid; gap: var(--vn-s2); }
+@media (min-width: 600px) { .hv3-prompts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.hv3-prompts form { margin: 0; display: grid; }
+.hv3-prompt { min-height: 48px; padding: var(--vn-s2) var(--vn-s4); border: 0; border-radius: var(--vn-r-md); background: var(--vn-surface); color: var(--vn-ink); text-align: left; font: 500 15px/1.35 var(--vn-font); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vn-ink) 6%, transparent), var(--vn-e1); cursor: pointer; }
+.hv3-prompt:hover { background: var(--vn-surface-2); }
+.hv3-composer { position: sticky; bottom: calc(var(--gyst-tab-height) + var(--gyst-safe-bottom) + var(--vn-s2)); z-index: 10; display: flex; gap: var(--vn-s2); align-items: flex-end; padding: var(--vn-s2); border-radius: var(--vn-r-xl); background: var(--vn-elevated); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vn-ink) 8%, transparent), var(--vn-e2); }
+.hv3-composer textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 160px; resize: vertical; padding: 10px var(--vn-s3); border: 0; background: transparent; color: var(--vn-ink); font: 400 16px/1.4 var(--vn-font); }
+.hv3-composer textarea:focus { outline: none; }
+.hv3-composer:focus-within { box-shadow: 0 0 0 2px var(--vn-accent), var(--vn-e2); }
+@media (min-width: 1024px) { .hv3-composer { bottom: var(--vn-s6); } }
+.hv3-ph form { margin: 0; }
