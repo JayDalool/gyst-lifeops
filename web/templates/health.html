@@ -1,12 +1,12 @@
 {{define "content"}}
-{{/* Health v3 · Today (#53; design approved in #45). Observations only: absent
-     values read "—", never 0. Watch and phone steps stay separate. */}}
+{{/* Health · Today (#70; approved mockup in docs/design/health-home/). Observations
+     only: absent values read "—", never 0. Watch and phone steps stay separate.
+     Every status colour is paired with words. */}}
 <div class="gyst-scope hv3">
 <header class="hv3-ph">
   <div class="hv3-ph-copy">
-    <p class="hv3-eyebrow">{{niceDate .Today.Date}}</p>
-    <h1>{{greeting}}</h1>
-    {{with .Today.Status}}<p class="hv3-status"><span class="hv3-dot {{.Tone}}" aria-hidden="true"></span>{{.Text}}</p>{{end}}
+    <p class="hv3-eyebrow">Health · {{niceDate .Today.Date}}</p>
+    <h1>Today</h1>
   </div>
 </header>
 
@@ -17,31 +17,34 @@
 <p class="hv3-banner warn" role="status">{{template "gyst.icon" "refresh-cw"}}<span>Apple Health last synced {{.Today.LastSynced}}</span><span class="hv3-chip warn">Stale</span></p>
 {{end}}
 
-<div class="hv3-today">
-  <section class="hv3-card hv3-energy" aria-labelledby="energy-title">
-    <h2 id="energy-title" class="hv3-sr">Calories</h2>
-    <div class="hv3-energy-body">
-      <div class="hv3-ring hv3-ring-lg{{if .Today.CaloriesOver}} warn{{end}}">
+<div class="hv3-home">
+ <div class="hv3-col">
+  <section class="hv3-card hv3-cal" aria-labelledby="cal-title">
+    <div class="hv3-cal-head"><h2 id="cal-title">Calories today</h2><span class="hv3-cstate {{.Today.CalState.Key}}">{{template "gyst.icon" .Today.CalState.Icon}}{{.Today.CalState.Label}}</span></div>
+    <div class="hv3-cal-body">
+      <div class="hv3-ring {{.Today.CalState.Key}}">
         <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false"><circle class="track{{if not .Today.Calories.HasBar}} empty{{end}}" cx="60" cy="60" r="52" pathLength="100"/>{{if .Today.Calories.HasBar}}<circle class="val" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="{{.Today.CaloriePercent}} 100"/>{{end}}</svg>
         <div class="hv3-ring-center">
           {{if .Today.Calories.HasBar}}
             <strong class="hv3-big">{{.Today.BudgetAbs}}</strong><span>{{if .Today.CaloriesOver}}kcal over budget{{else}}food budget left{{end}}</span>
           {{else if .Today.Calories.Consumed.Present}}
-            <strong class="hv3-big">{{.Today.Calories.Consumed.Value}}</strong><span>kcal eaten</span><small>No target set</small>
+            <strong class="hv3-big">{{.Today.Calories.Consumed.Value}}</strong><span>kcal eaten</span>
           {{else}}
             <strong class="hv3-big hv3-absent">—</strong><span>No food logged yet</span>
           {{end}}
         </div>
       </div>
-      <div class="hv3-energy-side">
-        <p class="hv3-eaten"><span><b>{{if .Today.Calories.Consumed.Present}}{{.Today.Calories.Consumed.Value}}{{else}}—{{end}}</b> eaten</span><span aria-hidden="true">·</span><span><b>{{if .Today.CalorieTarget.Present}}{{.Today.CalorieTarget.Value}}{{else}}—{{end}}</b> {{if .Today.CalorieTarget.Present}}target{{else}}no target{{end}}</span></p>
-        <dl class="hv3-e2">
-          <div><dt>Burned so far</dt><dd>{{if .Today.ObservedBurn.Present}}{{.Today.ObservedBurn.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
-            <p>{{if and .Today.RestingEnergy.Present .Today.ActiveEnergy.Present}}{{.Today.RestingEnergy.Value}} resting + {{.Today.ActiveEnergy.Value}} active{{else if .Today.ActiveEnergy.Present}}{{.Today.ActiveEnergy.Value}} active · resting not received{{else}}Not received{{end}}</p></div>
-          <div class="hv3-bal"><dt>Balance so far</dt><dd>{{if .Today.ObservedEnergy.Present}}{{.Today.ObservedEnergy.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
-            <p>{{if .Today.ObservedEnergy.Present}}Observed, not final{{else}}Needs food and burn data{{end}}</p></div>
-        </dl>
-      </div>
+      <dl class="hv3-cal-stats">
+        <div class="eaten"><span class="hv3-cal-ico" aria-hidden="true">{{template "gyst.icon" "utensils"}}</span><dt>Eaten</dt>
+          <dd>{{if .Today.Calories.Consumed.Present}}{{.Today.Calories.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
+          <p>{{if .Today.CalorieTarget.Present}}of {{.Today.CalorieTarget.Value}} target{{else}}No target set{{end}}</p></div>
+        <div class="burn"><span class="hv3-cal-ico" aria-hidden="true">{{template "gyst.icon" "flame"}}</span><dt>Burned so far</dt>
+          <dd>{{if .Today.ObservedBurn.Present}}{{.Today.ObservedBurn.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
+          <p>{{if and .Today.RestingEnergy.Present .Today.ActiveEnergy.Present}}{{.Today.RestingEnergy.Value}} resting + {{.Today.ActiveEnergy.Value}} active{{else if .Today.ActiveEnergy.Present}}{{.Today.ActiveEnergy.Value}} active · resting not received{{else}}Not received{{end}}</p></div>
+        <div class="bal"><span class="hv3-cal-ico" aria-hidden="true">{{template "gyst.icon" "chart-column"}}</span><dt>Balance so far</dt>
+          <dd>{{if .Today.ObservedEnergy.Present}}{{.Today.ObservedEnergy.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
+          <p>{{if .Today.ObservedEnergy.Present}}Observed, not final{{else}}Needs food and burn data{{end}}</p></div>
+      </dl>
     </div>
     <details class="hv3-disclose">
       <summary>{{template "gyst.icon" "info"}}How this is counted</summary>
@@ -49,80 +52,88 @@
         <li><b>Budget left</b> = calorie target − eaten.</li>
         <li><b>Burned so far</b> = resting + active energy from Apple Health. Steps are never turned into calories.</li>
         <li><b>Balance so far</b> = eaten − burned so far. It changes until the day ends, so it isn't a final deficit.</li>
+        <li>The ring turns amber in the last tenth of your budget and red when you're over.</li>
         {{if .Today.TargetEnergy.Present}}<li>Your plan aims for a daily balance of {{.Today.TargetEnergy.Value}} kcal.</li>{{end}}
       </ul>
     </details>
   </section>
 
-  <section class="hv3-section" aria-labelledby="macros-title">
-    <div class="hv3-section-h"><h2 id="macros-title">Macros</h2><a href="/health/nutrition">Nutrition</a></div>
-    <div class="hv3-grid4">
+  {{with .Nudge}}
+  <section class="hv3-nudge {{.Kind}}" aria-labelledby="nudge-title">
+    <span class="hv3-nudge-ico" aria-hidden="true">{{if eq .Kind "recovery"}}{{template "gyst.icon" "heart"}}{{else}}{{template "gyst.icon" "footprints"}}{{end}}</span>
+    <div><h2 id="nudge-title">{{.Title}}</h2><p>{{.Body}}</p></div>
+    {{if eq .Kind "move"}}<ul class="hv3-nudge-opts" aria-label="Ideas"><li>{{template "gyst.icon" "footprints"}}Walk</li><li>{{template "gyst.icon" "waves"}}Swim</li><li>{{template "gyst.icon" "bike"}}Bike</li></ul>{{end}}
+  </section>
+  {{end}}
+ </div>
+
+ <div class="hv3-col">
+  <section aria-labelledby="macros-title">
+    <h2 id="macros-title" class="hv3-sr">Macros</h2>
+    <div class="hv3-macs">
       {{range .Today.Nutrients}}
-      <div class="hv3-card hv3-macro">
-        {{if .Target.Present}}<div class="hv3-ring hv3-ring-sm {{.State}}"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle class="track{{if not .HasBar}} empty{{end}}" cx="24" cy="24" r="20" pathLength="100"/>{{if .HasBar}}<circle class="val" cx="24" cy="24" r="20" pathLength="100" stroke-dasharray="{{.Percent}} 100"/>{{end}}</svg></div>{{end}}
-        <div class="hv3-macro-copy">
-          <span class="hv3-label">{{.Short}}</span>
-          <span class="hv3-amt">{{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}{{if .Target.Present}}<small> / {{.Target.Value}} {{.Target.Unit}}</small>{{else}}<small> {{.Consumed.Unit}}</small>{{end}}</span>
-          <span class="hv3-note{{if eq .State "warn"}} warn{{end}}">{{if .Note}}{{.Note}}{{else if not .Consumed.Present}}Not logged yet{{else}}No target{{end}}</span>
-          <span class="hv3-sr">{{.ProgressAria}}</span>
-        </div>
-      </div>
+      <a class="hv3-card hv3-mac {{.Key}}" href="/health/nutrition">
+        <span class="hv3-mac-h"><span class="hv3-mac-dot" aria-hidden="true"></span>{{.Short}}</span>
+        {{if .Target.Present}}<span class="hv3-bar{{if not .HasBar}} empty{{end}}" aria-hidden="true"><i style="width:{{.BarPercent}}%"></i></span>{{end}}
+        <span class="hv3-mac-v">{{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}{{if .Target.Present}}<small> / {{.Target.Value}} {{.Target.Unit}}</small>{{else if .Consumed.Present}}<small> {{.Consumed.Unit}}</small>{{end}}</span>
+        {{if eq .State "warn"}}<span class="hv3-mac-note warn">{{template "gyst.icon" "circle-alert"}}{{.Note}}</span>
+        {{else if eq .Note "Target met"}}<span class="hv3-mac-note">{{template "gyst.icon" "check"}}Target met</span>
+        {{else if not .Consumed.Present}}<span class="hv3-mac-note">Not logged yet</span>
+        {{else if not .Target.Present}}<span class="hv3-mac-note">No target</span>{{end}}
+        <span class="hv3-sr">{{.ProgressAria}}{{if .Note}}, {{.Note}}{{end}}</span>
+      </a>
       {{end}}
     </div>
   </section>
 
-  <section class="hv3-section hv3-span" aria-labelledby="activity-title">
-    <div class="hv3-section-h"><h2 id="activity-title">Activity</h2></div>
-    <div class="hv3-grid2">
-      <div class="hv3-card hv3-stat">
-        <p class="hv3-k">{{template "gyst.icon" "footprints"}}Steps</p>
-        <p class="hv3-v">{{if .Today.Steps.Present}}{{.Today.Steps.Value}} <small>{{.Today.StepsSource}}</small>{{else}}<span class="hv3-absent">—</span>{{end}}</p>
-        {{if and .Today.Steps.Present .Today.StepTarget.Present}}<div class="hv3-bar" role="img" aria-label="{{.Today.Steps.Value}} of {{.Today.StepTarget.Value}} steps, {{.Today.StepsSource}}"><i style="width:{{.Today.StepPercent}}%"></i></div>{{end}}
-        <p class="hv3-s">{{if not .Today.Steps.Present}}No steps received yet{{else if .Today.StepsOther.Present}}{{.Today.OtherSource}} {{.Today.StepsOther.Value}} · counted separately{{else}}{{.Today.OtherSource}} · not received{{end}}</p>
-      </div>
-      <div class="hv3-card hv3-stat">
-        <p class="hv3-k">{{template "gyst.icon" "timer"}}Exercise</p>
-        <p class="hv3-v">{{if .Today.ExerciseMinutes.Present}}{{.Today.ExerciseMinutes.Value}} <small>min</small>{{else}}<span class="hv3-absent">—</span>{{end}}</p>
-        <p class="hv3-s">{{if and .Today.ExerciseMinutes.Present (eq .Today.ExerciseMinutes.Value "0")}}Recorded zero today{{else if .Today.ExerciseMinutes.Present}}Today, from Apple Health{{else}}Not received{{end}}</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="hv3-card hv3-weight hv3-span" aria-labelledby="weight-title">
-    <h2 id="weight-title" class="hv3-k">{{template "gyst.icon" "weight"}}Weight</h2>
-    {{if .Weight.Present}}
-    <div class="hv3-weight-body">
-      <div>
-        <p class="hv3-v">{{.Weight.Latest}} <small>kg</small></p>
-        {{if .Weight.HasChange}}<p class="hv3-delta">{{.Weight.Change}} since {{.Weight.Since}}</p>{{else if .Weight.NoneSincePlan}}<p class="hv3-s">No reading since plan start ({{.Weight.Since}})</p>{{else if eq .Weight.Readings 1}}<p class="hv3-s">First reading</p>{{else}}<p class="hv3-s">Latest reading</p>{{end}}
-      </div>
+  <div class="hv3-duo">
+    <section class="hv3-card hv3-tile-card" aria-labelledby="steps-title">
+      <div class="hv3-tile-h"><h2 id="steps-title" class="hv3-k">{{template "gyst.icon" "footprints"}}Steps</h2></div>
+      <p class="hv3-tile-v">{{if .Today.Steps.Present}}{{.Today.Steps.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</p>
+      {{if and .Today.Steps.Present .Today.StepTarget.Present}}<div class="hv3-bar" role="img" aria-label="{{.Today.Steps.Value}} of {{.Today.StepTarget.Value}} steps, {{.Today.StepsSource}}"><i style="width:{{.Today.StepPercent}}%"></i></div>{{end}}
+      <p class="hv3-s">{{if not .Today.Steps.Present}}No steps received yet{{else if .Today.StepTarget.Present}}of {{.Today.StepTarget.Value}} · {{.Today.StepsSource}}{{else}}{{.Today.StepsSource}}{{end}}</p>
+      {{if .Today.StepsOther.Present}}<p class="hv3-s">{{.Today.OtherSource}} {{.Today.StepsOther.Value}} · counted separately</p>{{end}}
+      {{if .Today.ExerciseMinutes.Present}}<p class="hv3-s">{{.Today.ExerciseMinutes.Value}} min exercise</p>{{end}}
+    </section>
+    <section class="hv3-card hv3-tile-card" aria-labelledby="weight-title">
+      <div class="hv3-tile-h"><h2 id="weight-title" class="hv3-k">{{template "gyst.icon" "weight"}}Weight</h2><a href="/health/progress" aria-label="Weight history">{{template "gyst.icon" "chevron-right"}}</a></div>
+      {{if .Weight.Present}}
+      <p class="hv3-tile-v">{{.Weight.Latest}}<small> kg</small></p>
+      <p class="hv3-s">{{if .Weight.HasChange}}{{.Weight.Change}} since {{.Weight.Since}}{{else if .Weight.NoneSincePlan}}No reading since plan start{{else if eq .Weight.Readings 1}}First reading{{else}}{{.Weight.LatestAt}}{{end}}</p>
       {{if .Weight.Points}}<svg class="hv3-spark" viewBox="0 0 100 32" preserveAspectRatio="none" role="img" aria-label="{{.Weight.SparkDescription}}"><polyline points="{{.Weight.Points}}"/></svg>{{end}}
-    </div>
-    {{else}}
-    <p class="hv3-v"><span class="hv3-absent">—</span></p><p class="hv3-s">No readings yet</p>
-    {{end}}
-    <div class="hv3-card-foot"><span class="hv3-s">{{if .Weight.Present}}{{.Weight.LatestAt}} · <a href="/health/progress">History</a>{{end}}</span><a class="hv3-btn secondary small" href="/health/progress#log">{{template "gyst.icon" "plus"}}Log weight</a></div>
-  </section>
+      {{else}}
+      <p class="hv3-tile-v"><span class="hv3-absent">—</span></p><p class="hv3-s">No readings yet</p>
+      {{end}}
+      <a class="hv3-logw" href="/health/progress#log">{{template "gyst.icon" "plus"}}Log weight</a>
+    </section>
+  </div>
+ </div>
 
-  <section class="hv3-section hv3-span" id="checklist" aria-labelledby="checklist-title">
-    <div class="hv3-section-h"><h2 id="checklist-title">Checklist</h2><a href="/health/checklist">Edit</a></div>
+  <section class="hv3-card hv3-cl2 hv3-span" id="checklist" aria-labelledby="checklist-title">
     {{if .Checklist}}
-    <ul class="hv3-group hv3-checklist">
+    <div class="hv3-cl2-h"><span class="hv3-cl2-badge{{if eq .ChecklistDone (len .Checklist)}} done{{end}}" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
+      <div><h2 id="checklist-title">Daily checklist</h2><p class="hv3-s">{{.ChecklistDone}} of {{len .Checklist}} complete</p></div>
+      <a href="/health/checklist" aria-label="Edit checklist">{{template "gyst.icon" "chevron-right"}}</a></div>
+    <div class="hv3-bar" aria-hidden="true"><i style="width:{{.ChecklistPercent}}%"></i></div>
+    <ul class="hv3-cl2-items">
       {{range .Checklist}}
-      <li class="hv3-check-row">
+      <li>
         {{if .Habit}}
-        <form method="post" action="/health/checklist/{{.ID}}/toggle"><button class="hv3-check{{if .Done}} done{{end}}" type="submit" aria-pressed="{{if .Done}}true{{else}}false{{end}}" aria-label="{{.Name}}: {{if .Done}}done, tap to undo{{else}}not done, tap to mark done{{end}}">{{template "gyst.icon" "check"}}</button></form>
-        <span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span></span>
+        <form method="post" action="/health/checklist/{{.ID}}/toggle"><button class="hv3-dot-btn{{if .Done}} done{{end}}" type="submit" aria-pressed="{{if .Done}}true{{else}}false{{end}}" aria-label="{{.Name}}: {{if .Done}}done, tap to undo{{else}}not done, tap to mark done{{end}}">{{template "gyst.icon" "check"}}</button></form>
+        <span class="lbl" title="{{.Name}}" aria-hidden="true">{{.Name}}</span>
         {{else}}
-        <span class="hv3-check measured{{if .Done}} done{{end}}" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
-        <span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">Measured from food logged{{if .Done}} · target met{{end}}</span></span>
-        <span class="hv3-state">{{.Value}}</span>
+        <span class="hv3-dot-btn measured{{if .Done}} done{{end}}" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
+        <span class="lbl" title="{{.Name}}">{{.Name}}</span>
+        <span class="val">{{.Value}}</span>
+        <span class="hv3-sr">Measured from food logged{{if .Done}}, target met{{else}}, not met yet{{end}}</span>
         {{end}}
       </li>
       {{end}}
     </ul>
     {{else}}
-    <div class="hv3-card hv3-empty-sm"><p class="hv3-strong">No checklist yet</p><p class="hv3-s">Add your own daily habits and a protein target. <a href="/health/checklist">Set up checklist</a></p></div>
+    <div class="hv3-cl2-h"><span class="hv3-cl2-badge" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
+      <div><h2 id="checklist-title">Daily checklist</h2><p class="hv3-s">Add your own daily habits and a protein target.</p></div>
+      <a href="/health/checklist" aria-label="Set up checklist">{{template "gyst.icon" "chevron-right"}}</a></div>
     {{end}}
   </section>
 </div>

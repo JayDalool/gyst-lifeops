@@ -38,7 +38,7 @@ func TestChecklistLifecycle(t *testing.T) {
 	day := time.Date(2026, 10, 7, 9, 0, 0, 0, loc)
 	h.Service.Clock.Now = func() time.Time { return day }
 
-	if body := cfgGet(t, h, "/health"); !strings.Contains(body, "No checklist yet") {
+	if body := cfgGet(t, h, "/health"); !strings.Contains(body, "Add your own daily habits") {
 		t.Fatal("Today should show the empty checklist state")
 	}
 	if body := cfgGet(t, h, "/health/checklist"); !strings.Contains(body, "No items yet") || !strings.Contains(body, `value="protein"`) {

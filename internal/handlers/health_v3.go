@@ -34,25 +34,6 @@ func healthTab(data any) string {
 	return "more"
 }
 
-// healthStatus is the one-line answer under the greeting. Calories only, and
-// only what has been observed so far today.
-type healthStatus struct{ Text, Tone string }
-
-func (v HealthTodayView) Status() healthStatus {
-	switch {
-	case !v.HasSnapshot:
-		return healthStatus{"Waiting for today's Apple Health sync", "idle"}
-	case !v.Calories.Consumed.Present:
-		return healthStatus{"No food logged yet today", "idle"}
-	case v.CaloriesOver:
-		return healthStatus{"Over your calorie budget", "warn"}
-	case v.Calories.Target.Present:
-		return healthStatus{"Within your calorie budget so far", "ok"}
-	default:
-		return healthStatus{"No calorie target set", "idle"}
-	}
-}
-
 // healthWeightView is the compact weight card: latest reading, change since
 // the plan started (or the earliest reading in range), and a sparkline.
 type healthWeightView struct {

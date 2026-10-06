@@ -1,8 +1,8 @@
-# GYST Health — Current State (2026-10-05)
+# GYST Health — Current State (2026-10-06)
 
-**Production:** `c2c8ae7` (PR #63, merged and deployed 2026-10-05, Winnipeg time)  
-**Last updated:** 2026-10-05, corrected against code and production (read-only checks)  
-**Status:** Health v3 Today, Workout, Nutrition and More are live, with the Daily checklist, My foods & products and protein-gap suggestions. Integrations operational. Remaining: Health Coach (PR #65, awaiting Jay), water target (#60), final real-device QA.
+**Production:** `cbc5411` (PR #65, Coach disabled) when this was written. PR #68 (load rounding) and PR #71 (Today redesign) deploy together after #71 merges.  
+**Last updated:** 2026-10-06, after the 2026-10-05 usage audit (#67, #69) and the Today redesign (#70)  
+**Status:** Health v3 Today, Workout, Nutrition and More are live, with the Daily checklist, My foods & products and protein-gap suggestions. Integrations operational. Today redesigned to the approved mockup (#70). Health Coach merged (PR #65) and disabled until Jay sets an AI key. Remaining: water target (#60), the nutrition-week zero-day decision (#69), final real-device QA.
 
 **Note:** This document reflects the **production state** of implemented features. Production has already reported successful Hevy syncs and Apple Health data ingestion. Treat operational features as running unless proven otherwise.
 
@@ -21,12 +21,19 @@
 ### Health v3 UI (PR #54 `6efa27e`; Nutrition added in PR #58)
 Today, Workout and More from PR #54; Nutrition v3 from PR #58 (see Real Gaps below):
 
-#### 1. Health → Today (`/health`, `web/templates/health.html`)
-- **Calories card:** budget left vs target, progress ring, eaten + burned breakdown
-- **Macros section:** protein, carbs, fat, fiber with targets + progress rings
-- **Activity section:** steps (Watch and Phone tracked separately), exercise minutes
-- **Weight section:** latest reading, trend since plan start, sparkline chart
-- **Stale data warning:** flagged when Apple Health data is >8 hours old
+#### 1. Health → Today (`/health`, `web/templates/health.html`; redesigned in #70)
+- **Calories today card:** food budget left (target − eaten) in a ring coloured by state, always with words: *Within budget*, *Close to budget* (the last tenth of the target), *Over budget*, *No food logged*, *Waiting for sync*. Beside it, three separate numbers: **Eaten** (of target), **Burned so far** (resting + active) and **Balance so far** (eaten − burned, "Observed, not final"). Numbers are rounded before they're combined, so the parts on screen always add up.
+- **Movement nudge** (`internal/handlers/health_home.go`): deterministic, server-side, never mentions calories.
+  - Hidden when there's no snapshot, the data is stale, before 11:00, or from 21:00.
+  - Hidden after 30+ exercise minutes or once the step target is reached.
+  - After a Hevy workout that day it shows a short recovery note instead.
+  - Otherwise it shows the steps left to the plan's step target, with Walk / Swim / Bike ideas.
+- **Macro cards:** protein, carbs, fat, fiber in their category colours with bars; "over" warnings on limits, "Target met" on minimums. Each card opens Nutrition.
+- **Steps card:** Apple Watch when observed, else iPhone, labelled; the other source is listed separately and never summed; exercise minutes.
+- **Weight card:** latest reading, change since plan start, sparkline, history link and Log weight.
+- **Daily checklist:** "n of m complete" with a bar and round toggles; the protein item is measured, not ticked.
+- **Stale data warning:** flagged when Apple Health data is >8 hours old.
+- Design record: `docs/design/health-home/` (approved mockup, prototype, states).
 
 #### 2. Health → Workout (`/health/training`, `web/templates/training.html`)  
 - **Weekly summary:** workouts completed vs target, volume (kg), training time

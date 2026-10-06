@@ -314,3 +314,150 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .hv3-gap-list li { display: flex; align-items: center; gap: var(--vn-s3); padding: var(--vn-s2) 0; border-top: 1px solid var(--vn-separator); }
 .hv3-gap-list li:first-child { border-top: 0; }
 .hv3-gap-p { color: var(--vn-ok-text); font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* =====================================================================
+   Health Today redesign (#70; approved mockup docs/design/health-home/).
+   Health semantic tokens sit on the vNext tokens. Eaten, burned and
+   balance each get their own colour; every colour is paired with words.
+   ===================================================================== */
+:root, [data-gyst-theme="light"] {
+  --health-eaten: #e8604c;   --health-eaten-text: #b93a2c;   --health-eaten-soft: #fdeceb;
+  --health-burn: #16a34a;    --health-burn-text: #15803d;    --health-burn-soft: #e7f6ec;
+  --health-balance: #4c6fd9; --health-balance-text: #3554b8; --health-balance-soft: #ecf0fd;
+  --health-calorie-ok: var(--vn-ok); --health-calorie-watch: var(--vn-warn); --health-calorie-over: var(--vn-crit);
+  /* Macro category colours (identity, not state). */
+  --health-protein: #e5536a; --health-carbs: #3b82f6; --health-fat: #e0a100; --health-fiber: #8b5cf6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-gyst-theme="light"]) {
+    --health-eaten: #ff7b6b;   --health-eaten-text: #ff9b8f;   --health-eaten-soft: #3b1d1b;
+    --health-burn: #4ade80;    --health-burn-text: #6ee7a0;    --health-burn-soft: #10301f;
+    --health-balance: #8ca3ff; --health-balance-text: #a8b8ff; --health-balance-soft: #1b2448;
+    --health-protein: #ff6f86; --health-carbs: #60a5fa; --health-fat: #fbbf24; --health-fiber: #a78bfa;
+  }
+}
+[data-gyst-theme="dark"] {
+  --health-eaten: #ff7b6b;   --health-eaten-text: #ff9b8f;   --health-eaten-soft: #3b1d1b;
+  --health-burn: #4ade80;    --health-burn-text: #6ee7a0;    --health-burn-soft: #10301f;
+  --health-balance: #8ca3ff; --health-balance-text: #a8b8ff; --health-balance-soft: #1b2448;
+  --health-protein: #ff6f86; --health-carbs: #60a5fa; --health-fat: #fbbf24; --health-fiber: #a78bfa;
+}
+
+.hv3-home { display: grid; gap: var(--vn-s4); min-width: 0; }
+@media (min-width: 1024px) {
+  .hv3-home { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; column-gap: var(--vn-s6); row-gap: var(--vn-s4); }
+  .hv3-home .hv3-col { display: grid; gap: var(--vn-s4); min-width: 0; align-content: start; }
+  .hv3-home .hv3-span { grid-column: 1 / -1; }
+}
+.hv3-home .hv3-col { display: grid; gap: var(--vn-s4); min-width: 0; align-content: start; }
+
+/* Calorie card */
+.hv3-cal { display: grid; gap: var(--vn-s4); padding: var(--vn-s4); }
+.hv3-cal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--vn-s2); flex-wrap: wrap; }
+.hv3-cal-head h2 { font: 650 var(--vn-t-body)/1.3 var(--vn-font-display); color: var(--vn-ink); }
+.hv3-cstate { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 2px 10px 2px 8px; border-radius: var(--vn-r-pill); font-size: var(--vn-t-foot); font-weight: 650; white-space: nowrap; }
+.hv3-cstate .gyst-icon { width: 14px; height: 14px; }
+.hv3-cstate.ok { background: var(--vn-ok-soft); color: var(--vn-ok-text); }
+.hv3-cstate.watch { background: var(--vn-warn-soft); color: var(--vn-warn-text); }
+.hv3-cstate.over { background: var(--vn-crit-soft); color: var(--vn-crit-text); }
+.hv3-cstate.idle { background: var(--vn-idle-soft); color: var(--vn-idle-text); }
+.hv3-cal-body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--vn-s4); align-items: center; }
+@media (max-width: 359px) { .hv3-cal-body { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
+.hv3-cal .hv3-ring { width: 148px; height: 148px; }
+.hv3-cal .hv3-ring circle { stroke-width: 12; }
+.hv3-cal .hv3-ring.ok .val { stroke: var(--health-calorie-ok); }
+.hv3-cal .hv3-ring.watch .val { stroke: var(--health-calorie-watch); }
+.hv3-cal .hv3-ring.over .val { stroke: var(--health-calorie-over); }
+.hv3-cal .hv3-ring-center { padding: 0 14px; }
+.hv3-cal .hv3-big { font-size: 36px; }
+.hv3-cal .hv3-ring-center span { font-size: var(--vn-t-foot); line-height: 1.25; }
+.hv3-cal-stats { display: grid; gap: var(--vn-s3); min-width: 0; margin: 0; }
+.hv3-cal-stats > div { display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: var(--vn-s3); align-items: center; min-width: 0; }
+.hv3-cal-ico { grid-row: span 3; display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--vn-r-sm); align-self: start; }
+.hv3-cal-ico .gyst-icon { width: 18px; height: 18px; }
+.hv3-cal-stats dt { font-size: var(--vn-t-foot); font-weight: 650; }
+.hv3-cal-stats dd { margin: 0; font: 700 var(--vn-t-section)/1.15 var(--vn-font-display); letter-spacing: -.015em; color: var(--vn-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hv3-cal-stats p { font-size: var(--vn-t-caption); color: var(--vn-ink-2); overflow-wrap: anywhere; }
+.hv3-cal-stats .eaten .hv3-cal-ico { background: var(--health-eaten-soft); color: var(--health-eaten); }
+.hv3-cal-stats .eaten dt { color: var(--health-eaten-text); }
+.hv3-cal-stats .burn .hv3-cal-ico { background: var(--health-burn-soft); color: var(--health-burn); }
+.hv3-cal-stats .burn dt { color: var(--health-burn-text); }
+.hv3-cal-stats .bal .hv3-cal-ico { background: var(--health-balance-soft); color: var(--health-balance); }
+.hv3-cal-stats .bal dt { color: var(--health-balance-text); }
+.hv3-cal .hv3-disclose { margin-top: calc(-1 * var(--vn-s2)); }
+
+/* Movement nudge */
+.hv3-nudge { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: var(--vn-s3); align-items: start; padding: var(--vn-s4); border-radius: var(--vn-r-lg); background: var(--health-burn-soft); color: var(--vn-ink); }
+.hv3-nudge.recovery { background: var(--health-balance-soft); }
+.hv3-nudge-ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--vn-r-md); background: var(--vn-surface); color: var(--health-burn); }
+.hv3-nudge.recovery .hv3-nudge-ico { color: var(--health-balance); }
+.hv3-nudge h2 { font: 650 var(--vn-t-body)/1.3 var(--vn-font-display); }
+.hv3-nudge p { font-size: var(--vn-t-sub); color: var(--vn-ink-2); margin-top: 2px; }
+.hv3-nudge-opts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--vn-s2); }
+.hv3-nudge-opts li { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 10px; border-radius: var(--vn-r-pill); background: var(--vn-surface); font-size: var(--vn-t-foot); font-weight: 600; color: var(--vn-ink); }
+.hv3-nudge-opts .gyst-icon { width: 16px; height: 16px; color: var(--health-burn); }
+
+/* Macros */
+.hv3-macs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--vn-s3); }
+.hv3-mac { display: grid; gap: var(--vn-s2); align-content: start; padding: var(--vn-s3) var(--vn-s4); }
+.hv3-mac-h { display: flex; align-items: center; gap: var(--vn-s2); font-size: var(--vn-t-foot); font-weight: 650; color: var(--vn-ink-2); }
+.hv3-mac-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; background: var(--mac); }
+.hv3-mac .hv3-bar { height: 8px; }
+.hv3-mac .hv3-bar i { background: var(--mac); }
+.hv3-mac-v { font: 700 var(--vn-t-body)/1.2 var(--vn-font); color: var(--vn-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hv3-mac-v small { font-weight: 500; color: var(--vn-ink-2); font-size: var(--vn-t-foot); }
+.hv3-mac-note { display: inline-flex; align-items: center; gap: 4px; font-size: var(--vn-t-caption); color: var(--vn-ink-2); }
+.hv3-mac-note.warn { color: var(--vn-warn-text); font-weight: 600; }
+.hv3-mac-note .gyst-icon { width: 12px; height: 12px; }
+.hv3-mac.protein { --mac: var(--health-protein); } .hv3-mac.carbs { --mac: var(--health-carbs); }
+.hv3-mac.fat { --mac: var(--health-fat); } .hv3-mac.fiber { --mac: var(--health-fiber); }
+.hv3-mac .hv3-bar.empty i { width: 0; }
+
+/* Steps + weight */
+.hv3-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--vn-s3); }
+.hv3-tile-card { display: grid; gap: var(--vn-s2); align-content: start; padding: var(--vn-s3) var(--vn-s4); min-width: 0; }
+.hv3-tile-h { display: flex; align-items: center; justify-content: space-between; gap: var(--vn-s2); min-height: 32px; }
+.hv3-tile-h .hv3-k { font-size: var(--vn-t-foot); font-weight: 650; }
+.hv3-tile-h a { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; min-width: 44px; justify-content: flex-end; color: var(--vn-ink-3); text-decoration: none; }
+.hv3-tile-h a:hover { color: var(--vn-accent); }
+.hv3-tile-v { font: 700 24px/1.1 var(--vn-font-display); letter-spacing: -.02em; color: var(--vn-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hv3-tile-v small { font: 500 var(--vn-t-foot)/1 var(--vn-font); color: var(--vn-ink-2); letter-spacing: 0; }
+.hv3-tile-card .hv3-bar i { background: var(--health-burn); }
+.hv3-tile-card .hv3-spark { height: 32px; }
+.hv3-tile-card .hv3-spark polyline { stroke: var(--health-burn); }
+.hv3-logw { justify-self: start; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: var(--vn-t-foot); font-weight: 600; color: var(--vn-accent); text-decoration: none; }
+.hv3-logw .gyst-icon { width: 14px; height: 14px; }
+
+/* Daily checklist */
+.hv3-cl2 { display: grid; gap: var(--vn-s3); padding: var(--vn-s4); }
+.hv3-cl2-h { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: var(--vn-s3); align-items: center; }
+.hv3-cl2-badge { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--vn-surface-2); color: var(--vn-ink-3); }
+.hv3-cl2-badge.done { background: var(--vn-ok); color: #fff; }
+.hv3-cl2-badge .gyst-icon { width: 18px; height: 18px; }
+.hv3-cl2-h h2 { font: 650 var(--vn-t-body)/1.25 var(--vn-font-display); }
+.hv3-cl2-h a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; color: var(--vn-ink-3); }
+.hv3-cl2 .hv3-bar i { background: var(--vn-ok); }
+.hv3-cl2-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: var(--vn-s2); }
+.hv3-cl2-items li { display: grid; justify-items: center; gap: 4px; min-width: 0; text-align: center; }
+.hv3-cl2-items form { margin: 0; display: contents; }
+.hv3-dot-btn { position: relative; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 2px solid var(--vn-ink-3); background: transparent; color: transparent; cursor: pointer; }
+.hv3-dot-btn .gyst-icon { width: 18px; height: 18px; }
+.hv3-dot-btn.done { background: var(--vn-ok); border-color: var(--vn-ok); color: #fff; }
+.hv3-dot-btn.measured { border-style: dashed; cursor: default; }
+.hv3-dot-btn.measured.done { border-style: solid; }
+.hv3-cl2-items .lbl { font-size: var(--vn-t-caption); color: var(--vn-ink-2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hv3-cl2-items .val { font-size: 11px; color: var(--vn-ink-3); font-variant-numeric: tabular-nums; }
+@media (min-width: 1024px) {
+  .hv3-cal { padding: var(--vn-s6); }
+  .hv3-cal .hv3-ring { width: 184px; height: 184px; }
+  .hv3-cal .hv3-big { font-size: 44px; }
+  .hv3-cal-body { gap: var(--vn-s8); }
+  .hv3-cal-stats { gap: var(--vn-s4); }
+  .hv3-cal-stats dd { font-size: 24px; }
+}
+.hv3 a.hv3-mac { color: inherit; text-decoration: none; border: 1px solid transparent; }
+.hv3 a.hv3-mac:hover { border-color: var(--vn-separator); }
+.hv3 a.hv3-mac:focus-visible { outline: 2px solid var(--vn-accent); outline-offset: 2px; }
+.hv3-cal .hv3-ring.idle .track { stroke: var(--vn-surface-3); }
+.hv3-cal .hv3-ring .track.empty { stroke-width: 4; stroke-dasharray: 1.5 2.5; }
+@media (min-width: 768px) { .hv3-cl2-items { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); } }
