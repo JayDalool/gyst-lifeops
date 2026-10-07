@@ -2,7 +2,7 @@
 {{/* Health · Today (#70; approved mockup in docs/design/health-home/). Observations
      only: absent values read "—", never 0. Watch and phone steps stay separate.
      Every status colour is paired with words. */}}
-<div class="gyst-scope hv3">
+<div class="gyst-scope hv3" data-day-page="{{.Today.Date}}" data-day-tz="{{appTimezone}}">
 <header class="hv3-ph">
   <div class="hv3-ph-copy">
     <p class="hv3-eyebrow">Health · {{niceDate .Today.Date}}</p>
@@ -72,17 +72,17 @@
       <h2 id="water-title" class="hv3-k">{{template "gyst.icon" "droplet"}}Water</h2>
       {{if .HasTarget}}<p class="hv3-tile-v">{{if .Logged}}{{.Total}}{{else}}<span class="hv3-absent">—</span>{{end}}<small> / {{.Target}} L</small></p>{{end}}
     </div>
-    {{if and .HasTarget .HasBottle}}
+    {{if .Tappable}}
     <form class="hv3-wbtl-form" method="post" action="/health/water">
       <button class="hv3-wbtl{{if ge .FromPercent 0}} rise{{end}}{{if .Done}} full{{end}}" type="submit" style="--lvl:{{.Level}};{{if ge .FromPercent 0}}--from:{{.FromLevel}};{{end}}" aria-label="Add a {{.Bottle}} L bottle. Today: {{if .Logged}}{{.Total}} of {{.Target}} L{{else}}nothing logged yet, target {{.Target}} L{{end}}">{{template "health.bottle" .}}</button>
     </form>
     {{else}}
-    <div class="hv3-wbtl static" style="--lvl:{{.Level}};" role="img" aria-label="{{if .Logged}}Water bottle, {{.Total}} L logged{{else}}Empty water bottle, nothing logged yet{{end}}">{{template "health.bottle" .}}</div>
+    <div class="hv3-wbtl static{{if ge .FromPercent 0}} rise{{end}}{{if .Done}} full{{end}}" style="--lvl:{{.Level}};{{if ge .FromPercent 0}}--from:{{.FromLevel}};{{end}}" role="img" aria-label="{{if .Done}}Water bottle full: {{.Total}} of {{.Target}} L, target reached{{else if .Logged}}Water bottle, {{.Total}} L logged{{else}}Empty water bottle, nothing logged yet{{end}}">{{template "health.bottle" .}}</div>
     {{end}}
     <div class="hv3-water-copy">
       {{if .HasTarget}}
       <p class="hv3-s">{{if .Done}}<span class="hv3-water-done">{{template "gyst.icon" "check"}}Target reached</span>{{else if .Logged}}{{.Left}}{{else}}No water logged yet{{end}}{{if and .HasBottle .BottlesNeeded}} · {{.Taps}} of {{.BottlesNeeded}} bottles{{end}}</p>
-      {{if .HasBottle}}<p class="hv3-water-hint">Tap the bottle to add {{.Bottle}} L</p>{{else}}<p class="hv3-s">Set your bottle size in <a href="/health/plan">Plan</a> to log bottles.</p>{{end}}
+      {{if .Tappable}}<p class="hv3-water-hint">Tap the bottle to add {{.Bottle}} L</p>{{else if .Done}}<p class="hv3-water-hint">Done for today · resets at midnight</p>{{else if not .HasBottle}}<p class="hv3-s">Set your bottle size in <a href="/health/plan">Plan</a> to log bottles.</p>{{end}}
       {{else}}
       <p class="hv3-s">Set a daily water target and your bottle size in <a href="/health/plan">Plan</a>.</p>
       {{end}}

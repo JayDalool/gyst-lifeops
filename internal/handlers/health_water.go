@@ -35,10 +35,13 @@ type healthWaterView struct {
 	// -1 means no animation (a normal page load).
 	FromPercent int
 	Done        bool
-	Left        string // "1.5 L to go"
-	Ticks       []int  // bottle-share marks on the bottle, % of the fill height
-	Notice      string // after a tap or undo
-	Error       string
+	// Tappable: the bottle is a button only while today's total is below
+	// the target and a bottle size is set (#78).
+	Tappable bool
+	Left     string // "1.5 L to go"
+	Ticks    []int  // bottle-share marks on the bottle, % of the fill height
+	Notice   string // after a tap or undo
+	Error    string
 
 	targetML int64
 }
@@ -69,6 +72,7 @@ func buildHealthWater(cycle *models.HealthCycle, totalML int64, taps int, fromML
 	v.Percent = share(totalML)
 	v.animateFrom(fromML)
 	v.Done = totalML >= cycle.WaterTargetML
+	v.Tappable = v.HasBottle && !v.Done
 	if !v.Done {
 		v.Left = litres(cycle.WaterTargetML-totalML) + " L to go"
 	}
@@ -118,9 +122,9 @@ func waterQuery(q url.Values) (fromML int64, notice, errText string) {
 	case "undone":
 		notice = "Last bottle removed"
 	case "nobottle":
-		errText, fromML = "Set your bottle size in Health → Plan first", -1
-	case "max":
-		errText, fromML = "That's more than 15 L today; check for a double tap", -1
+		errText, fromML = "Set your water target and bottle size in Health → Plan first", -1
+	case "full":
+		notice, fromML = "Today's water target is reached", -1
 	default:
 		fromML = -1
 	}
@@ -154,8 +158,8 @@ func (h *Handler) healthWater(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		http.Redirect(w, r, "/health?water=added&wfrom="+strconv.FormatInt(before, 10)+"#water", http.StatusSeeOther)
-	case errors.Is(err, services.ErrWaterDailyCap):
-		http.Redirect(w, r, "/health?water=max#water", http.StatusSeeOther)
+	case errors.Is(err, services.ErrWaterTargetReached):
+		http.Redirect(w, r, "/health?water=full#water", http.StatusSeeOther)
 	case errors.As(err, &invalid):
 		http.Redirect(w, r, "/health?water=nobottle#water", http.StatusSeeOther)
 	default:
