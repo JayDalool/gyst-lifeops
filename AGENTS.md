@@ -56,9 +56,13 @@ This file and `docs/RULES.md` win over the plugin wherever they differ.
 - `jay-dev:qa` for browser checks: local dev with `seeds/example.sql`, never
   production health data; light and dark as rule 9 says. The one exception
   (Jay, 2026-10-06): when Jay asks in the session to check his real data,
-  use a read-only throwaway copy of the data, never the live database. Read
-  text output only, with no screenshots. Delete the copy afterwards. Record no
-  real values in commits, tests, comments, prototypes or PR and issue bodies.
+  the agent may make one copy with the verified `lifeops backup` command (as
+  for the pre-deploy backup; never `cp`, see `docs/RULES.md` §3.1), written
+  outside `data/backups/` and moved to its scratch folder. For QA, that one
+  command is the only exception to rule 6. Run the app on the copy, never on the
+  live database. Read text output only, with no screenshots or logs. Delete
+  the copy afterwards. Record no real values in commits, tests, comments,
+  prototypes or PR and issue bodies.
 - `jay-dev:security` for anything touching auth, the session cookie, the
   bearer-token Health sync (`/api/health/*`), web push or uploads.
 - `jay-dev:db` for migrations (additive, timestamp-prefixed, never edited).
