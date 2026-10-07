@@ -54,7 +54,11 @@ This file and `docs/RULES.md` win over the plugin wherever they differ.
   and the specialists; code changes still follow the rules above (Issue →
   task branch from `master` → PR → independent review → Jay merges).
 - `jay-dev:qa` for browser checks: local dev with `seeds/example.sql`, never
-  production health data; light and dark as rule 9 says.
+  production health data; light and dark as rule 9 says. The one exception
+  (Jay, 2026-10-06): when Jay asks in the session to check his real data,
+  use a read-only throwaway copy of the data, never the live database. Read
+  text output only, with no screenshots. Delete the copy afterwards. Record no
+  real values in commits, tests, comments, prototypes or PR and issue bodies.
 - `jay-dev:security` for anything touching auth, the session cookie, the
   bearer-token Health sync (`/api/health/*`), web push or uploads.
 - `jay-dev:db` for migrations (additive, timestamp-prefixed, never edited).
