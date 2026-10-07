@@ -117,7 +117,9 @@ committed. Tests use `t.TempDir()`.
 not auto-repair foreign-key violations found in production — report them and
 stop. Only Jay runs anything against it, with the app stopped and a backup taken:
 `docker compose exec gyst-lifeops /app/lifeops backup`
-([B2](tasks/B2-backup-tooling.md)).
+([B2](tasks/B2-backup-tooling.md)). One exception (Jay, 2026-10-06; see
+`AGENTS.md`, `jay-dev:qa`): when Jay asks for a real-data check, an agent may
+make one copy with `lifeops backup` for QA, outside `data/backups/`.
 
 **Never back up with `cp`.** WAL mode means the main file alone can be
 near-empty while the real data sits in `-wal`, and the copy looks fine.
