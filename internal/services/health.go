@@ -53,6 +53,13 @@ func ValidateHealthCycle(c models.HealthCycle) error {
 			return healthInvalid("targets must be finite, non-negative, and no greater than 1 billion")
 		}
 	}
+	// Water (#60): 0 = not set; otherwise a sensible daily target and bottle.
+	if c.WaterTargetML != 0 && (c.WaterTargetML < 500 || c.WaterTargetML > 10000) {
+		return healthInvalid("water target must be blank or between 0.5 and 10 L")
+	}
+	if c.WaterBottleML != 0 && (c.WaterBottleML < 100 || c.WaterBottleML > 3000) {
+		return healthInvalid("bottle size must be blank or between 0.1 and 3 L")
+	}
 	return nil
 }
 func (s *Service) validateHealthCycleOverlap(c models.HealthCycle) error {

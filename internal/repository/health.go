@@ -11,11 +11,11 @@ import (
 // requests cannot both insert/update conflicting date ranges after validation.
 var ErrHealthCycleOverlap = errors.New("health cycle overlaps an existing cycle")
 
-const healthCycleColumns = `id, title, start_date, end_date, primary_goal, daily_calorie_target, protein_target_g, carbs_target_g, fat_target_g, fiber_target_g, target_deficit_kcal, strength_sessions_per_week, cardio_sessions_per_week, step_target, notes, created_at, updated_at`
+const healthCycleColumns = `id, title, start_date, end_date, primary_goal, daily_calorie_target, protein_target_g, carbs_target_g, fat_target_g, fiber_target_g, target_deficit_kcal, strength_sessions_per_week, cardio_sessions_per_week, step_target, water_target_ml, water_bottle_ml, notes, created_at, updated_at`
 
 func scanHealthCycle(row scanner) (models.HealthCycle, error) {
 	var c models.HealthCycle
-	err := row.Scan(&c.ID, &c.Title, &c.StartDate, &c.EndDate, &c.PrimaryGoal, &c.DailyCalorieTarget, &c.ProteinTargetG, &c.CarbsTargetG, &c.FatTargetG, &c.FiberTargetG, &c.TargetDeficitKcal, &c.StrengthSessionsPerWeek, &c.CardioSessionsPerWeek, &c.StepTarget, &c.Notes, &c.CreatedAt, &c.UpdatedAt)
+	err := row.Scan(&c.ID, &c.Title, &c.StartDate, &c.EndDate, &c.PrimaryGoal, &c.DailyCalorieTarget, &c.ProteinTargetG, &c.CarbsTargetG, &c.FatTargetG, &c.FiberTargetG, &c.TargetDeficitKcal, &c.StrengthSessionsPerWeek, &c.CardioSessionsPerWeek, &c.StepTarget, &c.WaterTargetML, &c.WaterBottleML, &c.Notes, &c.CreatedAt, &c.UpdatedAt)
 	return c, err
 }
 func (r *Repository) GetHealthCycle(id int64) (models.HealthCycle, error) {
@@ -41,8 +41,8 @@ func (r *Repository) ListHealthCycles() ([]models.HealthCycle, error) {
 	return cycles, rows.Err()
 }
 func (r *Repository) CreateHealthCycle(c *models.HealthCycle) error {
-	result, err := r.db.Exec(`INSERT INTO health_cycles (title, start_date, end_date, primary_goal, daily_calorie_target, protein_target_g, carbs_target_g, fat_target_g, fiber_target_g, target_deficit_kcal, strength_sessions_per_week, cardio_sessions_per_week, step_target, notes) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
- WHERE NOT EXISTS (SELECT 1 FROM health_cycles WHERE start_date <= ? AND end_date >= ?)`, c.Title, c.StartDate, c.EndDate, c.PrimaryGoal, c.DailyCalorieTarget, c.ProteinTargetG, c.CarbsTargetG, c.FatTargetG, c.FiberTargetG, c.TargetDeficitKcal, c.StrengthSessionsPerWeek, c.CardioSessionsPerWeek, c.StepTarget, c.Notes, c.EndDate, c.StartDate)
+	result, err := r.db.Exec(`INSERT INTO health_cycles (title, start_date, end_date, primary_goal, daily_calorie_target, protein_target_g, carbs_target_g, fat_target_g, fiber_target_g, target_deficit_kcal, strength_sessions_per_week, cardio_sessions_per_week, step_target, water_target_ml, water_bottle_ml, notes) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+ WHERE NOT EXISTS (SELECT 1 FROM health_cycles WHERE start_date <= ? AND end_date >= ?)`, c.Title, c.StartDate, c.EndDate, c.PrimaryGoal, c.DailyCalorieTarget, c.ProteinTargetG, c.CarbsTargetG, c.FatTargetG, c.FiberTargetG, c.TargetDeficitKcal, c.StrengthSessionsPerWeek, c.CardioSessionsPerWeek, c.StepTarget, c.WaterTargetML, c.WaterBottleML, c.Notes, c.EndDate, c.StartDate)
 	if err != nil {
 		return err
 	}
@@ -57,8 +57,8 @@ func (r *Repository) CreateHealthCycle(c *models.HealthCycle) error {
 	return err
 }
 func (r *Repository) UpdateHealthCycle(c *models.HealthCycle) error {
-	result, err := r.db.Exec(`UPDATE health_cycles SET title = ?, start_date = ?, end_date = ?, primary_goal = ?, daily_calorie_target = ?, protein_target_g = ?, carbs_target_g = ?, fat_target_g = ?, fiber_target_g = ?, target_deficit_kcal = ?, strength_sessions_per_week = ?, cardio_sessions_per_week = ?, step_target = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
- WHERE id = ? AND NOT EXISTS (SELECT 1 FROM health_cycles WHERE id != ? AND start_date <= ? AND end_date >= ?)`, c.Title, c.StartDate, c.EndDate, c.PrimaryGoal, c.DailyCalorieTarget, c.ProteinTargetG, c.CarbsTargetG, c.FatTargetG, c.FiberTargetG, c.TargetDeficitKcal, c.StrengthSessionsPerWeek, c.CardioSessionsPerWeek, c.StepTarget, c.Notes, c.ID, c.ID, c.EndDate, c.StartDate)
+	result, err := r.db.Exec(`UPDATE health_cycles SET title = ?, start_date = ?, end_date = ?, primary_goal = ?, daily_calorie_target = ?, protein_target_g = ?, carbs_target_g = ?, fat_target_g = ?, fiber_target_g = ?, target_deficit_kcal = ?, strength_sessions_per_week = ?, cardio_sessions_per_week = ?, step_target = ?, water_target_ml = ?, water_bottle_ml = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+ WHERE id = ? AND NOT EXISTS (SELECT 1 FROM health_cycles WHERE id != ? AND start_date <= ? AND end_date >= ?)`, c.Title, c.StartDate, c.EndDate, c.PrimaryGoal, c.DailyCalorieTarget, c.ProteinTargetG, c.CarbsTargetG, c.FatTargetG, c.FiberTargetG, c.TargetDeficitKcal, c.StrengthSessionsPerWeek, c.CardioSessionsPerWeek, c.StepTarget, c.WaterTargetML, c.WaterBottleML, c.Notes, c.ID, c.ID, c.EndDate, c.StartDate)
 	if err != nil {
 		return err
 	}

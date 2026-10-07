@@ -28,6 +28,8 @@ type healthPlanForm struct {
 	StrengthSessionsPerWeek string
 	CardioSessionsPerWeek   string
 	StepTarget              string
+	WaterTargetL            string // litres; blank = not set (#60)
+	WaterBottleL            string
 	Notes                   string
 }
 type healthPlanData struct {
@@ -54,6 +56,8 @@ func healthPlanValues(c models.HealthCycle) healthPlanForm {
 		StrengthSessionsPerWeek: strconv.FormatInt(c.StrengthSessionsPerWeek, 10),
 		CardioSessionsPerWeek:   strconv.FormatInt(c.CardioSessionsPerWeek, 10),
 		StepTarget:              strconv.FormatInt(c.StepTarget, 10),
+		WaterTargetL:            litresField(c.WaterTargetML),
+		WaterBottleL:            litresField(c.WaterBottleML),
 		Notes:                   c.Notes,
 	}
 }
@@ -72,6 +76,8 @@ func parseHealthPlan(r *http.Request) (healthPlanForm, models.HealthCycle, error
 		StrengthSessionsPerWeek: r.PostForm.Get("strength_sessions_per_week"),
 		CardioSessionsPerWeek:   r.PostForm.Get("cardio_sessions_per_week"),
 		StepTarget:              r.PostForm.Get("step_target"),
+		WaterTargetL:            r.PostForm.Get("water_target_l"),
+		WaterBottleL:            r.PostForm.Get("water_bottle_l"),
 		Notes:                   r.PostForm.Get("notes"),
 	}
 	var c models.HealthCycle
@@ -119,6 +125,12 @@ func parseHealthPlan(r *http.Request) (healthPlanForm, models.HealthCycle, error
 	c.StepTarget, err = strconv.ParseInt(form.StepTarget, 10, 64)
 	if err != nil {
 		return form, c, &services.HealthValidationError{Message: "Step target must be a valid whole number"}
+	}
+	if c.WaterTargetML, err = parseLitres(form.WaterTargetL, "Water target"); err != nil {
+		return form, c, err
+	}
+	if c.WaterBottleML, err = parseLitres(form.WaterBottleL, "Bottle size"); err != nil {
+		return form, c, err
 	}
 	c.Notes = form.Notes
 	return form, c, nil

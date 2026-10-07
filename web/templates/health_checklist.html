@@ -10,8 +10,12 @@
     {{range .Items}}
     <li class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{if eq .Kind "protein"}}Measured · protein eaten vs your plan{{else}}Habit · tick it each day{{end}}</span></span>
       <form method="post" action="/health/checklist/{{.ID}}/remove"><button class="hv3-btn secondary small" type="submit" aria-label="Remove {{.Name}}">Remove</button></form></li>
-    {{else}}
+    {{else}}{{if not .WaterName}}
     <li class="hv3-row"><span class="hv3-s">No items yet. Add habits like creatine or magnesium, and the protein target.</span></li>
+    {{end}}{{end}}
+    {{with .WaterName}}
+    <li class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.}}</span><span class="hv3-s">Measured · water bottles logged vs your plan</span></span>
+      <form method="post" action="/health/checklist/water/remove"><button class="hv3-btn secondary small" type="submit" aria-label="Remove {{.}}">Remove</button></form></li>
     {{end}}
   </ul>
   <p class="hv3-foot">Removing an item hides it; its history is kept.</p>
@@ -23,6 +27,7 @@
     <label class="hv3-field"><span>Type</span><select name="kind">
       <option value="habit"{{if eq .Kind "habit"}} selected{{end}}>Habit</option>
       {{if not .HasProtein}}<option value="protein"{{if eq .Kind "protein"}} selected{{end}}>Protein target</option>{{end}}
+      {{if not .WaterName}}<option value="water"{{if eq .Kind "water"}} selected{{end}}>Water target</option>{{end}}
     </select></label>
     <button class="hv3-btn" type="submit">Add</button>
   </form>
