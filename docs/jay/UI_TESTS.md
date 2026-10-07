@@ -1,3 +1,4 @@
+- [ ] #60 · iPhone Today: water box fills half per bottle, Undo · https://gyst.zaylolabs.com/health#water
 - [ ] #69 · Nutrition week: zero days blank, partial days hatched · https://gyst.zaylolabs.com/health/nutrition
 - [ ] #70 · iPhone Today: calorie card, nudge, macros, checklist · https://gyst.zaylolabs.com/health
 - [ ] #67 · Workout: lb sets show 43.1 kg, not long decimals · https://gyst.zaylolabs.com/health/training

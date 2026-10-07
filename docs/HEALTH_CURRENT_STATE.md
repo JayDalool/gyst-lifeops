@@ -1,8 +1,8 @@
 # GYST Health — Current State (2026-10-06)
 
-**Production:** `cbc5411` (PR #65, Coach disabled) when this was written. PR #68 (load rounding) and PR #71 (Today redesign) deploy together after #71 merges.  
-**Last updated:** 2026-10-06, after the 2026-10-05 usage audit (#67, #69) and the Today redesign (#70)  
-**Status:** Health v3 Today, Workout, Nutrition and More are live, with the Daily checklist, My foods & products and protein-gap suggestions. Integrations operational. Today redesigned to the approved mockup (#70). Health Coach merged (PR #65) and disabled until Jay sets an AI key. Remaining: water target (#60), the nutrition-week zero-day decision (#69), final real-device QA.
+**Production:** `d8a26a9` (PR #72, Nutrition week fix) when this was written; the water PR for #60 deploys after it merges. Earlier: PR #74 (real-data rule), #71 (Today redesign), #68 (load rounding), #65 (Coach, disabled).  
+**Last updated:** 2026-10-06, with the water target (#60)  
+**Status:** Health v3 Today, Workout, Nutrition and More are live, with the Daily checklist, My foods & products and protein-gap suggestions. Integrations operational. Today redesigned to the approved mockup (#70), with water logging (#60). Nutrition week marks recorded-zero and partial days (#69). Health Coach merged (PR #65) and disabled until Jay sets an AI key. Remaining: final real-device QA.
 
 **Note:** This document reflects the **production state** of implemented features. Production has already reported successful Hevy syncs and Apple Health data ingestion. Treat operational features as running unless proven otherwise.
 
@@ -31,7 +31,12 @@ Today, Workout and More from PR #54; Nutrition v3 from PR #58 (see Real Gaps bel
 - **Macro cards:** protein, carbs, fat, fiber in their category colours with bars; "over" warnings on limits, "Target met" on minimums. Each card opens Nutrition.
 - **Steps card:** Apple Watch when observed, else iPhone, labelled; the other source is listed separately and never summed; exercise minutes.
 - **Weight card:** latest reading, change since plan start, sparkline, history link and Log weight.
-- **Daily checklist:** "n of m complete" with a bar and round toggles; the protein item is measured, not ticked.
+- **Water card** (#60, `internal/handlers/health_water.go`):
+  - A 3D glass box fills to the share of the plan's water target, with moving water and a rise animation after each tap; motion stops under reduced motion.
+  - **Bottle done** adds one bottle of the plan's size to today; **Undo** removes the last tap. With a 1.5 L bottle and a 3.0 L target, one tap fills it halfway.
+  - Target and bottle size are set in Health → Plan (blank = not set).
+  - Taps are stored in `health_water_log`, at most 15 L a day. No taps reads "No water logged yet", never 0 L.
+- **Daily checklist:** "n of m complete" with a bar and round toggles. The protein and water items are measured, not ticked; water is added from checklist settings and stored as the `health.checklist.water` setting.
 - **Stale data warning:** flagged when Apple Health data is >8 hours old.
 - Design record: `docs/design/health-home/` (approved mockup, prototype, states).
 
@@ -123,11 +128,9 @@ Done since the last update (all merged and deployed 2026-10-05, Winnipeg time):
 
 Still open:
 
-1. **Health Coach** (#64, PR #65): provider-neutral backend, read-only Health tools, Anthropic adapter, GYST-owned memory. Elevated risk: **Jay decides the merge and the key**. See `docs/HEALTH_COACH.md` on that branch. The OpenAI adapter is a follow-up.
+1. **Health Coach** (#64, PR #65): merged and disabled until Jay sets `ANTHROPIC_API_KEY` (see `docs/HEALTH_COACH.md`). The OpenAI adapter is a follow-up; the Coach doesn't read water yet.
 
-2. **Water target** (#60): needs a water field in the Apple Health sync, a plan target and a Shortcut update.
-
-3. **Real device QA** — End-to-end testing on iPhone + Watch
+2. **Real device QA** — End-to-end testing on iPhone + Watch
    - Apple Health Shortcut nutrition flow
    - Hevy sync accuracy
    - Weight logging + charting
@@ -196,9 +199,8 @@ Still open:
 
 **For Agent (Feature Work):**
 
-1. **Health Coach**: address Jay's review of PR #65; then the OpenAI adapter
-2. **Water target** (#60), after Jay adds water to the Shortcut
-3. **Real device testing**: production iPhone/Watch
+1. **Health Coach**: the OpenAI adapter; add water to the Coach's today tool
+2. **Real device testing**: production iPhone/Watch
 
 ---
 

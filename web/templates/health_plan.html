@@ -64,6 +64,16 @@
     <input class="gyst-input" type="number" inputmode="numeric" name="step_target" required min="0" max="1000000000" step="1" value="{{.Form.StepTarget}}">
   </label>
   </div></fieldset>
+  <fieldset class="card health-plan-section"><legend>Water</legend>
+  <p class="meta">Log water on Today by tapping "Bottle done". Each tap adds one bottle. Leave blank to hide the water target.</p>
+  <div class="health-plan-fields">
+  <label class="gyst-field"><span>Daily water target (L, optional)</span>
+    <input class="gyst-input" type="text" inputmode="decimal" name="water_target_l" maxlength="6" placeholder="3.0" autocomplete="off" value="{{.Form.WaterTargetL}}">
+  </label>
+  <label class="gyst-field"><span>Bottle size (L, optional)</span>
+    <input class="gyst-input" type="text" inputmode="decimal" name="water_bottle_l" maxlength="6" placeholder="1.5" autocomplete="off" value="{{.Form.WaterBottleL}}">
+  </label>
+  </div></fieldset>
   <fieldset class="card health-plan-section"><legend>Notes</legend>
   <p class="meta">Keep any context you want to revisit with this cycle.</p>
   <div class="health-plan-fields">

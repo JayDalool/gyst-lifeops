@@ -102,13 +102,13 @@ func TestChecklistLifecycle(t *testing.T) {
 
 func TestChecklistValidationAndGuards(t *testing.T) {
 	h := testHandler(t)
-	for _, f := range []url.Values{{"name": {"  "}, "kind": {"habit"}}, {"name": {strings.Repeat("x", 81)}, "kind": {"habit"}}, {"name": {"Water"}, "kind": {"water"}}} {
+	for _, f := range []url.Values{{"name": {"  "}, "kind": {"habit"}}, {"name": {strings.Repeat("x", 81)}, "kind": {"habit"}}, {"name": {"Water"}, "kind": {"steps"}}} {
 		w := cfgPost(h, "/health/checklist", f, "")
 		if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), `role="alert"`) {
 			t.Fatalf("%v: %d", f, w.Code)
 		}
 	}
-	if w := cfgPost(h, "/health/checklist", url.Values{"name": {"Water"}, "kind": {"water"}}, ""); !strings.Contains(w.Body.String(), `value="Water"`) {
+	if w := cfgPost(h, "/health/checklist", url.Values{"name": {"Water"}, "kind": {"steps"}}, ""); !strings.Contains(w.Body.String(), `value="Water"`) {
 		t.Fatal("typed name not kept")
 	}
 	if w := cfgPost(h, "/health/checklist", url.Values{"name": {"Creatine"}, "kind": {"habit"}}, "https://evil.example"); w.Code != http.StatusForbidden {

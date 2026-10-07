@@ -252,6 +252,8 @@ type HealthData struct {
 	// Today redesign (#70).
 	ChecklistDone int
 	Nudge         *HealthNudge
+	// Water (#60).
+	Water healthWaterView
 }
 
 type ArchiveData struct {
@@ -332,6 +334,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.health(w, r)
 		} else if len(segments) == 2 && segments[1] == "progress" {
 			h.healthProgress(w, r)
+		} else if len(segments) == 2 && segments[1] == "water" {
+			h.healthWater(w, r)
+		} else if len(segments) == 3 && segments[1] == "water" && segments[2] == "undo" {
+			h.healthWaterUndo(w, r)
 		} else if len(segments) == 2 && segments[1] == "weight" {
 			h.healthWeight(w, r)
 		} else if len(segments) == 4 && segments[1] == "weight" && segments[3] == "undo" {
@@ -1677,6 +1683,9 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.HealthTab = "today"
+	fromML, notice, errText := waterQuery(r.URL.Query())
+	data.Water.animateFrom(fromML)
+	data.Water.Notice, data.Water.Error = notice, errText
 	h.render(w, "health.html", data)
 }
 
@@ -1750,7 +1759,19 @@ func (h *Handler) healthBase(w http.ResponseWriter) (HealthData, bool) {
 	if c := today.HealthCycle; c != nil {
 		nudge.StepTarget = c.StepTarget
 	}
+	waterTotal, waterTaps, err := h.Service.Repo.HealthWaterDay(today.Date)
+	if err != nil {
+		return fail(err)
+	}
+	water := buildHealthWater(today.HealthCycle, waterTotal, waterTaps, -1)
+	waterName, err := h.Service.Repo.GetSetting(waterChecklistKey)
+	if err != nil {
+		return fail(err)
+	}
 	rows := buildChecklistRows(items, view)
+	if waterName != "" {
+		rows = append(rows, waterChecklistRow(waterName, water))
+	}
 	return HealthData{
 		Page:          "health",
 		HealthGoals:   healthGoals,
@@ -1761,6 +1782,7 @@ func (h *Handler) healthBase(w http.ResponseWriter) (HealthData, bool) {
 		Weight:        buildHealthWeight(weights, cycleStart, h.Service.Now(), h.Service.Location()),
 		Checklist:     rows,
 		ChecklistDone: checklistDone(rows),
+		Water:         water,
 		Nudge:         nudgeUnlessErr(buildHealthNudge(nudge), trainingErr),
 	}, true
 }

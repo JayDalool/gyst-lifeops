@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"strings"
+	"unicode/utf8"
 
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
@@ -77,6 +79,7 @@ type healthChecklistData struct {
 	Page       string
 	Items      []models.HealthChecklistItem
 	HasProtein bool
+	WaterName  string // the measured water row's name; "" when not added (#60)
 	Error      string
 	Name, Kind string
 }
@@ -89,7 +92,19 @@ func (h *Handler) healthChecklist(w http.ResponseWriter, r *http.Request) {
 	}
 	data := healthChecklistData{Page: "health", Kind: "habit"}
 	status := http.StatusOK
-	if r.Method == http.MethodPost {
+	if r.Method == http.MethodPost && r.PostFormValue("kind") == "water" {
+		// The measured water row (#60) is a setting, not a checklist item.
+		name := strings.TrimSpace(r.PostFormValue("name"))
+		if name == "" || utf8.RuneCountInString(name) > 80 {
+			data.Error, data.Name, data.Kind, status = "Give the item a name (at most 80 characters)", r.PostFormValue("name"), "water", http.StatusBadRequest
+		} else if err := h.Service.Repo.SetSetting(waterChecklistKey, name); err != nil {
+			serverError(w, err)
+			return
+		} else {
+			http.Redirect(w, r, "/health/checklist", http.StatusSeeOther)
+			return
+		}
+	} else if r.Method == http.MethodPost {
 		_, err := h.Service.AddHealthChecklistItem(r.PostFormValue("name"), r.PostFormValue("kind"))
 		var invalid *services.HealthValidationError
 		switch {
@@ -112,6 +127,10 @@ func (h *Handler) healthChecklist(w http.ResponseWriter, r *http.Request) {
 	for _, it := range items {
 		data.HasProtein = data.HasProtein || it.Kind == "protein"
 	}
+	if data.WaterName, err = h.Service.Repo.GetSetting(waterChecklistKey); err != nil {
+		serverError(w, err)
+		return
+	}
 	if status != http.StatusOK {
 		w.WriteHeader(status)
 	}
@@ -120,6 +139,14 @@ func (h *Handler) healthChecklist(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) healthChecklistItemAction(w http.ResponseWriter, r *http.Request, rawID, action string) {
 	if !postGuard(w, r, "POST") {
+		return
+	}
+	if rawID == "water" && action == "remove" {
+		if err := h.Service.Repo.DeleteSetting(waterChecklistKey); err != nil {
+			serverError(w, err)
+			return
+		}
+		http.Redirect(w, r, "/health/checklist", http.StatusSeeOther)
 		return
 	}
 	id, ok := parseID(rawID)

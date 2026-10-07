@@ -16,9 +16,12 @@ type HealthCycle struct {
 	StrengthSessionsPerWeek int64   `json:"strength_sessions_per_week"`
 	CardioSessionsPerWeek   int64   `json:"cardio_sessions_per_week"`
 	StepTarget              int64   `json:"step_target"`
-	Notes                   string  `json:"notes"`
-	CreatedAt               string  `json:"created_at"`
-	UpdatedAt               string  `json:"updated_at"`
+	// Water (#60), in millilitres; 0 = not set.
+	WaterTargetML int64  `json:"water_target_ml"`
+	WaterBottleML int64  `json:"water_bottle_ml"`
+	Notes         string `json:"notes"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
 }
 
 // HealthMetrics preserves absent values as nil. Watch and phone steps are independent.
