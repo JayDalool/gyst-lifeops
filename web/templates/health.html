@@ -68,35 +68,28 @@
 
   {{with .Water}}
   <section class="hv3-card hv3-water" id="water" aria-labelledby="water-title">
-    <div class="hv3-wbox{{if ge .FromPercent 0}} rise{{end}}{{if .Done}} full{{end}}" style="--lvl:{{.Level}};{{if ge .FromPercent 0}}--from:{{.FromLevel}};{{end}}" role="img" aria-label="{{if .Logged}}{{if .HasTarget}}Water box {{.Percent}}% full{{else}}Water box{{end}}{{else}}Empty water box, nothing logged yet{{end}}">
-      <div class="wb-scene" aria-hidden="true">
-        <i class="wb-g wb-back"></i><i class="wb-g wb-left"></i><i class="wb-g wb-bottom"></i>
-        <span class="wb-water">
-          <i class="wb-w wb-w-back"></i><i class="wb-w wb-w-left"></i>
-          <i class="wb-w wb-w-front"><b></b><b></b><b></b></i><i class="wb-w wb-w-right"></i>
-          <i class="wb-w wb-w-top"></i>
-        </span>
-        <i class="wb-g wb-front">{{range .Ticks}}<s style="bottom:{{.}}%"></s>{{end}}</i><i class="wb-g wb-right"></i>
-      </div>
-    </div>
-    <div class="hv3-water-copy">
+    <div class="hv3-water-h">
       <h2 id="water-title" class="hv3-k">{{template "gyst.icon" "droplet"}}Water</h2>
+      {{if .HasTarget}}<p class="hv3-tile-v">{{if .Logged}}{{.Total}}{{else}}<span class="hv3-absent">—</span>{{end}}<small> / {{.Target}} L</small></p>{{end}}
+    </div>
+    {{if and .HasTarget .HasBottle}}
+    <form class="hv3-wbtl-form" method="post" action="/health/water">
+      <button class="hv3-wbtl{{if ge .FromPercent 0}} rise{{end}}{{if .Done}} full{{end}}" type="submit" style="--lvl:{{.Level}};{{if ge .FromPercent 0}}--from:{{.FromLevel}};{{end}}" aria-label="Add a {{.Bottle}} L bottle. Today: {{if .Logged}}{{.Total}} of {{.Target}} L{{else}}nothing logged yet, target {{.Target}} L{{end}}">{{template "health.bottle" .}}</button>
+    </form>
+    {{else}}
+    <div class="hv3-wbtl static" style="--lvl:{{.Level}};" role="img" aria-label="{{if .Logged}}Water bottle, {{.Total}} L logged{{else}}Empty water bottle, nothing logged yet{{end}}">{{template "health.bottle" .}}</div>
+    {{end}}
+    <div class="hv3-water-copy">
       {{if .HasTarget}}
-      <p class="hv3-tile-v">{{if .Logged}}{{.Total}}{{else}}<span class="hv3-absent">—</span>{{end}}<small> / {{.Target}} L</small></p>
       <p class="hv3-s">{{if .Done}}<span class="hv3-water-done">{{template "gyst.icon" "check"}}Target reached</span>{{else if .Logged}}{{.Left}}{{else}}No water logged yet{{end}}{{if and .HasBottle .BottlesNeeded}} · {{.Taps}} of {{.BottlesNeeded}} bottles{{end}}</p>
+      {{if .HasBottle}}<p class="hv3-water-hint">Tap the bottle to add {{.Bottle}} L</p>{{else}}<p class="hv3-s">Set your bottle size in <a href="/health/plan">Plan</a> to log bottles.</p>{{end}}
       {{else}}
       <p class="hv3-s">Set a daily water target and your bottle size in <a href="/health/plan">Plan</a>.</p>
       {{end}}
       {{with .Error}}<p class="hv3-water-msg warn" role="alert">{{template "gyst.icon" "circle-alert"}}{{.}}</p>{{end}}
       {{with .Notice}}<p class="hv3-water-msg" role="status">{{.}}</p>{{end}}
-      {{if and .HasTarget (not .HasBottle)}}<p class="hv3-s">Set your bottle size in <a href="/health/plan">Plan</a> to log bottles.</p>{{end}}
+      {{if and .HasBottle .Logged}}<form method="post" action="/health/water/undo"><button class="hv3-btn secondary small" type="submit" aria-label="Undo last bottle">{{template "gyst.icon" "undo-2"}}Undo</button></form>{{end}}
     </div>
-    {{if and .HasTarget .HasBottle}}
-    <div class="hv3-water-actions">
-      <form method="post" action="/health/water"><button class="hv3-btn" type="submit">{{template "gyst.icon" "plus"}}Bottle done · {{.Bottle}} L</button></form>
-      {{if .Logged}}<form method="post" action="/health/water/undo"><button class="hv3-btn secondary small" type="submit" aria-label="Undo last bottle">{{template "gyst.icon" "undo-2"}}Undo</button></form>{{end}}
-    </div>
-    {{end}}
   </section>
   {{end}}
  </div>

@@ -89,6 +89,12 @@ func (v *healthWaterView) animateFrom(fromML int64) {
 	}
 }
 
+// TickY is a bottle mark's height in the bottle SVG's coordinates: the
+// water surface runs from y 342 (empty) to y 80 (full).
+func (v healthWaterView) TickY(percent int) string {
+	return strconv.FormatFloat(80+(1-float64(percent)/100)*262, 'f', 1, 64)
+}
+
 // Level is the fill as a 0-1 number for the CSS custom property.
 func (v healthWaterView) Level() string {
 	return strconv.FormatFloat(float64(v.Percent)/100, 'f', 2, 64)

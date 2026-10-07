@@ -32,3 +32,29 @@
 </form>
 <p class="hv3-s">Values per serving. Leave a value blank if you don't know it.</p>
 {{end}}
+
+{{/* Water bottle (#76): the picture Jay taps. viewBox 0 0 200 360; the
+     water's surface sits at y = 80 when full and y = 342 when empty
+     (healthWaterView.SurfaceY), moved by the --lvl custom property. */}}
+{{define "health.bottle"}}{{$w := .}}<svg class="wbt" viewBox="0 0 200 360" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="wbt-inside"><path d="M88 36V53C88 67 45 73 38 98V316Q38 336 62 338Q100 344 138 338Q162 336 162 316V98C155 73 112 67 112 53V36Z"/></clipPath>
+    <linearGradient id="wbt-water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--health-water-hi)"/><stop offset=".12" style="stop-color:var(--health-water)"/><stop offset="1" style="stop-color:var(--health-water-deep)"/></linearGradient>
+    <linearGradient id="wbt-shade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".16" stop-color="#fff" stop-opacity=".42"/><stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".26"/></linearGradient>
+    <linearGradient id="wbt-cap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--health-water-deep)"/><stop offset=".35" style="stop-color:var(--health-water)"/><stop offset="1" style="stop-color:var(--health-water-deep)"/></linearGradient>
+  </defs>
+  <path class="wbt-glass" d="M84 34V52C84 64 40 70 34 96V318Q34 340 60 342Q100 348 140 342Q166 340 166 318V96C160 70 116 64 116 52V34Z"/>
+  <g clip-path="url(#wbt-inside)">
+    <g class="wbt-level">
+      <path class="wbt-wave back" d="M-200 -3Q-175 -10-150-3T-100-3T-50-3T0-3T50-3T100-3T150-3T200-3T250-3T300-3T350-3T400-3V300H-200Z"/>
+      <ellipse class="wbt-surface" cx="100" cy="0" rx="70" ry="7"/>
+      <path class="wbt-wave front" d="M-200 2Q-175-5-150 2T-100 2T-50 2T0 2T50 2T100 2T150 2T200 2T250 2T300 2T350 2T400 2V300H-200Z"/>
+      <circle class="wbt-bub" cx="62" cy="90" r="3.5"/><circle class="wbt-bub" cx="112" cy="110" r="2.5"/><circle class="wbt-bub" cx="140" cy="80" r="2"/>
+    </g>
+  </g>
+  {{range .Ticks}}<line class="wbt-tick" x1="40" x2="72" y1="{{$w.TickY .}}" y2="{{$w.TickY .}}"/>{{end}}
+  <path class="wbt-shine" d="M84 34V52C84 64 40 70 34 96V318Q34 340 60 342Q100 348 140 342Q166 340 166 318V96C160 70 116 64 116 52V34Z"/>
+  <path class="wbt-edge" d="M84 34V52C84 64 40 70 34 96V318Q34 340 60 342Q100 348 140 342Q166 340 166 318V96C160 70 116 64 116 52V34Z"/>
+  <rect class="wbt-cap" x="78" y="4" width="44" height="32" rx="7"/>
+  <path class="wbt-ridges" d="M86 9V31M93 9V31M100 9V31M107 9V31M114 9V31"/>
+</svg>{{end}}

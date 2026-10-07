@@ -52,6 +52,10 @@ func TestBuildHealthWater(t *testing.T) {
 	if v.FromPercent != 50 || v.Level() != "1.00" || v.FromLevel() != "0.50" || v.BottlesNeeded != 2 || v.Ticks[0] != 50 {
 		t.Fatalf("animation/ticks %+v", v)
 	}
+	// Bottle marks in SVG units: 50% is halfway between y 342 and y 80.
+	if v.TickY(50) != "211.0" || v.TickY(100) != "80.0" || v.TickY(0) != "342.0" {
+		t.Fatalf("tick y %s", v.TickY(50))
+	}
 	// A 0.75 L bottle against 3.0 L needs 4 bottles, marks at 25/50/75%.
 	v = buildHealthWater(&models.HealthCycle{WaterTargetML: 3000, WaterBottleML: 750}, 0, 0, -1)
 	if v.BottlesNeeded != 4 || fmt.Sprint(v.Ticks) != "[25 50 75]" {
@@ -121,7 +125,7 @@ func TestWaterPlanFields(t *testing.T) {
 func TestWaterBottleFlow(t *testing.T) {
 	h, now := waterHandler(t, "3", "1.5")
 	body := cfgGet(t, h, "/health")
-	if !strings.Contains(body, "No water logged yet") || !strings.Contains(body, "0 of 2 bottles") || !strings.Contains(body, "Bottle done · 1.5 L") || strings.Contains(body, "Undo last bottle") || strings.Contains(body, "0.0<small>") {
+	if !strings.Contains(body, "No water logged yet") || !strings.Contains(body, "0 of 2 bottles") || !strings.Contains(body, "Tap the bottle to add 1.5 L") || !strings.Contains(body, `aria-label="Add a 1.5 L bottle. Today: nothing logged yet, target 3.0 L"`) || strings.Contains(body, "Undo last bottle") || strings.Contains(body, "0.0<small>") {
 		t.Fatal("empty water state wrong")
 	}
 	w := cfgPost(h, "/health/water", nil, "")
@@ -129,14 +133,14 @@ func TestWaterBottleFlow(t *testing.T) {
 		t.Fatalf("first bottle: %d %s", w.Code, w.Header().Get("Location"))
 	}
 	body = cfgGet(t, h, "/health?water=added&wfrom=0")
-	if !strings.Contains(body, "1.5<small> / 3.0 L</small>") || !strings.Contains(body, "1.5 L to go · 1 of 2 bottles") || !strings.Contains(body, "hv3-wbox rise") || !strings.Contains(body, "--lvl:0.50;--from:0.00;") || !strings.Contains(body, "Bottle added") {
+	if !strings.Contains(body, "1.5<small> / 3.0 L</small>") || !strings.Contains(body, "1.5 L to go · 1 of 2 bottles") || !strings.Contains(body, "hv3-wbtl rise") || !strings.Contains(body, "--lvl:0.50;--from:0.00;") || !strings.Contains(body, "Bottle added") {
 		t.Fatal("one bottle should fill half and animate from empty")
 	}
 	if w := cfgPost(h, "/health/water", nil, ""); w.Header().Get("Location") != "/health?water=added&wfrom=1500#water" {
 		t.Fatalf("second bottle: %s", w.Header().Get("Location"))
 	}
 	body = cfgGet(t, h, "/health")
-	if !strings.Contains(body, "Target reached") || !strings.Contains(body, "2 of 2 bottles") || !strings.Contains(body, "hv3-wbox full") || strings.Contains(body, " rise") {
+	if !strings.Contains(body, "Target reached") || !strings.Contains(body, "2 of 2 bottles") || !strings.Contains(body, "hv3-wbtl full") || strings.Contains(body, " rise") {
 		t.Fatal("two bottles should fill the box, without animating on a plain load")
 	}
 	// Undo removes the last bottle and animates down from full.
@@ -169,8 +173,8 @@ func TestWaterBottleFlow(t *testing.T) {
 
 func TestWaterNeedsPlanAndGuards(t *testing.T) {
 	h := testHandler(t)
-	if body := cfgGet(t, h, "/health"); !strings.Contains(body, "Set a daily water target and your bottle size") || strings.Contains(body, "Bottle done") {
-		t.Fatal("no plan: should point to Plan, no button")
+	if body := cfgGet(t, h, "/health"); !strings.Contains(body, "Set a daily water target and your bottle size") || strings.Contains(body, "hv3-wbtl-form") || !strings.Contains(body, "Empty water bottle, nothing logged yet") {
+		t.Fatal("no plan: should point to Plan, bottle not tappable")
 	}
 	if w := cfgPost(h, "/health/water", nil, ""); w.Header().Get("Location") != "/health?water=nobottle#water" {
 		t.Fatalf("no plan tap: %s", w.Header().Get("Location"))
@@ -183,7 +187,7 @@ func TestWaterNeedsPlanAndGuards(t *testing.T) {
 	}
 	// Target without a bottle: amount shown, no button.
 	h2, _ := waterHandler(t, "3", "")
-	if body := cfgGet(t, h2, "/health"); !strings.Contains(body, "Set your bottle size in") || strings.Contains(body, "Bottle done") {
+	if body := cfgGet(t, h2, "/health"); !strings.Contains(body, "Set your bottle size in") || strings.Contains(body, "hv3-wbtl-form") {
 		t.Fatal("target without bottle")
 	}
 	for _, path := range []string{"/health/water", "/health/water/undo"} {
