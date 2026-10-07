@@ -202,11 +202,24 @@ func TestWaterTargetUnevenBottle(t *testing.T) {
 func TestWaterTargetConcurrentTaps(t *testing.T) {
 	h, _ := waterHandler(t, "3", "1.5")
 	var wg sync.WaitGroup
-	for i := 0; i < 8; i++ {
+	locations := make([]string, 8)
+	for i := range locations {
 		wg.Add(1)
-		go func() { defer wg.Done(); cfgPost(h, "/health/water", nil, "") }()
+		go func() { defer wg.Done(); locations[i] = cfgPost(h, "/health/water", nil, "").Header().Get("Location") }()
 	}
 	wg.Wait()
+	added := 0
+	for _, loc := range locations {
+		switch {
+		case strings.Contains(loc, "water=added"):
+			added++
+		case !strings.Contains(loc, "water=full"):
+			t.Fatalf("simultaneous tap answered %q", loc)
+		}
+	}
+	if added != 2 {
+		t.Fatalf("%d taps reported added, want 2", added)
+	}
 	if total, taps, _ := h.Service.Repo.HealthWaterDay(h.Service.TodayString()); total != 3000 || taps != 2 {
 		t.Fatalf("8 simultaneous taps stored %d in %d taps", total, taps)
 	}

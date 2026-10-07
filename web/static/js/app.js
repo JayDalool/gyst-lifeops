@@ -448,8 +448,23 @@
     });
   }
 
+  // Pages about "today" ([data-day-page], e.g. Health Today) reload when the
+  // local date has changed while the PWA sat in the background, so the water
+  // bottle and the day's numbers reset at midnight without a manual refresh
+  // (#78).
+  function initDayReload() {
+    if (!document.querySelector("[data-day-page]")) return;
+    var loaded = new Date().toDateString();
+    function check() {
+      if (document.visibilityState === "visible" && new Date().toDateString() !== loaded) location.reload();
+    }
+    document.addEventListener("visibilitychange", check);
+    window.addEventListener("pageshow", function (e) { if (e.persisted) check(); });
+  }
+
   function init() {
     document.querySelectorAll("[data-map-v2]").forEach(function (m) { initMap(m); });
+    initDayReload();
     initMisc();
     initShellClearance();
 	initCommandPalette();
