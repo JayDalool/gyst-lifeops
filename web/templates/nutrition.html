@@ -51,10 +51,10 @@
     <div class="hv3-card-h"><h2 id="week-title" class="hv3-k">Last 7 days</h2>{{if .WeekAvg}}<span class="hv3-s">Avg {{.WeekAvg}} kcal</span>{{end}}</div>
     <div class="hv3-kbars" role="img" aria-label="{{.WeekLabel}}">
       {{if .TargetLine}}<i class="hv3-tline" style="bottom:{{.TargetLine}}%"></i>{{end}}
-      {{range .Week}}<span class="{{if not .Present}}none{{else if .Over}}over{{end}}{{if .IsToday}} today{{end}}" style="height:{{if .Present}}{{.Height}}{{else}}4{{end}}%"></span>{{end}}
+      {{range .Week}}<span class="{{if not .Present}}none{{else if .Over}}over{{end}}{{if .Partial}} partial{{end}}{{if .IsToday}} today{{end}}" style="height:{{if .Present}}{{.Height}}{{else}}4{{end}}%"></span>{{end}}
     </div>
     <div class="hv3-kdays" aria-hidden="true">{{range .Week}}<span{{if .IsToday}} class="today"{{end}}>{{.Letter}}</span>{{end}}</div>
-    <p class="hv3-s">{{if .WeekLogged}}{{if .TargetLine}}{{.WeekWithin}} of {{.WeekLogged}} logged days within target · {{end}}today so far{{else}}No food logged in the previous six days{{end}}</p>
+    <p class="hv3-s">{{if .WeekLogged}}{{if .TargetLine}}{{.WeekWithin}} of {{.WeekLogged}} logged days within target · {{end}}{{end}}{{if .WeekPartial}}{{.WeekPartial}} partial {{if eq .WeekPartial 1}}day{{else}}days{{end}}, not counted · {{end}}{{if or .WeekLogged .WeekPartial}}today so far{{else}}No food logged in the previous six days{{end}}</p>
   </section>
   {{end}}
 
