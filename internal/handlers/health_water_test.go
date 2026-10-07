@@ -125,6 +125,9 @@ func TestWaterPlanFields(t *testing.T) {
 func TestWaterBottleFlow(t *testing.T) {
 	h, now := waterHandler(t, "3", "1.5")
 	body := cfgGet(t, h, "/health")
+	if !strings.Contains(body, `<form class="hv3-wbtl-form" method="post" action="/health/water">`) {
+		t.Fatal("the bottle must be the submit button of the /health/water form")
+	}
 	if !strings.Contains(body, "No water logged yet") || !strings.Contains(body, "0 of 2 bottles") || !strings.Contains(body, "Tap the bottle to add 1.5 L") || !strings.Contains(body, `aria-label="Add a 1.5 L bottle. Today: nothing logged yet, target 3.0 L"`) || strings.Contains(body, "Undo last bottle") || strings.Contains(body, "0.0<small>") {
 		t.Fatal("empty water state wrong")
 	}

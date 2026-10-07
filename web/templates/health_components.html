@@ -35,7 +35,7 @@
 
 {{/* Water bottle (#76): the picture Jay taps. viewBox 0 0 200 360; the
      water's surface sits at y = 80 when full and y = 342 when empty
-     (healthWaterView.SurfaceY), moved by the --lvl custom property. */}}
+     (healthWaterView.TickY uses the same range), moved by --lvl. */}}
 {{define "health.bottle"}}{{$w := .}}<svg class="wbt" viewBox="0 0 200 360" aria-hidden="true" focusable="false">
   <defs>
     <clipPath id="wbt-inside"><path d="M88 36V53C88 67 45 73 38 98V316Q38 336 62 338Q100 344 138 338Q162 336 162 316V98C155 73 112 67 112 53V36Z"/></clipPath>

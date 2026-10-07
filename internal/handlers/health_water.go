@@ -13,10 +13,10 @@ import (
 	"lifeops-tracker/internal/services"
 )
 
-// Water (#60). Jay logs water by tapping "Bottle done": each tap adds one
-// bottle of the plan's size to today. The Today card fills a 3D water box to
-// the share of the plan's target; one 1.5 L bottle of a 3.0 L target fills
-// it halfway. Nothing is estimated: no taps means nothing logged.
+// Water (#60, #76). Jay logs water by tapping his bottle on Today: each tap
+// adds one bottle of the plan's size to today, and the bottle fills to the
+// share of the plan's target (one 1.5 L bottle of a 3.0 L target fills it
+// halfway). Nothing is estimated: no taps means nothing logged.
 
 // waterChecklistKey holds the name of the measured water checklist row when
 // Jay has added it; unset means the row isn't shown. It lives in
@@ -36,7 +36,7 @@ type healthWaterView struct {
 	FromPercent int
 	Done        bool
 	Left        string // "1.5 L to go"
-	Ticks       []int  // bottle marks on the box, % of its height
+	Ticks       []int  // bottle-share marks on the bottle, % of the fill height
 	Notice      string // after a tap or undo
 	Error       string
 

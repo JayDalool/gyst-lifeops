@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-// Water bottle log (#60). One row per "Bottle done" tap on a local day.
+// Water bottle log (#60). One row per tap on the bottle on a local day.
 
 // AddHealthWater records one tap of ml on date unless the day's total would
 // pass capML. The check and insert are one statement, so two quick taps

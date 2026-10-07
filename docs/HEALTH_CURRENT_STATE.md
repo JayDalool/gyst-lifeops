@@ -1,7 +1,7 @@
-# GYST Health — Current State (2026-10-06)
+# GYST Health — Current State (2026-10-07)
 
 **Production:** `6cf1164` (PR #75, water; deployed and smoke-tested 2026-10-07) when this was written. The bottle redesign (#76) is not in production until its PR merges and deploys. Earlier: PR #74 (real-data rule), #71 (Today redesign), #68 (load rounding), #65 (Coach, disabled).  
-**Last updated:** 2026-10-06, with the water target (#60)  
+**Last updated:** 2026-10-07, with the water target (#60) and the tap-the-bottle redesign (#76)  
 **Status:** Health v3 Today, Workout, Nutrition and More are live, with the Daily checklist, My foods & products and protein-gap suggestions. Integrations operational. Today redesigned to the approved mockup (#70), with water logging (#60, #76). Nutrition week marks recorded-zero and partial days (#69). Health Coach merged (PR #65) and disabled until Jay sets an AI key. Remaining: final real-device QA.
 
 **Note:** This document reflects the **production state** of implemented features. Production has already reported successful Hevy syncs and Apple Health data ingestion. Treat operational features as running unless proven otherwise.
@@ -31,7 +31,7 @@ Today, Workout and More from PR #54; Nutrition v3 from PR #58 (see Real Gaps bel
 - **Macro cards:** protein, carbs, fat, fiber in their category colours with bars; "over" warnings on limits, "Target met" on minimums. Each card opens Nutrition.
 - **Steps card:** Apple Watch when observed, else iPhone, labelled; the other source is listed separately and never summed; exercise minutes.
 - **Weight card:** latest reading, change since plan start, sparkline, history link and Log weight.
-- **Water card** (#60 PR #75, live; bottle #76; `internal/handlers/health_water.go`, `health_components.html` `health.bottle`):
+- **Water card** (#60, PR #75, live; the bottle design is #76, pending merge and deploy; `internal/handlers/health_water.go`, `health_components.html` `health.bottle`):
   - Jay's water bottle (#76) fills the card. **Tapping the bottle** adds one bottle of the plan's size to today, and the water rises with waves to the share of the target: with a 1.5 L bottle and a 3.0 L target, one tap fills it halfway and two fill it. **Undo** removes the last tap.
   - The waves and bubbles settle after about a minute. Motion stops under reduced motion.
   - Target and bottle size are set in Health → Plan (blank = not set).

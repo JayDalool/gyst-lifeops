@@ -505,9 +505,9 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .hv3-wbtl {
   --wy: calc(80px + (1 - var(--lvl)) * 262px);
   display: block; width: min(52vw, 184px); padding: 4px 10px; margin: 0 auto; border: 0; border-radius: 28px;
-  background: transparent; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s ease;
+  background: transparent; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform .15s ease;
 }
-.hv3-wbtl:active { transform: scale(.97); }
+.hv3-wbtl:not(.static):active { transform: scale(.97); }
 .hv3-wbtl:focus-visible { outline: 3px solid var(--vn-accent); outline-offset: 4px; }
 .hv3-wbtl.static { cursor: default; }
 .hv3-wbtl.rise { animation: wb-rise 1.4s cubic-bezier(.2, .8, .2, 1) both; }
@@ -533,6 +533,6 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 @keyframes wbt-bub { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: .9; } 100% { transform: translateY(-76px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .hv3-wbtl.rise, .wbt-wave, .wbt-bub { animation: none; }
-  .hv3-wbtl:active { transform: none; }
+  .hv3-wbtl:not(.static):active { transform: none; }
 }
 [data-motion="reduced"] .hv3-wbtl.rise, [data-motion="reduced"] .wbt-wave, [data-motion="reduced"] .wbt-bub { animation: none; }
