@@ -20,6 +20,33 @@ type nutritionDay struct {
 	Present, Over       bool
 	IsToday             bool
 	Height              int // bar height, % of the chart
+	// Partial: the day's last sync was before partialBefore local time, so
+	// the stored total is probably missing the evening's food (#69).
+	Partial bool
+}
+
+// partialBefore is the local hour a past day's last sync must reach for its
+// total to count as complete (#69).
+const partialBefore = 20
+
+// weekNothingLogged reports a snapshot whose food fields are recorded zeros:
+// 0 kcal and 0 (or no) protein. The Shortcut posts that when it runs before
+// MyFitnessPal has written anything, so the week view treats it as "nothing
+// logged" (Jay's decision on #69). Stored data and Today are unchanged.
+func weekNothingLogged(s models.DailyHealthSnapshot) bool {
+	return s.DietaryCalories != nil && math.Round(*s.DietaryCalories) == 0 &&
+		(s.ProteinG == nil || math.Round(*s.ProteinG) == 0)
+}
+
+// weekPartial reports a past day whose last sync landed before 20:00 local
+// time on that same day.
+func weekPartial(s models.DailyHealthSnapshot, loc *time.Location) bool {
+	synced, err := time.Parse(time.RFC3339Nano, s.LastSyncedAt)
+	if err != nil {
+		return false // unknown sync time: don't guess
+	}
+	local := synced.In(loc)
+	return local.Format("2006-01-02") == s.Date && local.Hour() < partialBefore
 }
 
 type nutritionData struct {
@@ -29,9 +56,10 @@ type nutritionData struct {
 	Week         []nutritionDay
 	WeekLabel    string
 	TargetLine   int    // target as % of chart height; 0 when no target
-	WeekAvg      string // average of logged days before today; empty when none
-	WeekLogged   int
+	WeekAvg      string // average of complete logged days before today; empty when none
+	WeekLogged   int    // complete logged days before today (partial days excluded)
 	WeekWithin   int
+	WeekPartial  int // past days with a partial total, shown but not counted (#69)
 	// Close-the-gap suggestions (#62): shown only when protein eaten and a
 	// protein target are both known and eaten is below target.
 	ShowGap  bool
@@ -94,15 +122,22 @@ func buildProteinGap(data *nutritionData, foods []models.HealthFood) {
 
 // buildNutritionWeek lays out the six days before today plus today, from
 // stored daily totals. A day without a dietary observation is "not logged",
-// never zero.
-func buildNutritionWeek(data *nutritionData, history []models.DailyHealthSnapshot, today string, target float64) {
+// never zero; so is a day of recorded zeros (#69). Past days whose last sync
+// came before 20:00 are "partial" and left out of the average and the
+// within-target count, since their totals are probably incomplete.
+func buildNutritionWeek(data *nutritionData, history []models.DailyHealthSnapshot, today string, target float64, loc *time.Location) {
 	day, err := time.Parse("2006-01-02", today)
 	if err != nil {
 		return
 	}
 	byDate := map[string]*float64{}
+	partial := map[string]bool{}
 	for _, s := range history {
+		if weekNothingLogged(s) {
+			continue
+		}
 		byDate[s.Date] = s.DietaryCalories
+		partial[s.Date] = s.Date != today && weekPartial(s, loc)
 	}
 	values := make([]*float64, 7)
 	top := target
@@ -120,15 +155,19 @@ func buildNutritionWeek(data *nutritionData, history []models.DailyHealthSnapsho
 	data.WeekLabel = "Calories by day, oldest first:"
 	for i, v := range values {
 		d := day.AddDate(0, 0, i-6)
-		nd := nutritionDay{Letter: d.Format("Mon")[:1], Name: d.Format("Mon Jan 2"), IsToday: i == 6}
+		nd := nutritionDay{Letter: d.Format("Mon")[:1], Name: d.Format("Mon Jan 2"), IsToday: i == 6, Partial: partial[d.Format("2006-01-02")]}
 		shown := "not logged"
 		if v != nil {
 			nd.Present, nd.Value = true, formatThousands(*v)
 			shown = nd.Value
+			if nd.Partial {
+				shown += " (partial)"
+				data.WeekPartial++
+			}
 			nd.Height = max(2, int(math.Round(*v/top*100)))
 			// Same rule as the Today card: compare at displayed precision.
 			nd.Over = target > 0 && math.Round(*v) > math.Round(target)
-			if i < 6 {
+			if i < 6 && !nd.Partial {
 				data.WeekLogged++
 				sum += *v
 				if target > 0 && math.Round(*v) <= math.Round(target) {
@@ -179,7 +218,7 @@ func (h *Handler) nutrition(w http.ResponseWriter, r *http.Request) {
 		if today.HealthCycle != nil {
 			target = today.HealthCycle.DailyCalorieTarget
 		}
-		buildNutritionWeek(&data, history, today.Date, target)
+		buildNutritionWeek(&data, history, today.Date, target, h.Service.Location())
 	}
 	foods, err := h.Service.Repo.ListHealthFoods(false)
 	if err != nil {

@@ -250,6 +250,9 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-kbars span.today { background: var(--vn-accent); }
 .hv3-kbars span.over { background: var(--vn-warn); }
 .hv3-kbars span.none { background: transparent; border: 1.5px dashed var(--vn-surface-3); }
+/* A partial day (last sync before 20:00) is hatched, and the summary line says so (#69). */
+.hv3-kbars span.partial { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--vn-accent) 55%, var(--vn-surface-3)) 0 4px, transparent 4px 7px); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--vn-accent) 55%, var(--vn-surface-3)); }
+.hv3-kbars span.partial.over { background: repeating-linear-gradient(135deg, var(--vn-warn) 0 4px, transparent 4px 7px); box-shadow: inset 0 0 0 1.5px var(--vn-warn); }
 .hv3-tline { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--vn-ink-3); pointer-events: none; }
 .hv3-kdays { display: flex; gap: 8px; margin: 6px 0 var(--vn-s2); }
 .hv3-kdays span { flex: 1; text-align: center; font-size: var(--vn-t-caption); color: var(--vn-ink-3); font-weight: 600; }
