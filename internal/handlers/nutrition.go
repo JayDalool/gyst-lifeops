@@ -137,7 +137,8 @@ func buildNutritionWeek(data *nutritionData, history []models.DailyHealthSnapsho
 			continue
 		}
 		byDate[s.Date] = s.DietaryCalories
-		partial[s.Date] = s.Date != today && weekPartial(s, loc)
+		// Only a day with food can be partial; a day without stays "not logged".
+		partial[s.Date] = s.DietaryCalories != nil && s.Date != today && weekPartial(s, loc)
 	}
 	values := make([]*float64, 7)
 	top := target

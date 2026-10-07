@@ -119,6 +119,9 @@ func TestNutritionWeekPartialAndZeroDays(t *testing.T) {
 		return d.Add(time.Duration(hour) * time.Hour).UTC().Format(time.RFC3339Nano)
 	}
 	history := []models.DailyHealthSnapshot{
+		// Partial: 16:00 local is 21:00 UTC, so this proves the app time zone
+		// is used, not UTC.
+		{Date: "2026-09-04", LastSyncedAt: at("2026-09-04", 16), HealthMetrics: models.HealthMetrics{DietaryCalories: viewFloat(1200), ProteinG: viewFloat(90)}},
 		// Complete: last sync 22:00 that day.
 		{Date: "2026-09-05", LastSyncedAt: at("2026-09-05", 22), HealthMetrics: models.HealthMetrics{DietaryCalories: viewFloat(2100), ProteinG: viewFloat(150)}},
 		// Complete: last sync after midnight, the next day.
@@ -135,14 +138,14 @@ func TestNutritionWeekPartialAndZeroDays(t *testing.T) {
 	data := nutritionData{}
 	buildNutritionWeek(&data, history, "2026-09-10", 2000, loc)
 	w := data.Week
-	if w[1].Partial || w[2].Partial || !w[3].Partial || w[6].Partial {
-		t.Fatalf("partial flags %v %v %v %v", w[1].Partial, w[2].Partial, w[3].Partial, w[6].Partial)
+	if !w[0].Partial || w[1].Partial || w[2].Partial || !w[3].Partial || w[6].Partial {
+		t.Fatalf("partial flags %v %v %v %v %v", w[0].Partial, w[1].Partial, w[2].Partial, w[3].Partial, w[6].Partial)
 	}
 	if w[4].Present || !w[5].Present || w[5].Value != "0" {
 		t.Fatal("recorded zeros must read nothing logged; 0 kcal with protein stays")
 	}
 	// Counted: 2100, 1900, 0 → avg 1,333; within: 1900 and 0 (2100 is over).
-	if data.WeekLogged != 3 || data.WeekWithin != 2 || data.WeekAvg != "1,333" || data.WeekPartial != 1 {
+	if data.WeekLogged != 3 || data.WeekWithin != 2 || data.WeekAvg != "1,333" || data.WeekPartial != 2 {
 		t.Fatalf("logged %d within %d avg %q partial %d", data.WeekLogged, data.WeekWithin, data.WeekAvg, data.WeekPartial)
 	}
 	if !strings.Contains(data.WeekLabel, "Mon Sep 7 800 (partial)") || !strings.Contains(data.WeekLabel, "Tue Sep 8 not logged") {
@@ -150,13 +153,34 @@ func TestNutritionWeekPartialAndZeroDays(t *testing.T) {
 	}
 	data.Page = "health"
 	body := renderBody(t, "nutrition.html", data)
-	if !strings.Contains(body, "2 of 3 logged days within target · 1 partial day, not counted · today so far") || !strings.Contains(body, "partial") {
+	if !strings.Contains(body, "2 of 3 logged days within target · 2 partial days, not counted · today so far") || !strings.Contains(body, "partial") {
 		t.Fatal("summary line must name the partial day")
 	}
 	// Only partial days: no "No food logged" claim.
 	only := nutritionData{Page: "health"}
-	buildNutritionWeek(&only, history[2:3], "2026-09-10", 2000, loc)
+	buildNutritionWeek(&only, history[3:4], "2026-09-10", 2000, loc)
 	if body := renderBody(t, "nutrition.html", only); strings.Contains(body, "No food logged in the previous six days") || !strings.Contains(body, "1 partial day, not counted · today so far") {
 		t.Fatal("a partial-only week must not say nothing was logged")
+	}
+}
+
+// A past day without food can't be partial: an activity-only sync at 14:00
+// stays "not logged" (dashed), never a hatched bar. Rounding to zero (0.4
+// kcal, 0.4 g) is a day of recorded zeros (#72 review).
+func TestNutritionWeekNotLoggedNeverPartial(t *testing.T) {
+	loc, _ := time.LoadLocation("America/Winnipeg")
+	d, _ := time.ParseInLocation("2006-01-02", "2026-09-08", loc)
+	early := d.Add(14 * time.Hour).UTC().Format(time.RFC3339Nano)
+	history := []models.DailyHealthSnapshot{
+		{Date: "2026-09-08", LastSyncedAt: early, HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(3000)}},
+		{Date: "2026-09-09", LastSyncedAt: early, HealthMetrics: models.HealthMetrics{DietaryCalories: viewFloat(0.4), ProteinG: viewFloat(0.4)}},
+	}
+	data := nutritionData{Page: "health"}
+	buildNutritionWeek(&data, history, "2026-09-10", 2000, loc)
+	if data.Week[4].Partial || data.Week[4].Present || data.Week[5].Partial || data.Week[5].Present || data.WeekPartial != 0 {
+		t.Fatalf("not-logged days must not be partial: %+v %+v", data.Week[4], data.Week[5])
+	}
+	if body := renderBody(t, "nutrition.html", data); strings.Contains(body, "none partial") {
+		t.Fatal("a not-logged bar rendered as partial")
 	}
 }
