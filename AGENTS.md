@@ -59,7 +59,7 @@ This file and `docs/RULES.md` win over the plugin wherever they differ.
   the agent may make one copy with the verified `lifeops backup` command (as
   for the pre-deploy backup; never `cp`, see `docs/RULES.md` §3.1), written
   outside `data/backups/` and moved to its scratch folder. For QA, that one
-  command is the only exception to rule 6. Run the app on the copy, never on the
+  command is the only exception to rule 6 and to `docs/RULES.md` §3.1. Run the app on the copy, never on the
   live database. Read text output only, with no screenshots or logs. Delete
   the copy afterwards. Record no real values in commits, tests, comments,
   prototypes or PR and issue bodies.
