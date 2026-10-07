@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -39,7 +40,7 @@ func TestBuildHealthWater(t *testing.T) {
 		{"nothing yet", plan, 0, 0, 0, false, false, "3.0 L to go", "0.0", 1},
 		{"one bottle is half", plan, 1500, 1, 50, false, true, "1.5 L to go", "1.5", 1},
 		{"two bottles is full", plan, 3000, 2, 100, true, true, "", "3.0", 1},
-		{"over target stays full", plan, 4500, 3, 100, true, true, "", "4.5", 1},
+		{"over target (target lowered later) stays full", plan, 4500, 3, 100, true, true, "", "4.5", 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			v := buildHealthWater(tc.cycle, tc.total, tc.taps, -1)
@@ -49,7 +50,7 @@ func TestBuildHealthWater(t *testing.T) {
 		})
 	}
 	v := buildHealthWater(plan, 3000, 2, 1500)
-	if v.FromPercent != 50 || v.Level() != "1.00" || v.FromLevel() != "0.50" || v.BottlesNeeded != 2 || v.Ticks[0] != 50 {
+	if v.FromPercent != 50 || v.Tappable || v.Level() != "1.00" || v.FromLevel() != "0.50" || v.BottlesNeeded != 2 || v.Ticks[0] != 50 {
 		t.Fatalf("animation/ticks %+v", v)
 	}
 	// Bottle marks in SVG units: 50% is halfway between y 342 and y 80.
@@ -143,12 +144,30 @@ func TestWaterBottleFlow(t *testing.T) {
 		t.Fatalf("second bottle: %s", w.Header().Get("Location"))
 	}
 	body = cfgGet(t, h, "/health")
-	if !strings.Contains(body, "Target reached") || !strings.Contains(body, "2 of 2 bottles") || !strings.Contains(body, "hv3-wbtl full") || strings.Contains(body, " rise") {
-		t.Fatal("two bottles should fill the box, without animating on a plain load")
+	if !strings.Contains(body, "Target reached") || !strings.Contains(body, "2 of 2 bottles") || !strings.Contains(body, "hv3-wbtl static full") || strings.Contains(body, " rise") {
+		t.Fatal("two bottles should fill the bottle, without animating on a plain load")
 	}
-	// Undo removes the last bottle and animates down from full.
+	// #78: at the target the bottle is no longer a button, and the server
+	// refuses a stale tap.
+	if strings.Contains(body, "hv3-wbtl-form") || strings.Contains(body, "Tap the bottle") || !strings.Contains(body, "Done for today · resets at midnight") || !strings.Contains(body, `aria-label="Water bottle full: 3.0 of 3.0 L, target reached"`) || !strings.Contains(body, "Undo last bottle") {
+		t.Fatal("a full bottle must not be tappable; Undo stays")
+	}
+	if w := cfgPost(h, "/health/water", nil, ""); w.Header().Get("Location") != "/health?water=full#water" {
+		t.Fatalf("tap past the target: %s", w.Header().Get("Location"))
+	}
+	if total, taps, _ := h.Service.Repo.HealthWaterDay(h.Service.TodayString()); total != 3000 || taps != 2 {
+		t.Fatalf("stored %d in %d taps past the target", total, taps)
+	}
+	if body := cfgGet(t, h, "/health?water=full"); !strings.Contains(body, "Today&#39;s water target is reached") {
+		t.Fatal("refused tap should say why")
+	}
+	// Undo removes the last bottle, animates down from full, and the bottle
+	// is tappable again.
 	if w := cfgPost(h, "/health/water/undo", nil, ""); w.Header().Get("Location") != "/health?water=undone&wfrom=3000#water" {
 		t.Fatalf("undo: %s", w.Header().Get("Location"))
+	}
+	if body := cfgGet(t, h, "/health"); !strings.Contains(body, "hv3-wbtl-form") {
+		t.Fatal("below the target the bottle is a button again")
 	}
 	cfgPost(h, "/health/water/undo", nil, "")
 	if w := cfgPost(h, "/health/water/undo", nil, ""); w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/health#water" {
@@ -162,15 +181,34 @@ func TestWaterBottleFlow(t *testing.T) {
 	if body := cfgGet(t, h, "/health"); !strings.Contains(body, "No water logged yet") {
 		t.Fatal("yesterday's bottle leaked into today")
 	}
-	// Runaway taps stop at 15 L a day.
-	for i := 0; i < 10; i++ {
-		cfgPost(h, "/health/water", nil, "")
+}
+
+// #78: when the bottle doesn't divide the target, the tap that reaches or
+// passes it is the last one.
+func TestWaterTargetUnevenBottle(t *testing.T) {
+	h, _ := waterHandler(t, "2.5", "1")
+	for i, want := range []string{"added", "added", "added", "full"} {
+		w := cfgPost(h, "/health/water", nil, "")
+		if !strings.Contains(w.Header().Get("Location"), "water="+want) {
+			t.Fatalf("tap %d: %s, want %s", i+1, w.Header().Get("Location"), want)
+		}
 	}
-	if w := cfgPost(h, "/health/water", nil, ""); w.Header().Get("Location") != "/health?water=max#water" {
-		t.Fatalf("cap: %s", w.Header().Get("Location"))
+	if total, taps, _ := h.Service.Repo.HealthWaterDay(h.Service.TodayString()); total != 3000 || taps != 3 {
+		t.Fatalf("stored %d in %d taps", total, taps)
 	}
-	if total, taps, _ := h.Service.Repo.HealthWaterDay(h.Service.TodayString()); total != 15000 || taps != 10 {
-		t.Fatalf("cap stored %d in %d taps", total, taps)
+}
+
+// #78: quick simultaneous taps can't pass the target.
+func TestWaterTargetConcurrentTaps(t *testing.T) {
+	h, _ := waterHandler(t, "3", "1.5")
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() { defer wg.Done(); cfgPost(h, "/health/water", nil, "") }()
+	}
+	wg.Wait()
+	if total, taps, _ := h.Service.Repo.HealthWaterDay(h.Service.TodayString()); total != 3000 || taps != 2 {
+		t.Fatalf("8 simultaneous taps stored %d in %d taps", total, taps)
 	}
 }
 
@@ -182,7 +220,7 @@ func TestWaterNeedsPlanAndGuards(t *testing.T) {
 	if w := cfgPost(h, "/health/water", nil, ""); w.Header().Get("Location") != "/health?water=nobottle#water" {
 		t.Fatalf("no plan tap: %s", w.Header().Get("Location"))
 	}
-	if body := cfgGet(t, h, "/health?water=nobottle"); !strings.Contains(body, "Set your bottle size in Health → Plan first") {
+	if body := cfgGet(t, h, "/health?water=nobottle"); !strings.Contains(body, "Set your water target and bottle size in Health → Plan first") {
 		t.Fatal("no-bottle message missing")
 	}
 	if total, taps, _ := h.Service.Repo.HealthWaterDay(h.Service.TodayString()); total != 0 || taps != 0 {

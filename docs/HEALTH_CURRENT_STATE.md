@@ -31,11 +31,11 @@ Today, Workout and More from PR #54; Nutrition v3 from PR #58 (see Real Gaps bel
 - **Macro cards:** protein, carbs, fat, fiber in their category colours with bars; "over" warnings on limits, "Target met" on minimums. Each card opens Nutrition.
 - **Steps card:** Apple Watch when observed, else iPhone, labelled; the other source is listed separately and never summed; exercise minutes.
 - **Weight card:** latest reading, change since plan start, sparkline, history link and Log weight.
-- **Water card** (#60, PR #75, live; the bottle design is #76, pending merge and deploy; `internal/handlers/health_water.go`, `health_components.html` `health.bottle`):
+- **Water card** (#60, #76, live; the daily stop at the target is #78; `internal/handlers/health_water.go`, `health_components.html` `health.bottle`):
   - Jay's water bottle (#76) fills the card. **Tapping the bottle** adds one bottle of the plan's size to today, and the water rises with waves to the share of the target: with a 1.5 L bottle and a 3.0 L target, one tap fills it halfway and two fill it. **Undo** removes the last tap.
   - The waves and bubbles settle after about a minute. Motion stops under reduced motion.
   - Target and bottle size are set in Health → Plan (blank = not set).
-  - Taps are stored in `health_water_log`, at most 15 L a day (checked in the same statement as the insert). No taps reads "No water logged yet", never 0 L.
+  - Taps are stored per local day in `health_water_log`, so the bottle starts empty at midnight (America/Winnipeg). Taps stop at the plan's target (#78): the check is in the same statement as the insert, and the tap that reaches or passes the target is the last one. Once full, the bottle isn't a button ("Done for today · resets at midnight"); Undo stays. No taps reads "No water logged yet", never 0 L.
   - The card sits right after the calorie card (and nudge) at every width, so the screen order and the reading order match.
 - **Daily checklist:** "n of m complete" with a bar and round toggles. The protein and water items are measured, not ticked; water is added from checklist settings and stored as the `health.checklist.water` setting.
 - **Stale data warning:** flagged when Apple Health data is >8 hours old.

@@ -7,13 +7,14 @@ import (
 
 // Water bottle log (#60). One row per tap on the bottle on a local day.
 
-// AddHealthWater records one tap of ml on date unless the day's total would
-// pass capML. The check and insert are one statement, so two quick taps
-// can't both slip past the cap. It reports whether the tap was stored.
-func (r *Repository) AddHealthWater(date string, ml, capML int64) (bool, error) {
+// AddHealthWater records one tap of ml on date while the day's total is
+// still below targetML (#78); the tap that reaches or passes the target is
+// the last one. The check and insert are one statement, so two quick taps
+// can't both slip past it. It reports whether the tap was stored.
+func (r *Repository) AddHealthWater(date string, ml, targetML int64) (bool, error) {
 	res, err := r.db.Exec(`INSERT INTO health_water_log (date, ml)
-		SELECT ?, ? WHERE (SELECT COALESCE(SUM(ml), 0) FROM health_water_log WHERE date = ?) + ? <= ?`,
-		date, ml, date, ml, capML)
+		SELECT ?, ? WHERE (SELECT COALESCE(SUM(ml), 0) FROM health_water_log WHERE date = ?) < ?`,
+		date, ml, date, targetML)
 	if err != nil {
 		return false, err
 	}

@@ -1,3 +1,4 @@
+- [ ] #78 · Water: 2 taps fill it, third tap blocked · https://gyst.zaylolabs.com/health#water
 - [ ] #76 · iPhone Today: tap bottle, fills half, waves, Undo · https://gyst.zaylolabs.com/health#water
 - [ ] #69 · Nutrition week: zero days blank, partial days hatched · https://gyst.zaylolabs.com/health/nutrition
 - [ ] #70 · iPhone Today: calorie card, nudge, macros, checklist · https://gyst.zaylolabs.com/health
