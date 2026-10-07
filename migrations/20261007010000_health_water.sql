@@ -1,8 +1,8 @@
 -- Health water target and bottle log (Issue #60). Additive only.
--- Rollback: an older binary ignores the new table and columns. To remove:
--- DROP TABLE health_water_log; the two health_cycles columns can stay (they
--- default to 0 = not set); DELETE FROM schema_migrations WHERE filename =
--- this file.
+-- Rollback: deploy the older binary and leave everything in place (the
+-- table, both columns and this file's schema_migrations row). An older
+-- binary ignores them. Don't delete the schema_migrations row on its own:
+-- re-applying this file would then fail on the existing columns.
 
 -- Water target and bottle size per plan, in millilitres. 0 means not set,
 -- so an existing plan shows "Set a water target in Plan" rather than an

@@ -490,8 +490,10 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 @media (max-width: 359px) { .hv3-water { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
 .hv3-water-copy { display: grid; gap: var(--vn-s2); min-width: 0; align-content: center; }
 .hv3-water-copy .hv3-k .gyst-icon { color: var(--health-water); }
-.hv3-water-actions { display: flex; flex-wrap: wrap; gap: var(--vn-s2); align-items: center; }
-.hv3-water-actions form { margin: 0; }
+.hv3-water-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--vn-s2); align-items: center; }
+.hv3-water-actions form { margin: 0; min-width: 0; }
+.hv3-water-actions form:first-child { flex: 1 1 12rem; }
+.hv3-water-actions form:first-child .hv3-btn { width: 100%; justify-content: center; white-space: normal; text-align: center; }
 .hv3-water-actions .hv3-btn .gyst-icon { width: 16px; height: 16px; }
 .hv3-water-done { display: inline-flex; align-items: center; gap: 4px; color: var(--vn-ok-text); font-weight: 650; }
 .hv3-water-done .gyst-icon { width: 14px; height: 14px; }
@@ -506,7 +508,7 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 }
 .hv3-wbox.rise { animation: wb-rise 1.4s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes wb-rise { from { --lvl: var(--from); } }
-.wb-scene { position: relative; width: var(--bw); height: var(--bh); transform-style: preserve-3d; transform: rotateX(-15deg) rotateY(-32deg); animation: wb-sway 7s ease-in-out infinite alternate; }
+.wb-scene { position: relative; width: var(--bw); height: var(--bh); transform-style: preserve-3d; transform: rotateX(-15deg) rotateY(-32deg); animation: wb-sway 7s ease-in-out 8 alternate; }
 @keyframes wb-sway { to { transform: rotateX(-15deg) rotateY(-20deg); } }
 .wb-scene i, .wb-water { position: absolute; display: block; }
 .wb-water { inset: 0; transform-style: preserve-3d; }
@@ -537,12 +539,12 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .wb-w-front, .wb-w-right {
   -webkit-mask: var(--wave) repeat-x 0 0 / 28px 6px, linear-gradient(#000 0 0) no-repeat 0 5px / 100% 100%;
   mask: var(--wave) repeat-x 0 0 / 28px 6px, linear-gradient(#000 0 0) no-repeat 0 5px / 100% 100%;
-  animation: wb-wave 2.2s linear infinite;
+  animation: wb-wave 2.2s linear 27;
 }
-.wb-w-right { animation-duration: 2.9s; animation-direction: reverse; }
+.wb-w-right { animation-duration: 2.9s; animation-iteration-count: 20; animation-direction: reverse; }
 @keyframes wb-wave { to { -webkit-mask-position: 28px 0, 0 5px; mask-position: 28px 0, 0 5px; } }
 /* Bubbles. */
-.wb-w-front b { position: absolute; bottom: -6px; width: 5px; height: 5px; border-radius: 50%; background: rgb(255 255 255 / 60%); animation: wb-bubble 3.4s ease-in infinite; }
+.wb-w-front b { position: absolute; bottom: -6px; width: 5px; height: 5px; border-radius: 50%; background: rgb(255 255 255 / 60%); animation: wb-bubble 3.4s ease-in 17; }
 .wb-w-front b:nth-child(1) { left: 22%; }
 .wb-w-front b:nth-child(2) { left: 55%; width: 4px; height: 4px; animation-delay: 1.2s; }
 .wb-w-front b:nth-child(3) { left: 76%; width: 3px; height: 3px; animation-delay: 2.3s; }
@@ -553,11 +555,3 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 }
 [data-motion="reduced"] .hv3-wbox.rise, [data-motion="reduced"] .wb-scene, [data-motion="reduced"] .wb-w-front, [data-motion="reduced"] .wb-w-right { animation: none; }
 [data-motion="reduced"] .wb-w-front b { display: none; }
-/* Phone and tablet keep the approved order (calories, nudge, macros,
-   steps/weight, then water, then checklist); on desktop water sits under the
-   calorie card to balance the two columns (#60). */
-@media (max-width: 1023px) {
-  .hv3-home > .hv3-col { display: contents; }
-  .hv3-home .hv3-water { order: 1; }
-  .hv3-home .hv3-cl2 { order: 2; }
-}

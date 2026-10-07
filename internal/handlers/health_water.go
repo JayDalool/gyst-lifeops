@@ -123,7 +123,7 @@ func waterQuery(q url.Values) (fromML int64, notice, errText string) {
 
 // waterChecklistRow is the measured water row for the daily checklist.
 func waterChecklistRow(name string, v healthWaterView) healthChecklistRow {
-	row := healthChecklistRow{Name: name, Measured: true, Done: v.Done, Value: "Set target in Plan"}
+	row := healthChecklistRow{Name: name, Measured: true, Source: "water bottles logged", Done: v.Done, Value: "Set target in Plan"}
 	if v.HasTarget {
 		row.Value = "— / " + v.Target + " L"
 		if v.Logged {
@@ -148,7 +148,7 @@ func (h *Handler) healthWater(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		http.Redirect(w, r, "/health?water=added&wfrom="+strconv.FormatInt(before, 10)+"#water", http.StatusSeeOther)
-	case errors.As(err, &invalid) && strings.Contains(invalid.Message, "15 L"):
+	case errors.Is(err, services.ErrWaterDailyCap):
 		http.Redirect(w, r, "/health?water=max#water", http.StatusSeeOther)
 	case errors.As(err, &invalid):
 		http.Redirect(w, r, "/health?water=nobottle#water", http.StatusSeeOther)

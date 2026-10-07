@@ -68,7 +68,7 @@
 
   {{with .Water}}
   <section class="hv3-card hv3-water" id="water" aria-labelledby="water-title">
-    <div class="hv3-wbox{{if ge .FromPercent 0}} rise{{end}}{{if .Done}} full{{end}}" style="--lvl:{{.Level}};{{if ge .FromPercent 0}}--from:{{.FromLevel}};{{end}}" role="img" aria-label="{{if .HasTarget}}Water box {{.Percent}}% full{{else}}Empty water box{{end}}">
+    <div class="hv3-wbox{{if ge .FromPercent 0}} rise{{end}}{{if .Done}} full{{end}}" style="--lvl:{{.Level}};{{if ge .FromPercent 0}}--from:{{.FromLevel}};{{end}}" role="img" aria-label="{{if .Logged}}{{if .HasTarget}}Water box {{.Percent}}% full{{else}}Water box{{end}}{{else}}Empty water box, nothing logged yet{{end}}">
       <div class="wb-scene" aria-hidden="true">
         <i class="wb-g wb-back"></i><i class="wb-g wb-left"></i><i class="wb-g wb-bottom"></i>
         <span class="wb-water">
@@ -89,15 +89,14 @@
       {{end}}
       {{with .Error}}<p class="hv3-water-msg warn" role="alert">{{template "gyst.icon" "circle-alert"}}{{.}}</p>{{end}}
       {{with .Notice}}<p class="hv3-water-msg" role="status">{{.}}</p>{{end}}
-      {{if and .HasTarget .HasBottle}}
-      <div class="hv3-water-actions">
-        <form method="post" action="/health/water"><button class="hv3-btn" type="submit">{{template "gyst.icon" "plus"}}Bottle done · {{.Bottle}} L</button></form>
-        {{if .Logged}}<form method="post" action="/health/water/undo"><button class="hv3-btn secondary small" type="submit" aria-label="Undo last bottle">{{template "gyst.icon" "undo-2"}}Undo</button></form>{{end}}
-      </div>
-      {{else if .HasTarget}}
-      <p class="hv3-s">Set your bottle size in <a href="/health/plan">Plan</a> to log bottles.</p>
-      {{end}}
+      {{if and .HasTarget (not .HasBottle)}}<p class="hv3-s">Set your bottle size in <a href="/health/plan">Plan</a> to log bottles.</p>{{end}}
     </div>
+    {{if and .HasTarget .HasBottle}}
+    <div class="hv3-water-actions">
+      <form method="post" action="/health/water"><button class="hv3-btn" type="submit">{{template "gyst.icon" "plus"}}Bottle done · {{.Bottle}} L</button></form>
+      {{if .Logged}}<form method="post" action="/health/water/undo"><button class="hv3-btn secondary small" type="submit" aria-label="Undo last bottle">{{template "gyst.icon" "undo-2"}}Undo</button></form>{{end}}
+    </div>
+    {{end}}
   </section>
   {{end}}
  </div>
@@ -160,7 +159,7 @@
         <span class="hv3-dot-btn measured{{if .Done}} done{{end}}" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
         <span class="lbl" title="{{.Name}}">{{.Name}}</span>
         <span class="val">{{.Value}}</span>
-        <span class="hv3-sr">Measured from food logged{{if .Done}}, target met{{else}}, not met yet{{end}}</span>
+        <span class="hv3-sr">Measured from {{.Source}}{{if .Done}}, target met{{else}}, not met yet{{end}}</span>
         {{end}}
       </li>
       {{end}}

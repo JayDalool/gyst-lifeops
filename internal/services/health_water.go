@@ -13,6 +13,9 @@ import (
 // sensible day.
 const maxWaterPerDayML = 15000
 
+// ErrWaterDailyCap is returned when a tap would pass maxWaterPerDayML.
+var ErrWaterDailyCap = &HealthValidationError{Message: "That's more than 15 L today; check for a double tap"}
+
 // LogHealthWaterBottle adds one bottle to today and returns the amount added.
 func (s *Service) LogHealthWaterBottle() (int64, error) {
 	today := s.TodayString()
@@ -23,14 +26,14 @@ func (s *Service) LogHealthWaterBottle() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	total, _, err := s.Repo.HealthWaterDay(today)
+	stored, err := s.Repo.AddHealthWater(today, cycle.WaterBottleML, maxWaterPerDayML)
 	if err != nil {
 		return 0, err
 	}
-	if total+cycle.WaterBottleML > maxWaterPerDayML {
-		return 0, healthInvalid("That's more than 15 L today; check for a double tap")
+	if !stored {
+		return 0, ErrWaterDailyCap
 	}
-	return cycle.WaterBottleML, s.Repo.AddHealthWater(today, cycle.WaterBottleML)
+	return cycle.WaterBottleML, nil
 }
 
 // UndoHealthWater removes today's latest tap and returns its amount;

@@ -7,30 +7,28 @@ import (
 
 // Water bottle log (#60). One row per "Bottle done" tap on a local day.
 
-// AddHealthWater records one tap of ml on date.
-func (r *Repository) AddHealthWater(date string, ml int64) error {
-	_, err := r.db.Exec(`INSERT INTO health_water_log (date, ml) VALUES (?, ?)`, date, ml)
-	return err
+// AddHealthWater records one tap of ml on date unless the day's total would
+// pass capML. The check and insert are one statement, so two quick taps
+// can't both slip past the cap. It reports whether the tap was stored.
+func (r *Repository) AddHealthWater(date string, ml, capML int64) (bool, error) {
+	res, err := r.db.Exec(`INSERT INTO health_water_log (date, ml)
+		SELECT ?, ? WHERE (SELECT COALESCE(SUM(ml), 0) FROM health_water_log WHERE date = ?) + ? <= ?`,
+		date, ml, date, ml, capML)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n == 1, err
 }
 
-// UndoHealthWater removes the latest tap on date and returns its amount.
-// It returns sql.ErrNoRows when nothing was logged that day.
+// UndoHealthWater removes the latest tap on date in one statement and
+// returns its amount; sql.ErrNoRows when nothing was logged that day.
 func (r *Repository) UndoHealthWater(date string) (int64, error) {
-	var id, ml int64
-	err := r.db.QueryRow(`SELECT id, ml FROM health_water_log WHERE date = ? ORDER BY id DESC LIMIT 1`, date).Scan(&id, &ml)
-	if err != nil {
-		return 0, err
-	}
-	res, err := r.db.Exec(`DELETE FROM health_water_log WHERE id = ?`, id)
-	if err != nil {
-		return 0, err
-	}
-	if n, err := res.RowsAffected(); err != nil {
-		return 0, err
-	} else if n != 1 {
-		return 0, sql.ErrNoRows
-	}
-	return ml, nil
+	var ml int64
+	err := r.db.QueryRow(`DELETE FROM health_water_log
+		WHERE id = (SELECT id FROM health_water_log WHERE date = ? ORDER BY id DESC LIMIT 1)
+		RETURNING ml`, date).Scan(&ml)
+	return ml, err
 }
 
 // HealthWaterDay is the day's total and number of taps; Taps 0 means

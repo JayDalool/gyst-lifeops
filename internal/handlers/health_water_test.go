@@ -147,9 +147,11 @@ func TestWaterBottleFlow(t *testing.T) {
 	if w := cfgPost(h, "/health/water/undo", nil, ""); w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/health#water" {
 		t.Fatalf("undo with nothing logged: %d %s", w.Code, w.Header().Get("Location"))
 	}
-	// A new local day starts empty.
+	// A new local day starts empty. 20:00 local is already the next day in
+	// UTC, so this fails if days were counted in UTC.
+	*now = time.Date(2026, 10, 7, 20, 0, 0, 0, h.Service.Location())
 	cfgPost(h, "/health/water", nil, "")
-	*now = now.Add(10 * time.Hour)
+	*now = now.Add(5 * time.Hour)
 	if body := cfgGet(t, h, "/health"); !strings.Contains(body, "No water logged yet") {
 		t.Fatal("yesterday's bottle leaked into today")
 	}

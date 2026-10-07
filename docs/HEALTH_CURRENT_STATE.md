@@ -1,8 +1,8 @@
 # GYST Health — Current State (2026-10-06)
 
-**Production:** `d8a26a9` (PR #72, Nutrition week fix) when this was written; the water PR for #60 deploys after it merges. Earlier: PR #74 (real-data rule), #71 (Today redesign), #68 (load rounding), #65 (Coach, disabled).  
+**Production:** `d8a26a9` (PR #72, Nutrition week fix; deployed and smoke-tested 2026-10-06) when this was written. The water PR for #60 (PR #75) is not in production until it merges and deploys. Earlier: PR #74 (real-data rule), #71 (Today redesign), #68 (load rounding), #65 (Coach, disabled).  
 **Last updated:** 2026-10-06, with the water target (#60)  
-**Status:** Health v3 Today, Workout, Nutrition and More are live, with the Daily checklist, My foods & products and protein-gap suggestions. Integrations operational. Today redesigned to the approved mockup (#70), with water logging (#60). Nutrition week marks recorded-zero and partial days (#69). Health Coach merged (PR #65) and disabled until Jay sets an AI key. Remaining: final real-device QA.
+**Status:** Health v3 Today, Workout, Nutrition and More are live, with the Daily checklist, My foods & products and protein-gap suggestions. Integrations operational. Today redesigned to the approved mockup (#70); water logging (#60, PR #75) pending merge and deploy. Nutrition week marks recorded-zero and partial days (#69). Health Coach merged (PR #65) and disabled until Jay sets an AI key. Remaining: final real-device QA.
 
 **Note:** This document reflects the **production state** of implemented features. Production has already reported successful Hevy syncs and Apple Health data ingestion. Treat operational features as running unless proven otherwise.
 
@@ -31,11 +31,12 @@ Today, Workout and More from PR #54; Nutrition v3 from PR #58 (see Real Gaps bel
 - **Macro cards:** protein, carbs, fat, fiber in their category colours with bars; "over" warnings on limits, "Target met" on minimums. Each card opens Nutrition.
 - **Steps card:** Apple Watch when observed, else iPhone, labelled; the other source is listed separately and never summed; exercise minutes.
 - **Weight card:** latest reading, change since plan start, sparkline, history link and Log weight.
-- **Water card** (#60, `internal/handlers/health_water.go`):
-  - A 3D glass box fills to the share of the plan's water target, with moving water and a rise animation after each tap; motion stops under reduced motion.
+- **Water card** (#60, PR #75, pending merge and deploy; `internal/handlers/health_water.go`):
+  - A 3D glass box fills to the share of the plan's water target. It rises after each tap; the waves, bubbles and sway settle after about a minute. Motion stops under reduced motion.
   - **Bottle done** adds one bottle of the plan's size to today; **Undo** removes the last tap. With a 1.5 L bottle and a 3.0 L target, one tap fills it halfway.
   - Target and bottle size are set in Health → Plan (blank = not set).
-  - Taps are stored in `health_water_log`, at most 15 L a day. No taps reads "No water logged yet", never 0 L.
+  - Taps are stored in `health_water_log`, at most 15 L a day (checked in the same statement as the insert). No taps reads "No water logged yet", never 0 L.
+  - The card sits right after the calorie card (and nudge) at every width, so the screen order and the reading order match.
 - **Daily checklist:** "n of m complete" with a bar and round toggles. The protein and water items are measured, not ticked; water is added from checklist settings and stored as the `health.checklist.water` setting.
 - **Stale data warning:** flagged when Apple Health data is >8 hours old.
 - Design record: `docs/design/health-home/` (approved mockup, prototype, states).
@@ -128,7 +129,7 @@ Done since the last update (all merged and deployed 2026-10-05, Winnipeg time):
 
 Still open:
 
-1. **Health Coach** (#64, PR #65): merged and disabled until Jay sets `ANTHROPIC_API_KEY` (see `docs/HEALTH_COACH.md`). The OpenAI adapter is a follow-up; the Coach doesn't read water yet.
+1. **Health Coach** (#64, PR #65): merged and disabled until Jay sets `ANTHROPIC_API_KEY` (see `docs/HEALTH_COACH.md`). The OpenAI adapter is a follow-up. The Coach sees water only through its checklist tool, when the Water row is added.
 
 2. **Real device QA** — End-to-end testing on iPhone + Watch
    - Apple Health Shortcut nutrition flow
@@ -199,7 +200,7 @@ Still open:
 
 **For Agent (Feature Work):**
 
-1. **Health Coach**: the OpenAI adapter; add water to the Coach's today tool
+1. **Health Coach**: the OpenAI adapter; give the Coach's today tool the water total
 2. **Real device testing**: production iPhone/Watch
 
 ---

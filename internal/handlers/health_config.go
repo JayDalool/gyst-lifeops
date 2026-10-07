@@ -23,6 +23,7 @@ type healthChecklistRow struct {
 	Done     bool
 	Value    string // measured rows: "132 / 180 g", or "—" when not logged
 	Measured bool
+	Source   string // measured rows: what the value is measured from
 }
 
 func buildChecklistRows(items []models.HealthChecklistItem, today HealthTodayView) []healthChecklistRow {
@@ -30,7 +31,7 @@ func buildChecklistRows(items []models.HealthChecklistItem, today HealthTodayVie
 	for _, it := range items {
 		row := healthChecklistRow{ID: it.ID, Name: it.Name, Habit: it.Kind == "habit", Done: it.DoneToday}
 		if it.Kind == "protein" {
-			row.Measured = true
+			row.Measured, row.Source = true, "food logged"
 			var protein HealthMacroView
 			for _, m := range today.Macros {
 				if m.Label == "Protein" {
