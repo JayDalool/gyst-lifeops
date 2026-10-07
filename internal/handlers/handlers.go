@@ -2355,6 +2355,14 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 			}
 			return h.Service.TodayString()
 		},
+		// The application timezone's IANA name, so a page can tell when the
+		// server's day has changed (#78).
+		"appTimezone": func() string {
+			if h.Service == nil {
+				return ""
+			}
+			return h.Service.Location().String()
+		},
 		"appTomorrow": func() string {
 			if h.Service == nil {
 				return ""

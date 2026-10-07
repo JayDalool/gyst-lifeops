@@ -2,7 +2,7 @@
 {{/* Health · Today (#70; approved mockup in docs/design/health-home/). Observations
      only: absent values read "—", never 0. Watch and phone steps stay separate.
      Every status colour is paired with words. */}}
-<div class="gyst-scope hv3" data-day-page>
+<div class="gyst-scope hv3" data-day-page="{{.Today.Date}}" data-day-tz="{{appTimezone}}">
 <header class="hv3-ph">
   <div class="hv3-ph-copy">
     <p class="hv3-eyebrow">Health · {{niceDate .Today.Date}}</p>

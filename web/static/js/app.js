@@ -448,15 +448,42 @@
     });
   }
 
-  // Pages about "today" ([data-day-page], e.g. Health Today) reload when the
-  // local date has changed while the PWA sat in the background, so the water
-  // bottle and the day's numbers reset at midnight without a manual refresh
-  // (#78).
+  // Pages about "today" ([data-day-page="YYYY-MM-DD"], e.g. Health Today)
+  // reload when the app's day has changed while the PWA sat in the
+  // background, so the water bottle and the day's numbers reset at midnight
+  // without a manual refresh (#78). The day is read in the app timezone
+  // (data-day-tz), the same one the server counts days in.
   function initDayReload() {
-    if (!document.querySelector("[data-day-page]")) return;
+    var page = document.querySelector("[data-day-page]");
+    if (!page) return;
+    // One-off notices (?water=added&wfrom=...) belong to the tap that caused
+    // them; drop them from the address so a refresh or the day reload
+    // doesn't replay the message and the animation.
+    try {
+      var u = new URL(location.href);
+      if (u.searchParams.has("water") || u.searchParams.has("wfrom")) {
+        u.searchParams.delete("water");
+        u.searchParams.delete("wfrom");
+        history.replaceState(history.state, "", u.pathname + u.search + u.hash);
+      }
+    } catch (_) {}
+    var day = page.getAttribute("data-day-page"), tz = page.getAttribute("data-day-tz");
     var loaded = new Date().toDateString();
+    function appDay() {
+      if (!day || !tz) return null;
+      try {
+        var p = {};
+        new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" })
+          .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+        return p.year + "-" + p.month + "-" + p.day;
+      } catch (_) { return null; }
+    }
+    function changed() {
+      var d = appDay();
+      return d ? d !== day : new Date().toDateString() !== loaded;
+    }
     function check() {
-      if (document.visibilityState === "visible" && new Date().toDateString() !== loaded) location.reload();
+      if (document.visibilityState === "visible" && changed()) location.reload();
     }
     document.addEventListener("visibilitychange", check);
     window.addEventListener("pageshow", function (e) { if (e.persisted) check(); });
