@@ -52,9 +52,9 @@ function themeChecks() {
     if(legacyMedia)media.addListener=fn=>state.mediaChange=fn;else media.addEventListener=(name,fn)=>{assert.equal(name,'change');state.mediaChange=fn;};
     state.root={dataset:{}};state.meta={content:''};state.choices=choices;state.media=media;
     vm.runInNewContext(code,{
-      document:{documentElement:state.root,querySelector:()=>state.meta,querySelectorAll:sel=>sel==='[data-theme-choice]'?choices:[],dispatchEvent:()=>{state.changes++;},addEventListener:(name,fn)=>state.events[name]=fn},
+      document:{documentElement:state.root,querySelector:()=>state.meta,querySelectorAll:sel=>sel==='[data-theme-choice]'?choices:[],dispatchEvent:event=>{assert.equal(event.type,'gyst:themechange');state.changes++;},addEventListener:(name,fn)=>state.events[name]=fn},
       localStorage:{getItem:key=>{if(denied)throw Error('denied');return key==='lifeops-theme'?state.stored:null;},setItem:(key,value)=>{if(denied)throw Error('denied');state.stored=value;}},
-      window:{addEventListener:(name,fn)=>state.events[name]=fn,matchMedia:query=>{assert.equal(query,'(prefers-color-scheme: dark)');return media;}},Event:class{}
+      window:{addEventListener:(name,fn)=>state.events[name]=fn,matchMedia:query=>{assert.equal(query,'(prefers-color-scheme: dark)');return media;}},Event:class{constructor(type){this.type=type;}}
     });
     return state;
   }
