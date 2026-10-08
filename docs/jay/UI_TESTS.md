@@ -1,5 +1,5 @@
-- [ ] #9 · iPhone Galaxy: time Safari and app, 3/10/30 worlds · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/design/galaxy-baseline/README.md
-- [ ] #78 · Water: tap fills half, second full, third blocked, Undo · https://gyst.zaylolabs.com/health#water
+- [ ] #9 · iPhone Galaxy: time Safari and app, read-only, per §J.7 · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/design/galaxy-baseline/README.md
+- [ ] #78 · iPhone water: half, full, third blocked, waves, Undo · https://gyst.zaylolabs.com/health#water
 - [ ] #69 · Nutrition week: zero days blank, partial days hatched · https://gyst.zaylolabs.com/health/nutrition
 - [ ] #70 · iPhone Today: calorie card, nudge, macros, checklist · https://gyst.zaylolabs.com/health
 - [ ] #67 · Workout: lb sets show 43.1 kg, not long decimals · https://gyst.zaylolabs.com/health/training
