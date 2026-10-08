@@ -42,23 +42,55 @@ async function workerChecks() {
   networkResponse=()=>new Response('private',{headers:{'Cache-Control':'no-store'}});
   await request('/static/no-store',{mode:'cors'});assert.equal(cached.size,1,'no-store response cached');
 }
+// Appearance (#42, DD-1): stored system/light/dark, missing or unreadable → system, System follows the OS live.
 function themeChecks() {
   const code=fs.readFileSync('web/static/js/theme.js','utf8');
-  for(const initial of [null,'light','dark','invalid']) {
+  function run(initial,denied,osDark,legacyMedia) {
+    const state={stored:initial,events:{},changes:0,mediaChange:null};
+    const choices=['system','light','dark'].map(value=>({dataset:{themeChoice:value},attrs:{},listeners:{},setAttribute(k,v){this.attrs[k]=v;},addEventListener(n,fn){this.listeners[n]=fn;}}));
+    const media={matches:osDark};
+    if(legacyMedia)media.addListener=fn=>state.mediaChange=fn;else media.addEventListener=(name,fn)=>{assert.equal(name,'change');state.mediaChange=fn;};
+    state.root={dataset:{}};state.meta={content:''};state.choices=choices;state.media=media;
+    vm.runInNewContext(code,{
+      document:{documentElement:state.root,querySelector:()=>state.meta,querySelectorAll:sel=>sel==='[data-theme-choice]'?choices:[],dispatchEvent:event=>{assert.equal(event.type,'gyst:themechange');state.changes++;},addEventListener:(name,fn)=>state.events[name]=fn},
+      localStorage:{getItem:key=>{if(denied)throw Error('denied');return key==='lifeops-theme'?state.stored:null;},setItem:(key,value)=>{if(denied)throw Error('denied');state.stored=value;}},
+      window:{addEventListener:(name,fn)=>state.events[name]=fn,matchMedia:query=>{assert.equal(query,'(prefers-color-scheme: dark)');return media;}},Event:class{constructor(type){this.type=type;}}
+    });
+    return state;
+  }
+  function expectTheme(state,theme,mode) {
+    assert.equal(state.root.dataset.gystTheme,theme);
+    assert.equal(state.root.dataset.theme,theme==='light'?'light':undefined,'legacy dark relies on absent data-theme');
+    assert.equal(state.meta.content,theme==='dark'?'#0f172a':'#f8fafc');
+    if(mode)for(const c of state.choices)assert.equal(c.attrs['aria-pressed'],String(c.dataset.themeChoice===mode));
+  }
+  const choice=(state,value)=>state.choices.find(c=>c.dataset.themeChoice===value).listeners.click();
+  const flipOS=state=>{state.media.matches=!state.media.matches;state.mediaChange();};
+  for(const initial of [null,'light','dark','system','invalid']) {
     for(const denied of [false,true]) {
-      let stored=initial;const events={},toggle={checked:false,addEventListener:(name,fn)=>events.change=fn};
-      const root={dataset:{}},meta={content:''};
-      vm.runInNewContext(code,{
-        document:{documentElement:root,querySelector:()=>meta,querySelectorAll:()=>[toggle],dispatchEvent:()=>{},addEventListener:(name,fn)=>events[name]=fn},
-        localStorage:{getItem:()=>{if(denied)throw Error('denied');return stored;},setItem:(key,value)=>{if(denied)throw Error('denied');stored=value;}},
-        window:{addEventListener:(name,fn)=>events[name]=fn},Event:class{}
-      });
-      const expected=!denied && initial==='dark'?'dark':'light';
-      assert.equal(root.dataset.gystTheme,expected);
-      events.DOMContentLoaded();assert.equal(toggle.checked,expected==='light');
-      toggle.checked=false;events.change();assert.equal(root.dataset.gystTheme,'dark');assert.equal(root.dataset.theme,undefined);
-      if(!denied)assert.equal(stored,'dark');
-      events.storage({key:'lifeops-theme',newValue:'light'});assert.equal(root.dataset.theme,'light');
+      for(const osDark of [false,true]) {
+        for(const legacyMedia of [false,true]) {
+          const s=run(initial,denied,osDark,legacyMedia);
+          const mode=!denied && (initial==='light'||initial==='dark')?initial:'system';
+          const resolved=m=>m==='system'?(s.media.matches?'dark':'light'):m;
+          expectTheme(s,resolved(mode));
+          assert.ok(s.changes>=1,'gyst:themechange fired on load');
+          s.events.DOMContentLoaded();expectTheme(s,resolved(mode),mode);
+          // A live OS change moves System only; a manual choice ignores it.
+          flipOS(s);expectTheme(s,resolved(mode),mode);
+          choice(s,'dark');expectTheme(s,'dark','dark');if(!denied)assert.equal(s.stored,'dark');
+          flipOS(s);expectTheme(s,'dark','dark');
+          choice(s,'light');expectTheme(s,'light','light');if(!denied)assert.equal(s.stored,'light');
+          flipOS(s);expectTheme(s,'light','light');
+          choice(s,'system');expectTheme(s,resolved('system'),'system');if(!denied)assert.equal(s.stored,'system');
+          flipOS(s);expectTheme(s,resolved('system'),'system');
+          // Cross-tab sync for every value, a cleared key and localStorage.clear().
+          for(const [key,value,next] of [['lifeops-theme','light','light'],['lifeops-theme','dark','dark'],['lifeops-theme','system','system'],['lifeops-theme','dark','dark'],['lifeops-theme',null,'system'],['lifeops-theme','dark','dark'],[null,null,'system']]) {
+            s.events.storage({key,newValue:value});expectTheme(s,resolved(next),next);
+          }
+          const before=s.root.dataset.gystTheme;s.events.storage({key:'lifeops-motion',newValue:'light'});assert.equal(s.root.dataset.gystTheme,before);
+        }
+      }
     }
   }
 }
@@ -146,4 +178,4 @@ function toastChecks() {
   assert.equal(T.parse('?celebrate=task&celebrate_level=1').level,0);
   assert.equal(innerHTMLWrites.length,0);
 }
-(async()=>{await workerChecks();themeChecks();motionChecks();toastChecks();console.log('UI shell: private/offline cache policy, theme persistence, motion preference and completion toast passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{await workerChecks();themeChecks();motionChecks();toastChecks();console.log('UI shell: private/offline cache policy, appearance setting, motion preference and completion toast passed');})().catch(error=>{console.error(error);process.exitCode=1;});

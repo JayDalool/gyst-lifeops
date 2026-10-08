@@ -1,3 +1,4 @@
+- [ ] #42 · iPhone Safari + PWA: System/Light/Dark, follows iOS live · https://gyst.zaylolabs.com/settings
 - [ ] #9 · iPhone Galaxy: time Safari and app, read-only, per §J.7 · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/design/galaxy-baseline/README.md
 - [ ] #78 · iPhone water: half, full, third blocked, waves, Undo · https://gyst.zaylolabs.com/health#water
 - [ ] #69 · Nutrition week: zero days blank, partial days hatched · https://gyst.zaylolabs.com/health/nutrition
