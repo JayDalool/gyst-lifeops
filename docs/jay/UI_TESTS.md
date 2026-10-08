@@ -1,21 +1,19 @@
-- [ ] #78 · Water: 2 taps fill it, third tap blocked · https://gyst.zaylolabs.com/health#water
-- [ ] #76 · iPhone Today: tap bottle, fills half, waves, Undo · https://gyst.zaylolabs.com/health#water
+- [ ] #9 · iPhone Galaxy: time Safari and app, 3/10/30 worlds · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/design/galaxy-baseline/README.md
+- [ ] #78 · Water: tap fills half, second full, third blocked, Undo · https://gyst.zaylolabs.com/health#water
 - [ ] #69 · Nutrition week: zero days blank, partial days hatched · https://gyst.zaylolabs.com/health/nutrition
 - [ ] #70 · iPhone Today: calorie card, nudge, macros, checklist · https://gyst.zaylolabs.com/health
 - [ ] #67 · Workout: lb sets show 43.1 kg, not long decimals · https://gyst.zaylolabs.com/health/training
 - [ ] #64 · If Coach enabled: profile page, Coach chat, dark buttons · https://gyst.zaylolabs.com/health/coach
 - [ ] #62 · iPhone Nutrition: protein gap card, foods, budget · https://gyst.zaylolabs.com/health/nutrition
-- [ ] #59 · iPhone: tick checklist, add a food, edit it · https://gyst.zaylolabs.com/health
+- [ ] #59 · iPhone My foods: add a food, edit it · https://gyst.zaylolabs.com/health/foods
 - [ ] #55 · iPhone Nutrition: calories, macros, 7 days, Open MFP · https://gyst.zaylolabs.com/health/nutrition
-- [ ] #53 · iPhone Health: Today and Workout new design · https://github.com/JayDalool/gyst-lifeops/pull/54
 - [ ] #49 · iPhone Training: This week, progress, muscle groups look right · https://gyst.zaylolabs.com/health/training
 - [ ] #47 · iPhone Progress: log weight, Undo works, reading shows · https://gyst.zaylolabs.com/health/progress
 - [ ] #25 · iPhone Today: tick task, toast shows, Undo reopens · https://github.com/JayDalool/gyst-lifeops/pull/31
 - [ ] #25 · iPhone Project: final mission, brief level-up, tap dismisses · https://github.com/JayDalool/gyst-lifeops/pull/31
-- [ ] #25 · Reduce motion on: completion toast appears without sliding · https://github.com/JayDalool/gyst-lifeops/pull/31
 - [ ] #23 · iPhone: tick a task, circle fills, title strikes · https://github.com/JayDalool/gyst-lifeops/pull/28
 - [ ] #23 · iPhone: page change fades, top bar and nav stay · https://github.com/JayDalool/gyst-lifeops/pull/28
-- [ ] #23 · Settings Reduce motion on: tick-off and pages instant · https://github.com/JayDalool/gyst-lifeops/pull/28
+- [ ] #23 · Reduce motion on: tick-off, pages, toast all instant · https://github.com/JayDalool/gyst-lifeops/pull/28
 - [ ] #22 · iPhone Galaxy: light window, dark full-bleed, ship clear · https://github.com/JayDalool/gyst-lifeops/pull/27
 - [ ] #24 · iPhone Tasks: tick, Skip/Edit row, filter chips tappable · https://github.com/JayDalool/gyst-lifeops/pull/26
-- [ ] #24 · Health empty day text and date; empty project card · https://github.com/JayDalool/gyst-lifeops/pull/26
+- [ ] #24 · Empty project shows "No missions yet" · https://github.com/JayDalool/gyst-lifeops/pull/26
