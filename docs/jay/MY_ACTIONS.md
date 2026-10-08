@@ -1,4 +1,3 @@
-- [ ] #60 · Plan: water 3.0 L, bottle 1.5 L; add Water to checklist · https://gyst.zaylolabs.com/health/plan
-- [ ] #64 · Decide Coach PR; if merged, set Anthropic key · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
-- [ ] #53 · Health → Plan → Strength sessions/week → 3 → Save · https://gyst.zaylolabs.com/health/plan
+- [ ] #3 · Quick-capture due date, prayer save, then D6 checklist · https://github.com/JayDalool/gyst-lifeops/issues/3
+- [ ] #64 · Coach: set provider and Anthropic key, or leave off · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
 - [ ] #5 · Run host permissions runbook, paste result to Claude · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/tasks/VN-009-host-permissions.md
