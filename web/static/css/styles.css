@@ -4700,6 +4700,9 @@ i.map-node-state {
   border-bottom: 1px solid var(--border);
 }
 :root .setting:last-child { border-bottom: 0; padding-bottom: 0; }
+/* A wide control (Appearance segments) drops below its label on narrow screens instead of stacking. */
+:root .setting.setting-wrap { flex-wrap: wrap; row-gap: 12px; }
+:root .setting.setting-wrap .gyst-segments { flex-wrap: nowrap; }
 :root .setting b { display: block; font-weight: 600; font-size: 14.5px; }
 :root .setting p { color: var(--quiet); font-size: 13.5px; max-width: 52ch; margin: 2px 0 0; }
 

@@ -114,12 +114,16 @@
 
 <section class="card mt-16 settings-card">
   <h2 class="section-title">Appearance</h2>
-  <div class="setting mt-8">
+  <div class="setting setting-wrap mt-8">
     <div>
-      <b>Light mode</b>
-      <p>Dark is the default. Stored locally in this browser.</p>
+      <b id="appearance-label">Theme</b>
+      <p id="appearance-help">System follows your device’s light or dark setting. Stored locally in this browser.</p>
     </div>
-    <label class="switch"><input type="checkbox" data-theme-toggle aria-label="Light mode"><i></i></label>
+    <div class="gyst-scope gyst-segments" role="group" aria-labelledby="appearance-label" aria-describedby="appearance-help">
+      <button class="gyst-segment" type="button" data-theme-choice="system" aria-pressed="true">System</button>
+      <button class="gyst-segment" type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+      <button class="gyst-segment" type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+    </div>
   </div>
 </section>
 

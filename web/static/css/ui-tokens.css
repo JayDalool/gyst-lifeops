@@ -56,8 +56,9 @@
    - dark values on any [data-gyst-theme="dark"] scope (the current toggle);
    - OS dark when no explicit light theme is set (no attribute, or a future
      data-gyst-theme="system"), which follows OS changes live without reload.
-   layout.html/theme.js always set data-gyst-theme today, so production stays
-   on the explicit toggle until GYST-VN-019 adds the System setting.
+   layout.html/theme.js always set data-gyst-theme: GYST-VN-019's System
+   setting is resolved to light or dark by theme.js (live on OS change), so
+   legacy styles keyed on data-theme follow it too.
    color-scheme is deliberately not set here: it would restyle native
    controls on existing screens.
    ------------------------------------------------------------------------ */
