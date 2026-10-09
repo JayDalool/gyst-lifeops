@@ -21,7 +21,7 @@ Independent review            different agent/provider where practical (REVIEW_W
  ↓
 Human verification            Jay, where applicable
  ↓
-Merge                         Jay only
+Merge                         merge gate (AGENTS.md rule 13), or Jay
  ↓
 status:done / close           Jay
 ```
@@ -38,7 +38,7 @@ status:done / close           Jay
 8. **Self-review.** Go through the diff against each acceptance criterion. Look for scope creep, secrets, debug output and stray files (`git status`).
 9. **Open the PR.** Use the PR template. Body contains `Refs #<issue>`. Set the Issue to `status:review`. Add `needs:security-review` for PRIVILEGED work.
 10. **Independent review.** A different agent reviews per `REVIEW_WORKFLOW.md`. Fix BLOCKING findings on the same branch (new commits, no force-push).
-11. **Human verification and merge.** Jay merges. For operational steps (deploy, host changes), Jay performs them as the Issue describes.
+11. **Merge.** `merge-gate merge <n>` merges when every gate passes (AGENTS.md rule 13). Big changes (`merge-gate classify <n>`) need the `## Review card` in the PR and a browser UI check of every affected flow; so do UI changes. Work the gate blocks (ELEVATED, PRIVILEGED, security) waits for Jay's Agree or his merge. For operational steps (deploy, host changes), Jay performs them as the Issue describes.
 12. **Close.** Jay closes the Issue as completed once the outcome is verified; it becomes `status:done`.
 
 ## Human-operational Issues

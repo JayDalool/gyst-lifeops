@@ -5,8 +5,9 @@ in this repository. It is deliberately short. Detail lives in the linked files.
 
 **GYST** is a single-user, self-hosted LifeOps PWA: Go single binary, SQLite
 (WAL, enforced foreign keys), server-rendered templates, vanilla JS, plain CSS,
-Three.js Galaxy, Docker Compose + Caddy. Jay is the owner, operator and the only
-person who merges and touches production.
+Three.js Galaxy, Docker Compose + Caddy. Jay is the owner and operator, and the
+only person who touches production. Agents merge only through the merge gate
+(rule 13).
 
 ## Who does what
 
@@ -17,7 +18,8 @@ person who merges and touches production.
 | Pull request | The implementation artifact |
 | Claude / Codex | Implementation and review workers |
 | GYST (later) | A control surface over the same Issues |
-| Jay | Final verification and merge |
+| Merge gate (`merge-gate`, jay-dev) | Merges a PR once CI, independent review, UI check and review card pass (rule 13) |
+| Jay | Decisions on big or blocked changes, final verification, deploys |
 
 There is **one** editable task system: GitHub Issues. `docs/tasks/` is a
 historical ledger (see its README). The vNext backlog
@@ -38,7 +40,7 @@ becomes an Issue, the Issue is the live record.
 10. **Report limitations honestly:** what wasn't run, wasn't verified, or failed, with the output.
 11. **Code existing is not Done.** Done means the acceptance criteria are verified, reviewed and accepted by Jay (then `status:done` / closed).
 12. **Independent review** by a different agent/provider where practical is required before Jay's final acceptance whenever the Issue's risk class or reviewer field asks for it. ELEVATED and PRIVILEGED always need it. A self-review is not independent.
-13. **Agents never merge into `master`** (GitHub branch protection isn't available on the repository's current plan, so this rule is enforced by process until GYST-VN-099 is re-planned), never force-push, never rewrite shared history, never change branch protection, secrets or repository settings.
+13. **Agents merge into `master` only through the merge gate** (`merge-gate merge <n>` from the jay-dev plugin; Jay, 2026-10-09). It merges when, on the PR's current head: CI is green; an independent reviewer posted `REVIEW: APPROVE · head <sha>`; UI changes and big changes have a browser `UI CHECK: PASS · head <sha>` covering every affected page and flow; big changes have a `## Review card`; and no blocking label is on the PR or its Issue. `risk:elevated`, `risk:privileged`, `type:security`, `type:infrastructure` and `needs:security-review` block it, so that work still waits for Jay (his Agree on the Repo Board's For you tab, or his merge). Agents never merge directly (`gh pr merge`), never deploy, never force-push, never rewrite shared history, never change branch protection, secrets or repository settings.
 14. **PRs reference Issues with `Refs #<issue>`**, never `Closes`/`Fixes`. Jay closes the Issue after verification.
 15. **Secrets never enter the repository**, logs, Issues, PRs or screenshots.
 
@@ -52,7 +54,7 @@ This file and `docs/RULES.md` win over the plugin wherever they differ.
 
 - `/jay-dev:studio [quick|standard|deep|exhaustive] <request>` picks the level
   and the specialists; code changes still follow the rules above (Issue →
-  task branch from `master` → PR → independent review → Jay merges).
+  task branch from `master` → PR → independent review → merge gate, rule 13).
 - `jay-dev:qa` for browser checks: local dev with `seeds/example.sql`, never
   production health data; light and dark as rule 9 says. The one exception
   (Jay, 2026-10-06): when Jay asks in the session to check his real data,
@@ -92,7 +94,7 @@ This file and `docs/RULES.md` win over the plugin wherever they differ.
 
 **`master`** is the canonical development trunk and the GitHub default branch
 (decided in GYST-VN-001, Issue #2). Task branches start from `master`, PRs
-target `master`, and only Jay merges. `feature/health-hardening` was merged into
+target `master`, and merge through the gate (rule 13). `feature/health-hardening` was merged into
 `master` (PR #10) and is historical.
 
 ## When in doubt
