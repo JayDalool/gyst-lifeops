@@ -307,11 +307,13 @@ flowchart LR
     CF -->|tunnel| CFD[cloudflared container]
     CFD -->|proxy network, HTTP| C8081[gyst-caddy :8081<br/>Host gyst.zaylolabs.com]
     Tailnet[Tailnet devices] -->|HTTPS 100.x:3443| C443
-    LAN[LAN 10.0.0.0/24] -->|HTTPS 10.0.0.183:3443<br/>correct SNI required| C443[gyst-caddy :443<br/>Tailscale cert]
+    LAN[LAN 192.0.2.0/24] -->|HTTPS 192.0.2.10:3443<br/>correct SNI required| C443[gyst-caddy :443<br/>Tailscale cert]
     Other[n8n, SamVision, FMS, NPM,<br/>uptime-kuma containers] -. proxy network .-> C8081
     C8081 --> APP[gyst-lifeops :8080<br/>gyst-lifeops_default network only]
     C443 --> APP
 ```
+
+Addresses use the RFC 5737 documentation range; the real LAN address is withheld.
 
 | Item | Finding |
 |---|---|
@@ -496,7 +498,7 @@ Severity reflects **practical risk to this single-user deployment today**.
 
 ### S2-08 — Tailnet listener bound on all host interfaces
 - **Severity:** LOW · **Status:** CONFIRMED (LAN reachability from the host itself). Other-host reachability UNKNOWN.
-- **Evidence:** port binding `HostIp ""` → `0.0.0.0:3443`; `10.0.0.183:3443` returned 200 with the tailnet SNI.
+- **Evidence:** port binding `HostIp ""` → `0.0.0.0:3443`; `192.0.2.10:3443` returned 200 with the tailnet SNI.
 - **Impact:** a Tailscale-only intent isn't enforced at the bind level. LAN devices, and the internet if a router forward exists, can reach the app, though the session is still required.
 - **Direction:** bind to the Tailscale address, or firewall it.
 - **Remediation stage:** operations
