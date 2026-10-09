@@ -149,8 +149,10 @@ queries.
 
 GitHub, Jira, and Slack links may refresh their stored title/status snapshots
 through `internal/services/providers/`. Page rendering never performs remote
-I/O. GitHub can use `GITHUB_TOKEN`; Jira requires `JIRA_EMAIL` and
-`JIRA_API_TOKEN`; Slack requires `SLACK_BOT_TOKEN`. Missing credentials leave
+I/O. GitHub can use `GITHUB_TOKEN`; Jira requires `JIRA_EMAIL`,
+`JIRA_API_TOKEN` and `JIRA_BASE_URL` (an https URL; credentials are sent only to
+links on exactly that host, requests are built from it, and redirects are not
+followed); Slack requires `SLACK_BOT_TOKEN`. Missing credentials leave
 the manual snapshot unchanged.
 
 ## Calendar integration

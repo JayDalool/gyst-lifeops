@@ -2,7 +2,10 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
+	"net/url"
 
 	"lifeops-tracker/internal/services/providers"
 )
@@ -25,6 +28,13 @@ func (s *Service) SyncExternalLink(ctx context.Context, id int64) error {
 	}
 	snapshot, err := provider.Fetch(ctx, link)
 	if err != nil {
+		if errors.Is(err, providers.ErrHostNotAllowed) {
+			host := ""
+			if u, perr := url.Parse(link.URL); perr == nil {
+				host = u.Hostname()
+			}
+			log.Printf("SECURITY: external link %d sync refused: host not allowed (%s)", link.ID, host)
+		}
 		return err
 	}
 	return s.Repo.UpdateExternalLinkSnapshot(id, snapshot.Title, snapshot.StatusText)

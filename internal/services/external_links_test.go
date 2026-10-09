@@ -1,12 +1,20 @@
 package services
 
 import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
+	"lifeops-tracker/internal/services/providers"
 )
 
 func externalLinkService(t *testing.T) (*Service, models.ProjectItem) {
@@ -62,5 +70,41 @@ func TestBuildExternalLinkRejectsUnsafeAndMissingTargets(t *testing.T) {
 	}
 	if _, err := service.BuildExternalLink("project_item", 999999, "https://example.com", ""); err == nil {
 		t.Error("accepted missing target")
+	}
+}
+
+func TestSyncExternalLinkRefusesForeignJiraHost(t *testing.T) {
+	service, item := externalLinkService(t)
+	t.Setenv("JIRA_EMAIL", "dev@example.test")
+	t.Setenv("JIRA_API_TOKEN", "fake-token-not-real")
+	t.Setenv("JIRA_BASE_URL", "https://team.atlassian.net")
+	link, err := service.BuildExternalLink("project_item", item.ID, "https://team.atlassian.net.evil.example/browse/GYST-9", "Manual title")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if link.Provider != "jira" {
+		t.Fatalf("provider = %s", link.Provider)
+	}
+	if err := service.Repo.CreateExternalLink(&link); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	err = service.SyncExternalLink(context.Background(), link.ID)
+	if !errors.Is(err, providers.ErrHostNotAllowed) {
+		t.Fatalf("err = %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, fmt.Sprintf("SECURITY: external link %d sync refused: host not allowed", link.ID)) ||
+		!strings.Contains(out, "team.atlassian.net.evil.example") || strings.Contains(out, "fake-token-not-real") {
+		t.Fatalf("log = %q", out)
+	}
+	after, err := service.Repo.ExternalLinkByID(link.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Title != link.Title || after.StatusText != link.StatusText || after.LastSyncedAt != link.LastSyncedAt {
+		t.Fatalf("snapshot changed: %+v -> %+v", link, after)
 	}
 }
