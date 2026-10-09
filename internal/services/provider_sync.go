@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	"lifeops-tracker/internal/services/providers"
 )
@@ -21,7 +20,7 @@ func (s *Service) SyncExternalLink(ctx context.Context, id int64) error {
 	case "slack":
 		provider = providers.Slack{}
 	default:
-		return fmt.Errorf("%s does not support API sync", link.Provider)
+		return userError(link.Provider + " does not support API sync")
 	}
 	snapshot, err := provider.Fetch(ctx, link)
 	if err != nil {

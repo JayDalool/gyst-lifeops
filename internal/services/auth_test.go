@@ -65,8 +65,8 @@ func TestSessionLifecycle(t *testing.T) {
 		t.Errorf("fresh session rejected: %v", err)
 	}
 
-	if err := service.RevokeSession(rawToken); err != nil {
-		t.Fatalf("revoke: %v", err)
+	if revoked, err := service.RevokeSession(rawToken); err != nil || !revoked {
+		t.Fatalf("revoke: revoked=%v err=%v", revoked, err)
 	}
 	if err := service.ValidateSession(rawToken); !errors.Is(err, ErrNoSession) {
 		t.Errorf("revoked session: got %v, want ErrNoSession", err)

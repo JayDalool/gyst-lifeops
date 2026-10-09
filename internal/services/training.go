@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
-	"errors"
 	"lifeops-tracker/internal/models"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -19,23 +19,26 @@ type TrainingSync struct {
 
 func (s *Service) SyncTraining(ctx context.Context) error {
 	if s.Training == nil || s.Training.Provider == nil {
-		return errors.New("Hevy is not connected")
+		return userError("Hevy is not connected")
 	}
 	t := s.Training
 	if !t.mu.TryLock() {
-		return errors.New("A training sync is already running")
+		return userError("A training sync is already running")
 	}
 	defer t.mu.Unlock()
 	if !t.lastAttempt.IsZero() && s.Now().Sub(t.lastAttempt) < time.Minute {
-		return errors.New("Please wait one minute before syncing again")
+		return userError("Please wait one minute before syncing again")
 	}
 	t.lastAttempt = s.Now()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
 	entries, err := t.Provider.Fetch(ctx)
 	if err != nil {
+		// The Hevy client returns only fixed, curated text (never the request,
+		// the key or the response body), so it is safe to store, log and show.
 		_ = s.Repo.TrainingFailure("hevy", err.Error())
-		return err
+		slog.Warn("provider failure", "event", "provider.failed", "provider", "hevy", "error", err.Error())
+		return userError(err.Error())
 	}
 	return s.Repo.SaveTraining("hevy", entries, s.Now())
 }
