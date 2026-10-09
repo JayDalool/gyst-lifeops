@@ -1,11 +1,20 @@
 package services
 
 import (
+	"bytes"
+	"context"
 	"errors"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"lifeops-tracker/internal/db"
+	"lifeops-tracker/internal/repository"
 )
 
 func testAuthConfig(t *testing.T, password string) AuthConfig {
@@ -251,5 +260,155 @@ func TestSweepExpiredSessionsLeavesLiveOnes(t *testing.T) {
 	}
 	if count != 1 {
 		t.Errorf("sessions remaining = %d, want 1", count)
+	}
+}
+
+// sweeperFixture returns a service at a pinned time with one expired and one
+// live session, plus the raw tokens.
+func sweeperFixture(t *testing.T) (svc *Service, expired, live string) {
+	t.Helper()
+	svc = testService(t)
+	base := time.Date(2030, 1, 1, 12, 0, 0, 0, time.UTC)
+	svc.Now = func() time.Time { return base }
+	var err error
+	if expired, _, err = svc.CreateSession(); err != nil {
+		t.Fatalf("create expired: %v", err)
+	}
+	svc.Now = func() time.Time { return base.Add(sessionLifetime - time.Hour) }
+	if live, _, err = svc.CreateSession(); err != nil {
+		t.Fatalf("create live: %v", err)
+	}
+	svc.Now = func() time.Time { return base.Add(sessionLifetime + time.Minute) }
+	return svc, expired, live
+}
+
+func captureLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	return &buf
+}
+
+func runOnTicks(ctx context.Context, svc *Service, ticks <-chan time.Time) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		svc.sweepSessionsOnTick(ctx, ticks)
+	}()
+	return done
+}
+
+func waitDone(t *testing.T, done <-chan struct{}) {
+	t.Helper()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("sweeper did not return after cancel")
+	}
+}
+
+func TestSessionSweeperDeletesExpiredOnTick(t *testing.T) {
+	svc, expired, live := sweeperFixture(t)
+	logs := captureLog(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	ticks := make(chan time.Time)
+	done := runOnTicks(ctx, svc, ticks)
+	ticks <- time.Time{} // unbuffered: returns once the loop took the tick
+	cancel()
+	waitDone(t, done) // the tick's sweep finished before the loop could exit
+
+	if err := svc.ValidateSession(live); err != nil {
+		t.Errorf("live session was swept: %v", err)
+	}
+	if n, _ := svc.Repo.CountSessions(); n != 1 {
+		t.Errorf("sessions remaining = %d, want 1", n)
+	}
+	out := logs.String()
+	if !strings.Contains(out, "sessions: removed 1 expired") {
+		t.Errorf("log = %q, want removed count", out)
+	}
+	for _, secret := range []string{expired, live, hashSessionToken(expired), hashSessionToken(live)} {
+		if strings.Contains(out, secret) {
+			t.Errorf("log leaks token material: %q", out)
+		}
+	}
+}
+
+func TestSessionSweeperDoesNothingWithoutTick(t *testing.T) {
+	svc, _, _ := sweeperFixture(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := runOnTicks(ctx, svc, make(chan time.Time))
+	cancel()
+	waitDone(t, done)
+	if n, _ := svc.Repo.CountSessions(); n != 2 {
+		t.Errorf("sessions = %d, want 2 (no tick, no sweep)", n)
+	}
+}
+
+func TestRunSessionSweeperSweepsOnStartAndStopsOnCancel(t *testing.T) {
+	svc, _, live := sweeperFixture(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	done := make(chan struct{})
+	go func() { defer close(done); svc.RunSessionSweeper(ctx) }()
+	waitDone(t, done)
+	if n, _ := svc.Repo.CountSessions(); n != 1 {
+		t.Errorf("sessions = %d, want 1 (start sweep)", n)
+	}
+	if err := svc.ValidateSession(live); err != nil {
+		t.Errorf("live session was swept: %v", err)
+	}
+}
+
+func TestSessionSweeperContinuesAfterError(t *testing.T) {
+	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	svc := New(repository.New(database))
+	database.Close() // every sweep now fails
+	logs := captureLog(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	ticks := make(chan time.Time)
+	done := runOnTicks(ctx, svc, ticks)
+	ticks <- time.Time{}
+	ticks <- time.Time{} // second tick proves the loop survived the first error
+	cancel()
+	waitDone(t, done)
+	if got := strings.Count(logs.String(), "sessions: sweep failed:"); got != 2 {
+		t.Errorf("failure lines = %d, want 2; log = %q", got, logs.String())
+	}
+}
+
+// The sweep must never delete a session Validate still accepts: a session
+// lapses exactly at expires_at, and one second earlier it is live.
+func TestSweepExpiredSessionsBoundary(t *testing.T) {
+	svc := testService(t)
+	now := time.Date(2030, 6, 1, 0, 0, 0, 0, time.UTC)
+	svc.Now = func() time.Time { return now }
+	for name, expires := range map[string]time.Time{
+		"before": now.Add(-time.Second),
+		"at":     now,
+		"after":  now.Add(time.Second),
+	} {
+		if err := svc.Repo.CreateSession(hashSessionToken(name), expires, now.Add(-time.Hour)); err != nil {
+			t.Fatalf("create %s: %v", name, err)
+		}
+	}
+	removed, err := svc.SweepExpiredSessions()
+	if err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if removed != 2 {
+		t.Errorf("removed %d, want 2 (at and before)", removed)
+	}
+	if err := svc.ValidateSession("after"); err != nil {
+		t.Errorf("session expiring in 1s was swept: %v", err)
+	}
+	for _, name := range []string{"before", "at"} {
+		if err := svc.ValidateSession(name); !errors.Is(err, ErrNoSession) {
+			t.Errorf("%s should be gone: %v", name, err)
+		}
 	}
 }

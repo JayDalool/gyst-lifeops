@@ -86,7 +86,9 @@ func New(config Config) (*App, error) {
 	service.Loc = location
 	log.Printf("Application timezone: %s", location)
 	pushContext, cancelPush := context.WithCancel(context.Background())
+	// pushContext is cancelled by Close and drives every background loop.
 	go service.RunPushScheduler(pushContext)
+	go service.RunSessionSweeper(pushContext)
 	if config.HevyAPIKey != "" {
 		service.Training = &services.TrainingSync{Provider: hevy.New(config.HevyAPIKey)}
 		go service.RunTrainingSync(pushContext)

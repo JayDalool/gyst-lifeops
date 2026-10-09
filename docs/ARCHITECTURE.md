@@ -258,6 +258,14 @@ tailnet exemption.
   missing), with IPs truncated to /24 (IPv4) or /48 (IPv6). Per-failure audit
   events belong to the later audit-log work.
 
+## Sessions
+
+Sessions roll for 30 days from last use (`sessionLifetime`). Lapsed rows are
+removed by `Service.RunSessionSweeper`, started in `app.New` on the context
+`App.Close` cancels: one sweep at start, then hourly. The cutoff is the
+service clock (`s.Now`), the DELETE is scoped to `expires_at <= now`, and the
+log line carries only a count. Validation never depends on the sweep.
+
 ## Designed for later
 
 The data model supports a future mobile sync client. AI roadmap and quest logic
