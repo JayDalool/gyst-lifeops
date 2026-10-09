@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -101,7 +100,7 @@ func (h *Handler) Authenticated() http.Handler {
 		path := normalizePath(r.URL.Path)
 
 		if h.AuthDisabled {
-			log.Printf("SECURITY: authentication disabled (GYST_AUTH_DISABLED); serving %s %s unauthenticated", r.Method, path)
+			h.log().Warn("authentication disabled (GYST_AUTH_DISABLED); serving unauthenticated", "event", "auth.disabled", "method", r.Method, "route", routeLabel(path), "request_id", requestIDFrom(r.Context()))
 			h.ServeHTTP(w, r)
 			return
 		}

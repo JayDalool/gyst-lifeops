@@ -4,6 +4,7 @@ import (
 	"errors"
 	"html/template"
 	"log"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"sync/atomic"
@@ -23,14 +24,13 @@ var limiterMissingLogged atomic.Bool
 // admitLogin reserves a password check for this request's client. A nil
 // attempt means the request was refused and the caller must not check the
 // password. It fails closed when no limiter is configured.
-func (h *Handler) admitLogin(r *http.Request) *authlimit.Attempt {
+func (h *Handler) admitLogin(bucket, key, label string) *authlimit.Attempt {
 	if h.loginLimiter == nil {
 		if limiterMissingLogged.CompareAndSwap(false, true) {
-			log.Printf("SECURITY: login throttle: limiter missing; login refused")
+			h.log().Warn("login throttle", "event", "limiter_missing", "detail", "login refused")
 		}
 		return nil
 	}
-	bucket, key, label := loginClient(r)
 	attempt, decision := h.loginLimiter.Admit(bucket, key, label)
 	if decision != authlimit.Allow {
 		return nil
@@ -140,7 +140,8 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	// Throttle before the password is compared, so a refusal can never depend
 	// on whether the password was right. The 403, 400 and 503 paths above are
 	// not attempts and are never counted.
-	attempt := h.admitLogin(r)
+	ingress, key, client := loginClient(r)
+	attempt := h.admitLogin(ingress, key, client)
 	if attempt == nil {
 		h.renderLogin(w, http.StatusTooManyRequests, loginPageData{Error: throttledMessage, Next: next})
 		return
@@ -153,6 +154,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		attempt.Fail()
+		h.authEvent(r, "login.failed", ingress, client, slog.LevelWarn)
 		h.renderLogin(w, http.StatusUnauthorized, loginPageData{Error: "Incorrect password.", Next: next})
 		return
 	}
@@ -163,6 +165,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	attempt.Succeed()
+	h.authEvent(r, "login.succeeded", ingress, client, slog.LevelInfo)
 	h.setSessionCookie(w, r, token, expires)
 	http.Redirect(w, r, defaultIfEmpty(next, "/"), http.StatusSeeOther)
 }
@@ -178,9 +181,16 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	// Revoking server-side matters more than clearing the cookie: a token that
 	// has already been copied elsewhere must stop working too.
-	if err := h.Service.RevokeSession(sessionToken(r)); err != nil {
+	revoked, err := h.Service.RevokeSession(sessionToken(r))
+	if err != nil {
 		serverError(w, err)
 		return
+	}
+	if revoked {
+		// Logged only when a live session ended, so a stray or forged logout
+		// leaves no line; the response below is the same either way.
+		ingress, _, client := loginClient(r)
+		h.authEvent(r, "logout", ingress, client, slog.LevelInfo)
 	}
 	h.clearSessionCookie(w, r)
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
