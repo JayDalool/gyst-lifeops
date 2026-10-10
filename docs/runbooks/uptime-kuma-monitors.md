@@ -17,6 +17,8 @@ reachable from the internet. That is acceptable: the body is just `ok`, and the
 probe is not logged (`internal/app/healthz.go`). VN-014's note that Caddy "does
 not route it publicly" is out of date; this runbook is the record.
 
+The public `/healthz` also shows whether the database answers (200 vs 503) and runs one `SELECT 1` per hit. Accepted.
+
 ## Part A: do now
 
 Common settings for HTTP monitors: method GET, accepted status `200-299`,
@@ -59,14 +61,21 @@ Notes:
    ```
    Expected output: `mount=... used=NN%` lines, then
    `warn=up crit=up worst=NN%` and exit 0. A5 and A6 turn green.
-4. Schedule it every 15 minutes as user `jay`. Keep this out of the repo.
-   systemd timer (or an equivalent cron line):
+4. Install the script outside the repo checkout (from a reviewed master
+   checkout), so the timer never runs code that a branch switch could change:
+   ```
+   sudo install -d -o root -g root -m 0755 /usr/local/lib/gyst
+   sudo install -o root -g root -m 0755 scripts/ops/disk-push.sh /usr/local/lib/gyst/disk-push.sh
+   ```
+   Push URLs must be `https://`; the script refuses `http://` unless the host is
+   localhost, 127.0.0.1 or [::1].
+5. Schedule it every 15 minutes as user `jay`. Keep the unit files out of the repo.
    ```
    # /etc/systemd/system/gyst-disk-push.service
    [Service]
    Type=oneshot
    User=jay
-   ExecStart=/usr/bin/bash <repo path>/scripts/ops/disk-push.sh <warn push URL file> <crit push URL file> / <data mount>
+   ExecStart=/usr/bin/bash /usr/local/lib/gyst/disk-push.sh <warn push URL file> <crit push URL file> / <data mount>
 
    # /etc/systemd/system/gyst-disk-push.timer
    [Timer]
@@ -75,7 +84,15 @@ Notes:
    [Install]
    WantedBy=timers.target
    ```
-5. Deliberate down test (required): push `down` by hand to A5 using the same
+   Then:
+   ```
+   sudo systemctl daemon-reload && sudo systemctl enable --now gyst-disk-push.timer
+   systemctl list-timers gyst-disk-push.timer
+   journalctl -u gyst-disk-push.service -n 20
+   ```
+   If any listed mount cannot be read, the script pushes `down` to both disk
+   monitors and exits 1.
+6. Deliberate down test (required): push `down` by hand to A5 using the same
    stdin technique, so the token stays out of argv:
    ```
    printf 'url = "%s?status=down&msg=test&ping="\n' "$(head -n1 <warn push URL file> | cut -d'?' -f1)" | curl -fsS -K - >/dev/null
@@ -114,6 +131,11 @@ Part B:           not created yet (waiting on VN-010 / VN-095 / VN-012)
 
 ## Rollback
 
-Delete the monitors in Kuma, disable the timer
-(`systemctl disable --now gyst-disk-push.timer`), and delete the push URL files.
-Nothing else is changed: no GYST, Caddy or compose edits.
+Delete the monitors in Kuma, then:
+```
+sudo systemctl disable --now gyst-disk-push.timer
+sudo rm /etc/systemd/system/gyst-disk-push.service /etc/systemd/system/gyst-disk-push.timer
+sudo rm /usr/local/lib/gyst/disk-push.sh
+sudo systemctl daemon-reload
+```
+Delete the push URL files. Nothing else is changed: no GYST, Caddy or compose edits.

@@ -8,10 +8,11 @@
 #   >= 95%  -> crit monitor "down" (and warn monitor "down")
 #   >= 85%  -> warn monitor "down", crit monitor "up"
 #   else    -> both "up"
-# The push URL is handed to curl as a config on stdin (-K -), so it never
+# The push URL is handed to curl as a config on stdin (-K -; -q first so ~/.curlrc is never read), so it never
 # appears in argv, ps or logs. Output carries only the percent and a mount
 # label, never a URL. Exit status: 0 = pushed, 1 = a push or df failed,
-# 2 = usage or file-permission error.
+# 2 = usage or file-permission error. An unreadable mount pushes down and exits 1.
+# Push URLs must be https:// (http only for localhost).
 set -uo pipefail
 
 WARN_PCT=85
@@ -38,11 +39,17 @@ done
 
 worst=-1
 worst_label=""
+unreadable=""
 rc=0
 for m in "$@"; do
-  pct=$(df -P -- "$m" 2>/dev/null | awk 'NR==2 {gsub("%","",$5); print $5}')
+  # --output=pcent is one column, so filesystem names with spaces cannot shift it.
+  pct=$(df --output=pcent -- "$m" 2>/dev/null | tail -n 1 | tr -d '[:space:]%')
   case "$pct" in
-    ''|*[!0-9]*) echo "error: cannot read usage for mount $m" >&2; rc=1; continue ;;
+    ''|*[!0-9]*)
+      label=$(printf '%s' "$m" | tr -c 'A-Za-z0-9' '_')
+      [ "$label" = "_" ] && label="root"
+      echo "error: cannot read usage for mount $label" >&2
+      rc=1; unreadable="$label"; continue ;;
   esac
   label=$(printf '%s' "$m" | tr -c 'A-Za-z0-9' '_')
   [ "$label" = "_" ] && label="root"
@@ -50,17 +57,15 @@ for m in "$@"; do
   if [ "$pct" -gt "$worst" ]; then worst="$pct"; worst_label="$label"; fi
 done
 
-# No readable mount at all: push nothing. The push heartbeat (30 min) then
-# turns red on its own, which is the intended dead-script signal.
-if [ "$worst" -lt 0 ]; then exit 1; fi
 
 push() { # url-file status msg
   local file="$1" status="$2" msg="$3" base url
   base=$(head -n 1 -- "$file" | tr -d '[:space:]')
   base="${base%%\?*}"
   case "$base" in
-    https://*|http://*) ;;
-    *) echo "error: URL file does not hold an http(s) URL" >&2; return 1 ;;
+    https://*) ;;
+    http://localhost|http://localhost[:/]*|http://127.0.0.1|http://127.0.0.1[:/]*|http://\[::1\]|http://\[::1\][:/]*) ;;
+    *) echo "error: push URL must be https:// (http only for localhost)" >&2; return 1 ;;
   esac
   case "$base" in
     *[\"\\]*) echo "error: URL file holds unsupported characters" >&2; return 1 ;;
@@ -68,18 +73,24 @@ push() { # url-file status msg
   url="${base}?status=${status}&msg=${msg}&ping="
   # The URL goes in on stdin as a curl config. curl's own output and errors
   # are discarded so nothing can echo the URL back.
-  if printf 'url = "%s"\n' "$url" | curl -fsS --max-time 20 -K - >/dev/null 2>&1; then
+  if printf 'url = "%s"\n' "$url" | curl -q -fsS --max-time 20 -K - >/dev/null 2>&1; then
     return 0
   fi
   echo "error: push failed ($status)" >&2
   return 1
 }
 
-msg="${worst_label}_${worst}pct"
-
 warn_status=up; crit_status=up
-[ "$worst" -ge "$WARN_PCT" ] && warn_status=down
-[ "$worst" -ge "$CRIT_PCT" ] && crit_status=down
+if [ -n "$unreadable" ]; then
+  # Any unreadable mount means we cannot vouch for disk space: push down.
+  warn_status=down; crit_status=down
+  msg="mount_unreadable_${unreadable}"
+  worst_label="${unreadable}"
+else
+  msg="${worst_label}_${worst}pct"
+  [ "$worst" -ge "$WARN_PCT" ] && warn_status=down
+  [ "$worst" -ge "$CRIT_PCT" ] && crit_status=down
+fi
 
 push "$warn_file" "$warn_status" "$msg" || rc=1
 push "$crit_file" "$crit_status" "$msg" || rc=1
