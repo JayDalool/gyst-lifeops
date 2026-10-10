@@ -14,6 +14,7 @@
 # 2 = usage or file-permission error. An unreadable mount pushes down and exits 1.
 # Push URLs must be https:// (http only for localhost).
 set -uo pipefail
+PATH=/usr/sbin:/usr/bin:/sbin:/bin; export PATH
 
 WARN_PCT=85
 CRIT_PCT=95
@@ -43,7 +44,10 @@ unreadable=""
 rc=0
 for m in "$@"; do
   # --output=pcent is one column, so filesystem names with spaces cannot shift it.
-  pct=$(df --output=pcent -- "$m" 2>/dev/null | tail -n 1 | tr -d '[:space:]%')
+  pct=""
+  if mountpoint -q -- "$m" 2>/dev/null; then
+    pct=$(df --output=pcent -- "$m" 2>/dev/null | tail -n 1 | tr -d '[:space:]%')
+  fi
   case "$pct" in
     ''|*[!0-9]*)
       label=$(printf '%s' "$m" | tr -c 'A-Za-z0-9' '_')
@@ -59,12 +63,22 @@ done
 
 
 push() { # url-file status msg
-  local file="$1" status="$2" msg="$3" base url
+  local file="$1" status="$2" msg="$3" base url scheme rest auth
   base=$(head -n 1 -- "$file" | tr -d '[:space:]')
   base="${base%%\?*}"
-  case "$base" in
-    https://*) ;;
-    http://localhost|http://localhost[:/]*|http://127.0.0.1|http://127.0.0.1[:/]*|http://\[::1\]|http://\[::1\][:/]*) ;;
+  scheme="${base%%://*}"
+  rest="${base#*://}"
+  auth="${rest%%/*}"
+  # Refuse userinfo first: it can disguise the real host (http://localhost:@evil/).
+  case "$auth" in
+    *@*) echo "error: push URL must not contain userinfo (@)" >&2; return 1 ;;
+  esac
+  case "$scheme" in
+    https) ;;
+    http)
+      if ! [[ "$auth" =~ ^(localhost|127\.0\.0\.1|\[::1\])(:[0-9]+)?$ ]]; then
+        echo "error: push URL must be https:// (http only for localhost)" >&2; return 1
+      fi ;;
     *) echo "error: push URL must be https:// (http only for localhost)" >&2; return 1 ;;
   esac
   case "$base" in

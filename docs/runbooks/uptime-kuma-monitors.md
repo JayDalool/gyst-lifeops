@@ -90,12 +90,12 @@ Notes:
    systemctl list-timers gyst-disk-push.timer
    journalctl -u gyst-disk-push.service -n 20
    ```
-   If any listed mount cannot be read, the script pushes `down` to both disk
+   If any listed mount cannot be read or is not a mount point, the script pushes `down` to both disk
    monitors and exits 1.
 6. Deliberate down test (required): push `down` by hand to A5 using the same
    stdin technique, so the token stays out of argv:
    ```
-   printf 'url = "%s?status=down&msg=test&ping="\n' "$(head -n1 <warn push URL file> | cut -d'?' -f1)" | curl -fsS -K - >/dev/null
+   printf 'url = "%s?status=down&msg=test&ping="\n' "$(head -n1 <warn push URL file> | tr -d '[:space:]' | cut -d'?' -f1)" | curl -q -fsS --max-time 20 -K - >/dev/null
    ```
    Confirm A5 turns red and an alert
    arrives. Then wait for the next scheduled run (or run step 3) and confirm A5
@@ -136,6 +136,7 @@ Delete the monitors in Kuma, then:
 sudo systemctl disable --now gyst-disk-push.timer
 sudo rm /etc/systemd/system/gyst-disk-push.service /etc/systemd/system/gyst-disk-push.timer
 sudo rm /usr/local/lib/gyst/disk-push.sh
+sudo rmdir /usr/local/lib/gyst   # ignore if not empty
 sudo systemctl daemon-reload
 ```
 Delete the push URL files. Nothing else is changed: no GYST, Caddy or compose edits.
