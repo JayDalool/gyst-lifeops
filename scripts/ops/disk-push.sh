@@ -63,9 +63,23 @@ done
 
 
 push() { # url-file status msg
-  local file="$1" status="$2" msg="$3" base url scheme rest auth
-  base=$(head -n 1 -- "$file" | tr -d '[:space:]')
+  # URL guard matches scripts/ops/n8n-postgres-backup.sh push() (#110); keep the two identical.
+  local file="$1" status="$2" msg="$3" raw base url scheme rest auth
+  raw=$(head -n 1 -- "$file")
+  base=$(printf '%s' "$raw" | tr -d '[:space:]')
+  # Whitespace inside the URL, or a # anywhere (it would hide the appended
+  # ?status=), is refused rather than silently repaired.
+  if [ "$base" != "$(printf '%s' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')" ]; then
+    echo "error: push URL must not contain whitespace" >&2; return 1
+  fi
+  case "$raw" in
+    *'#'*) echo "error: push URL must not contain #" >&2; return 1 ;;
+  esac
   base="${base%%\?*}"
+  case "$base" in
+    *://*) ;;
+    *) echo "error: push URL must be https:// (http only for localhost)" >&2; return 1 ;;
+  esac
   scheme="${base%%://*}"
   rest="${base#*://}"
   auth="${rest%%/*}"
@@ -85,9 +99,10 @@ push() { # url-file status msg
     *[\"\\]*) echo "error: URL file holds unsupported characters" >&2; return 1 ;;
   esac
   url="${base}?status=${status}&msg=${msg}&ping="
-  # The URL goes in on stdin as a curl config. curl's own output and errors
+  # -q first: ~/.curlrc is never read; -g: no URL globbing. The URL goes in on
+  # stdin as a curl config. curl's own output and errors
   # are discarded so nothing can echo the URL back.
-  if printf 'url = "%s"\n' "$url" | curl -q -fsS --max-time 20 -K - >/dev/null 2>&1; then
+  if printf 'url = "%s"\n' "$url" | curl -q -g -fsS --max-time 20 -K - >/dev/null 2>&1; then
     return 0
   fi
   echo "error: push failed ($status)" >&2

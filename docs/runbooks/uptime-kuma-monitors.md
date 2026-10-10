@@ -95,7 +95,7 @@ Notes:
 6. Deliberate down test (required): push `down` by hand to A5 using the same
    stdin technique, so the token stays out of argv:
    ```
-   printf 'url = "%s?status=down&msg=test&ping="\n' "$(head -n1 <warn push URL file> | tr -d '[:space:]' | cut -d'?' -f1)" | curl -q -fsS --max-time 20 -K - >/dev/null
+   printf 'url = "%s?status=down&msg=test&ping="\n' "$(head -n1 <warn push URL file> | tr -d '[:space:]' | cut -d'?' -f1)" | curl -q -g -fsS --max-time 20 -K - >/dev/null
    ```
    Confirm A5 turns red and an alert
    arrives. Then wait for the next scheduled run (or run step 3) and confirm A5
