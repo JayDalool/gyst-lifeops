@@ -11,6 +11,10 @@ import (
 
 var ErrNotConfigured = errors.New("provider credentials are not configured")
 
+// ErrHostNotAllowed means a link does not point at the configured provider host,
+// so no request (and no credential) was sent.
+var ErrHostNotAllowed = errors.New("link host is not the configured Jira host")
+
 type LinkSnapshot struct {
 	Title      string
 	StatusText string
