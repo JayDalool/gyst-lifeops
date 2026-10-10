@@ -301,9 +301,18 @@ only `[a-f0-9]`. `agent.*`, `github.*` and `server.*` actions are owned by
 Command Center and are not added here; `automation.*` is not added yet. A new
 action is a one-line allowlist change, no migration.
 
-`detail` has control characters removed, is replaced by `redacted` if it
-contains password, passwd, secret, token, bearer, authorization, cookie,
-gyst_session, api_key, apikey or a bcrypt prefix, then is cut to 200 runes.
+`detail` is sanitised in this order: control, format (zero-width, bidi
+override) and other non-graphic characters are removed from what is stored.
+For matching only, the text is also percent-decoded once, fullwidth forms
+(U+FF01-U+FF5E) are folded to ASCII and it is lower-cased. The whole detail is
+replaced by `redacted` if the matching form contains password, passwd, pwd,
+secret, token, bearer, basic, authorization, cookie, set-cookie, session,
+gyst_session, api_key, api-key, apikey, x-api-key, private_key, private-key or
+a bcrypt prefix, or if it has a secret-looking value shape: a run of 32 or more
+characters from `[A-Za-z0-9+/=_.-]`, a JWT, a `sk-`, `ghp_`, `gho_`,
+`github_pat_` or `xox[abp]-` prefix, a bcrypt hash or 40+ hex digits. Otherwise
+it is cut to 200 runes. This is a best-effort filter, not a guarantee: callers
+should still pass only short fixed reasons, never raw input.
 `SessionActorRef` gives `session:` plus the first 8 hex characters of the
 stored token hash. **Never logged (09 section M):** passwords, tokens (only
 credential names and ids), cookie values, environment values, request bodies,

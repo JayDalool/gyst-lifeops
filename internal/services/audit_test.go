@@ -113,6 +113,25 @@ func TestRecordAuditRedactsSecretLookingDetail(t *testing.T) {
 		"client secret",
 		"passwd entered",
 		"pass\nword=hunter2-fictional",
+		"X-Api-Key: fictional",
+		"api-key fictional",
+		"pass\u200bword=fictional",
+		"\uff50\uff41\uff53\uff53\uff57\uff4f\uff52\uff44=fictional",
+		"%70assword=fictional",
+		"\u202etoken\u202c fictional",
+		"AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcde",
+		"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		"sk-ant-fictional",
+		"key ghp_fictional",
+		"gho_fictional",
+		"github_pat_fictional",
+		"xoxb-fictional",
+		"eyJfictional.fictional.fictional",
+		"Basic ZmljdGlvbmFs",
+		"$2a$10$fictional",
+		"private_key fictional",
+		"pwd=fictional",
+		"set-cookie fictional",
 	}
 	for _, d := range details {
 		e := goodAudit()
@@ -132,6 +151,36 @@ func TestRecordAuditRedactsSecretLookingDetail(t *testing.T) {
 		if strings.Contains(r.Detail+r.ActorRef+r.TargetRef, "hunter2") {
 			t.Errorf("secret leaked in %+v", r)
 		}
+	}
+}
+
+func TestRecordAuditKeepsNormalDetail(t *testing.T) {
+	svc := auditService(t)
+	want := []string{"link 42 refreshed", "host example.test", "task-12 done", "attempt 3 of 5", "caf\u00e9 \u65e5\u672c"}
+	for _, d := range want {
+		e := goodAudit()
+		e.Detail = d
+		if err := svc.RecordAudit(context.Background(), e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rows := auditRows(t, svc) // newest first
+	for i, r := range rows {
+		if w := want[len(want)-1-i]; r.Detail != w {
+			t.Errorf("detail %q, want kept as %q", r.Detail, w)
+		}
+	}
+}
+
+func TestRecordAuditStoredDetailHasNoInvisibleRunes(t *testing.T) {
+	svc := auditService(t)
+	e := goodAudit()
+	e.Detail = "ok\u200b\u202e\u2066value\ufeff"
+	if err := svc.RecordAudit(context.Background(), e); err != nil {
+		t.Fatal(err)
+	}
+	if got := auditRows(t, svc)[0].Detail; got != "okvalue" {
+		t.Fatalf("detail = %q", got)
 	}
 }
 

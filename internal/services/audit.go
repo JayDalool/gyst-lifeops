@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode"
@@ -67,10 +68,56 @@ var (
 	auditRequestPattern = regexp.MustCompile(`^[a-f0-9]*$`)
 )
 
-// Detail containing any of these (case-insensitive) is replaced entirely.
+// Detail containing any of these (case-insensitive, after normalisation) is
+// replaced entirely.
 var auditSecretMarkers = []string{
-	"password", "passwd", "secret", "token", "bearer", "authorization", "cookie",
-	"gyst_session", "api_key", "apikey", "$2a$", "$2b$", "$2y$",
+	"password", "passwd", "pwd", "secret", "token", "bearer", "basic", "authorization",
+	"cookie", "set-cookie", "session", "gyst_session", "api_key", "api-key", "apikey",
+	"x-api-key", "private_key", "private-key", "$2a$", "$2b$", "$2y$",
+}
+
+// Value shapes that look like a credential whatever the words around them.
+var auditSecretShapes = regexp.MustCompile(
+	`[A-Za-z0-9+/=_.-]{32,}` + // long opaque run: base64, base64url, hex, hashes
+		`|eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.` + // JWT
+		`|(?i:(?:^|[^a-z0-9])(?:sk-|ghp_|gho_|github_pat_|xox[abp]-))` + // provider prefixes (sk-ant- starts with sk-)
+		`|\$2[aby]\$` + // bcrypt
+		`|[0-9a-fA-F]{40,}`)
+
+// stripAuditRunes removes control, format (Cf: zero-width, bidi overrides)
+// and other non-graphic runes; any space separator becomes a plain space.
+func stripAuditRunes(s string) string {
+	return strings.Map(func(r rune) rune {
+		switch {
+		case r == ' ':
+			return r
+		case unicode.Is(unicode.Zs, r):
+			return ' '
+		case unicode.Is(unicode.Cf, r), !unicode.IsGraphic(r):
+			return -1
+		}
+		return r
+	}, s)
+}
+
+// foldFullwidth maps U+FF01-U+FF5E to ASCII.
+func foldFullwidth(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r >= 0xFF01 && r <= 0xFF5E {
+			return r - 0xFEE0
+		}
+		return r
+	}, s)
+}
+
+// normalizeForAudit is the form detail is matched in: invisible runes gone,
+// percent-decoded once, fullwidth folded, lower-cased.
+func normalizeForAudit(s string) string {
+	s = stripAuditRunes(s)
+	if d, err := url.PathUnescape(s); err == nil {
+		s = stripAuditRunes(strings.ToValidUTF8(d, ""))
+	}
+	return strings.ToLower(foldFullwidth(s))
 }
 
 func validateAudit(e repository.AuditEvent) error {
@@ -87,21 +134,19 @@ func validateAudit(e repository.AuditEvent) error {
 	return nil
 }
 
-// sanitizeAuditDetail drops control characters, redacts anything secret
-// looking, then cuts to 200 runes (never mid-character).
+// sanitizeAuditDetail removes invisible and control characters, redacts
+// anything secret looking (by marker word or by value shape, matched on the
+// normalised form), then cuts to 200 runes (never mid-character).
 func sanitizeAuditDetail(s string) string {
-	s = strings.ToValidUTF8(s, "")
-	s = strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) {
-			return -1
-		}
-		return r
-	}, s)
-	lower := strings.ToLower(s)
+	s = stripAuditRunes(strings.ToValidUTF8(s, ""))
+	norm := normalizeForAudit(s)
 	for _, m := range auditSecretMarkers {
-		if strings.Contains(lower, m) {
+		if strings.Contains(norm, m) {
 			return auditRedacted
 		}
+	}
+	if auditSecretShapes.MatchString(norm) {
+		return auditRedacted
 	}
 	if utf8.RuneCountInString(s) > auditDetailMax {
 		s = string([]rune(s)[:auditDetailMax])
