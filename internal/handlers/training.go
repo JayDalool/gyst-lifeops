@@ -171,7 +171,11 @@ func (h *Handler) trainingSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.Service.SyncTraining(r.Context()); err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		if _, ok := services.UserMessage(err); ok {
+			userError(w, err, http.StatusServiceUnavailable, "")
+		} else {
+			serverError(w, err)
+		}
 		return
 	}
 	http.Redirect(w, r, "/health/training", http.StatusSeeOther)

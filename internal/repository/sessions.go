@@ -59,9 +59,14 @@ func (r *Repository) TouchSession(tokenHash string, expiresAt, lastSeenAt time.T
 	return err
 }
 
-func (r *Repository) DeleteSession(tokenHash string) error {
-	_, err := r.db.Exec(`DELETE FROM sessions WHERE token_hash = ?`, tokenHash)
-	return err
+// DeleteSession removes one session and reports whether a row was removed.
+func (r *Repository) DeleteSession(tokenHash string) (bool, error) {
+	result, err := r.db.Exec(`DELETE FROM sessions WHERE token_hash = ?`, tokenHash)
+	if err != nil {
+		return false, err
+	}
+	n, err := result.RowsAffected()
+	return n > 0, err
 }
 
 // DeleteExpiredSessions removes sessions that lapsed before the given instant
