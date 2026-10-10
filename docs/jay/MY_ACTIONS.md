@@ -1,3 +1,4 @@
+- [ ] #107 · Create Kuma monitors per runbook, record results · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/uptime-kuma-monitors.md
 - [ ] #104 · Regenerate production password hash at cost 12 · https://github.com/JayDalool/gyst-lifeops/pull/106
 - [ ] #103 · Cloudflare: Rocket Loader, Email Obfuscation, Web Analytics off · https://github.com/JayDalool/gyst-lifeops/issues/103
 - [ ] #3 · Quick-capture due date, prayer save, then D6 checklist · https://github.com/JayDalool/gyst-lifeops/issues/3
