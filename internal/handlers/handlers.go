@@ -2369,6 +2369,13 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 			}
 			return h.Service.Today().AddDate(0, 0, 1).Format(clock.DateLayout)
 		},
+		// Loaded-at time in app time for the offline banner (13 §17).
+		"appClock": func() string {
+			if h.Service == nil {
+				return ""
+			}
+			return h.Service.Now().In(h.Service.Location()).Format("15:04")
+		},
 		"nodeState":   nodeState,
 		"levelPct":    levelPct,
 		"toNextLevel": toNextLevel,

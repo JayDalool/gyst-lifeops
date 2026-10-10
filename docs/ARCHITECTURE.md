@@ -125,8 +125,26 @@ flowchart LR
 ```
 
 Rows written before this change may carry the UTC day for evening entries;
-their remediation is a separate decision (GYST-VN-011). How absolute
-timestamps are stored and displayed is GYST-VN-004.
+their remediation is a separate decision (GYST-VN-011).
+
+### Stored instants (GYST-VN-004)
+
+- New instant columns are `TEXT NOT NULL` with no SQL default. The app writes
+  them from `Clock.Now()` through `clock.FormatInstant`, which is always UTC
+  with a fixed 9-digit fraction (`2026-09-27T14:03:00.000000000Z`, 30 chars).
+  The fixed width keeps SQL TEXT comparison and `ORDER BY` chronological.
+- Read them with `clock.ParseInstant` (RFC 3339, Z or numeric offset).
+- Day buckets stay explicit local `YYYY-MM-DD` values (see above); never
+  derive a day by slicing an instant string.
+- Display goes through `Clock.InLocal`.
+- A test (`internal/db/instant_guard_test.go`) fails if a migration added after
+  `20261007010000_health_water.sql` uses `CURRENT_TIMESTAMP`, `CURRENT_DATE`,
+  `CURRENT_TIME` or `'now'` in a date function.
+- Legacy formats, not migrated: `CURRENT_TIMESTAMP` text (`YYYY-MM-DD HH:MM:SS`,
+  no offset) in most tables including `health_water_log`,
+  `health_coach_messages` and the checklist-food tables; RFC3339Nano (trimmed
+  fraction) in `training_snapshots.synced_at` and the daily snapshot
+  `last_synced_at`; the 9-digit layout in sessions and weight `measured_at`.
 
 ## External work references
 
@@ -149,8 +167,10 @@ queries.
 
 GitHub, Jira, and Slack links may refresh their stored title/status snapshots
 through `internal/services/providers/`. Page rendering never performs remote
-I/O. GitHub can use `GITHUB_TOKEN`; Jira requires `JIRA_EMAIL` and
-`JIRA_API_TOKEN`; Slack requires `SLACK_BOT_TOKEN`. Missing credentials leave
+I/O. GitHub can use `GITHUB_TOKEN`; Jira requires `JIRA_EMAIL`,
+`JIRA_API_TOKEN` and `JIRA_BASE_URL` (an https URL; credentials are sent only to
+links on exactly that host, requests are built from it, and redirects are not
+followed); Slack requires `SLACK_BOT_TOKEN`. Missing credentials leave
 the manual snapshot unchanged.
 
 ## Calendar integration

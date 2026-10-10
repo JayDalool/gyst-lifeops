@@ -39,7 +39,8 @@ func galleryHTML(t *testing.T) []byte {
 		Metrics         []UIMetric
 		States          []UIStateCard
 		VN              vnGallery
-	}{Tokens: read("ui-tokens.css"), Components: read("ui-components.css"), VN: vnGalleryData()}
+		SC              stateGallery
+	}{Tokens: read("ui-tokens.css"), Components: read("ui-components.css"), VN: vnGalleryData(), SC: stateGalleryData()}
 	data.Colors = []struct {
 		Name  string
 		Value template.CSS
@@ -93,5 +94,33 @@ func TestExportUIGallery(t *testing.T) {
 	}
 	if err := os.WriteFile(filepath.Join(dir, "index.html"), galleryHTML(t), 0644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// stateGallery holds the fictional VN-022 state component examples.
+type stateGallery struct {
+	States  []UIState
+	Unknown UIState
+	Banners []UIBanner
+	Error   UIErrorBanner
+	Empty   UIEmpty
+	Stale   UIStale
+	Loaded  string
+}
+
+func stateGalleryData() stateGallery {
+	return stateGallery{
+		States:  []UIState{{Kind: "ok"}, {Kind: "info"}, {Kind: "warn"}, {Kind: "crit"}, {Kind: "idle", Word: "Paused"}},
+		Unknown: UIState{Kind: "mystery"},
+		Banners: []UIBanner{
+			{State: UIState{Kind: "info"}, Message: "Example sync in progress", Action: UIAction{Label: "View", URL: "#states-title", Variant: "secondary"}},
+			{State: UIState{Kind: "warn"}, Message: "Example source is behind", Detail: "Last sync 6:40"},
+			{State: UIState{Kind: "crit"}, Message: "Example service is down", Action: UIAction{Label: "Details", URL: "#states-title", Variant: "secondary"}},
+			{State: UIState{Kind: "idle", Word: "Paused"}, Message: "Example reminders are paused"},
+		},
+		Error:  UIErrorBanner{Message: "Could not load the example summary", LastGood: true, Retry: UIAction{Label: "Retry", URL: "#states-title", Variant: "secondary"}},
+		Empty:  UIEmpty{Line: "Nothing to study yet", Action: UIAction{Label: "Add course", URL: "#states-title", Variant: "secondary"}},
+		Stale:  UIStale{Source: "Example source · last sync 6:40", Age: "6:40"},
+		Loaded: "09:15",
 	}
 }
