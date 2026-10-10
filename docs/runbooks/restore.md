@@ -66,8 +66,8 @@ sudo install -d -m 700 -o "$(id -u)" -g "$(id -g)" "$S" "$S/data"
 ```bash
 docker compose exec -T gyst-lifeops /app/lifeops backup
 BK=$(sudo sh -c 'ls -1t data/backups/lifeops-*.db | head -1'); echo "$BK"
-sudo install -m 600 -o "$(id -u)" -g "$(id -g)" "$BK" "$S/source.db"
-cp "$S/source.db" "$S/data/lifeops.db"
+sudo install -m 600 -o "$(id -u)" -g "$(id -g)" "$BK" "${S:?}/source.db"
+cp "${S:?}/source.db" "${S:?}/data/lifeops.db"
 ```
 
 `lifeops backup` prints `verified: integrity_check ok`. To drill an older backup
@@ -76,13 +76,13 @@ instead, set `BK` to that file by hand and note its age in the record.
 ### A3. Check the copy
 
 ```bash
-$SQ "$S/data/lifeops.db" 'PRAGMA integrity_check;'
-$SQ "$S/data/lifeops.db" 'PRAGMA foreign_key_check;' | wc -l
-$SQ "$S/data/lifeops.db" 'SELECT count(*) FROM schema_migrations;'
-counts "$S/source.db" > "$S/counts-source.txt"
-counts "$S/data/lifeops.db" > "$S/counts-copy.txt"
-diff "$S/counts-source.txt" "$S/counts-copy.txt" && echo "counts identical"
-wc -l < "$S/counts-copy.txt"
+$SQ "${S:?}/data/lifeops.db" 'PRAGMA integrity_check;'
+$SQ "${S:?}/data/lifeops.db" 'PRAGMA foreign_key_check;' | wc -l
+$SQ "${S:?}/data/lifeops.db" 'SELECT count(*) FROM schema_migrations;'
+counts "${S:?}/source.db" > "${S:?}/counts-source.txt"
+counts "${S:?}/data/lifeops.db" > "${S:?}/counts-copy.txt"
+diff "${S:?}/counts-source.txt" "${S:?}/counts-copy.txt" && echo "counts identical"
+wc -l < "${S:?}/counts-copy.txt"
 ```
 
 | Check | Pass |
@@ -98,7 +98,7 @@ of rows only, and tell Claude.
 ### A4. Boot check (no network, no keys, no ports)
 
 ```bash
-docker run --rm -d --name gyst-restore-drill --network none -v "$S/data:/app/data" "$IMG"
+docker run --rm -d --name gyst-restore-drill --network none -v "${S:?}/data:/app/data" "${IMG:?}"
 sleep 5
 docker logs gyst-restore-drill 2>&1 | grep -E 'Application timezone|running at'
 docker stop gyst-restore-drill
@@ -160,14 +160,23 @@ Expect `ok` and `0`.
 **An older backup on newer code is fine; a newer backup on older code is not.**
 On start the app runs any migrations the backup is missing
 (`internal/app/app.go`). It cannot cope with a backup that has migrations the
-deployed code lacks. This must print nothing:
+deployed code lacks. This must print `migrations ok` and nothing else (any
+error, empty list or missing variable prints STOP or a message and fails):
 
 ```bash
-comm -23 <($SQ "$BK" 'SELECT filename FROM schema_migrations;' | sort) \
-         <(docker run --rm --network none "$IMG" ls /app/migrations | sort)
+( set -euo pipefail
+  : "${BK:?}" "${IMG:?}"
+  sudo test -f "$BK" || { echo "STOP: $BK is not a file"; exit 1; }
+  have=$($SQ "$BK" 'SELECT filename FROM schema_migrations;' | sort)
+  code=$(docker run --rm --network none "$IMG" ls /app/migrations | sort)
+  if [ -z "$have" ] || [ -z "$code" ]; then echo "STOP: could not read the migration lists"; exit 1; fi
+  extra=$(comm -23 <(echo "$have") <(echo "$code"))
+  if [ -n "$extra" ]; then echo "STOP: the backup has migrations the code lacks:"; echo "$extra"; exit 1; fi
+  echo "migrations ok"
+)
 ```
 
-If it prints filenames, the backup is newer than the running code. Either deploy
+If it prints filenames (STOP), the backup is newer than the running code. Either deploy
 code that includes those migrations first, then restore, or choose an older
 backup and repeat B1. Do not continue with this backup on this code.
 
@@ -194,17 +203,25 @@ stopped containers, so it is not used as the check.)
 ### B4. Move the live files aside (never delete)
 
 ```bash
-T=$(date -u +%Y%m%dT%H%M%SZ)
-OLD=data/backups/pre-restore-$T
-OWN=$(sudo stat -c '%u:%g' data/lifeops.db 2>/dev/null || echo 0:0)
-MODE=$(sudo stat -c '%a' data/lifeops.db 2>/dev/null || echo 600)
-echo "$OLD owner $OWN mode $MODE"
-sudo install -d -m 700 "$OLD"
-for f in lifeops.db lifeops.db-wal lifeops.db-shm; do
-  if sudo test -e "data/$f"; then sudo mv "data/$f" "$OLD/"; fi
-done
-sudo ls "$OLD"
-sudo ls data
+if [ "$(docker inspect -f '{{.State.Status}}' gyst-lifeops)" != exited ]; then
+  echo "STOP: gyst-lifeops is not stopped. Do B3 first."
+elif ! sudo test -f data/lifeops.db; then
+  echo "STOP: data/lifeops.db is absent. B4 may already have run. Existing pre-restore directories:"
+  sudo sh -c 'ls -d data/backups/pre-restore-*'
+  echo "Do not run B4 again. If the live database was lost (no live file ever), set OWN=0:0 MODE=600 and go to B5."
+else
+  T=$(date -u +%Y%m%dT%H%M%SZ)
+  OLD=data/backups/pre-restore-$T
+  OWN=$(sudo stat -c '%u:%g' data/lifeops.db)
+  MODE=$(sudo stat -c '%a' data/lifeops.db)
+  echo "$OLD owner $OWN mode $MODE"
+  sudo install -d -m 700 "$OLD"
+  for f in lifeops.db lifeops.db-wal lifeops.db-shm; do
+    if sudo test -e "data/$f"; then sudo mv "data/$f" "$OLD/"; fi
+  done
+  sudo ls "$OLD"
+  sudo ls data
+fi
 ```
 
 All three files must leave `data/`: `sudo ls data` must show no `lifeops.db*`.
@@ -225,8 +242,7 @@ corrupt it.
 )
 ```
 
-The output must match the owner and mode printed in B4. (If there was no live
-file, the defaults used are `0:0` and `600`.)
+The output must match the owner and mode printed in B4. (If the live file never existed, use `OWN=0:0 MODE=600`.)
 
 ### B6. Check before you start
 
@@ -251,7 +267,14 @@ docker compose start gyst-lifeops
 sleep 5
 docker compose ps gyst-lifeops
 docker compose logs --tail 20 gyst-lifeops | grep -E 'Application timezone|running at'
-curl -ksS -o /dev/null -w '%{http_code}\n' https://<GYST_TLS_HOSTNAME>:3443/healthz
+```
+
+Then check health through Caddy. Set `H` to the app's full Tailscale hostname
+(the `GYST_TLS_HOSTNAME` value; empty on purpose, so the check refuses until set):
+
+```bash
+H=      # example: H=host.tailnet-name.ts.net
+: "${H:?set H}" && curl -fsS -o /dev/null -w '%{http_code}\n' "https://$H:3443/healthz"
 ```
 
 Pass: the container is `running`, both log lines print, and `/healthz` prints
