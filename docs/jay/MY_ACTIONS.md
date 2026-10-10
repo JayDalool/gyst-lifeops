@@ -1,3 +1,5 @@
+- [ ] #112 · Run the restore drill once, record result · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/restore.md
+- [ ] #112 · Repeat restore drill monthly, record result · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/restore.md
 - [ ] #108 · Install n8n backup timer, then test-restore one dump · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/n8n-postgres-backup.md
 - [ ] #108 · Store n8n encryption key safely, apart from dumps · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/n8n-postgres-backup.md
 - [ ] #107 · Create Kuma monitors per runbook, record results · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/uptime-kuma-monitors.md
