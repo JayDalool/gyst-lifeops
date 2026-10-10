@@ -3,10 +3,12 @@ package app
 import (
 	"bufio"
 	"fmt"
-	"golang.org/x/crypto/bcrypt"
+	"io"
 	"log"
 	"os"
 	"strings"
+
+	"lifeops-tracker/internal/services"
 )
 
 func passwordHashRequested(args []string) bool {
@@ -19,26 +21,32 @@ func passwordHashRequested(args []string) bool {
 }
 
 func runPasswordHashAndExit() {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter password: ")
-	password, err := reader.ReadString('\n')
-	if err != nil {
-		log.Fatalf("failed to read password: %v", err)
+	if err := writePasswordHash(os.Stdin, os.Stdout); err != nil {
+		log.Fatal(err)
 	}
-	password = strings.TrimSpace(password)
-
-	if password == "" {
-		log.Fatal("password cannot be empty")
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Fatalf("failed to hash password: %v", err)
-	}
-
-	fmt.Printf("\nPassword hash:\n%s\n", string(hash))
-	fmt.Println("\nAdd this to your .env file as:")
-	fmt.Printf("GYST_PASSWORD_HASH=%s\n", string(hash))
 	os.Exit(0)
+}
+
+// writePasswordHash reads one line from in and writes the prompt and the hash
+// to out. Only the trailing line ending is stripped, so the hash matches what
+// is typed at login. The password itself is never written.
+func writePasswordHash(in io.Reader, out io.Writer) error {
+	reader := bufio.NewReader(in)
+
+	fmt.Fprint(out, "Enter password: ")
+	password, err := reader.ReadString('\n')
+	if err != nil && password == "" {
+		return fmt.Errorf("failed to read password: %w", err)
+	}
+	password = strings.TrimRight(password, "\r\n")
+
+	hash, err := services.HashPassword(password)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	fmt.Fprintf(out, "\nPassword hash:\n%s\n", hash)
+	fmt.Fprintln(out, "\nAdd this to your .env file as:")
+	fmt.Fprintf(out, "GYST_PASSWORD_HASH=%s\n", hash)
+	return nil
 }

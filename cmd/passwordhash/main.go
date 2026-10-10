@@ -11,38 +11,40 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
 
-	"golang.org/x/crypto/bcrypt"
+	"lifeops-tracker/internal/services"
 )
 
-// bcryptCost is deliberately above the library default. This runs once per
-// login on a machine serving one person, so a slower hash costs nothing that
-// matters and buys real resistance to offline cracking if .env ever leaks.
-const bcryptCost = 12
-
 func main() {
-	fmt.Fprint(os.Stderr, "Password: ")
+	if err := run(os.Stdin, os.Stdout, os.Stderr); err != nil {
+		log.Fatal(err)
+	}
+}
 
-	reader := bufio.NewReader(os.Stdin)
+// run reads one line from in, writes the prompt to prompt and only the
+// GYST_PASSWORD_HASH= line to out. The password is never written.
+func run(in io.Reader, out, prompt io.Writer) error {
+	fmt.Fprint(prompt, "Password: ")
+
+	reader := bufio.NewReader(in)
 	password, err := reader.ReadString('\n')
 	if err != nil && password == "" {
-		log.Fatalf("read password: %v", err)
+		return fmt.Errorf("read password: %w", err)
 	}
-	// Accept both a piped value and an interactive line.
+	// Accept both a piped value and an interactive line. Only the line ending
+	// is stripped, so the hash matches what is typed at login.
 	password = strings.TrimRight(password, "\r\n")
-	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(prompt)
 
-	if strings.TrimSpace(password) == "" {
-		log.Fatal("password must not be empty")
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+	hash, err := services.HashPassword(password)
 	if err != nil {
-		log.Fatalf("hash password: %v", err)
+		return fmt.Errorf("hash password: %w", err)
 	}
 
-	fmt.Printf("GYST_PASSWORD_HASH=%s\n", hash)
+	fmt.Fprintf(out, "GYST_PASSWORD_HASH=%s\n", hash)
+	return nil
 }

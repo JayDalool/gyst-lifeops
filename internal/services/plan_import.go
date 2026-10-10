@@ -175,7 +175,7 @@ func (s *Service) ImportAIPlan(plan models.AIPlan, destination string, targetID 
 			}
 		}
 		if firstID == 0 {
-			return "", fmt.Errorf("the plan contains no tasks")
+			return "", userError("the plan contains no tasks")
 		}
 		return "/tasks/" + strconv.FormatInt(firstID, 10), nil
 	default:
@@ -202,7 +202,7 @@ func (s *Service) ImportAIPlan(plan models.AIPlan, destination string, targetID 
 			}
 		}
 		if firstID == 0 {
-			return "", fmt.Errorf("the plan contains no project")
+			return "", userError("the plan contains no project")
 		}
 		return "/projects/" + strconv.FormatInt(firstID, 10), nil
 	}

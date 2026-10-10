@@ -1,12 +1,14 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -123,7 +125,7 @@ func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err err
 	if !now.Before(session.ExpiresAt) {
 		// Clear it on the way past so lapsed rows do not accumulate between
 		// sweeps. A failure here must not deny an otherwise correct decision.
-		_ = s.Repo.DeleteSession(tokenHash)
+		_, _ = s.Repo.DeleteSession(tokenHash)
 		return time.Time{}, ErrNoSession
 	}
 
@@ -139,10 +141,11 @@ func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err err
 
 // RevokeSession ends one session. Revoking an unknown token succeeds: logout
 // should be idempotent, and reporting "no such session" would confirm to a
-// caller which tokens exist.
-func (s *Service) RevokeSession(rawToken string) error {
+// caller which tokens exist. The revoked flag is for the server's own audit
+// log only; it must never change what the browser is told.
+func (s *Service) RevokeSession(rawToken string) (revoked bool, err error) {
 	if rawToken == "" {
-		return nil
+		return false, nil
 	}
 	return s.Repo.DeleteSession(hashSessionToken(rawToken))
 }
@@ -150,4 +153,79 @@ func (s *Service) RevokeSession(rawToken string) error {
 // SweepExpiredSessions deletes lapsed sessions and reports how many went.
 func (s *Service) SweepExpiredSessions() (int64, error) {
 	return s.Repo.DeleteExpiredSessions(s.Now().UTC())
+}
+
+// PasswordHashCost is the bcrypt cost for every newly generated password hash
+// (09 section C, S2-12). It is deliberately above the library default: login
+// runs on a machine serving one person, so a slower hash costs nothing that
+// matters and buys resistance to offline cracking if a hash ever leaks.
+// Verification reads the cost from the stored hash, so hashes made at any
+// other cost keep working until they are regenerated.
+const PasswordHashCost = 12
+
+// ErrEmptyPassword means the password was blank or only whitespace.
+var ErrEmptyPassword = errors.New("auth: password must not be empty")
+
+// HashPassword is the only place a password hash is generated. A blank or
+// whitespace-only password is rejected. The password is hashed exactly as
+// given (no trimming), so it matches what is typed at login. bcrypt's own
+// errors, such as input over 72 bytes, are returned rather than truncated.
+func HashPassword(password string) (string, error) {
+	if strings.TrimSpace(password) == "" {
+		return "", ErrEmptyPassword
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), PasswordHashCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+// sessionSweepInterval is how often lapsed sessions are removed.
+const sessionSweepInterval = time.Hour
+
+// SweepSessionsAtStart runs one sweep and logs the result. app.New calls it
+// synchronously before starting the loop, so frequent restarts cannot starve
+// the hourly ticker and the sweep cannot race App.Close.
+func (s *Service) SweepSessionsAtStart() {
+	s.sweepSessionsAndLog(context.Background())
+}
+
+// RunSessionSweeper sweeps every sessionSweepInterval until ctx is cancelled.
+// Validation already refuses a lapsed session; this only stops dead rows
+// piling up.
+func (s *Service) RunSessionSweeper(ctx context.Context) {
+	ticker := time.NewTicker(sessionSweepInterval)
+	defer ticker.Stop()
+	s.sweepSessionsOnTick(ctx, ticker.C)
+}
+
+// sweepSessionsOnTick sweeps once per tick. The tick value is ignored: the
+// cutoff always comes from the injected clock (s.Now).
+func (s *Service) sweepSessionsOnTick(ctx context.Context, ticks <-chan time.Time) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticks:
+			s.sweepSessionsAndLog(ctx)
+		}
+	}
+}
+
+// sweepSessionsAndLog logs counts and errors only, never token material, and
+// stays silent when nothing was removed. Once ctx is cancelled the app is
+// shutting down and the database may already be closed, so it logs nothing.
+func (s *Service) sweepSessionsAndLog(ctx context.Context) {
+	n, err := s.SweepExpiredSessions()
+	if ctx.Err() != nil {
+		return
+	}
+	if err != nil {
+		log.Printf("sessions: sweep failed: %v", err)
+		return
+	}
+	if n > 0 {
+		log.Printf("sessions: removed %d expired", n)
+	}
 }

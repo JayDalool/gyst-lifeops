@@ -94,7 +94,11 @@ func TestHealthzCarriesNoIdentifyingDetail(t *testing.T) {
 
 func assertCleanHeaders(t *testing.T, rec *httptest.ResponseRecorder) {
 	t.Helper()
-	allowed := map[string]bool{"Content-Type": true, "Content-Length": true, "Cache-Control": true}
+	// The security headers are static policy, identical on every response, and
+	// say nothing about this deployment.
+	allowed := map[string]bool{"Content-Type": true, "Content-Length": true, "Cache-Control": true,
+		"Content-Security-Policy-Report-Only": true, "X-Frame-Options": true, "X-Content-Type-Options": true,
+		"Referrer-Policy": true, "Permissions-Policy": true}
 	for name, values := range rec.Header() {
 		if !allowed[name] {
 			t.Fatalf("unexpected header %s: %v", name, values)

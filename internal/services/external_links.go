@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"net/url"
 	"path"
 	"strings"
@@ -13,18 +12,18 @@ import (
 // compact label displayed by the UI. It performs no remote request.
 func (s *Service) BuildExternalLink(entityType string, entityID int64, rawURL, summary string) (models.ExternalLink, error) {
 	if entityID < 1 {
-		return models.ExternalLink{}, errors.New("invalid link target")
+		return models.ExternalLink{}, userError("invalid link target")
 	}
 	exists, err := s.Repo.ExternalLinkEntityExists(entityType, entityID)
 	if err != nil {
 		return models.ExternalLink{}, err
 	}
 	if !exists {
-		return models.ExternalLink{}, errors.New("link target not found")
+		return models.ExternalLink{}, userError("link target not found")
 	}
 	u, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
-		return models.ExternalLink{}, errors.New("external link must be an absolute http or https URL")
+		return models.ExternalLink{}, userError("external link must be an absolute http or https URL")
 	}
 	provider, key, title := classifyExternalURL(u)
 	return models.ExternalLink{
