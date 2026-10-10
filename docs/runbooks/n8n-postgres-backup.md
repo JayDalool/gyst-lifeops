@@ -25,7 +25,7 @@ key), user records and execution data. Treat each dump like a secret.
   On success: `status=up`. The push URL goes to curl on stdin (`-K -`), never
   argv.
 - Takes an exclusive lock (`<backup dir>/.lock`); a second concurrent run
-  exits 1 without touching the first run's files.
+  exits 75 (no push) without touching the first run's files.
 - Refuses a relative directory or one inside a git repository (exit 2).
 
 Off-host copy is not part of this task: it stays with VN-012.
@@ -66,6 +66,7 @@ Off-host copy is not part of this task: it stays with VN-012.
    Description=n8n Postgres backup (GYST-VN-095)
    [Service]
    Type=oneshot
+   SuccessExitStatus=75
    User=jay
    ExecStart=/usr/bin/bash /usr/local/lib/gyst/n8n-postgres-backup.sh <n8n pg container> <backup dir> <push URL file>
 
@@ -162,7 +163,7 @@ read.
 - Push URLs must be `https://` (`http://` only for localhost, 127.0.0.1 or
   `[::1]`), with no userinfo (`@`), `#`, quotes, backslashes or spaces; same
   guard as `disk-push.sh`. curl runs with `-q -g` so no `~/.curlrc` or URL globbing.
-- A second run while one is active exits 75 and pushes nothing (the active run
+- A second run while one is active exits 75 (the unit treats 75 as success) and pushes nothing (the active run
   reports). It does not touch the active run's files.
 - A kill -9 or power loss can leave an `n8n-*.dump.partial`; it is not counted
   as a backup and not deleted by retention. Delete it by hand.

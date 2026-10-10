@@ -84,7 +84,8 @@ write_status() {
 }
 
 push() { # status msg ; the URL goes to curl on stdin only, never argv
-  # URL guard copied from scripts/ops/disk-push.sh (#107); keep the two identical.
+  # URL guard matches scripts/ops/disk-push.sh (#107), which is being brought to
+  # the same rules; keep the two identical.
   local status="$1" msg="$2" raw base url scheme rest auth
   [ -n "$pushfile" ] || return 0
   raw=$(head -n 1 -- "$pushfile")
@@ -98,6 +99,10 @@ push() { # status msg ; the URL goes to curl on stdin only, never argv
     *'#'*) echo "error: push URL must not contain #" >&2; return 1 ;;
   esac
   base="${base%%\?*}"
+  case "$base" in
+    *://*) ;;
+    *) echo "error: push URL must contain ://" >&2; return 1 ;;
+  esac
   scheme="${base%%://*}"
   rest="${base#*://}"
   auth="${rest%%/*}"
@@ -151,7 +156,7 @@ step="mkdir"
 mkdir -p -- "$dir"
 chmod 700 -- "$dir"
 
-# One run at a time. A second run exits 1 and leaves the first run's files alone.
+# One run at a time. A second run exits 75 and leaves the first run's files alone.
 step="lock"
 exec 9>>"$dir/.lock"
 if ! flock -n 9; then
