@@ -278,6 +278,13 @@ tailnet exemption.
   missing), with IPs truncated to /24 (IPv4) or /48 (IPv6). Per-failure audit
   events belong to the later audit-log work.
 
+## Password hashing (GYST-VN-080)
+
+Every password hash comes from `services.HashPassword` at bcrypt cost 12
+(`services.PasswordHashCost`), used by `lifeops passwordhash`,
+`lifeops -passwordhash` and `cmd/passwordhash`. Verification reads the cost from
+the stored hash, so older hashes keep working until regenerated.
+
 ## Designed for later
 
 The data model supports a future mobile sync client. AI roadmap and quest logic
