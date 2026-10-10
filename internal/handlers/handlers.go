@@ -59,7 +59,7 @@ type TodayData struct {
 	Pending        []models.TaskOccurrence
 	Completed      []models.TaskOccurrence
 	Skipped        []models.TaskOccurrence
-	OverdueTasks   []models.Task
+	OverdueTasks   []models.OverdueTask
 	RemindersToday []models.ReminderView
 	Learning       models.TodayLearning
 	Prayer         PrayerTodayData
@@ -495,7 +495,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	overdueTasks, err := h.Service.Repo.ListActiveOneTimeOverdueTasks(h.Service.TodayString())
+	overdueTasks, err := h.Service.OverdueTasks()
 	if err != nil {
 		serverError(w, err)
 		return
@@ -700,6 +700,8 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 		h.undoTaskCompletion(w, r, id)
 	case "archive":
 		h.archiveTask(w, r, id)
+	case "do-today":
+		h.doTaskToday(w, r, id)
 	case "checklist":
 		h.taskChecklist(w, r, id, segments)
 	default:
@@ -948,6 +950,28 @@ func (h *Handler) archiveTask(w http.ResponseWriter, r *http.Request, id int64) 
 		return
 	}
 	http.Redirect(w, r, "/tasks", http.StatusSeeOther)
+}
+
+// doTaskToday moves an overdue task to the server's local today. It reads no
+// date from the request; a task that is not overdue is left unchanged.
+func (h *Handler) doTaskToday(w http.ResponseWriter, r *http.Request, id int64) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if _, err := h.Service.Repo.TaskByID(id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		serverError(w, err)
+		return
+	}
+	if _, err := h.Service.MoveTaskToToday(id); err != nil {
+		serverError(w, err)
+		return
+	}
+	redirectAfter(w, r, "/today#checklist")
 }
 
 func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []string) {

@@ -650,6 +650,12 @@ type ReminderView struct {
 	Overdue      bool
 }
 
+// OverdueTask is an overdue one-time task with its "since Friday" label.
+type OverdueTask struct {
+	Task  Task
+	Since string
+}
+
 type TrackerItem struct {
 	ID        int64
 	UUID      string

@@ -68,6 +68,29 @@ func (r *Repository) ListActiveOneTimeOverdueTasks(today string) ([]models.Task,
 	return tasks, rows.Err()
 }
 
+// MoveOverdueTaskToDate sets a task's due date to today, but only when the task
+// is still overdue: one-time, pending, not archived and due before today. It
+// reports whether a row changed; any other task is left untouched. The task's
+// reminder row is re-synced so it follows the new date.
+func (r *Repository) MoveOverdueTaskToDate(id int64, today string) (bool, error) {
+	res, err := r.db.Exec(`UPDATE tasks
+		SET due_date = ?, updated_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1
+		WHERE id = ?
+			AND archived_at IS NULL
+			AND repeat_type = 'none'
+			AND status = 'pending'
+			AND due_date IS NOT NULL
+			AND due_date < ?`, today, id, today)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil || n != 1 {
+		return false, err
+	}
+	return true, r.syncTaskReminder(id)
+}
+
 func (r *Repository) TaskByID(id int64) (models.Task, error) {
 	task, err := scanTask(r.db.QueryRow(fmt.Sprintf(`SELECT %s FROM tasks WHERE id = ?`, taskColumns), id))
 	if errors.Is(err, sql.ErrNoRows) {

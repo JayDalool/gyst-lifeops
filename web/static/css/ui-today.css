@@ -59,3 +59,20 @@
 :root .today-page .tracker-dot small { margin: 0; color: var(--gyst-text-secondary); font-size: .75rem; }
 .today-page .tracker-dot > span:first-child { display: none; }
 .today-dedicated { max-width: 760px; margin-inline: auto; }
+/* GYST-VN-032: overdue rows are warn, never crit, never a badge (11 section I, 13A). */
+.today-page .list li.today-overdue-wrap { display: block; padding: 0; }
+.today-overdue { display: flex; align-items: center; gap: var(--vn-s3, 12px); min-height: 56px; padding: var(--vn-s2, 8px) 0; }
+.today-overdue-copy { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.today-overdue-copy a { display: flex; align-items: center; min-height: 44px; color: var(--gyst-text); overflow-wrap: anywhere; }
+.today-overdue-copy .meta { color: var(--vn-ink-2, var(--gyst-text-secondary)); font-size: .8125rem; }
+.today-overdue form { margin: 0; flex: none; }
+.today-overdue .gyst-button { min-width: 44px; }
+.today-overdue-summary { display: flex; align-items: center; gap: var(--vn-s3, 12px); min-height: 56px; list-style: none; cursor: pointer; border-radius: var(--gyst-radius-sm); }
+.today-overdue-summary::-webkit-details-marker { display: none; }
+.today-overdue-summary:focus-visible { outline: 2px solid var(--gyst-blue); outline-offset: 2px; }
+.today-overdue-summary > .gyst-icon { flex: none; width: 20px; height: 20px; transition: transform var(--vn-fast, 120ms) var(--vn-ease, ease); }
+.today-overdue-group[open] > .today-overdue-summary > .gyst-icon { transform: rotate(90deg); }
+.today-overdue-body { padding-bottom: var(--vn-s2, 8px); }
+.today-overdue-body .today-overdue + .today-overdue { border-top: 1px solid var(--gyst-border); }
+@media (prefers-reduced-motion: reduce) { .today-overdue-summary > .gyst-icon { transition: none; } }
+[data-motion="reduced"] .today-overdue-summary > .gyst-icon { transition: none; }

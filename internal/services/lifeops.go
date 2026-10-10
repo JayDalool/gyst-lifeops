@@ -712,6 +712,50 @@ func trackerCompletion(items []models.TrackerStatusView) int {
 	return (done * 100) / len(items)
 }
 
+// OverdueSince labels how long a task has been overdue: "since yesterday",
+// the weekday for 2-6 days, "since Oct 2" for a week or more, and the year too
+// when it is not this year. Days are counted from the calendar dates, not from
+// durations, so DST days cannot shift the count.
+func OverdueSince(due, today time.Time) string {
+	d := time.Date(due.Year(), due.Month(), due.Day(), 0, 0, 0, 0, time.UTC)
+	t := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	days := int(t.Sub(d) / (24 * time.Hour))
+	switch {
+	case days <= 1:
+		return "since yesterday"
+	case days < 7:
+		return "since " + d.Weekday().String()
+	case d.Year() == t.Year():
+		return "since " + d.Format("Jan 2")
+	default:
+		return "since " + d.Format("Jan 2, 2006")
+	}
+}
+
+// OverdueTasks lists the overdue one-time tasks, oldest first, with labels.
+func (s *Service) OverdueTasks() ([]models.OverdueTask, error) {
+	today := s.Today()
+	tasks, err := s.Repo.ListActiveOneTimeOverdueTasks(formatDate(today))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]models.OverdueTask, 0, len(tasks))
+	for _, task := range tasks {
+		item := models.OverdueTask{Task: task, Since: "since earlier"}
+		if due, ok := parseDate(task.DueDate, s.Location()); ok {
+			item.Since = OverdueSince(due, today)
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+// MoveTaskToToday moves an overdue task to the app-local today. The date comes
+// only from the service clock.
+func (s *Service) MoveTaskToToday(id int64) (bool, error) {
+	return s.Repo.MoveOverdueTaskToDate(id, s.TodayString())
+}
+
 func formatDate(date time.Time) string {
 	return date.Format("2006-01-02")
 }
