@@ -4,8 +4,14 @@ name: check
 # makes a branch's state legible before it is merged - the 017 migration
 # collision was caught by hand, and these checks exist so the next one is not.
 on:
-  push:
   pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
