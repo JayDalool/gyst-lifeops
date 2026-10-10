@@ -6,7 +6,7 @@ live Health data. Issue #64.
 ## How it works
 
 - GYST builds a small context: stable rules, the profile you typed (More →
-  Profile for the coach) and today's observed summary.
+  Profile for the coach) and today's observed summary (including today's water: litres logged or null, taps, target).
 - The model can call allowlisted, **read-only** tools: today, plan, weight
   trend, training summary, recent workouts, exercise progress, Hevy routines,
   My foods and the daily checklist. That's all it can see. It can't reach
@@ -39,7 +39,8 @@ adapter exists.
   browser storage, logs or error messages.
 - What leaves GYST per question: the rules, your profile, today's summary,
   recent visible turns and whatever tool results the model asks for (Health
-  data only).
+  data only). Today's water is part of the summary: litres logged (null when
+  nothing is logged), bottle taps, target and bottle size.
 - Prompts and replies are not logged. Vendor errors are replaced by fixed
   messages.
 - Anthropic's API doesn't train on API data by default. Retention follows

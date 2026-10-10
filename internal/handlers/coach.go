@@ -94,6 +94,23 @@ func metricOrNil(m HealthMetricView) any {
 	return m.Value
 }
 
+// coachWater is today's water for the Coach. No taps is null, never 0, and the
+// target and bottle follow HasTarget/HasBottle, not the formatted strings.
+func coachWater(v healthWaterView) map[string]any {
+	w := map[string]any{"logged_l": nil, "bottles_logged": v.Taps, "target_l": nil, "bottle_l": nil, "target_reached": nil,
+		"note": "Logged by bottle taps on Today. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health."}
+	if v.Logged {
+		w["logged_l"] = v.Total
+	}
+	if v.HasTarget {
+		w["target_l"], w["target_reached"] = v.Target, v.Done
+	}
+	if v.HasBottle {
+		w["bottle_l"] = v.Bottle
+	}
+	return w
+}
+
 // coachToday is the compact Today summary, also embedded in the system prompt.
 func coachToday(data HealthData) map[string]any {
 	t := data.Today
@@ -122,6 +139,7 @@ func coachToday(data HealthData) map[string]any {
 		"exercise_minutes":         metricOrNil(t.ExerciseMinutes),
 		"latest_weight_kg":         map[bool]any{true: data.Weight.Latest, false: nil}[data.Weight.Present],
 		"weight_change_since_plan": map[bool]any{true: data.Weight.Change, false: nil}[data.Weight.HasChange],
+		"water":                    coachWater(data.Water),
 	}
 }
 
@@ -145,7 +163,7 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 		}
 	}
 	return []healthcoach.Tool{
-		{Name: "get_health_today", Description: "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes and latest weight.",
+		{Name: "get_health_today", Description: "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight.",
 			Run: none(func() (any, error) { return coachToday(data), nil })},
 		{Name: "get_health_plan", Description: "The current health plan: dates and daily targets (calories, macros, steps, strength and cardio sessions per week).",
 			Run: none(func() (any, error) {
