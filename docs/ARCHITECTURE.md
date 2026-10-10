@@ -319,6 +319,14 @@ lets tests capture it.
 - **Not here:** log shipping, rotation (GYST-VN-016), a log viewer, 2xx access
   logs, a styled 500 page and panic recovery.
 
+## Sessions
+
+Sessions roll for 30 days from last use (`sessionLifetime`). Lapsed rows are
+removed by `Service.RunSessionSweeper`, started in `app.New` on the context
+`App.Close` cancels: one sweep at start, then hourly. The cutoff is the
+service clock (`s.Now`), the DELETE is scoped to `expires_at <= now`, and the
+log line carries only a count. Validation never depends on the sweep.
+
 ## Designed for later
 
 The data model supports a future mobile sync client. AI roadmap and quest logic
