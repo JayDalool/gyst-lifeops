@@ -489,6 +489,18 @@
     window.addEventListener("pageshow", function (e) { if (e.persisted) check(); });
   }
 
+  // Offline banner (VN-022, 13 §17): shown while the browser reports offline,
+  // hidden again on the online event, without a reload.
+  function initOfflineBanner() {
+    var banner = document.querySelector("[data-gyst-offline]");
+    if (!banner) return;
+    function sync() { banner.hidden = navigator.onLine !== false; }
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    window.addEventListener("pageshow", sync);
+    sync();
+  }
+
   function init() {
     document.querySelectorAll("[data-map-v2]").forEach(function (m) { initMap(m); });
     initDayReload();
@@ -496,6 +508,7 @@
     initShellClearance();
 	initCommandPalette();
     initCheckOff();
+    initOfflineBanner();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
