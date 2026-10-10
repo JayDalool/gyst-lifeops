@@ -10,9 +10,21 @@ import (
 // can be turned back into a usable cookie.
 type Session struct {
 	TokenHash  string
-	CreatedAt  string
+	CreatedAt  time.Time
 	ExpiresAt  time.Time
 	LastSeenAt time.Time
+}
+
+// sqliteTimestampLayout is what the column DEFAULT (CURRENT_TIMESTAMP) wrote
+// before created_at was set explicitly: UTC, second precision, space separated.
+// Rows from that era are still read, and capped from their real creation time.
+const sqliteTimestampLayout = "2006-01-02 15:04:05"
+
+func parseSessionCreatedAt(value string) (time.Time, error) {
+	if at, err := time.Parse(sessionTimeLayout, value); err == nil {
+		return at, nil
+	}
+	return time.ParseInLocation(sqliteTimestampLayout, value, time.UTC)
 }
 
 // sessionTimeLayout keeps stored timestamps fixed-width and UTC so TEXT
@@ -23,10 +35,13 @@ func formatSessionTime(at time.Time) string {
 	return at.UTC().Format(sessionTimeLayout)
 }
 
+// CreateSession stores a new session. A session is last seen the moment it is
+// created, so lastSeenAt is also written as created_at: the service clock, not
+// the column DEFAULT (wall clock), fixes the start of the absolute cap.
 func (r *Repository) CreateSession(tokenHash string, expiresAt, lastSeenAt time.Time) error {
 	_, err := r.db.Exec(
-		`INSERT INTO sessions (token_hash, expires_at, last_seen_at) VALUES (?, ?, ?)`,
-		tokenHash, formatSessionTime(expiresAt), formatSessionTime(lastSeenAt))
+		`INSERT INTO sessions (token_hash, created_at, expires_at, last_seen_at) VALUES (?, ?, ?, ?)`,
+		tokenHash, formatSessionTime(lastSeenAt), formatSessionTime(expiresAt), formatSessionTime(lastSeenAt))
 	return err
 }
 
@@ -34,11 +49,16 @@ func (r *Repository) CreateSession(tokenHash string, expiresAt, lastSeenAt time.
 // sql.ErrNoRows; expiry is the service's decision, not the repository's.
 func (r *Repository) GetSession(tokenHash string) (Session, error) {
 	var session Session
-	var expiresAt, lastSeenAt string
+	var createdAt, expiresAt, lastSeenAt string
 	err := r.db.QueryRow(
 		`SELECT token_hash, created_at, expires_at, last_seen_at FROM sessions WHERE token_hash = ?`,
-		tokenHash).Scan(&session.TokenHash, &session.CreatedAt, &expiresAt, &lastSeenAt)
+		tokenHash).Scan(&session.TokenHash, &createdAt, &expiresAt, &lastSeenAt)
 	if err != nil {
+		return Session{}, err
+	}
+	// An unreadable created_at is an error, never a zero time: the caller
+	// would otherwise cap from year 1 (refuse) or skip the cap (accept).
+	if session.CreatedAt, err = parseSessionCreatedAt(createdAt); err != nil {
 		return Session{}, err
 	}
 	if session.ExpiresAt, err = time.Parse(sessionTimeLayout, expiresAt); err != nil {

@@ -334,7 +334,14 @@ lets tests capture it.
 
 ## Sessions
 
-Sessions roll for 30 days from last use (`sessionLifetime`). Lapsed rows are
+Sessions roll for 30 days from last use (`sessionLifetime`) but never past
+90 days from creation (`sessionAbsoluteLifetime`, 10A D-S5): every write of
+`expires_at` is `min(now+30d, created_at+90d)`, `CheckSession` refuses and
+deletes a row once `now >= created_at+90d`, and the renewed cookie carries the
+capped expiry. `created_at` is written from the service clock; older rows hold
+the SQLite `YYYY-MM-DD HH:MM:SS` UTC default and are read as such. An
+unparseable `created_at` makes the check return an error, which the middleware
+treats as unauthenticated (fail closed). Lapsed rows are
 removed by `Service.RunSessionSweeper`, started in `app.New` on the context
 `App.Close` cancels: one sweep at start, then hourly. The cutoff is the
 service clock (`s.Now`), the DELETE is scoped to `expires_at <= now`, and the
