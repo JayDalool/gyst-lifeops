@@ -1,12 +1,9 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -88,16 +85,14 @@ func TestSyncExternalLinkRefusesForeignJiraHost(t *testing.T) {
 	if err := service.Repo.CreateExternalLink(&link); err != nil {
 		t.Fatal(err)
 	}
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	buf := captureLog(t)
 	err = service.SyncExternalLink(context.Background(), link.ID)
 	if !errors.Is(err, providers.ErrHostNotAllowed) {
 		t.Fatalf("err = %v", err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, fmt.Sprintf("SECURITY: external link %d sync refused: host not allowed", link.ID)) ||
-		!strings.Contains(out, "team.atlassian.net.evil.example") || strings.Contains(out, "fake-token-not-real") {
+	if !strings.Contains(out, fmt.Sprintf(`"link_id":%d`, link.ID)) || !strings.Contains(out, `"reason":"host not allowed"`) ||
+		!strings.Contains(out, "team.atlassian.net.evil.example") || strings.Contains(out, "/browse/") || strings.Contains(out, "fake-token-not-real") {
 		t.Fatalf("log = %q", out)
 	}
 	after, err := service.Repo.ExternalLinkByID(link.ID)
