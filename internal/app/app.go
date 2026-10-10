@@ -149,7 +149,7 @@ func New(config Config) (*App, error) {
 	// favicon are matched above and so stay reachable while signed out.
 	mux.Handle("/", handlers.RequestLog(logger, webHandler.Authenticated()))
 
-	return &App{DB: database, Handler: mux, cancel: cancelPush, service: service}, nil
+	return &App{DB: database, Handler: handlers.SecurityHeaders(mux), cancel: cancelPush, service: service}, nil
 }
 
 // HealthAIConfig is read from HEALTH_AI_PROVIDER, ANTHROPIC_API_KEY,

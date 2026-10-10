@@ -167,3 +167,29 @@ func safeNextPath(candidate string) string {
 	}
 	return candidate
 }
+
+// contentSecurityPolicy is the policy sent on every response. script-src is
+// 'self' only: no inline script, no eval, no nonce. style-src keeps
+// 'unsafe-inline' because templates use style attributes (progress widths,
+// SVG stop-color, route positions); CSSOM writes from JS are not affected.
+const contentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; font-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+
+// cspHeader is Report-Only for the first deploy. Enforcing is a one-line
+// change to "Content-Security-Policy". Report-Only never enforces
+// frame-ancestors, so X-Frame-Options: DENY carries clickjacking protection
+// until then.
+const cspHeader = "Content-Security-Policy-Report-Only"
+
+// SecurityHeaders sets the browser security headers before the wrapped handler
+// runs, so errors, redirects and http.Error responses carry them too.
+func SecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set(cspHeader, contentSecurityPolicy)
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("Referrer-Policy", "same-origin")
+		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
+		next.ServeHTTP(w, r)
+	})
+}
