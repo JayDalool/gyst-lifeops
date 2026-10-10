@@ -1,3 +1,5 @@
+- [ ] #108 · Install n8n backup timer, then test-restore one dump · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/n8n-postgres-backup.md
+- [ ] #108 · Store n8n encryption key safely, apart from dumps · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/n8n-postgres-backup.md
 - [ ] #3 · Quick-capture due date, prayer save, then D6 checklist · https://github.com/JayDalool/gyst-lifeops/issues/3
 - [ ] #64 · Coach: set provider and Anthropic key, or leave off · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
 - [ ] #5 · Run host permissions runbook, paste result to Claude · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/tasks/VN-009-host-permissions.md
