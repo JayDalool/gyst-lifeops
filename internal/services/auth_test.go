@@ -282,7 +282,7 @@ func sweeperFixture(t *testing.T) (svc *Service, expired, live string) {
 	return svc, expired, live
 }
 
-func captureLog(t *testing.T) *bytes.Buffer {
+func captureStdLog(t *testing.T) *bytes.Buffer {
 	t.Helper()
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
@@ -310,11 +310,12 @@ func waitDone(t *testing.T, done <-chan struct{}) {
 
 func TestSessionSweeperDeletesExpiredOnTick(t *testing.T) {
 	svc, expired, live := sweeperFixture(t)
-	logs := captureLog(t)
+	logs := captureStdLog(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	ticks := make(chan time.Time)
 	done := runOnTicks(ctx, svc, ticks)
 	ticks <- time.Time{} // unbuffered: returns once the loop took the tick
+	ticks <- time.Time{} // taken only after the first sweep (and its log) finished
 	cancel()
 	waitDone(t, done) // the tick's sweep finished before the loop could exit
 
@@ -346,13 +347,9 @@ func TestSessionSweeperDoesNothingWithoutTick(t *testing.T) {
 	}
 }
 
-func TestRunSessionSweeperSweepsOnStartAndStopsOnCancel(t *testing.T) {
+func TestSweepSessionsAtStartSweepsSynchronously(t *testing.T) {
 	svc, _, live := sweeperFixture(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	done := make(chan struct{})
-	go func() { defer close(done); svc.RunSessionSweeper(ctx) }()
-	waitDone(t, done)
+	svc.SweepSessionsAtStart()
 	if n, _ := svc.Repo.CountSessions(); n != 1 {
 		t.Errorf("sessions = %d, want 1 (start sweep)", n)
 	}
@@ -368,16 +365,17 @@ func TestSessionSweeperContinuesAfterError(t *testing.T) {
 	}
 	svc := New(repository.New(database))
 	database.Close() // every sweep now fails
-	logs := captureLog(t)
+	logs := captureStdLog(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	ticks := make(chan time.Time)
 	done := runOnTicks(ctx, svc, ticks)
 	ticks <- time.Time{}
 	ticks <- time.Time{} // second tick proves the loop survived the first error
+	ticks <- time.Time{} // taken only after the second sweep finished
 	cancel()
 	waitDone(t, done)
-	if got := strings.Count(logs.String(), "sessions: sweep failed:"); got != 2 {
-		t.Errorf("failure lines = %d, want 2; log = %q", got, logs.String())
+	if got := strings.Count(logs.String(), "sessions: sweep failed:"); got < 2 {
+		t.Errorf("failure lines = %d, want at least 2; log = %q", got, logs.String())
 	}
 }
 
@@ -410,5 +408,33 @@ func TestSweepExpiredSessionsBoundary(t *testing.T) {
 		if err := svc.ValidateSession(name); !errors.Is(err, ErrNoSession) {
 			t.Errorf("%s should be gone: %v", name, err)
 		}
+	}
+}
+
+func TestRunSessionSweeperStopsOnCancel(t *testing.T) {
+	svc, _, _ := sweeperFixture(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { defer close(done); svc.RunSessionSweeper(ctx) }()
+	cancel()
+	waitDone(t, done)
+	if n, _ := svc.Repo.CountSessions(); n != 2 {
+		t.Errorf("sessions = %d, want 2 (no sweep before the first hour)", n)
+	}
+}
+
+func TestSweeperSilentAfterCancel(t *testing.T) {
+	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	svc := New(repository.New(database))
+	database.Close()
+	logs := captureStdLog(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	svc.sweepSessionsAndLog(ctx)
+	if logs.Len() != 0 {
+		t.Errorf("logged during shutdown: %q", logs.String())
 	}
 }

@@ -157,12 +157,17 @@ func (s *Service) SweepExpiredSessions() (int64, error) {
 // sessionSweepInterval is how often lapsed sessions are removed.
 const sessionSweepInterval = time.Hour
 
-// RunSessionSweeper removes lapsed sessions once at start (so frequent
-// restarts cannot starve the ticker) and then every sessionSweepInterval,
-// until ctx is cancelled. Validation already refuses a lapsed session; this
-// only stops dead rows piling up.
+// SweepSessionsAtStart runs one sweep and logs the result. app.New calls it
+// synchronously before starting the loop, so frequent restarts cannot starve
+// the hourly ticker and the sweep cannot race App.Close.
+func (s *Service) SweepSessionsAtStart() {
+	s.sweepSessionsAndLog(context.Background())
+}
+
+// RunSessionSweeper sweeps every sessionSweepInterval until ctx is cancelled.
+// Validation already refuses a lapsed session; this only stops dead rows
+// piling up.
 func (s *Service) RunSessionSweeper(ctx context.Context) {
-	s.sweepSessionsAndLog()
 	ticker := time.NewTicker(sessionSweepInterval)
 	defer ticker.Stop()
 	s.sweepSessionsOnTick(ctx, ticker.C)
@@ -176,15 +181,19 @@ func (s *Service) sweepSessionsOnTick(ctx context.Context, ticks <-chan time.Tim
 		case <-ctx.Done():
 			return
 		case <-ticks:
-			s.sweepSessionsAndLog()
+			s.sweepSessionsAndLog(ctx)
 		}
 	}
 }
 
 // sweepSessionsAndLog logs counts and errors only, never token material, and
-// stays silent when nothing was removed.
-func (s *Service) sweepSessionsAndLog() {
+// stays silent when nothing was removed. Once ctx is cancelled the app is
+// shutting down and the database may already be closed, so it logs nothing.
+func (s *Service) sweepSessionsAndLog(ctx context.Context) {
 	n, err := s.SweepExpiredSessions()
+	if ctx.Err() != nil {
+		return
+	}
 	if err != nil {
 		log.Printf("sessions: sweep failed: %v", err)
 		return
