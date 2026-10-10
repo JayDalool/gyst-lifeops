@@ -12,7 +12,7 @@
 # POSTGRES_DB, so no credential is read, passed or printed on the host.
 # Steps: pg_dump -Fc -> n8n-<UTC>.dump.partial -> pg_restore --list check ->
 # rename to n8n-<UTC>.dump. Files are 0600 in a 0700 directory. Only the newest
-# 7 n8n-*.dump files in that directory are kept. last_run.json (0600) records
+# 7 n8n-<UTC>.dump files in that directory are kept. last_run.json (0600) records
 # the last run. The dump holds n8n credentials (encrypted with n8n's own
 # encryption key, which is NOT in the dump), so treat it as sensitive.
 #
@@ -33,15 +33,16 @@ case "$container" in
   ''|-*|*[!A-Za-z0-9_.-]*) echo "error: container name must be letters, digits, _ . - and not start with -" >&2; exit 2 ;;
 esac
 
+dir="${dir%/}"   # strip one trailing slash
 case "$dir" in
   /*) ;;
   *) echo "error: backup dir must be an absolute path" >&2; exit 2 ;;
 esac
-case "$dir/" in
-  */../*|*/./*|*//*) echo "error: backup dir must not contain .. or . or // segments" >&2; exit 2 ;;
-esac
-dir="${dir%/}"
 [ -n "$dir" ] || { echo "error: backup dir must not be /" >&2; exit 2; }
+case "$dir/" in
+  */../*) echo "error: backup dir must not contain a .. segment" >&2; exit 2 ;;
+  */./*|*//*) echo "error: backup dir must not contain a . segment or a double slash" >&2; exit 2 ;;
+esac
 
 # Refuse a dir inside a git work tree. Check from the nearest existing ancestor
 # (the dir may not exist yet). The check is a read-only git call.
@@ -62,9 +63,6 @@ if [ -n "$pushfile" ]; then
   fi
 fi
 
-mkdir -p -- "$dir"
-chmod 700 -- "$dir"
-
 ts=$(date -u +%Y%m%dT%H%M%SZ)
 fname="n8n-${ts}.dump"
 final="$dir/$fname"
@@ -72,6 +70,7 @@ partial="$final.partial"
 step="start"
 result="failed"
 size=0
+locked=0
 
 write_status() {
   local tmp now file=""
@@ -108,8 +107,8 @@ on_exit() {
   trap - EXIT
   set +e
   [ "$rc" -eq 0 ] || result="failed"
-  rm -f -- "$partial"
-  write_status || { echo "error: could not write last_run.json" >&2; [ "$rc" -ne 0 ] || rc=1; }
+  if [ "$locked" -eq 1 ]; then rm -f -- "$partial"; fi
+  [ "$locked" -eq 0 ] || write_status || { echo "error: could not write last_run.json" >&2; [ "$rc" -ne 0 ] || rc=1; }
   if [ "$rc" -eq 0 ]; then
     push up "ok" || rc=1
   else
@@ -121,6 +120,19 @@ on_exit() {
 trap on_exit EXIT
 trap 'exit 143' TERM
 trap 'exit 130' INT
+
+step="mkdir"
+mkdir -p -- "$dir"
+chmod 700 -- "$dir"
+
+# One run at a time. A second run exits 1 and leaves the first run's files alone.
+step="lock"
+exec 9>>"$dir/.lock"
+if ! flock -n 9; then
+  echo "error: another backup run holds the lock on $dir; exiting" >&2
+  exit 1
+fi
+locked=1
 
 step="dump"
 if [ -e "$final" ]; then echo "error: $fname already exists" >&2; exit 1; fi
@@ -138,15 +150,17 @@ size=$(stat -c %s -- "$final")
 echo "dump ok: $fname ($size bytes)"
 
 step="retention"
-# Only regular files matching n8n-*.dump directly in this directory. Names carry
-# a UTC timestamp, so a reverse name sort is newest first.
-n=0
-while IFS= read -r f; do
-  n=$((n + 1))
-  if [ "$n" -gt "$KEEP" ]; then
-    if [ -f "$f" ] && [ ! -L "$f" ]; then rm -f -- "$f"; fi
-  fi
-done < <(printf '%s\n' "$dir"/n8n-*.dump | sort -r)
+# Only regular, non-symlink files named exactly n8n-YYYYMMDDTHHMMSSZ.dump in
+# this directory count. Glob order is name order, so oldest first.
+shopt -s nullglob
+dumps=()
+for f in "$dir"/n8n-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z.dump; do
+  if [ -f "$f" ] && [ ! -L "$f" ]; then dumps+=("$f"); fi
+done
+shopt -u nullglob
+if [ "${#dumps[@]}" -gt "$KEEP" ]; then
+  for f in "${dumps[@]:0:${#dumps[@]}-KEEP}"; do rm -f -- "$f"; done
+fi
 
 step="done"
 result="ok"

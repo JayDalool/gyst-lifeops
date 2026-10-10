@@ -23,6 +23,8 @@ key), user records and execution data. Treat each dump like a secret.
 - On any failure: non-zero exit, `.partial` removed, `status=down` pushed.
   On success: `status=up`. The push URL goes to curl on stdin (`-K -`), never
   argv.
+- Takes an exclusive lock (`<backup dir>/.lock`); a second concurrent run
+  exits 1 without touching the first run's files.
 - Refuses a relative directory or one inside a git repository (exit 2).
 
 Off-host copy is not part of this task: it stays with VN-012.
@@ -48,7 +50,14 @@ Off-host copy is not part of this task: it stays with VN-012.
    Check: `stat -c '%a %n' <backup dir> <backup dir>/*` -> `700` for the
    directory and `600` for every file; `cat <backup dir>/last_run.json` shows
    `"result":"ok"`.
-5. Install the timer. Offset the time from the GYST backup (pick a different
+5. Install a reviewed copy of the script, from a reviewed master checkout
+   (the timer runs this copy, not the working tree):
+   ```
+   sudo install -d -o root -g root -m 0755 /usr/local/lib/gyst
+   sudo install -o root -g root -m 0755 scripts/ops/n8n-postgres-backup.sh /usr/local/lib/gyst/n8n-postgres-backup.sh
+   ```
+   Re-run the `install` after every reviewed change to the script.
+   Then install the timer. Offset the time from the GYST backup (pick a different
    minute/hour than that job):
    ```
    # /etc/systemd/system/n8n-pg-backup.service
@@ -57,7 +66,7 @@ Off-host copy is not part of this task: it stays with VN-012.
    [Service]
    Type=oneshot
    User=jay
-   ExecStart=/usr/bin/bash <repo path>/scripts/ops/n8n-postgres-backup.sh <n8n pg container> <backup dir> <push URL file>
+   ExecStart=/usr/bin/bash /usr/local/lib/gyst/n8n-postgres-backup.sh <n8n pg container> <backup dir> <push URL file>
 
    # /etc/systemd/system/n8n-pg-backup.timer
    [Unit]
@@ -92,9 +101,9 @@ F=$(ls -1 "$D"/n8n-*.dump | sort | tail -n 1)
 time ( \
 docker run --rm -d --network none -e POSTGRES_HOST_AUTH_METHOD=trust \
   --name n8n-restore-test postgres:<same major> && \
-until docker exec n8n-restore-test pg_isready -q; do sleep 1; done && \
+until docker exec n8n-restore-test pg_isready -q -h 127.0.0.1; do sleep 1; done && \
 docker exec n8n-restore-test createdb -U postgres n8n_restore && \
-docker exec -i n8n-restore-test pg_restore -U postgres -d n8n_restore --no-owner < "$F" )
+docker exec -i n8n-restore-test pg_restore -U postgres -d n8n_restore --no-owner -x < "$F" )
 echo "restore exit=$?"
 ```
 
