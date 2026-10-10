@@ -1,12 +1,14 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -123,7 +125,7 @@ func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err err
 	if !now.Before(session.ExpiresAt) {
 		// Clear it on the way past so lapsed rows do not accumulate between
 		// sweeps. A failure here must not deny an otherwise correct decision.
-		_ = s.Repo.DeleteSession(tokenHash)
+		_, _ = s.Repo.DeleteSession(tokenHash)
 		return time.Time{}, ErrNoSession
 	}
 
@@ -139,10 +141,11 @@ func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err err
 
 // RevokeSession ends one session. Revoking an unknown token succeeds: logout
 // should be idempotent, and reporting "no such session" would confirm to a
-// caller which tokens exist.
-func (s *Service) RevokeSession(rawToken string) error {
+// caller which tokens exist. The revoked flag is for the server's own audit
+// log only; it must never change what the browser is told.
+func (s *Service) RevokeSession(rawToken string) (revoked bool, err error) {
 	if rawToken == "" {
-		return nil
+		return false, nil
 	}
 	return s.Repo.DeleteSession(hashSessionToken(rawToken))
 }
@@ -176,4 +179,53 @@ func HashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(hash), nil
+}
+
+// sessionSweepInterval is how often lapsed sessions are removed.
+const sessionSweepInterval = time.Hour
+
+// SweepSessionsAtStart runs one sweep and logs the result. app.New calls it
+// synchronously before starting the loop, so frequent restarts cannot starve
+// the hourly ticker and the sweep cannot race App.Close.
+func (s *Service) SweepSessionsAtStart() {
+	s.sweepSessionsAndLog(context.Background())
+}
+
+// RunSessionSweeper sweeps every sessionSweepInterval until ctx is cancelled.
+// Validation already refuses a lapsed session; this only stops dead rows
+// piling up.
+func (s *Service) RunSessionSweeper(ctx context.Context) {
+	ticker := time.NewTicker(sessionSweepInterval)
+	defer ticker.Stop()
+	s.sweepSessionsOnTick(ctx, ticker.C)
+}
+
+// sweepSessionsOnTick sweeps once per tick. The tick value is ignored: the
+// cutoff always comes from the injected clock (s.Now).
+func (s *Service) sweepSessionsOnTick(ctx context.Context, ticks <-chan time.Time) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticks:
+			s.sweepSessionsAndLog(ctx)
+		}
+	}
+}
+
+// sweepSessionsAndLog logs counts and errors only, never token material, and
+// stays silent when nothing was removed. Once ctx is cancelled the app is
+// shutting down and the database may already be closed, so it logs nothing.
+func (s *Service) sweepSessionsAndLog(ctx context.Context) {
+	n, err := s.SweepExpiredSessions()
+	if ctx.Err() != nil {
+		return
+	}
+	if err != nil {
+		log.Printf("sessions: sweep failed: %v", err)
+		return
+	}
+	if n > 0 {
+		log.Printf("sessions: removed %d expired", n)
+	}
 }

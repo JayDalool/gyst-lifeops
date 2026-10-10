@@ -3,8 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 
 	"lifeops-tracker/internal/services/providers"
@@ -24,7 +23,7 @@ func (s *Service) SyncExternalLink(ctx context.Context, id int64) error {
 	case "slack":
 		provider = providers.Slack{}
 	default:
-		return fmt.Errorf("%s does not support API sync", link.Provider)
+		return userError(link.Provider + " does not support API sync")
 	}
 	snapshot, err := provider.Fetch(ctx, link)
 	if err != nil {
@@ -33,7 +32,7 @@ func (s *Service) SyncExternalLink(ctx context.Context, id int64) error {
 			if u, perr := url.Parse(link.URL); perr == nil {
 				host = u.Hostname()
 			}
-			log.Printf("SECURITY: external link %d sync refused: host not allowed (%s)", link.ID, host)
+			slog.Warn("provider failure", "event", "provider.failed", "provider", link.Provider, "link_id", link.ID, "host", host, "reason", "host not allowed")
 		}
 		return err
 	}

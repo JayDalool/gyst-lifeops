@@ -30,5 +30,4 @@
   {{range .Plan.Projects}}<div class="mt-16"><strong>{{.Name}}</strong>{{if .Description}}<p class="meta">{{.Description}}</p>{{end}}<ul class="list">{{range .Tasks}}<li><span class="grow">{{.Title}}<small>{{.Priority}} priority{{if .DueDate}} · due {{niceDate .DueDate}}{{end}} · {{len .Checklist}} checklist item(s)</small></span></li>{{end}}</ul></div>{{end}}
   {{if .Plan.Tasks}}<ul class="list">{{range .Plan.Tasks}}<li><span class="grow">{{.Title}}<small>{{.Priority}} priority · {{len .Checklist}} checklist item(s)</small></span></li>{{end}}</ul>{{end}}
 </section>{{end}}
-<script>document.querySelector('[data-copy-target]')?.addEventListener('click',async function(){const el=document.getElementById(this.dataset.copyTarget);await navigator.clipboard.writeText(el.value);this.textContent='Copied';});</script>
 {{end}}

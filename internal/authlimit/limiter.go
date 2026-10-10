@@ -22,7 +22,7 @@
 package authlimit
 
 import (
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -187,10 +187,10 @@ func (l *Limiter) updateEngaged(name string, b *bucketState, now time.Time) {
 	case engaged && !b.engaged:
 		b.engaged = true
 		b.refused = 0
-		log.Printf("SECURITY: login throttle: global gate engaged bucket=%s", name)
+		slog.Warn("login throttle", "event", "gate_engaged", "bucket", name)
 	case !engaged && b.engaged:
 		b.engaged = false
-		log.Printf("SECURITY: login throttle: global gate disengaged bucket=%s refused=%d", name, b.refused)
+		slog.Warn("login throttle", "event", "gate_disengaged", "bucket", name, "refused", b.refused)
 		b.refused = 0
 	}
 }
@@ -319,7 +319,7 @@ func (a *Attempt) Fail() {
 	s.lastFailure = now
 	if countIn(s.fails, now, l.p.KeyWindow) >= l.p.KeyMax {
 		s.blockedUntil = now.Add(l.p.KeyBlock)
-		log.Printf("SECURITY: login throttle: key blocked bucket=%s client=%s for=%s", a.bucket, a.label, l.p.KeyBlock)
+		slog.Warn("login throttle", "event", "lockout", "bucket", a.bucket, "client", a.label, "block_for", l.p.KeyBlock.String())
 	}
 }
 
