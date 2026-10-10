@@ -20,7 +20,7 @@ import (
 func testAuthConfig(t *testing.T, password string) AuthConfig {
 	t.Helper()
 	// MinCost keeps the suite fast; production hashes come from
-	// cmd/passwordhash, which uses a deliberately higher cost.
+	// services.HashPassword, which uses PasswordHashCost (12).
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	if err != nil {
 		t.Fatalf("hash password: %v", err)

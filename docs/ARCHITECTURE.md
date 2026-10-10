@@ -340,6 +340,13 @@ removed by `Service.RunSessionSweeper`, started in `app.New` on the context
 service clock (`s.Now`), the DELETE is scoped to `expires_at <= now`, and the
 log line carries only a count. Validation never depends on the sweep.
 
+## Password hashing (GYST-VN-080)
+
+Every password hash comes from `services.HashPassword` at bcrypt cost 12
+(`services.PasswordHashCost`), used by `lifeops passwordhash`,
+`lifeops -passwordhash` and `cmd/passwordhash`. Verification reads the cost from
+the stored hash, so older hashes keep working until regenerated.
+
 ## Designed for later
 
 The data model supports a future mobile sync client. AI roadmap and quest logic

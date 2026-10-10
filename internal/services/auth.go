@@ -155,6 +155,32 @@ func (s *Service) SweepExpiredSessions() (int64, error) {
 	return s.Repo.DeleteExpiredSessions(s.Now().UTC())
 }
 
+// PasswordHashCost is the bcrypt cost for every newly generated password hash
+// (09 section C, S2-12). It is deliberately above the library default: login
+// runs on a machine serving one person, so a slower hash costs nothing that
+// matters and buys resistance to offline cracking if a hash ever leaks.
+// Verification reads the cost from the stored hash, so hashes made at any
+// other cost keep working until they are regenerated.
+const PasswordHashCost = 12
+
+// ErrEmptyPassword means the password was blank or only whitespace.
+var ErrEmptyPassword = errors.New("auth: password must not be empty")
+
+// HashPassword is the only place a password hash is generated. A blank or
+// whitespace-only password is rejected. The password is hashed exactly as
+// given (no trimming), so it matches what is typed at login. bcrypt's own
+// errors, such as input over 72 bytes, are returned rather than truncated.
+func HashPassword(password string) (string, error) {
+	if strings.TrimSpace(password) == "" {
+		return "", ErrEmptyPassword
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), PasswordHashCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
 // sessionSweepInterval is how often lapsed sessions are removed.
 const sessionSweepInterval = time.Hour
 
