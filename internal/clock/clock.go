@@ -88,6 +88,11 @@ func (c Clock) TodayString() string {
 	return c.Today().Format(DateLayout)
 }
 
+// InLocal shows an instant in the application timezone, for display only.
+func (c Clock) InLocal(t time.Time) time.Time {
+	return t.In(c.Location())
+}
+
 // DateOf is the local calendar day of an instant, as YYYY-MM-DD.
 func (c Clock) DateOf(t time.Time) string {
 	return t.In(c.Location()).Format(DateLayout)
