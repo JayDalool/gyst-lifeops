@@ -278,6 +278,44 @@ tailnet exemption.
   missing), with IPs truncated to /24 (IPv4) or /48 (IPv6). Per-failure audit
   events belong to the later audit-log work.
 
+## Audit events (GYST-VN-005)
+
+`audit_events` (migration `20261010010000_audit_events.sql`) is a minimal
+append-only store from `docs/audit/vnext/09_SECURITY_FOUNDATION.md` section M.
+Nothing calls it yet; there is no UI, retention or export (GYST-115).
+
+Columns: `id`, `at`, `actor_type`, `actor_ref`, `ingress`, `action`,
+`target_ref`, `outcome`, `detail`, `request_id`. `at` is written by the app as
+`clock.FormatInstant(Clock.Now())` (30 chars, UTC, `Z`); there is no SQL
+default. SQL CHECKs fix `at`'s shape, the enums (`actor_type` human | machine |
+system; `ingress` public | tailnet | internal | job; `outcome` success | denied |
+failed) and the length limits (action 1-64, actor_ref 120, target_ref 200,
+detail 200, request_id 32). There are no foreign keys.
+
+The only writer is `Service.RecordAudit` (`internal/services/audit.go`). It
+rejects anything outside the Go action allowlist (`login.failed`,
+`login.succeeded`, `logout`, `session.revoked_all`, `reauth.succeeded`,
+`reauth.failed`, `access.denied`) with `ErrAuditInvalid` and writes nothing.
+`actor_ref` and `target_ref` allow only `[A-Za-z0-9:._/#@+-]`; `request_id`
+only `[a-f0-9]`. `agent.*`, `github.*` and `server.*` actions are owned by
+Command Center and are not added here; `automation.*` is not added yet. A new
+action is a one-line allowlist change, no migration.
+
+`detail` has control characters removed, is replaced by `redacted` if it
+contains password, passwd, secret, token, bearer, authorization, cookie,
+gyst_session, api_key, apikey or a bcrypt prefix, then is cut to 200 runes.
+`SessionActorRef` gives `session:` plus the first 8 hex characters of the
+stored token hash. **Never logged (09 section M):** passwords, tokens (only
+credential names and ids), cookie values, environment values, request bodies,
+raw command output, log contents.
+
+Write-failure rule: the insert ignores request cancellation. Callers log a
+failed `RecordAudit` and continue; an audit failure never changes an auth
+decision.
+
+Rollback: deploy the older binary and leave the table, index and
+`schema_migrations` row in place. The old binary ignores the table.
+
 ## Designed for later
 
 The data model supports a future mobile sync client. AI roadmap and quest logic
