@@ -66,7 +66,7 @@
 
 {{if .IsEdit}}
   <div class="flag-row mt-16">
-    <form method="post" action="/roadmaps/{{.Roadmap.ID}}/archive" onsubmit="return confirm('Archive this roadmap?')">
+    <form method="post" action="/roadmaps/{{.Roadmap.ID}}/archive" data-confirm="Archive this roadmap?">
       <button class="btn sm danger" type="submit">Archive roadmap</button>
     </form>
   </div>

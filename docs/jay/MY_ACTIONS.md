@@ -1,5 +1,8 @@
 - [ ] #108 · Install n8n backup timer, then test-restore one dump · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/n8n-postgres-backup.md
 - [ ] #108 · Store n8n encryption key safely, apart from dumps · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/n8n-postgres-backup.md
+- [ ] #107 · Create Kuma monitors per runbook, record results · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/uptime-kuma-monitors.md
+- [ ] #104 · Regenerate production password hash at cost 12 · https://github.com/JayDalool/gyst-lifeops/pull/106
+- [ ] #103 · Cloudflare: Rocket Loader, Email Obfuscation, Web Analytics off · https://github.com/JayDalool/gyst-lifeops/issues/103
 - [ ] #3 · Quick-capture due date, prayer save, then D6 checklist · https://github.com/JayDalool/gyst-lifeops/issues/3
 - [ ] #64 · Coach: set provider and Anthropic key, or leave off · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
 - [ ] #5 · Run host permissions runbook, paste result to Claude · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/tasks/VN-009-host-permissions.md

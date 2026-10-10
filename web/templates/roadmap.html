@@ -41,7 +41,7 @@
         {{if .HasSelectedRoadmap}}<a class="btn sm quiet" href="/roadmaps/{{.SelectedRoadmap.ID}}/edit">Edit</a>{{end}}
         <a class="btn sm quiet" href="/roadmap/export/public">Export</a>
         {{if and .HasSelectedRoadmap (not .SelectedRoadmap.Featured)}}
-          <form method="post" action="/roadmaps/{{.SelectedRoadmap.ID}}/archive" onsubmit="return confirm('Archive &quot;{{.SelectedRoadmap.Name}}&quot;? Its trips stay, but the roadmap leaves the active list.');">
+          <form method="post" action="/roadmaps/{{.SelectedRoadmap.ID}}/archive" data-confirm="Archive &quot;{{.SelectedRoadmap.Name}}&quot;? Its trips stay, but the roadmap leaves the active list.">
             <button class="btn sm danger" type="submit">Archive</button>
           </form>
         {{end}}

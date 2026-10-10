@@ -9,7 +9,7 @@
               <form method="post" action="/tasks/{{.Task.ID}}/complete">
                 <input type="hidden" name="occurrence_date" value="{{.Date}}">
                 <input type="hidden" name="return_to" value="{{$.ChecklistReturnPath}}#task-{{.Task.ID}}">
-                <label class="today-task-check"><input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()"></label>
+                <label class="today-task-check"><input type="checkbox" aria-label="Complete: {{.Task.Title}}" data-autosubmit></label>
               </form>
               <div class="task-body">
                 <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
@@ -37,7 +37,7 @@
               <form method="post" action="/tasks/{{.Task.ID}}/complete">
                 <input type="hidden" name="occurrence_date" value="{{.Date}}">
                 <input type="hidden" name="return_to" value="{{$.ChecklistReturnPath}}#task-{{.Task.ID}}">
-                <label class="today-task-check"><input type="checkbox" aria-label="Complete: {{.Task.Title}}" onchange="this.form.requestSubmit()"></label>
+                <label class="today-task-check"><input type="checkbox" aria-label="Complete: {{.Task.Title}}" data-autosubmit></label>
               </form>
               <div class="task-body">
                 <div class="task-title"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a></div>
