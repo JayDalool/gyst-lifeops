@@ -18,7 +18,8 @@ key), user records and execution data. Treat each dump like a secret.
   `POSTGRES_USER` and `POSTGRES_DB`. No credential is read on the host.
 - Writes `n8n-<UTC>.dump.partial`, checks it with `pg_restore --list`, then
   renames it to `n8n-<UTC>.dump`. Files `0600`, directory `0700`.
-- Keeps the newest 7 `n8n-*.dump` in that directory; nothing else is deleted.
+- Keeps the newest 7 files named `n8n-<UTC timestamp>Z.dump` (regular files, no
+  symlinks) in that directory; nothing else is counted or deleted.
 - Writes `last_run.json` (0600): UTC time, file, size, result, step.
 - On any failure: non-zero exit, `.partial` removed, `status=down` pushed.
   On success: `status=up`. The push URL goes to curl on stdin (`-K -`), never
@@ -153,8 +154,16 @@ read.
 
 - Exit non-zero, Kuma goes red after the heartbeat, or `last_run.json` says
   `"result":"failed"`: its `step` field names where it stopped
-  (`dump`, `verify`, `rename`, `retention`). Run `journalctl -u
+  (`mkdir`, `lock`, `dump`, `verify`, `rename`, `retention`). Run `journalctl -u
   n8n-pg-backup.service` for the same step name. Earlier good dumps are kept.
+- A failed push after a good dump: the dump and `last_run.json` say `ok`, but the
+  script exits 1 (the push error is in the journal). The backup is fine; fix the
+  push URL file or Kuma.
+- Push URLs must be `https://` (`http://` only for localhost, 127.0.0.1 or
+  `[::1]`), with no userinfo (`@`), `#`, quotes, backslashes or spaces; same
+  guard as `disk-push.sh`. curl runs with `-q -g` so no `~/.curlrc` or URL globbing.
+- A second run while one is active exits 75 and pushes nothing (the active run
+  reports). It does not touch the active run's files.
 - A kill -9 or power loss can leave an `n8n-*.dump.partial`; it is not counted
   as a backup and not deleted by retention. Delete it by hand.
 

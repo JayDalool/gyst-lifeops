@@ -17,10 +17,11 @@
 # encryption key, which is NOT in the dump), so treat it as sensitive.
 #
 # Output: step names and the dump file name only; never a URL or env value.
-# Exit status: 0 = ok, 2 = bad usage (nothing run), any other non-zero = a step
-# failed (status=down pushed, last_run.json says which step).
+# Exit status: 0 = ok, 2 = bad usage (nothing run), 75 = another run holds the lock (no push),
+# any other non-zero = a step failed (status=down pushed, last_run.json says which step).
 set -euo pipefail
 umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin; export PATH
 
 KEEP=7
 
@@ -83,19 +84,42 @@ write_status() {
 }
 
 push() { # status msg ; the URL goes to curl on stdin only, never argv
-  local status="$1" msg="$2" base
+  # URL guard copied from scripts/ops/disk-push.sh (#107); keep the two identical.
+  local status="$1" msg="$2" raw base url scheme rest auth
   [ -n "$pushfile" ] || return 0
-  base=$(head -n 1 -- "$pushfile" | tr -d '[:space:]')
+  raw=$(head -n 1 -- "$pushfile")
+  base=$(printf '%s' "$raw" | tr -d '[:space:]')
+  # Whitespace inside the URL, or a # anywhere (it would hide the appended
+  # ?status=), is refused rather than silently repaired.
+  if [ "$base" != "$(printf '%s' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')" ]; then
+    echo "error: push URL must not contain whitespace" >&2; return 1
+  fi
+  case "$raw" in
+    *'#'*) echo "error: push URL must not contain #" >&2; return 1 ;;
+  esac
   base="${base%%\?*}"
-  case "$base" in
-    https://*|http://*) ;;
-    *) echo "error: push URL file does not hold an http(s) URL" >&2; return 1 ;;
+  scheme="${base%%://*}"
+  rest="${base#*://}"
+  auth="${rest%%/*}"
+  # Refuse userinfo first: it can disguise the real host (http://localhost:@evil/).
+  case "$auth" in
+    *@*) echo "error: push URL must not contain userinfo (@)" >&2; return 1 ;;
+  esac
+  case "$scheme" in
+    https) ;;
+    http)
+      if ! [[ "$auth" =~ ^(localhost|127\.0\.0\.1|\[::1\])(:[0-9]+)?$ ]]; then
+        echo "error: push URL must be https:// (http only for localhost)" >&2; return 1
+      fi ;;
+    *) echo "error: push URL must be https:// (http only for localhost)" >&2; return 1 ;;
   esac
   case "$base" in
-    *[\"\\]*) echo "error: push URL file holds unsupported characters" >&2; return 1 ;;
+    *[\"\\]*) echo "error: URL file holds unsupported characters" >&2; return 1 ;;
   esac
-  if printf 'url = "%s?status=%s&msg=%s&ping="\n' "$base" "$status" "$msg" \
-      | curl -fsS --max-time 20 -K - >/dev/null 2>&1; then
+  url="${base}?status=${status}&msg=${msg}&ping="
+  # -q first: ~/.curlrc is never read. curl's own output and errors are
+  # discarded so nothing can echo the URL back.
+  if printf 'url = "%s"\n' "$url" | curl -q -g -fsS --max-time 20 -K - >/dev/null 2>&1; then
     return 0
   fi
   echo "error: push failed ($status)" >&2
@@ -111,6 +135,8 @@ on_exit() {
   [ "$locked" -eq 0 ] || write_status || { echo "error: could not write last_run.json" >&2; [ "$rc" -ne 0 ] || rc=1; }
   if [ "$rc" -eq 0 ]; then
     push up "ok" || rc=1
+  elif [ "$rc" -eq 75 ] && [ "$locked" -eq 0 ]; then
+    : # refused concurrent run: the run holding the lock reports; no down push
   else
     push down "failed_at_${step}" || true
     echo "FAILED at step: $step" >&2
@@ -130,7 +156,7 @@ step="lock"
 exec 9>>"$dir/.lock"
 if ! flock -n 9; then
   echo "error: another backup run holds the lock on $dir; exiting" >&2
-  exit 1
+  exit 75
 fi
 locked=1
 
