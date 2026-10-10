@@ -257,3 +257,14 @@ func TestGalleryShowsStateComponents(t *testing.T) {
 		t.Errorf("state components must appear in both theme panels, found %d tiles", n)
 	}
 }
+
+// Firefox dims placeholders to 0.54 by default, which falls under 4.5:1.
+func TestPlaceholderKeepsFullOpacity(t *testing.T) {
+	raw, err := os.ReadFile("../../web/static/css/ui-components.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !regexp.MustCompile(`\.gyst-input::placeholder \{[^}]*opacity: 1;`).Match(raw) {
+		t.Error(".gyst-input::placeholder must keep opacity: 1")
+	}
+}

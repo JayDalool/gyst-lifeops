@@ -48,7 +48,7 @@ a.gyst-row:hover { background: var(--gyst-blue-soft); }
 .gyst-subnav .gyst-segment[aria-current="page"] { background: var(--gyst-surface); color: var(--gyst-blue); box-shadow: var(--gyst-shadow-card); }
 .gyst-field { display: grid; gap: 8px; min-width: 0; }
 .gyst-input { display: block; width: 100%; min-height: 44px; padding: 10px 12px; color: var(--gyst-text); background: var(--gyst-surface); border: 1px solid var(--gyst-control-border); border-radius: var(--gyst-radius-sm); }
-.gyst-input::placeholder { color: var(--gyst-text-secondary); }
+.gyst-input::placeholder { color: var(--gyst-text-secondary); opacity: 1; }
 .gyst-input[aria-invalid="true"] { border-color: var(--gyst-danger-text); }
 .gyst-field-error { color: var(--gyst-danger-text); font-size: .875rem; }
 .gyst-choice { display: flex; gap: 12px; align-items: center; min-height: 44px; cursor: pointer; }
