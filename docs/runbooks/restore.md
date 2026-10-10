@@ -42,8 +42,8 @@ Two helpers used by both parts. Paste them into your shell first:
 # $SQ is the sqlite3 command to use; each part sets it.
 counts() { $SQ "$1" "SELECT 'SELECT ''' || name || ''', count(*) FROM \"' || name || '\";' FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\_%' ESCAPE '\' ORDER BY name;" | $SQ "$1"; }
 
-# The image compose builds for the app. The drill and the migration check use it.
-IMG=gyst-lifeops-gyst-lifeops:latest
+# The image the app container actually runs. The drill and the migration check use it.
+IMG=$(docker inspect -f '{{.Image}}' gyst-lifeops)
 ```
 
 ## Part A. The drill (scratch path only)
@@ -120,7 +120,7 @@ Fill in the record (Part D). Then remove the scratch directory, and only that
 directory:
 
 ```bash
-sudo rm -r "$S"
+sudo rm -r "${S:?}"
 ```
 
 The boot check wrote files into `$S/data` as root, which is why this needs `sudo`.
@@ -128,15 +128,31 @@ The boot check wrote files into `$S/data` as root, which is why this needs `sudo
 ## Part B. A real restore (only when needed)
 
 This replaces the live database. The app is down during it. Do not skip steps.
+Stay in one shell for B1 to B7, and write down the `$OLD` line B4 prints (Part C
+needs it if the shell is closed).
+
+```bash
+cd /srv/server/repos/gyst-lifeops
+```
 
 ### B1. Choose and check the backup
 
 ```bash
 SQ="sudo sqlite3 -readonly"
 sudo sh -c 'ls -1t data/backups/lifeops-*.db | head -5'
-BK=data/backups/lifeops-<UTC-STAMP>.db     # the one you chose, from the list above
-$SQ "$BK" 'PRAGMA integrity_check;'
-$SQ "$BK" 'PRAGMA foreign_key_check;' | wc -l
+```
+
+Now set `BK` to the file you chose from that list. Replace the empty value (it is
+empty on purpose: the checks below refuse to run until it names a real file):
+
+```bash
+BK=      # example: BK=data/backups/lifeops-20260101T000000Z.db
+( set -eu
+  : "${BK:?set BK to the chosen backup file}"
+  sudo test -f "$BK" || { echo "STOP: $BK is not a file"; exit 1; }
+  $SQ "$BK" 'PRAGMA integrity_check;'
+  $SQ "$BK" 'PRAGMA foreign_key_check;' | wc -l
+)
 ```
 
 Expect `ok` and `0`.
@@ -151,7 +167,9 @@ comm -23 <($SQ "$BK" 'SELECT filename FROM schema_migrations;' | sort) \
          <(docker run --rm --network none "$IMG" ls /app/migrations | sort)
 ```
 
-If it prints filenames, do not restore this backup onto this code.
+If it prints filenames, the backup is newer than the running code. Either deploy
+code that includes those migrations first, then restore, or choose an older
+backup and repeat B1. Do not continue with this backup on this code.
 
 ### B2. Take a fresh backup of what is there now (if the database still opens)
 
@@ -166,10 +184,12 @@ aside in B4, not deleted.
 
 ```bash
 docker compose stop gyst-lifeops
+docker inspect -f '{{.State.Status}}' gyst-lifeops
 ```
 
-Not `down`, and not Caddy or any other service. `docker compose ps gyst-lifeops`
-should show it exited.
+The second command must print `exited`. If it does not, stop here. Not `down`,
+and not Caddy or any other service. (`docker compose ps` without `-a` hides
+stopped containers, so it is not used as the check.)
 
 ### B4. Move the live files aside (never delete)
 
@@ -194,8 +214,15 @@ corrupt it.
 ### B5. Install the backup with the original owner and mode
 
 ```bash
-sudo install -m "$MODE" -o "${OWN%:*}" -g "${OWN#*:}" "$BK" data/lifeops.db
-sudo stat -c '%u:%g %a' data/lifeops.db
+( set -eu
+  : "${BK:?}" "${OWN:?}" "${MODE:?}"
+  sudo test -f "$BK" || { echo "STOP: $BK is not a file"; exit 1; }
+  if ! sudo test ! -e data/lifeops.db -a ! -e data/lifeops.db-wal -a ! -e data/lifeops.db-shm; then
+    echo "STOP: a lifeops.db* file is still in data/. Go back to B4."; exit 1
+  fi
+  sudo install -m "$MODE" -o "${OWN%:*}" -g "${OWN#*:}" "$BK" data/lifeops.db
+  sudo stat -c '%u:%g %a' data/lifeops.db
+)
 ```
 
 The output must match the owner and mode printed in B4. (If there was no live
@@ -204,16 +231,18 @@ file, the defaults used are `0:0` and `600`.)
 ### B6. Check before you start
 
 ```bash
+C=$(mktemp -d)
 $SQ data/lifeops.db 'PRAGMA integrity_check;'
 $SQ data/lifeops.db 'PRAGMA foreign_key_check;' | wc -l
-counts "$BK" > /tmp/counts-bk.txt
-counts data/lifeops.db > /tmp/counts-live.txt
-diff /tmp/counts-bk.txt /tmp/counts-live.txt && echo "counts identical"
-rm /tmp/counts-bk.txt /tmp/counts-live.txt
+counts "$BK" > "$C/bk.txt"
+counts data/lifeops.db > "$C/live.txt"
+diff "$C/bk.txt" "$C/live.txt" && echo "counts identical"
+rm -r "${C:?}"
 ```
 
-Expect `ok`, `0`, `counts identical`. The count files hold table names and
-numbers only. If anything differs, go to Part C.
+Expect `ok`, `0`, `counts identical`. `mktemp -d` makes a private (mode 700)
+directory; the count files hold table names and numbers only. If anything
+differs, go to Part C.
 
 ### B7. Start and verify
 
@@ -238,23 +267,42 @@ are until Jay removes them by hand, later.
 
 ## Part C. Rollback of a real restore
 
-Use this if B6 or B7 fails.
+Use this if B6 or B7 fails. It works in a fresh shell. It refuses to run, and
+starts nothing, unless the files you set aside in B4 are still there: starting
+the app on an empty `data/` would silently create a fake example database.
 
 ```bash
-docker compose stop gyst-lifeops
-sudo install -d -m 700 "data/backups/failed-restore-$T"
-for f in lifeops.db lifeops.db-wal lifeops.db-shm; do
-  if sudo test -e "data/$f"; then sudo mv "data/$f" "data/backups/failed-restore-$T/"; fi
-done
-for f in lifeops.db lifeops.db-wal lifeops.db-shm; do
-  if sudo test -e "$OLD/$f"; then sudo mv "$OLD/$f" "data/$f"; fi
-done
-docker compose start gyst-lifeops
+cd /srv/server/repos/gyst-lifeops
+sudo sh -c 'ls -d data/backups/pre-restore-*'
 ```
 
-`mv` keeps the original owner and mode. Verify as in B7. If the shell was
-closed, first set `T` to the stamp in the `pre-restore-<UTC>` directory name and
-`OLD=data/backups/pre-restore-$T`.
+Set `OLD` to the directory from B4 (the newest one, unless you know better).
+It is empty on purpose:
+
+```bash
+OLD=      # example: OLD=data/backups/pre-restore-20260101T000000Z
+( set -eu
+  : "${OLD:?set OLD to the pre-restore directory}"
+  if ! sudo test -f "$OLD/lifeops.db"; then
+    echo "STOP: $OLD/lifeops.db not found. Nothing was changed or started."; exit 1
+  fi
+  T=${OLD##*pre-restore-}
+  docker compose stop gyst-lifeops
+  sudo install -d -m 700 "data/backups/failed-restore-$T"
+  for f in lifeops.db lifeops.db-wal lifeops.db-shm; do
+    if sudo test -e "data/$f"; then sudo mv "data/$f" "data/backups/failed-restore-$T/"; fi
+  done
+  for f in lifeops.db lifeops.db-wal lifeops.db-shm; do
+    if sudo test -e "$OLD/$f"; then sudo mv "$OLD/$f" "data/$f"; fi
+  done
+  if ! sudo test -f data/lifeops.db; then
+    echo "STOP: data/lifeops.db is missing after moving files back. NOT starting the app."; exit 1
+  fi
+  docker compose start gyst-lifeops
+)
+```
+
+`mv` keeps the original owner and mode. Verify as in B7.
 
 ## Part D. Verification record
 
