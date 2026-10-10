@@ -1,3 +1,5 @@
+- [ ] #112 · Run the restore drill once, record result · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/restore.md
+- [ ] #112 · Repeat restore drill monthly, record result · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/restore.md
 - [ ] #3 · Quick-capture due date, prayer save, then D6 checklist · https://github.com/JayDalool/gyst-lifeops/issues/3
 - [ ] #64 · Coach: set provider and Anthropic key, or leave off · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
 - [ ] #5 · Run host permissions runbook, paste result to Claude · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/tasks/VN-009-host-permissions.md
