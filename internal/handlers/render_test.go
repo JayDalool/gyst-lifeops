@@ -209,7 +209,7 @@ func TestRenderToday(t *testing.T) {
 		},
 		Completed:      []models.TaskOccurrence{{Task: models.Task{ID: 2, Title: "Read"}, Date: "2026-06-25", Status: "completed", CompletedAt: "2026-06-25 08:00:00"}},
 		Skipped:        []models.TaskOccurrence{{Task: models.Task{ID: 3, Title: "Skipped one", Category: "personal"}, Date: "2026-06-25", Status: "skipped"}},
-		OverdueTasks:   []models.Task{{ID: 4, Title: "Late task", DueDate: "2026-06-20", Priority: "high"}},
+		OverdueTasks:   []models.OverdueTask{{Task: models.Task{ID: 4, Title: "Late task", DueDate: "2026-06-20", Priority: "high"}, Since: "since Saturday"}},
 		RemindersToday: []models.ReminderView{{Title: "Standup", ReminderTime: "09:00"}},
 	}
 	renderOK(t, "today.html", data)
