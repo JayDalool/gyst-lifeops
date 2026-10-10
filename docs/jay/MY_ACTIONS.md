@@ -1,3 +1,4 @@
+- [ ] #107 · Create Kuma monitors per runbook, record results · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/uptime-kuma-monitors.md
 - [ ] #3 · Quick-capture due date, prayer save, then D6 checklist · https://github.com/JayDalool/gyst-lifeops/issues/3
 - [ ] #64 · Coach: set provider and Anthropic key, or leave off · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
 - [ ] #5 · Run host permissions runbook, paste result to Claude · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/tasks/VN-009-host-permissions.md
