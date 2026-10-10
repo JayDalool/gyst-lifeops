@@ -145,7 +145,7 @@ Done 2026-10-05 (merged and deployed, Winnipeg time):
 
 Still open:
 
-1. **Health Coach** (Issue #64 / PR #65): merged 2026-10-06 and off until Jay sets `HEALTH_AI_PROVIDER` and `ANTHROPIC_API_KEY` (see `docs/HEALTH_COACH.md`). The OpenAI adapter is a follow-up. The Coach sees water only through its checklist tool, when the Water row is added.
+1. **Health Coach** (Issue #64 / PR #65): merged 2026-10-06 and off until Jay sets `HEALTH_AI_PROVIDER` and `ANTHROPIC_API_KEY` (see `docs/HEALTH_COACH.md`). The OpenAI adapter is a follow-up. Since GYST-063 (Issue #101) the Coach's today tool also carries today's water (logged litres, taps, target); no taps is null, never 0.
 
 2. **Real device QA** — End-to-end testing on iPhone + Watch
    - Apple Health Shortcut nutrition flow
@@ -218,7 +218,7 @@ Still open:
 
 **For Agent (Feature Work):**
 
-1. **Health Coach**: the OpenAI adapter; give the Coach's today tool the water total
+1. **Health Coach**: the OpenAI adapter
 
 ---
 
