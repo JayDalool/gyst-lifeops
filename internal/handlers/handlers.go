@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"math"
 	"net/http"
 	"net/url"
@@ -21,6 +22,7 @@ import (
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
+	"lifeops-tracker/internal/services/providers"
 	"lifeops-tracker/internal/xp"
 )
 
@@ -40,6 +42,8 @@ type Handler struct {
 	// loginLimiter throttles failed sign-ins (GYST-VN-006). It is built in New.
 	// A nil limiter makes POST /login fail closed rather than run unthrottled.
 	loginLimiter *authlimit.Limiter
+	// Logger receives auth events (GYST-VN-015). Nil means slog.Default().
+	Logger *slog.Logger
 	// Coach answers Health questions (Issue #64). Nil means no AI provider is
 	// configured: the Coach page shows that state and the rest of Health works.
 	Coach      healthcoach.Provider
@@ -769,7 +773,13 @@ func (h *Handler) planImport(w http.ResponseWriter, r *http.Request) {
 	}
 	redirect, err := h.Service.ImportAIPlan(data.Plan, data.Destination, data.TargetID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if errors.Is(err, sql.ErrNoRows) {
+			// A missing project or task target: fixed text, not the SQL error.
+			noteError(w, err)
+			http.Error(w, "That project or task no longer exists.", http.StatusBadRequest)
+			return
+		}
+		userError(w, err, http.StatusBadRequest, "The plan could not be imported.")
 		return
 	}
 	http.Redirect(w, r, redirect, http.StatusSeeOther)
@@ -1273,7 +1283,11 @@ func (h *Handler) externalLinks(w http.ResponseWriter, r *http.Request, segments
 		}
 		link, err := h.Service.BuildExternalLink(r.FormValue("entity_type"), entityID, r.FormValue("url"), r.FormValue("summary"))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			if _, ok := services.UserMessage(err); ok {
+				userError(w, err, http.StatusBadRequest, "")
+			} else {
+				serverError(w, err)
+			}
 			return
 		}
 		if err := h.Service.Repo.CreateExternalLink(&link); err != nil {
@@ -1307,7 +1321,23 @@ func (h *Handler) externalLinks(w http.ResponseWriter, r *http.Request, segments
 		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 		defer cancel()
 		if err := h.Service.SyncExternalLink(ctx, id); err != nil {
-			http.Error(w, "sync failed: "+err.Error(), http.StatusBadGateway)
+			switch {
+			case errors.Is(err, sql.ErrNoRows):
+				http.Error(w, "not found", http.StatusNotFound)
+			case errors.Is(err, providers.ErrNotConfigured):
+				http.Error(w, "That provider is not configured, so the link can't be refreshed.", http.StatusBadGateway)
+			default:
+				if _, ok := services.UserMessage(err); !ok && !errors.Is(err, providers.ErrHostNotAllowed) {
+					// (a refused host is already logged by the service.) A provider failure: the text can carry upstream detail,
+					// so it goes to the log only.
+					h.log().LogAttrs(r.Context(), slog.LevelWarn, "provider failure",
+						slog.String("event", "provider.failed"),
+						slog.String("provider", "external-link"),
+						slog.String("request_id", requestIDFrom(r.Context())),
+						slog.String("error", cappedError(err)))
+				}
+				userError(w, err, http.StatusBadGateway, "Couldn't refresh this link right now.")
+			}
 			return
 		}
 	default:
@@ -1863,7 +1893,11 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 			return
 		}
 		if err := h.Service.SavePrayerConfig(r.Form); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			if _, ok := services.UserMessage(err); ok {
+				userError(w, err, http.StatusBadRequest, "")
+			} else {
+				serverError(w, err)
+			}
 			return
 		}
 		http.Redirect(w, r, "/settings#prayer", http.StatusSeeOther)
@@ -2808,8 +2842,10 @@ func methodNotAllowed(w http.ResponseWriter) {
 	http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 }
 
+// serverError answers 500 with a generic message and the request reference.
+// The error itself goes only to the log, through the RequestLog middleware.
 func serverError(w http.ResponseWriter, err error) {
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+	writeError(w, http.StatusInternalServerError, "Something went wrong.", err)
 }
 
 func notFoundOrError(w http.ResponseWriter, err error) {

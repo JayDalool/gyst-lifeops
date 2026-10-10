@@ -201,6 +201,19 @@ push payloads. `push_subscriptions` stores browser endpoints/keys, while the
 unique `push_deliveries` key prevents duplicate sends across scheduler ticks and
 restarts. Invalid or expired endpoints are removed on HTTP 404/410 responses.
 
+## Browser security headers (GYST-VN-075)
+
+`handlers.SecurityHeaders` wraps the root mux, so every response (pages, static
+files, `/healthz`, `/api/*`, errors, redirects) carries `X-Frame-Options: DENY`,
+`X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`,
+`Permissions-Policy` and the CSP. The CSP is sent as
+`Content-Security-Policy-Report-Only` until enforced (one-line change to
+`cspHeader` in `middleware.go`). `script-src` is `'self'` only, so templates
+must not contain inline scripts or `on*=` attributes; use `data-autosubmit`,
+`data-confirm` and `data-copy-target`, handled by delegated listeners in
+`app.js` (a test scans the templates). `style-src` keeps `'unsafe-inline'`
+because templates use `style=` attributes. There is no report endpoint yet.
+
 ## Login throttling (GYST-VN-006)
 
 `POST /login` is throttled by `internal/authlimit` (no HTTP dependency), called
@@ -274,9 +287,65 @@ tailnet exemption.
   only "throttled", never password correctness.
 - Local development has no Caddy in front: the rightmost `X-Forwarded-For` is
   client-controlled there, and `localhost` classifies as public keyed by peer.
-- Logs carry only transitions (key blocked, gate engaged/disengaged, limiter
-  missing), with IPs truncated to /24 (IPv4) or /48 (IPv6). Per-failure audit
-  events belong to the later audit-log work.
+- Throttle logs carry only transitions (key blocked, gate engaged/disengaged,
+  limiter missing), with IPs truncated to /24 (IPv4) or /48 (IPv6); a refused
+  attempt writes no line, so an attacker cannot grow the log. They go through
+  the structured logger described in "Application logging" below. A wrong
+  password that was actually checked writes one `login.failed` auth line.
+
+## Application logging (GYST-VN-015)
+
+The server logs JSON lines to stdout through `log/slog`. `app.Run` installs the
+handler as the default, so the remaining `log.Printf` lines use the same format.
+`app.New` never changes global logging; `Config.Logger` (nil means the default)
+lets tests capture it.
+
+- **Request id.** `handlers.RequestLog` wraps the session-protected handler
+  (not `/healthz`, `/static/`, the manifest, the service worker or the
+  favicon). Each request gets 16 hex characters from `crypto/rand`, returned in
+  the `X-Request-Id` header and in error text as `Reference: <id>`. A client
+  supplied `X-Request-Id` is ignored.
+- **Errors.** `serverError(w, err)` answers 500 with "Something went wrong."
+  plus the reference. The error goes to the middleware, which writes exactly
+  one ERROR line per response that is a 5xx or carries an error: `time`,
+  `level`, `msg`, `request_id`, `method`, `route`, `status`, `error` (capped at
+  300 characters). 2xx and 3xx responses are not logged.
+- **User-safe text.** Only a `services.UserError` (fixed text written in this
+  repository) or a named sentinel may be shown to the browser. Anything else
+  gets the generic message and the reference; the detail goes to the log only.
+  Never wrap text from the database, the environment or a provider.
+- **Route.** The `route` field is sanitised: numeric segments become `:id`,
+  `/calendar/feed/<token>` becomes `/calendar/feed/:token`, and any segment that
+  is not a short lowercase word becomes `:param`. The query string is never
+  logged.
+- **Auth events** (`msg: auth`): `login.succeeded` (INFO), `login.failed`
+  (WARN, a checked wrong password), `logout` (INFO, only when a live session was
+  revoked). Fields: `event`, `ingress`, `client` (/24 or /48 label) and
+  `request_id`. Lockouts come from the throttle (`event: lockout`).
+- **Provider failures** (`event: provider.failed`, WARN): Hevy with its fixed
+  text; external links with the provider and a capped error; web push with the
+  status and subscription id, never the endpoint URL; Health Coach with a fixed
+  category only, because the vendor error can echo health values.
+- **Never logged:** request or response bodies, form values, query strings,
+  cookies, the `Authorization` header or any other header value, session tokens
+  or hashes, environment values.
+- **Not here:** log shipping, rotation (GYST-VN-016), a log viewer, 2xx access
+  logs, a styled 500 page and panic recovery.
+
+## Sessions
+
+Sessions roll for 30 days from last use (`sessionLifetime`). Lapsed rows are
+removed by `Service.RunSessionSweeper`, started in `app.New` on the context
+`App.Close` cancels: one sweep at start, then hourly. The cutoff is the
+service clock (`s.Now`), the DELETE is scoped to `expires_at <= now`, and the
+log line carries only a count. Validation never depends on the sweep.
+
+## Password hashing (GYST-VN-080)
+
+Every password hash comes from `services.HashPassword` at bcrypt cost 12
+(`services.PasswordHashCost`), used by `lifeops passwordhash`,
+`lifeops -passwordhash` and `cmd/passwordhash`. Verification reads the cost from
+the stored hash, so older hashes keep working until regenerated.
 
 ## Audit events (GYST-VN-005)
 

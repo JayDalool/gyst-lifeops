@@ -88,14 +88,14 @@
               {{else if eq .Status "completed"}}
                 <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/reopen">
                   <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
-                  <label class="project-task-check"><input type="checkbox" checked aria-label="Reopen: {{.Title}}" onchange="this.form.requestSubmit()"></label>
+                  <label class="project-task-check"><input type="checkbox" checked aria-label="Reopen: {{.Title}}" data-autosubmit></label>
                 </form>
               {{else if ne $.Project.Project.Status "active"}}
                 <input type="checkbox" disabled aria-label="Project is {{$.Project.Project.Status}}, can't mark done: {{.Title}}">
               {{else}}
                 <form method="post" action="/projects/{{$.Project.Project.ID}}/items/{{.ID}}/complete">
                   <input type="hidden" name="return_to" value="/projects/{{$.Project.Project.ID}}#mission-{{.ID}}">
-                  <label class="project-task-check"><input type="checkbox" aria-label="Complete: {{.Title}}" onchange="this.form.requestSubmit()"></label>
+                  <label class="project-task-check"><input type="checkbox" aria-label="Complete: {{.Title}}" data-autosubmit></label>
                 </form>
               {{end}}
               <div class="task-body">

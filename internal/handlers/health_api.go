@@ -102,6 +102,10 @@ func (h *Handler) healthAPI(w http.ResponseWriter, r *http.Request, segments []s
 	}
 }
 func (h *Handler) healthServiceError(w http.ResponseWriter, err error) {
+	if !errors.As(err, new(*services.HealthValidationError)) {
+		// The response text is fixed; the cause is recorded for the 500 line.
+		noteError(w, err)
+	}
 	var invalid *services.HealthValidationError
 	if errors.As(err, &invalid) {
 		healthJSONError(w, 400, invalid.Error())

@@ -16,29 +16,29 @@ import (
 func (s *Service) SavePrayerConfig(values url.Values) error {
 	latitude, err := strconv.ParseFloat(strings.TrimSpace(values.Get("latitude")), 64)
 	if err != nil || latitude < -90 || latitude > 90 {
-		return fmt.Errorf("latitude must be between -90 and 90")
+		return userError("latitude must be between -90 and 90")
 	}
 	longitude, err := strconv.ParseFloat(strings.TrimSpace(values.Get("longitude")), 64)
 	if err != nil || longitude < -180 || longitude > 180 {
-		return fmt.Errorf("longitude must be between -180 and 180")
+		return userError("longitude must be between -180 and 180")
 	}
 	// The prayer timezone is the application timezone (GYST_TIMEZONE); a posted
 	// "timezone" value is ignored and no longer stored (GYST-VN-003).
 	method := strings.ToLower(strings.TrimSpace(values.Get("method")))
 	if _, ok := prayerMethods[method]; !ok {
-		return fmt.Errorf("invalid prayer method")
+		return userError("invalid prayer method")
 	}
 	asr := strings.ToLower(strings.TrimSpace(values.Get("asr_method")))
 	if asr != AsrMethodShafi && asr != AsrMethodHanafi {
-		return fmt.Errorf("invalid Asr method")
+		return userError("invalid Asr method")
 	}
 	alertSound := strings.ToLower(strings.TrimSpace(values.Get("alert_sound")))
 	if alertSound != "chime" && alertSound != "athan" {
-		return fmt.Errorf("invalid alert sound")
+		return userError("invalid alert sound")
 	}
 	athanFile := strings.TrimSpace(values.Get("athan_file"))
 	if strings.Contains(athanFile, "/") || strings.Contains(athanFile, "\\") || strings.Contains(athanFile, "..") {
-		return fmt.Errorf("Athan file must be a filename from web/static/audio")
+		return userError("Athan file must be a filename from web/static/audio")
 	}
 	settings := map[string]string{
 		"prayer.latitude":  strconv.FormatFloat(latitude, 'f', -1, 64),
@@ -50,7 +50,7 @@ func (s *Service) SavePrayerConfig(values url.Values) error {
 		value := strings.TrimSpace(values.Get("adjust_" + name))
 		minutes, parseErr := strconv.Atoi(value)
 		if parseErr != nil || minutes < -120 || minutes > 120 {
-			return fmt.Errorf("%s adjustment must be between -120 and 120 minutes", titlePrayer(name))
+			return userError(fmt.Sprintf("%s adjustment must be between -120 and 120 minutes", titlePrayer(name)))
 		}
 		settings["prayer.adjust."+name] = strconv.Itoa(minutes)
 	}

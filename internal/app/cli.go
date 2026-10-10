@@ -3,6 +3,7 @@ package app
 import (
 	"flag"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -20,6 +21,12 @@ func Run() {
 		runPasswordHashAndExit()
 		return
 	}
+
+	// One JSON line per event on stdout (GYST-VN-015). Setting the default also
+	// routes the remaining log.Printf lines through the same handler, so the
+	// whole process logs one format. Only the server path is switched; backup
+	// and passwordhash keep their plain output.
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	addr := flag.String("addr", ":8080", "HTTP listen address")
 	passwordHashFlag := flag.Bool("passwordhash", false, "generate a bcrypt password hash")

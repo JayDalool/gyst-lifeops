@@ -11,6 +11,28 @@
 (function () {
   "use strict";
 
+  // Delegated handlers replacing the inline on*= attributes, so the CSP can
+  // keep script-src 'self' with no 'unsafe-inline'.
+  document.addEventListener("change", function (event) {
+    var el = event.target;
+    if (!el || !el.matches || !el.matches("[data-autosubmit]") || !el.form) return;
+    if (el.dataset.autosubmit === "plain") el.form.submit();
+    else el.form.requestSubmit();
+  });
+  document.addEventListener("submit", function (event) {
+    var form = event.target;
+    if (form && form.matches && form.matches("form[data-confirm]") && !window.confirm(form.dataset.confirm)) {
+      event.preventDefault();
+    }
+  });
+  document.addEventListener("click", function (event) {
+    var btn = event.target && event.target.closest ? event.target.closest("[data-copy-target]") : null;
+    if (!btn) return;
+    var el = document.getElementById(btn.dataset.copyTarget);
+    if (!el || !navigator.clipboard) return;
+    navigator.clipboard.writeText(el.value).then(function () { btn.textContent = "Copied"; });
+  });
+
   var VB = 100;
 
   function reducedMotion() {
