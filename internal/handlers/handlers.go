@@ -42,6 +42,8 @@ type Handler struct {
 	// loginLimiter throttles failed sign-ins (GYST-VN-006). It is built in New.
 	// A nil limiter makes POST /login fail closed rather than run unthrottled.
 	loginLimiter *authlimit.Limiter
+	// throttleAudit limits throttled-refusal audit rows (GYST-VN-007).
+	throttleAudit *throttleAuditGate
 	// Logger receives auth events (GYST-VN-015). Nil means slog.Default().
 	Logger *slog.Logger
 	// Coach answers Health questions (Issue #64). Nil means no AI provider is
@@ -284,9 +286,10 @@ type RoadmapFormData struct {
 
 func New(service *services.Service, templateDir string) *Handler {
 	return &Handler{
-		Service:      service,
-		TemplateDir:  templateDir,
-		loginLimiter: authlimit.New(clock.System().Now, authlimit.DefaultPolicy),
+		Service:       service,
+		TemplateDir:   templateDir,
+		loginLimiter:  authlimit.New(clock.System().Now, authlimit.DefaultPolicy),
+		throttleAudit: newThrottleAuditGate(throttleAuditMaxKeys),
 	}
 }
 
