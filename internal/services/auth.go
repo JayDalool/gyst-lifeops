@@ -123,7 +123,7 @@ func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err err
 	if !now.Before(session.ExpiresAt) {
 		// Clear it on the way past so lapsed rows do not accumulate between
 		// sweeps. A failure here must not deny an otherwise correct decision.
-		_ = s.Repo.DeleteSession(tokenHash)
+		_, _ = s.Repo.DeleteSession(tokenHash)
 		return time.Time{}, ErrNoSession
 	}
 
@@ -139,10 +139,11 @@ func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err err
 
 // RevokeSession ends one session. Revoking an unknown token succeeds: logout
 // should be idempotent, and reporting "no such session" would confirm to a
-// caller which tokens exist.
-func (s *Service) RevokeSession(rawToken string) error {
+// caller which tokens exist. The revoked flag is for the server's own audit
+// log only; it must never change what the browser is told.
+func (s *Service) RevokeSession(rawToken string) (revoked bool, err error) {
 	if rawToken == "" {
-		return nil
+		return false, nil
 	}
 	return s.Repo.DeleteSession(hashSessionToken(rawToken))
 }

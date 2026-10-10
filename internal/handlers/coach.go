@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strconv"
@@ -438,6 +439,13 @@ func (h *Handler) healthCoach(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, healthcoach.ErrBusy) {
 			status = http.StatusTooManyRequests
 		}
+		// The vendor error can echo the prompt, which holds health values, so
+		// only the fixed category is logged, never err itself.
+		h.log().LogAttrs(r.Context(), slog.LevelWarn, "provider failure",
+			slog.String("event", "provider.failed"),
+			slog.String("provider", "health-coach"),
+			slog.String("category", msg),
+			slog.String("request_id", requestIDFrom(r.Context())))
 		h.renderCoach(w, status, question, msg)
 		return
 	}

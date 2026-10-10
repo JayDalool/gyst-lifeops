@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -63,6 +64,9 @@ func (s *Service) sendPrayerPush(ctx context.Context, config PushConfig, date, p
 		}
 		response, err := webpush.SendNotificationWithContext(ctx, payload, &webpush.Subscription{Endpoint: subscription.Endpoint, Keys: webpush.Keys{P256dh: subscription.P256DH, Auth: subscription.Auth}}, &webpush.Options{Subscriber: config.Subscriber, VAPIDPublicKey: config.PublicKey, VAPIDPrivateKey: config.PrivateKey, TTL: 120})
 		if err != nil {
+			// The error text can carry the subscription endpoint URL, which is
+			// a capability URL: log the subscription id only.
+			slog.Warn("provider failure", "event", "provider.failed", "provider", "webpush", "subscription_id", subscription.ID, "reason", "send failed")
 			_ = s.Repo.ReleasePushDelivery(subscription.ID, date, prayer)
 			continue
 		}
@@ -71,6 +75,7 @@ func (s *Service) sendPrayerPush(ctx context.Context, config PushConfig, date, p
 			_ = s.Repo.DeletePushSubscription(subscription.Endpoint)
 		}
 		if response.StatusCode < 200 || response.StatusCode >= 300 {
+			slog.Warn("provider failure", "event", "provider.failed", "provider", "webpush", "subscription_id", subscription.ID, "status", response.StatusCode)
 			_ = s.Repo.ReleasePushDelivery(subscription.ID, date, prayer)
 		}
 	}

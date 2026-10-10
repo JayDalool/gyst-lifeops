@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -39,6 +40,9 @@ type Config struct {
 	// Timezone is the application timezone (GYST_TIMEZONE). Empty means
 	// America/Winnipeg. Every local calendar day is derived from it.
 	Timezone string
+	// Logger receives request, auth and provider lines (GYST-VN-015). Nil
+	// means slog.Default(). Run installs the JSON handler as the default.
+	Logger *slog.Logger
 }
 
 type App struct {
@@ -97,6 +101,11 @@ func New(config Config) (*App, error) {
 	webHandler.Auth = services.AuthConfig{PasswordHash: config.PasswordHash}
 	webHandler.AuthDisabled = config.AuthDisabled
 	webHandler.Coach = healthCoachProvider(config.HealthAI)
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+	webHandler.Logger = logger
 
 	if config.AuthDisabled {
 		log.Println("=======================================================")
@@ -134,7 +143,7 @@ func New(config Config) (*App, error) {
 	// Everything the mux has not already claimed goes through session
 	// enforcement. Static assets, the manifest, the service worker and the
 	// favicon are matched above and so stay reachable while signed out.
-	mux.Handle("/", webHandler.Authenticated())
+	mux.Handle("/", handlers.RequestLog(logger, webHandler.Authenticated()))
 
 	return &App{DB: database, Handler: mux, cancel: cancelPush, service: service}, nil
 }
