@@ -53,7 +53,7 @@
             <li class="task" id="catchup-{{.ID}}">
               <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/complete">
                 <input type="hidden" name="return_to" value="/courses/{{$cid}}#block-{{.ID}}">
-                <input type="checkbox" aria-label="Done: {{.Title}}" onchange="this.form.requestSubmit()">
+                <input type="checkbox" aria-label="Done: {{.Title}}" data-autosubmit>
               </form>
               <div class="task-body">
                 <div class="task-title">{{.Title}}</div>
@@ -74,12 +74,12 @@
               {{if eq .Status "completed"}}
                 <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/reopen">
                   <input type="hidden" name="return_to" value="/courses/{{$cid}}#block-{{.ID}}">
-                  <input type="checkbox" checked aria-label="Reopen: {{.Title}}" onchange="this.form.requestSubmit()">
+                  <input type="checkbox" checked aria-label="Reopen: {{.Title}}" data-autosubmit>
                 </form>
               {{else}}
                 <form method="post" action="/courses/{{$cid}}/blocks/{{.ID}}/complete">
                   <input type="hidden" name="return_to" value="/courses/{{$cid}}#block-{{.ID}}">
-                  <input type="checkbox" {{if ne .Status "pending"}}disabled{{end}} aria-label="Done: {{.Title}}" onchange="this.form.requestSubmit()">
+                  <input type="checkbox" {{if ne .Status "pending"}}disabled{{end}} aria-label="Done: {{.Title}}" data-autosubmit>
                 </form>
               {{end}}
               <div class="task-body">

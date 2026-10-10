@@ -201,6 +201,19 @@ push payloads. `push_subscriptions` stores browser endpoints/keys, while the
 unique `push_deliveries` key prevents duplicate sends across scheduler ticks and
 restarts. Invalid or expired endpoints are removed on HTTP 404/410 responses.
 
+## Browser security headers (GYST-VN-075)
+
+`handlers.SecurityHeaders` wraps the root mux, so every response (pages, static
+files, `/healthz`, `/api/*`, errors, redirects) carries `X-Frame-Options: DENY`,
+`X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`,
+`Permissions-Policy` and the CSP. The CSP is sent as
+`Content-Security-Policy-Report-Only` until enforced (one-line change to
+`cspHeader` in `middleware.go`). `script-src` is `'self'` only, so templates
+must not contain inline scripts or `on*=` attributes; use `data-autosubmit`,
+`data-confirm` and `data-copy-target`, handled by delegated listeners in
+`app.js` (a test scans the templates). `style-src` keeps `'unsafe-inline'`
+because templates use `style=` attributes. There is no report endpoint yet.
+
 ## Login throttling (GYST-VN-006)
 
 `POST /login` is throttled by `internal/authlimit` (no HTTP dependency), called

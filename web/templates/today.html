@@ -37,7 +37,7 @@
                 <span class="slot-time num">{{if .StartTime}}{{.StartTime}}{{else}}&mdash;{{end}}</span>
                 <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/complete">
                   <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
-                  <label class="today-task-check"><input type="checkbox" aria-label="Done: {{.Title}}" onchange="this.form.requestSubmit()"></label>
+                  <label class="today-task-check"><input type="checkbox" aria-label="Done: {{.Title}}" data-autosubmit></label>
                 </form>
                 <div class="task-body">
                   <div class="task-title"><a href="/courses/{{.CourseID}}#block-{{.ID}}">{{.Title}}</a></div>

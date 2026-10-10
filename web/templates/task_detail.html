@@ -16,7 +16,7 @@
 	<section class="card tight">
 		<h2 class="section-title card-title">Checklist</h2>
 		<ul class="tasks">
-			{{range .Checklist}}<li class="task"><form method="post" action="/tasks/{{$.Task.ID}}/checklist/{{.ID}}"><label><input type="checkbox" name="completed" value="1" {{if eq .Status "completed"}}checked{{end}} onchange="this.form.submit()"> <span class="task-title">{{.Title}}</span></label></form></li>{{end}}
+			{{range .Checklist}}<li class="task"><form method="post" action="/tasks/{{$.Task.ID}}/checklist/{{.ID}}"><label><input type="checkbox" name="completed" value="1" {{if eq .Status "completed"}}checked{{end}} data-autosubmit="plain"> <span class="task-title">{{.Title}}</span></label></form></li>{{end}}
 		</ul>
 	</section>
 	{{end}}
