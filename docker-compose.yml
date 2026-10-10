@@ -22,6 +22,7 @@ services:
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - JIRA_EMAIL=${JIRA_EMAIL:-}
       - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - JIRA_BASE_URL=${JIRA_BASE_URL:-}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
   caddy:
     image: caddy:2.10.2-alpine

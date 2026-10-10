@@ -37,7 +37,7 @@
 | T1 Internet attacker | Reaches the public domain; automated tooling | Opportunistic takeover, data |
 | T2 Credential stuffer | Leaked password lists | Account takeover |
 | T3 Session thief | Stolen cookie (malware, shared device, XSS) | Use the owner's access |
-| T4 Local network attacker | On the LAN (10.0.0.0/24) | Reach tailnet-only services via the LAN path |
+| T4 Local network attacker | On the LAN (192.0.2.0/24) | Reach tailnet-only services via the LAN path |
 | T5 Malicious repository content author | Writes issue text, comments, README, dependencies, PRs (incl. third-party packages) | Prompt injection, supply chain |
 | T6 Compromised or misbehaving agent | Code execution as `gyst-agent` inside a worktree | Exfiltration, escalation, sabotage |
 | T7 Compromised third-party integration | n8n workflow, SamVision, Kuma | Pivot into GYST |
@@ -211,7 +211,7 @@ holds no n8n management key (D-J6).
 |---|---|
 | Public request to `/system/services/n8n/restart` | 404 on the public listener (route absent) + Caddy deny + `access.denied` audit |
 | Public request to `/api/machine/events` | Blocked at Caddy; also absent on the public listener |
-| LAN client sending the tailnet SNI to 10.0.0.183:3443 | Refused once 3443 is bound to the Tailscale IP (today: **reachable**, S2-08) |
+| LAN client sending the tailnet SNI to 192.0.2.10:3443 | Refused once 3443 is bound to the Tailscale IP (today: **reachable**, S2-08) |
 | Public session cookie replayed on the tailnet host | Not sent (host-only cookie); separate login required |
 | Clickjacking a tailnet action | `frame-ancestors 'none'`; action nonce |
 | Stolen public session tries an elevated approval | Route is tailnet-only; step-up required |

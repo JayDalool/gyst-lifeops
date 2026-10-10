@@ -1303,8 +1303,8 @@ func (h *Handler) externalLinks(w http.ResponseWriter, r *http.Request, segments
 			case errors.Is(err, providers.ErrNotConfigured):
 				http.Error(w, "That provider is not configured, so the link can't be refreshed.", http.StatusBadGateway)
 			default:
-				if _, ok := services.UserMessage(err); !ok {
-					// A provider failure: the text can carry upstream detail,
+				if _, ok := services.UserMessage(err); !ok && !errors.Is(err, providers.ErrHostNotAllowed) {
+					// (a refused host is already logged by the service.) A provider failure: the text can carry upstream detail,
 					// so it goes to the log only.
 					h.log().LogAttrs(r.Context(), slog.LevelWarn, "provider failure",
 						slog.String("event", "provider.failed"),
@@ -2402,6 +2402,13 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 				return ""
 			}
 			return h.Service.Today().AddDate(0, 0, 1).Format(clock.DateLayout)
+		},
+		// Loaded-at time in app time for the offline banner (13 §17).
+		"appClock": func() string {
+			if h.Service == nil {
+				return ""
+			}
+			return h.Service.Now().In(h.Service.Location()).Format("15:04")
 		},
 		"nodeState":   nodeState,
 		"levelPct":    levelPct,

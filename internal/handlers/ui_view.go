@@ -1,5 +1,7 @@
 package handlers
 
+import "strings"
+
 // UI-0 inputs are presentation-only. Callers supply formatted values and state;
 // components never query services or compute nutrition/energy targets.
 type UIStatus struct {
@@ -113,3 +115,65 @@ type UIStateCard struct {
 	Status      UIStatus
 	Action      UIAction
 }
+
+// UIState is the shared status vocabulary of 11 §I: five families, each with a
+// word. Anything unrecognised is idle "Unknown", never ok (13 §17).
+type UIState struct{ Kind, Word string }
+
+var uiStateFamilies = map[string]struct{ word, icon string }{
+	"ok":   {"Healthy", "check"},
+	"info": {"Working", "info"},
+	"warn": {"Stale", "triangle-alert"},
+	"crit": {"Failed", "circle-alert"},
+	"idle": {"Unknown", "circle-dashed"},
+}
+
+// uiOKWords are the 11 §I words that only the ok family may show.
+var uiOKWords = map[string]bool{"healthy": true, "done": true, "up to date": true, "current": true, "valid": true}
+
+// Family returns ok, info, warn, crit or idle; anything else is idle.
+func (s UIState) Family() string {
+	k := strings.ToLower(strings.TrimSpace(s.Kind))
+	if _, ok := uiStateFamilies[k]; ok {
+		return k
+	}
+	return "idle"
+}
+
+// Label is the caller's word, or the family default when it is empty or, for a
+// non-ok family, one of the ok words.
+func (s UIState) Label() string {
+	f := s.Family()
+	w := strings.TrimSpace(s.Word)
+	if w == "" || (f != "ok" && uiOKWords[strings.ToLower(w)]) {
+		return uiStateFamilies[f].word
+	}
+	return w
+}
+
+// Icon is the Lucide icon for tiles and banners.
+func (s UIState) Icon() string { return uiStateFamilies[s.Family()].icon }
+
+// UIBanner is an inline strip: state icon, state word, one message, optional action.
+type UIBanner struct {
+	State           UIState
+	Message, Detail string
+	Action          UIAction
+}
+
+// UIErrorBanner is the crit banner for a failed source (13 §17). LastGood says
+// the previous data is still shown.
+type UIErrorBanner struct {
+	Message  string
+	LastGood bool
+	Retry    UIAction
+}
+
+// UIEmpty is one line plus at most one action.
+type UIEmpty struct {
+	Line   string
+	Action UIAction
+}
+
+// UIStale is the amber chip with the age the caller passes in ("6:40").
+type UIStale struct{ Source, Age string }

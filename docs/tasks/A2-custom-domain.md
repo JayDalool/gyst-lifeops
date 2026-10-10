@@ -8,7 +8,7 @@
 ## Finding
 
 The existing remotely managed Cloudflare Tunnel route already names
-`gyst.zaylolabs.com`, but its origin is `http://10.0.0.183:3005`. A1 removed that
+`gyst.zaylolabs.com`, but its origin is `http://192.0.2.10:3005`. A1 removed that
 published port. The prior rollout missed this dependency. Do not restore public
 plaintext access to work around it.
 
