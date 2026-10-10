@@ -185,7 +185,7 @@ func TestTodayOverdueRendering(t *testing.T) {
 	if strings.Count(body, `<details class="today-overdue-group"`) != 1 || strings.Contains(body, `<details class="today-overdue-group" open`) {
 		t.Error("3 overdue: want one closed details")
 	}
-	for _, want := range []string{"overdue<span", "Oldest since Saturday", `href="/tasks?status=overdue"`, "All overdue"} {
+	for _, want := range []string{"overdue</span><span", "Oldest since Saturday", `href="/tasks?status=overdue"`, "All overdue"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("3 overdue: missing %q", want)
 		}

@@ -70,12 +70,22 @@
             <span class="meta num">{{.ReminderTime}}</span>
           </li>
         {{end}}
-        {{range .OverdueTasks}}
-          <li>
-            <span class="gyst-badge gyst-badge--danger">Overdue</span>
-            <span class="grow"><a href="/tasks/{{.ID}}">{{.Title}}</a></span>
-            <span class="meta num">{{niceDate .DueDate}}</span>
+        {{if gt (len .OverdueTasks) 2}}
+          <li class="today-overdue-wrap">
+            <details class="today-overdue-group">
+              <summary class="today-overdue-summary">
+                <span class="gyst-sev-tile" data-state="warn">{{template "gyst.icon" "clock"}}</span>
+                <span class="today-overdue-copy"><span><b class="num">{{len .OverdueTasks}}</b> overdue</span><span class="meta">Oldest {{(index .OverdueTasks 0).Since}}</span></span>
+                {{template "gyst.icon" "chevron-right"}}
+              </summary>
+              <div class="today-overdue-body">
+                {{range .OverdueTasks}}{{template "today.overdue-row" .}}{{end}}
+                <a class="today-link" href="/tasks?status=overdue">All overdue</a>
+              </div>
+            </details>
           </li>
+        {{else}}
+          {{range .OverdueTasks}}<li class="today-overdue-wrap">{{template "today.overdue-row" .}}</li>{{end}}
         {{end}}
         {{if and (not .RemindersToday) (not .OverdueTasks)}}
           <li><span class="meta">Nothing due, nothing overdue.</span></li>
@@ -139,3 +149,12 @@
   </div>
 </div>
 {{end}}
+
+{{define "today.overdue-row"}}<div class="today-overdue">
+  <span class="gyst-sev-tile" data-state="warn">{{template "gyst.icon" "clock"}}</span>
+  <div class="today-overdue-copy"><a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a><span class="meta">Overdue &middot; {{.Since}}</span></div>
+  <form method="post" action="/tasks/{{.Task.ID}}/do-today">
+    <input type="hidden" name="return_to" value="/today#checklist">
+    <button class="gyst-button gyst-button--secondary" type="submit" aria-label="Do today: {{.Task.Title}}">Do today</button>
+  </form>
+</div>{{end}}
