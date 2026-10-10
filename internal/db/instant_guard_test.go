@@ -14,7 +14,9 @@ import (
 // store 'YYYY-MM-DD HH:MM:SS' with no offset. Older files are exempt.
 const instantGuardCutoff = "20261007010000_health_water.sql"
 
-var bannedNow = regexp.MustCompile(`(?i)\bcurrent_(timestamp|date|time)\b|\b(datetime|date|time|strftime|julianday)\s*\([^)]*'now'`)
+// Matched against the whole file so a call split across lines is still caught
+// ([^)] spans newlines). The no-argument forms, such as datetime(), also mean now.
+var bannedNow = regexp.MustCompile(`(?i)\bcurrent_(timestamp|date|time)\b|\b(datetime|date|time|strftime|julianday|unixepoch)\s*\([^)]*'now'|\b(datetime|date|time|julianday|unixepoch)\s*\(\s*\)`)
 
 func TestBannedNowPatterns(t *testing.T) {
 	for _, s := range []string{
@@ -25,6 +27,14 @@ func TestBannedNowPatterns(t *testing.T) {
 		"DEFAULT (strftime('%s','now'))",
 		"SELECT julianday('now')",
 		"DATE( 'now', 'localtime')",
+		"DEFAULT (datetime(\n'now'))",
+		"DEFAULT (strftime('%s',\n  'now'))",
+		"DEFAULT (datetime())",
+		"x DEFAULT (date( ))",
+		"time()",
+		"SELECT julianday()",
+		"DEFAULT (unixepoch())",
+		"unixepoch('now')",
 	} {
 		if !bannedNow.MatchString(s) {
 			t.Errorf("should flag %q", s)
@@ -56,10 +66,10 @@ func TestNewMigrationsAvoidSQLiteNowDefaults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for i, line := range strings.Split(string(body), "\n") {
-			if bannedNow.MatchString(line) {
-				t.Errorf("%s:%d uses a SQLite now-default; write clock.FormatInstant(Clock.Now()) from the app (GYST-VN-004): %s", name, i+1, strings.TrimSpace(line))
-			}
+		text := string(body)
+		for _, loc := range bannedNow.FindAllStringIndex(text, -1) {
+			line := strings.Count(text[:loc[0]], "\n") + 1
+			t.Errorf("%s:%d uses a SQLite now-default; write clock.FormatInstant(Clock.Now()) from the app (GYST-VN-004): %s", name, line, strings.Join(strings.Fields(text[loc[0]:loc[1]]), " "))
 		}
 	}
 }
