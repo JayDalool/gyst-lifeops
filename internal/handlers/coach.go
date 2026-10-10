@@ -97,8 +97,8 @@ func metricOrNil(m HealthMetricView) any {
 // coachWater is today's water for the Coach. No taps is null, never 0, and the
 // target and bottle follow HasTarget/HasBottle, not the formatted strings.
 func coachWater(v healthWaterView) map[string]any {
-	w := map[string]any{"logged_l": nil, "bottles_logged": v.Taps, "target_l": nil, "bottle_l": nil, "target_reached": nil,
-		"note": "Logged by bottle taps on Today. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health."}
+	w := map[string]any{"logged_l": nil, "taps_today": v.Taps, "target_l": nil, "bottle_l": nil, "target_reached": nil,
+		"note": "Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health."}
 	if v.Logged {
 		w["logged_l"] = v.Total
 	}

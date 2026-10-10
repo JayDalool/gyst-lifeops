@@ -6,7 +6,7 @@ live Health data. Issue #64.
 ## How it works
 
 - GYST builds a small context: stable rules, the profile you typed (More →
-  Profile for the coach) and today's observed summary (including today's water: litres logged or null, taps, target).
+  Profile for the coach) and today's observed summary (including today's water: litres logged or null, taps_today, target, bottle size).
 - The model can call allowlisted, **read-only** tools: today, plan, weight
   trend, training summary, recent workouts, exercise progress, Hevy routines,
   My foods and the daily checklist. That's all it can see. It can't reach
