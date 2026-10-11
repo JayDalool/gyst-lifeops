@@ -105,11 +105,12 @@ func (h *Handler) healthAPI(w http.ResponseWriter, r *http.Request, segments []s
 	}
 }
 func (h *Handler) healthServiceError(w http.ResponseWriter, err error) {
-	if !errors.As(err, new(*services.HealthValidationError)) {
-		// The response text is fixed; the cause is recorded for the 500 line.
+	var window *services.HealthDateWindowError
+	if !errors.As(err, new(*services.HealthValidationError)) && !errors.As(err, &window) {
+		// Client refusals (400, 422) are not server errors and write no
+		// "request failed" line; the cause of a 500 is recorded here.
 		noteError(w, err)
 	}
-	var window *services.HealthDateWindowError
 	if errors.As(err, &window) {
 		healthJSONError(w, 422, window.Error())
 		return
@@ -130,7 +131,13 @@ func (h *Handler) healthSyncRefusalAudit(r *http.Request, err error) {
 	if !errors.As(err, &window) {
 		return
 	}
-	ingress, _, client := loginClient(r)
+	ingress, key, client := loginClient(r)
+	// At most one row per client key per throttleAuditGate period: the token
+	// holder could otherwise grow audit_events without limit. The SECURITY log
+	// line is still written for every refusal.
+	if !h.throttleAudit.allow("health-sync|"+ingress+"|"+key, h.Service.Now()) {
+		return
+	}
 	e := repository.AuditEvent{
 		ActorType: services.AuditActorMachine, ActorRef: clientRef(client), Ingress: ingress,
 		Action: services.AuditActionHealthSyncRefused, TargetRef: "health:sync",

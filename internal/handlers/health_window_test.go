@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -65,7 +66,7 @@ func TestHealthSyncWindowHandler(t *testing.T) {
 	}
 
 	events, err := h.Service.Repo.RecentAuditEvents(context.Background(), 10)
-	if err != nil || len(events) != 2 {
+	if err != nil || len(events) != 1 { // two refusals, one row: the audit gate allows one per client per period
 		t.Fatalf("audit rows: %d %v", len(events), err)
 	}
 	for _, e := range events {
@@ -103,5 +104,59 @@ func TestHealthSyncWindowOrderOfChecks(t *testing.T) {
 	events, err := h.Service.Repo.RecentAuditEvents(context.Background(), 10)
 	if err != nil || len(events) != 1 {
 		t.Fatalf("only the authenticated refusal is audited: %d %v", len(events), err)
+	}
+}
+
+func TestHealthSyncRefusalBurstWritesOneAuditRowButEveryLogLine(t *testing.T) {
+	h := windowHandlerSetup(t)
+	var logs bytes.Buffer
+	origOut, origFlags := log.Writer(), log.Flags()
+	log.SetOutput(&logs)
+	log.SetFlags(0)
+	defer func() { log.SetOutput(origOut); log.SetFlags(origFlags) }()
+	const n = 50
+	for i := 0; i < n; i++ {
+		if rec := healthRequest(h, "POST", "/api/health/sync", windowBody("2026-09-01"), healthTestToken, "application/json"); rec.Code != 422 {
+			t.Fatalf("request %d: %d", i, rec.Code)
+		}
+	}
+	events, err := h.Service.Repo.RecentAuditEvents(context.Background(), 100)
+	if err != nil || len(events) != 1 {
+		t.Fatalf("audit rows after %d refusals: %d %v", n, len(events), err)
+	}
+	if got := strings.Count(logs.String(), "SECURITY: health sync refused: date outside window"); got != n {
+		t.Fatalf("SECURITY lines: %d want %d", got, n)
+	}
+	// After the period the next refusal may write again.
+	now := h.Service.Now()
+	h.Service.Now = func() time.Time { return now.Add(16 * time.Minute) }
+	healthRequest(h, "POST", "/api/health/sync", windowBody("2026-09-01"), healthTestToken, "application/json")
+	if events, _ := h.Service.Repo.RecentAuditEvents(context.Background(), 100); len(events) != 2 {
+		t.Fatalf("audit rows after the period: %d", len(events))
+	}
+}
+
+func TestHealthSyncRefusalThroughRequestLogIsNotAnError(t *testing.T) {
+	rig := newLogRig(t)
+	rig.h.HealthSyncToken = healthTestToken
+	rig.h.Service.Now = func() time.Time { return time.Date(2026, 10, 11, 18, 0, 0, 0, time.UTC) }
+	var std bytes.Buffer
+	origOut, origFlags := log.Writer(), log.Flags()
+	log.SetOutput(&std)
+	log.SetFlags(0)
+	defer func() { log.SetOutput(origOut); log.SetFlags(origFlags) }()
+	rig.buf.Reset()
+
+	req := httptest.NewRequest("POST", "/api/health/sync", strings.NewReader(windowBody("2026-09-01")))
+	req.Header.Set("Authorization", "Bearer "+healthTestToken)
+	req.Header.Set("Content-Type", "application/json")
+	if w := rig.do(req); w.Code != 422 {
+		t.Fatalf("status %d: %s", w.Code, w.Body.String())
+	}
+	if strings.Contains(rig.buf.String(), "request failed") || strings.Contains(rig.buf.String(), `"level":"ERROR"`) {
+		t.Fatalf("422 filed as an error: %s", rig.buf.String())
+	}
+	if got := strings.Count(std.String(), "SECURITY: health sync refused: date outside window"); got != 1 {
+		t.Fatalf("SECURITY lines: %d", got)
 	}
 }

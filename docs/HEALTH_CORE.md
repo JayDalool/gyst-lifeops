@@ -71,8 +71,9 @@ is an input safeguard, not a health recommendation.
   is written. Older backfill is refused; a backfill tool is out of scope. A
   malformed date is still 400, and a wrong token is still 401 before the window
   is checked. Each refusal logs one `SECURITY: health sync refused: date outside
-  window` line and one `health.sync_refused` audit row, both with the date and
-  bounds only.
+  window` line (date and bounds only). A `health.sync_refused` audit row is
+  written at most once per client per 15 minutes, so a burst cannot grow the
+  audit table.
 - Watch and phone steps remain independent; neither is labeled a reconciled
   total and they are never added together.
 
