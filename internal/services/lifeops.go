@@ -19,6 +19,10 @@ type Service struct {
 	clock.Clock
 	Training *TrainingSync
 	Repo     *repository.Repository
+
+	// calendarAfterReads is a test seam run after the calendar's project data
+	// reads and before the privacy lookup. Nil in production.
+	calendarAfterReads func()
 }
 
 type DailyStat struct {
