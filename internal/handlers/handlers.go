@@ -1906,6 +1906,13 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 		http.Redirect(w, r, "/settings#prayer", http.StatusSeeOther)
 		return
 	}
+	// POST /settings/sessions/revoke-all: sign out every device, this one
+	// included. Behind the session guard (not auth-exempt) and the
+	// same-origin guard; GET is 405.
+	if len(segments) == 3 && segments[1] == "sessions" && segments[2] == "revoke-all" {
+		h.revokeAllSessions(w, r)
+		return
+	}
 	// POST /settings/calendar-token — generate/rotate or revoke the feed token.
 	if len(segments) == 2 && segments[1] == "calendar-token" {
 		if r.Method != http.MethodPost {
