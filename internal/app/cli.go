@@ -17,6 +17,10 @@ func Run() {
 		runBackupAndExit()
 		return
 	}
+	if healthcheckRequested(os.Args) {
+		runHealthcheckAndExit()
+		return
+	}
 	if passwordHashRequested(os.Args) {
 		runPasswordHashAndExit()
 		return

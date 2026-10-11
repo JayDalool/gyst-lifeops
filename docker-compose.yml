@@ -1,8 +1,21 @@
+x-logging: &gyst-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   gyst-lifeops:
     build: .
     container_name: gyst-lifeops
     restart: unless-stopped
+    logging: *gyst-logging
+    healthcheck:
+      test: ["CMD", "/app/lifeops", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     volumes:
       - ./data:/app/data
     environment:
@@ -28,6 +41,7 @@ services:
     image: caddy:2.10.2-alpine
     container_name: gyst-caddy
     restart: unless-stopped
+    logging: *gyst-logging
     environment:
       - GYST_TLS_HOSTNAME=${GYST_TLS_HOSTNAME:?Set the full Tailscale MagicDNS hostname}
     networks:
