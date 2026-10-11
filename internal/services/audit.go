@@ -21,13 +21,14 @@ import (
 var ErrAuditInvalid = errors.New("invalid audit event")
 
 const (
-	AuditActionLoginFailed      = "login.failed"
-	AuditActionLoginSucceeded   = "login.succeeded"
-	AuditActionLogout           = "logout"
-	AuditActionSessionRevokeAll = "session.revoked_all"
-	AuditActionReauthSucceeded  = "reauth.succeeded"
-	AuditActionReauthFailed     = "reauth.failed"
-	AuditActionAccessDenied     = "access.denied"
+	AuditActionLoginFailed       = "login.failed"
+	AuditActionLoginSucceeded    = "login.succeeded"
+	AuditActionLogout            = "logout"
+	AuditActionSessionRevokeAll  = "session.revoked_all"
+	AuditActionReauthSucceeded   = "reauth.succeeded"
+	AuditActionReauthFailed      = "reauth.failed"
+	AuditActionAccessDenied      = "access.denied"
+	AuditActionHealthSyncRefused = "health.sync_refused"
 
 	AuditActorHuman   = "human"
 	AuditActorMachine = "machine"
@@ -57,6 +58,7 @@ var auditActions = map[string]bool{
 	AuditActionLoginFailed: true, AuditActionLoginSucceeded: true, AuditActionLogout: true,
 	AuditActionSessionRevokeAll: true, AuditActionReauthSucceeded: true,
 	AuditActionReauthFailed: true, AuditActionAccessDenied: true,
+	AuditActionHealthSyncRefused: true,
 }
 
 var (

@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"strings"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 )
 
@@ -93,6 +95,7 @@ func (h *Handler) healthAPI(w http.ResponseWriter, r *http.Request, segments []s
 		}
 		snapshot, err := h.Service.SyncHealth(input)
 		if err != nil {
+			h.healthSyncRefusalAudit(r, err)
 			h.healthServiceError(w, err)
 			return
 		}
@@ -106,10 +109,36 @@ func (h *Handler) healthServiceError(w http.ResponseWriter, err error) {
 		// The response text is fixed; the cause is recorded for the 500 line.
 		noteError(w, err)
 	}
+	var window *services.HealthDateWindowError
+	if errors.As(err, &window) {
+		healthJSONError(w, 422, window.Error())
+		return
+	}
 	var invalid *services.HealthValidationError
 	if errors.As(err, &invalid) {
 		healthJSONError(w, 400, invalid.Error())
 		return
 	}
 	healthJSONError(w, 500, "health data unavailable")
+}
+
+// healthSyncRefusalAudit records one audit row for an out-of-window sync, with
+// the date and the window bounds only. A write failure is logged and changes
+// nothing: the refusal stands and nothing is written to the health tables.
+func (h *Handler) healthSyncRefusalAudit(r *http.Request, err error) {
+	var window *services.HealthDateWindowError
+	if !errors.As(err, &window) {
+		return
+	}
+	ingress, _, client := loginClient(r)
+	e := repository.AuditEvent{
+		ActorType: services.AuditActorMachine, ActorRef: clientRef(client), Ingress: ingress,
+		Action: services.AuditActionHealthSyncRefused, TargetRef: "health:sync",
+		Outcome: services.AuditOutcomeDenied, RequestID: requestIDFrom(r.Context()),
+		Detail: "date=" + window.Date + " window=" + window.Earliest + ".." + window.Latest,
+	}
+	if aerr := h.Service.RecordAudit(r.Context(), e); aerr != nil {
+		h.log().LogAttrs(r.Context(), slog.LevelError, "audit write failed",
+			slog.String("action", e.Action), slog.String("request_id", e.RequestID))
+	}
 }
