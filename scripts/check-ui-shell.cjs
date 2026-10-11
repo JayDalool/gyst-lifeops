@@ -178,4 +178,19 @@ function toastChecks() {
   assert.equal(T.parse('?celebrate=task&celebrate_level=1').level,0);
   assert.equal(innerHTMLWrites.length,0);
 }
-(async()=>{await workerChecks();themeChecks();motionChecks();toastChecks();console.log('UI shell: private/offline cache policy, appearance setting, motion preference and completion toast passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+function overlayChecks() {
+  const src = fs.readFileSync('web/static/js/ui-overlay.js', 'utf8');
+  assert(!/\bconfirm\s*\(/.test(src), 'overlay module must not call window.confirm');
+  const ctx = {}; ctx.globalThis = ctx; vm.runInNewContext(src, ctx);
+  const O = ctx.GYSTOverlay;
+  assert.equal(O.mode(390), 'sheet'); assert.equal(O.mode(1023), 'sheet'); assert.equal(O.mode(1024), 'popover'); assert.equal(O.mode(1600), 'popover');
+  const vp = {width: 1280, height: 800}, size = {width: 220, height: 240};
+  for (const [l, t] of [[0, 0], [1200, 0], [0, 740], [1200, 740], [640, 400], [1280, 800]]) {
+    const trig = {left: l, top: t, right: Math.min(l + 80, 1280), bottom: Math.min(t + 44, 800), width: 80, height: 44};
+    const at = O.place(trig, size, vp);
+    assert(at.left >= 0 && at.top >= 0 && at.left + size.width <= vp.width && at.top + size.height <= vp.height, 'popover outside viewport for trigger ' + l + ',' + t + ': ' + JSON.stringify(at));
+  }
+  assert.equal(O.step(2, 1, 3), 0); assert.equal(O.step(0, -1, 3), 2); assert.equal(O.step(1, 1, 3), 2);
+  assert.equal(O.step(-1, 1, 3), 0); assert.equal(O.step(-1, -1, 3), 2); assert.equal(O.step(0, 1, 0), -1);
+}
+(async()=>{await workerChecks();themeChecks();motionChecks();toastChecks();overlayChecks();console.log('UI shell: private/offline cache policy, appearance setting, motion preference, completion toast and overlay helpers passed');})().catch(error=>{console.error(error);process.exitCode=1;});
