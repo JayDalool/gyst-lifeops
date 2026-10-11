@@ -183,6 +183,8 @@ function overlayChecks() {
   assert(!/\bconfirm\s*\(/.test(src), 'overlay module must not call window.confirm');
   const ctx = {}; ctx.globalThis = ctx; vm.runInNewContext(src, ctx);
   const O = ctx.GYSTOverlay;
+  vm.runInNewContext(src, ctx); assert.equal(ctx.GYSTOverlay, O, 'second load must keep the first instance');
+  assert(/if \(root\.GYSTOverlay\) return;/.test(src), 'double-load guard');
   assert.equal(O.mode(390), 'sheet'); assert.equal(O.mode(1023), 'sheet'); assert.equal(O.mode(1024), 'popover'); assert.equal(O.mode(1600), 'popover');
   const vp = {width: 1280, height: 800}, size = {width: 220, height: 240};
   for (const [l, t] of [[0, 0], [1200, 0], [0, 740], [1200, 740], [640, 400], [1280, 800]]) {

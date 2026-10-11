@@ -4,6 +4,7 @@
    a[data-gyst-inspect=panel] inside [data-gyst-inspector]. Without JS, rows stay links. */
 (function (root) {
   'use strict';
+  if (root.GYSTOverlay) return; // loaded twice: keep the first instance and its listeners
 
   // Pure helpers, exposed for node checks.
   function mode(width) { return width >= 1024 ? 'popover' : 'sheet'; }
@@ -53,7 +54,16 @@
     root.scrollTo(0, lockY);
   }
 
+  function setExpanded(inv, value) {
+    if (inv && inv.hasAttribute && inv.hasAttribute('data-gyst-open')) inv.setAttribute('aria-expanded', value);
+  }
+  // An overlay removed from the DOM while open never fires 'close'; release it here.
+  function prune() {
+    stack.slice().forEach(function (rec) { if (!rec.dlg.isConnected || !rec.dlg.open) onClosed(rec.dlg); });
+  }
+
   function open(dlg, invoker, extra) {
+    prune();
     if (!dlg || dlg.open || typeof dlg.showModal !== 'function') return null;
     var isConfirm = dlg.classList.contains('gyst-confirm');
     var isPopover = dlg.classList.contains('gyst-popover');
@@ -62,10 +72,10 @@
     if (!isConfirm) {
       stack.slice().forEach(function (rec) { if (!rec.confirm) { rec.noFocus = true; rec.dlg.close(); } });
     }
-    var rec = { dlg: dlg, invoker: invoker || null, popover: asPopover, confirm: isConfirm, noFocus: false, converted: false };
+    var rec = { dlg: dlg, invoker: invoker || null, popover: asPopover, confirm: isConfirm, noFocus: false, converted: false, at: Date.now() };
     if (extra) for (var k in extra) rec[k] = extra[k];
     stack.push(rec);
-    if (invoker && invoker.setAttribute) invoker.setAttribute('aria-expanded', 'true');
+    setExpanded(invoker, 'true');
     if (asPopover) {
       dlg.show();
       var r = invoker.getBoundingClientRect();
@@ -90,7 +100,7 @@
     if (rec.converted) dlg.classList.remove('gyst-sheet');
     if (!rec.popover) unlockScroll();
     var inv = rec.invoker;
-    if (inv && inv.setAttribute) inv.setAttribute('aria-expanded', 'false');
+    setExpanded(inv, 'false');
     if (!rec.noFocus && inv && inv.isConnected && inv.focus) inv.focus();
   }
 
@@ -101,6 +111,7 @@
   doc.addEventListener('click', function (e) {
     var t = e.target;
     if (!t.closest) return;
+    prune();
     var opener = t.closest('[data-gyst-open]');
     if (opener) {
       var dlg = doc.getElementById(opener.getAttribute('data-gyst-open'));
@@ -114,7 +125,10 @@
       if (crec) { crec.noFocus = !!form; crec.dlg.close(); }
       if (form && form.isConnected) {
         form.setAttribute('data-gyst-confirmed', 'true');
-        try { form.requestSubmit(crec.submitter || undefined); } catch (err) { form.requestSubmit(); }
+        try {
+          if (typeof form.requestSubmit !== 'function') { form.removeAttribute('data-gyst-confirmed'); form.submit(); }
+          else { try { form.requestSubmit(crec.submitter || undefined); } catch (err) { form.requestSubmit(); } }
+        } catch (err2) { form.removeAttribute('data-gyst-confirmed'); }
       }
       return;
     }
@@ -133,11 +147,18 @@
       if (rec.popover && !rec.dlg.contains(e.target) && !(rec.invoker && rec.invoker.contains(e.target))) rec.dlg.close();
     });
   });
-  function closePopovers() { stack.slice().forEach(function (rec) { if (rec.popover) rec.dlg.close(); }); }
+  function closePopovers(e) {
+    stack.slice().forEach(function (rec) {
+      if (!rec.popover) return;
+      if (e && e.type === 'scroll' && ((e.target && e.target.nodeType && rec.dlg.contains(e.target)) || Date.now() - rec.at < 300)) return;
+      rec.dlg.close();
+    });
+  }
   root.addEventListener('resize', closePopovers);
   root.addEventListener('scroll', closePopovers, true);
 
   doc.addEventListener('keydown', function (e) {
+    prune();
     var top = stack[stack.length - 1];
     if (top) {
       if (e.key === 'Escape' && top.popover) { e.preventDefault(); top.dlg.close(); return; }
