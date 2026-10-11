@@ -2,9 +2,14 @@ package handlers
 
 import (
 	"errors"
+	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
+	"lifeops-tracker/internal/services"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -144,8 +149,69 @@ func TestTodayListsEachItemOnce(t *testing.T) {
 	if strings.Contains(body, `aria-label="Study blocks"`) || strings.Contains(body, "today-context") {
 		t.Error("removed cards are back")
 	}
-	// Zero-value data still renders.
-	renderOK(t, "today.html", TodayData{})
+}
+
+func TestTodayEmptyStates(t *testing.T) {
+	// Zero-value data renders the empty line.
+	if body := renderBody(t, "today.html", TodayData{}); !strings.Contains(body, "Your day is open. Add a mission to get started.") {
+		t.Error("zero-value Today lost the empty line")
+	}
+	// An idle active course still gets its one-line study suggestion.
+	idle := TodayData{Page: "today", Learning: models.TodayLearning{SuggestStudy: true, SuggestCourse: models.Course{ID: 3, Name: "Fictional AI"}}}
+	if body := renderBody(t, "today.html", idle); !strings.Contains(body, "Nothing scheduled from Fictional AI today.") || !strings.Contains(body, `href="/courses/3"`) {
+		t.Error("SuggestStudy line lost on a day without tasks")
+	}
+	// /checklist ignores study data: no blocks, no suggestion, empty line kept.
+	blocks := TodayData{Page: "today", ChecklistOnly: true, Learning: models.TodayLearning{
+		Blocks:       []models.LearningBlock{{ID: 31, CourseID: 11, Title: "Fictional lesson"}},
+		SuggestStudy: true, SuggestCourse: models.Course{ID: 3, Name: "Fictional AI"}}}
+	body := renderBody(t, "checklist.html", blocks)
+	if !strings.Contains(body, "Your day is open. Add a mission to get started.") || strings.Contains(body, "Fictional lesson") || strings.Contains(body, "Nothing scheduled") {
+		t.Error("/checklist with study blocks and no tasks is not the empty state")
+	}
+}
+
+func TestStandaloneRemindersKeepsSourcelessTaskRows(t *testing.T) {
+	got := standaloneReminders([]models.ReminderView{
+		{SourceType: "task", SourceID: 5, Title: "linked"},
+		{SourceType: "task", SourceID: 0, Title: "sourceless"},
+		{SourceType: "reminder", SourceID: 7, Title: "plain"},
+	})
+	if len(got) != 2 || got[0].Title != "sourceless" || got[1].Title != "plain" {
+		t.Fatalf("got %+v", got)
+	}
+}
+
+func TestTodayHandlerHidesTaskRemindersKeepsStandalone(t *testing.T) {
+	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { database.Close() })
+	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
+		t.Fatal(err)
+	}
+	h := New(services.New(repository.New(database)), "../../web/templates")
+	today := h.Service.TodayString()
+	task := models.Task{Title: "Fictional timed task", Category: "personal", Priority: "medium", Status: "pending", DueDate: today, RepeatType: "none", ReminderTime: "09:00"}
+	if err := h.Service.Repo.CreateTask(&task); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(`INSERT INTO reminders (source_type, source_id, title, reminder_date, reminder_time) VALUES ('reminder', 7, 'Fictional standalone reminder', ?, '10:30')`, today); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/today", nil))
+	body := rec.Body.String()
+	if rec.Code != 200 {
+		t.Fatalf("status %d", rec.Code)
+	}
+	if strings.Contains(body, `<span class="grow">Fictional timed task`) || strings.Count(body, `<span class="grow">Fictional standalone reminder`) != 1 {
+		t.Error("handler did not filter task reminders / keep standalone reminders")
+	}
+	if strings.Count(body, `href="/tasks/`+strconv.FormatInt(task.ID, 10)+`"`) != 1 || !strings.Contains(body, "09:00") {
+		t.Error("task row missing or duplicated")
+	}
 }
 
 func TestDailyChecklistRoute(t *testing.T) {

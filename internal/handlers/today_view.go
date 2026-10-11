@@ -79,11 +79,12 @@ func (d TodayData) ChecklistReturnPath() string {
 }
 
 // standaloneReminders drops task-sourced reminders: the task row already
-// carries its reminder time, so listing it again would duplicate it.
+// carries its reminder time, so listing it again would duplicate it. A task-typed
+// row without a source id (the column default) is standalone and stays.
 func standaloneReminders(rows []models.ReminderView) []models.ReminderView {
 	out := make([]models.ReminderView, 0, len(rows))
 	for _, r := range rows {
-		if r.SourceType != "task" {
+		if r.SourceType != "task" || r.SourceID == 0 {
 			out = append(out, r)
 		}
 	}

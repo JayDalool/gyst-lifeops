@@ -1,8 +1,9 @@
 {{define "today.checklist"}}
+{{$study := and (not .ChecklistOnly) (or .Learning.Blocks .Learning.SuggestStudy)}}
 <section class="gyst-card today-checklist" id="checklist" aria-label="Today's checklist" data-done="{{len .Completed}}" data-pending="{{len .Pending}}" data-skipped="{{len .Skipped}}">
       <header class="gyst-header"><h2 class="gyst-section-title">Today’s checklist</h2><span class="gyst-caption">{{len .Completed}} done · {{len .Pending}} left{{if .Skipped}} · {{len .Skipped}} skipped{{end}}</span><a class="today-link" href="{{if .ChecklistOnly}}/today{{else}}/checklist{{end}}">{{if .ChecklistOnly}}Back to Today{{else}}Open checklist{{end}}</a></header>
       {{if or .Pending .Completed .Skipped}}<progress class="gyst-progress" value="{{.Progress}}" max="100" aria-label="Today’s task completion">{{.Progress}}%</progress>{{end}}
-      {{if or .Pending .Completed .Skipped .Learning.Blocks}}
+      {{if or .Pending .Completed .Skipped $study}}
         {{if or .Pending (and (not .ChecklistOnly) .Learning.Blocks)}}
         <ul class="tasks">
           {{range .Pending}}
