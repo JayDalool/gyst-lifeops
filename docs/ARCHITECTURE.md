@@ -191,10 +191,16 @@ calculated in UTC, which preserves the correct offset on DST transition days.
 
 ## Deployment
 
-Docker Compose runs the Go app on port 3005 for local diagnostics and Caddy on
+Docker Compose runs the Go app on the private Compose network and Caddy on
 HTTPS port 3443. Caddy terminates TLS and reverse-proxies to the private Compose
 service. VAPID private keys and provider tokens enter through environment
 variables and are never written to `app_settings` or committed.
+
+The app container has a Docker healthcheck (GYST-VN-016): every 30 s it runs
+`/app/lifeops healthcheck`, which GETs `http://127.0.0.1:8080/healthz` with a
+3 s timeout, follows no redirects and exits 0 only on HTTP 200 (the slim image
+has no curl). Docker only marks the container unhealthy; it does not restart
+it. Both containers use the `json-file` log driver capped at 10 MB x 5 files.
 
 The root-scoped service worker caches the application shell and handles prayer
 push payloads. `push_subscriptions` stores browser endpoints/keys, while the
