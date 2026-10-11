@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"errors"
-	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -79,7 +79,7 @@ var auditSecretMarkers = []string{
 // Value shapes that look like a credential whatever the words around them.
 var auditSecretShapes = regexp.MustCompile(
 	`[A-Za-z0-9+/=_.-]{32,}` + // long opaque run: base64, base64url, hex, hashes
-		`|eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.` + // JWT
+		`|(?i:eyj[a-z0-9_-]*\.[a-z0-9_-]*\.)` + // JWT (matched on lower-cased text, so case-insensitive)
 		`|(?i:(?:^|[^a-z0-9])(?:sk-|ghp_|gho_|github_pat_|xox[abp]-))` + // provider prefixes (sk-ant- starts with sk-)
 		`|\$2[aby]\$` + // bcrypt
 		`|[0-9a-fA-F]{40,}`)
@@ -110,13 +110,25 @@ func foldFullwidth(s string) string {
 	}, s)
 }
 
+// auditPercentEscape is one %XX escape. Decoding is lenient: a stray or
+// invalid % sequence elsewhere in the text must not stop valid ones decoding.
+var auditPercentEscape = regexp.MustCompile(`%[0-9A-Fa-f]{2}`)
+
+func decodePercentLenient(s string) string {
+	return auditPercentEscape.ReplaceAllStringFunc(s, func(m string) string {
+		b, err := strconv.ParseUint(m[1:], 16, 8)
+		if err != nil {
+			return m
+		}
+		return string([]byte{byte(b)})
+	})
+}
+
 // normalizeForAudit is the form detail is matched in: invisible runes gone,
 // percent-decoded once, fullwidth folded, lower-cased.
 func normalizeForAudit(s string) string {
 	s = stripAuditRunes(s)
-	if d, err := url.PathUnescape(s); err == nil {
-		s = stripAuditRunes(strings.ToValidUTF8(d, ""))
-	}
+	s = stripAuditRunes(strings.ToValidUTF8(decodePercentLenient(s), ""))
 	return strings.ToLower(foldFullwidth(s))
 }
 

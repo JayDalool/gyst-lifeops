@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/authlimit"
+	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 )
 
@@ -143,6 +144,15 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	ingress, key, client := loginClient(r)
 	attempt := h.admitLogin(ingress, key, client)
 	if attempt == nil {
+		// At most one row per key per KeyBlock. A refusal writes no auth log
+		// line, so an attacker cannot grow the log (TestThrottleLogsOnlyTransitions);
+		// the limiter's lockout line records the attack. The response is unchanged.
+		if h.throttleAudit.allow(ingress+"|"+key, h.Service.Now()) {
+			h.audit(r, repository.AuditEvent{
+				ActorRef: clientRef(client), Action: services.AuditActionLoginFailed,
+				Outcome: services.AuditOutcomeDenied, Detail: auditDetailThrottle,
+			}, ingress)
+		}
 		h.renderLogin(w, http.StatusTooManyRequests, loginPageData{Error: throttledMessage, Next: next})
 		return
 	}
@@ -154,6 +164,10 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		attempt.Fail()
+		h.audit(r, repository.AuditEvent{
+			ActorRef: clientRef(client), Action: services.AuditActionLoginFailed,
+			Outcome: services.AuditOutcomeFailed, Detail: auditDetailWrongPW,
+		}, ingress)
 		h.authEvent(r, "login.failed", ingress, client, slog.LevelWarn)
 		h.renderLogin(w, http.StatusUnauthorized, loginPageData{Error: "Incorrect password.", Next: next})
 		return
@@ -165,6 +179,10 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	attempt.Succeed()
+	h.audit(r, repository.AuditEvent{
+		ActorRef: services.SessionActorRef(token), Action: services.AuditActionLoginSucceeded,
+		Outcome: services.AuditOutcomeSuccess,
+	}, ingress)
 	h.authEvent(r, "login.succeeded", ingress, client, slog.LevelInfo)
 	h.setSessionCookie(w, r, token, expires)
 	http.Redirect(w, r, defaultIfEmpty(next, "/"), http.StatusSeeOther)
@@ -181,7 +199,9 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	// Revoking server-side matters more than clearing the cookie: a token that
 	// has already been copied elsewhere must stop working too.
-	revoked, err := h.Service.RevokeSession(sessionToken(r))
+	token := sessionToken(r)
+	ref := services.SessionActorRef(token) // before revocation
+	revoked, err := h.Service.RevokeSession(token)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -190,6 +210,9 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 		// Logged only when a live session ended, so a stray or forged logout
 		// leaves no line; the response below is the same either way.
 		ingress, _, client := loginClient(r)
+		h.audit(r, repository.AuditEvent{
+			ActorRef: ref, Action: services.AuditActionLogout, Outcome: services.AuditOutcomeSuccess,
+		}, ingress)
 		h.authEvent(r, "logout", ingress, client, slog.LevelInfo)
 	}
 	h.clearSessionCookie(w, r)

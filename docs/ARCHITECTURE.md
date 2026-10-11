@@ -289,9 +289,12 @@ tailnet exemption.
   client-controlled there, and `localhost` classifies as public keyed by peer.
 - Throttle logs carry only transitions (key blocked, gate engaged/disengaged,
   limiter missing), with IPs truncated to /24 (IPv4) or /48 (IPv6); a refused
-  attempt writes no line, so an attacker cannot grow the log. They go through
+  attempt writes no log line, so an attacker cannot grow the log. They go through
   the structured logger described in "Application logging" below. A wrong
   password that was actually checked writes one `login.failed` auth line.
+  Audit rows (GYST-VN-007): every checked wrong password writes a
+  `login.failed` row (bounded by the limiter); a refusal writes one
+  `throttled` row per key per 15 minutes at most. See "Audit events".
 
 ## Application logging (GYST-VN-015)
 
@@ -351,7 +354,8 @@ the stored hash, so older hashes keep working until regenerated.
 
 `audit_events` (migration `20261010010000_audit_events.sql`) is a minimal
 append-only store from `docs/audit/vnext/09_SECURITY_FOUNDATION.md` section M.
-Nothing calls it yet; there is no UI, retention or export (GYST-115).
+Sign-in and sign-out write to it (GYST-VN-007, below); there is no UI,
+retention or export (GYST-115).
 
 Columns: `id`, `at`, `actor_type`, `actor_ref`, `ingress`, `action`,
 `target_ref`, `outcome`, `detail`, `request_id`. `at` is written by the app as
@@ -372,13 +376,14 @@ action is a one-line allowlist change, no migration.
 
 `detail` is sanitised in this order: control, format (zero-width, bidi
 override) and other non-graphic characters are removed from what is stored.
-For matching only, the text is also percent-decoded once, fullwidth forms
+For matching only, the text is also percent-decoded once (each valid `%XX`
+is decoded even if the text holds a stray or invalid `%`), fullwidth forms
 (U+FF01-U+FF5E) are folded to ASCII and it is lower-cased. The whole detail is
 replaced by `redacted` if the matching form contains password, passwd, pwd,
 secret, token, bearer, basic, authorization, cookie, set-cookie, session,
 gyst_session, api_key, api-key, apikey, x-api-key, private_key, private-key or
 a bcrypt prefix, or if it has a secret-looking value shape: a run of 32 or more
-characters from `[A-Za-z0-9+/=_.-]`, a JWT, a `sk-`, `ghp_`, `gho_`,
+characters from `[A-Za-z0-9+/=_.-]`, a JWT (`eyJ` in any case), a `sk-`, `ghp_`, `gho_`,
 `github_pat_` or `xox[abp]-` prefix, a bcrypt hash or 40+ hex digits. Otherwise
 it is cut to 200 runes. This is a best-effort filter, not a guarantee: callers
 should still pass only short fixed reasons, never raw input.
@@ -393,6 +398,35 @@ decision.
 
 Rollback: deploy the older binary and leave the table, index and
 `schema_migrations` row in place. The old binary ignores the table.
+
+### Sign-in and sign-out rows (GYST-VN-007)
+
+`login`/`logout` in `internal/handlers/auth.go` call `Handler.audit`
+(`auth_audit.go`) after the decision and before the response; no response
+depends on the write. A failed write logs one ERROR `audit write failed` with
+`action` and `request_id` only and the login or logout carries on.
+
+| Event | actor_ref | outcome | detail |
+|---|---|---|---|
+| Wrong password (checked) | `client:<label>` | failed | `wrong-credentials` |
+| Throttled refusal | `client:<label>` | denied | `throttled` |
+| Sign-in | `SessionActorRef(new token)` | success | empty |
+| Sign-out of a live session | `SessionActorRef(cookie token)` | success | empty |
+
+`<label>` is the /24 (IPv4) or /48 (IPv6) from `logLabel`, never the full
+address. `target_ref` is the fixed `account:owner` (GYST has no username) and
+`ingress` is `public` or `tailnet`. The wrong-password detail is not
+`wrong-password` because the `detail` filter redacts the word "password".
+The 403 cross-site, 400 unreadable form and 503 no-password paths write
+nothing. A logout with no cookie or an unknown token writes nothing.
+
+Throttled refusals cost an attacker no bcrypt, so they are recorded at most
+once per (bucket, key) per 15 minutes (`authlimit.DefaultPolicy.KeyBlock`) on
+the app clock, by an in-memory gate of at most 1,000 keys. When full it drops
+expired keys; if still full the row is skipped (the limiter's lockout log line
+still records the attack). Like the throttle state, the gate is lost on
+restart. A throttled refusal writes no auth log line, as before; the other
+rows each have one auth line with the same `request_id`.
 
 ## Designed for later
 
