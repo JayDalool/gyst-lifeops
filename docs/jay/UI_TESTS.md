@@ -1,3 +1,4 @@
+- [ ] GYST-077 · iPhone Today: each task once, Done · n opens · https://github.com/JayDalool/gyst-lifeops/pull/130
 - [ ] #103 · iPhone PWA launches; Galaxy and Today toast work · https://gyst.zaylolabs.com/galaxy
 - [ ] #99 · iPhone: Today overdue rows and Do today · https://github.com/JayDalool/gyst-lifeops/pull/100
 - [ ] #89 · iPhone: state components and offline banner · https://github.com/JayDalool/gyst-lifeops/pull/93
