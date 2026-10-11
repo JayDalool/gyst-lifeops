@@ -185,18 +185,21 @@ func (s *Service) CreateRoadmapWeeklyReview(review models.RoadmapWeeklyReview) e
 }
 
 func (s *Service) ExportRoadmap(public bool) (string, error) {
-	// Fail closed: a privacy lookup error means no public file at all.
+	data, err := s.Roadmap(0)
+	if err != nil {
+		return "", err
+	}
+	// Looked up after the roadmap read so a project made private in between
+	// is never treated as public. A lookup error means no public file at all.
 	var privacy map[int64]models.ProjectPrivacy
 	if public {
-		var err error
 		privacy, err = s.Repo.EffectiveProjectPrivacy()
 		if err != nil {
 			return "", err
 		}
 	}
-	data, err := s.Roadmap(0)
-	if err != nil {
-		return "", err
+	hidden := func(project models.RoadmapProject) bool {
+		return public && (privacy[project.Project.Project.ID].Hidden() || project.Meta.IsPrivate || project.Meta.LocalOnly)
 	}
 
 	var b strings.Builder
@@ -213,7 +216,7 @@ func (s *Service) ExportRoadmap(public bool) (string, error) {
 		weekStart, weekEnd := weekBounds(s.Today())
 		var total, done, weekTotal, weekDone int
 		for _, project := range data.Projects {
-			if privacy[project.Project.Project.ID].Hidden() {
+			if hidden(project) {
 				continue
 			}
 			total += project.TotalWork
@@ -228,7 +231,7 @@ func (s *Service) ExportRoadmap(public bool) (string, error) {
 	fmt.Fprintf(&b, "Weekly completion: %d%%\n\n", weekly)
 
 	for _, project := range data.Projects {
-		if public && privacy[project.Project.Project.ID].Hidden() {
+		if hidden(project) {
 			continue
 		}
 		fmt.Fprintf(&b, "## %s\n\n", project.Project.Project.Name)

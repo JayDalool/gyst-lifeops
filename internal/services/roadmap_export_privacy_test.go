@@ -17,11 +17,11 @@ const exportPrivacySource = `# Fictional Campaign
 ## Project: Fictional Garden Planner
 Private: yes
 Description: Secret garden description.
-- [x] Garden root task
+- [x] Garden root task due 2026-06-24
 
 ### Phase 1: Seed Catalog
 Description: Seed catalog private words.
-- [ ] Sort seeds
+- [ ] Sort seeds due 2026-06-24
 
 ### Phase 1a: Seed Labels
 Description: Label private words.
@@ -29,7 +29,7 @@ Description: Label private words.
 
 ## Project: Fictional Open Book
 Description: Open book words.
-- [ ] Write chapter
+- [ ] Write chapter due 2026-06-24
 
 ### Phase 1: Open Chapter
 Description: Open chapter words.
@@ -111,9 +111,17 @@ func TestPublicExportTotalsCountVisibleProjectsOnly(t *testing.T) {
 	if !strings.Contains(pub, "Overall progress: 50%") {
 		t.Errorf("public overall should be 50%%:\n%s", pub)
 	}
+	// Hidden task is done and due this week; the visible one is due and open.
+	// Counting hidden projects would give 33%; visible only gives 0%.
+	if !strings.Contains(pub, "Weekly completion: 0%") {
+		t.Errorf("public weekly should be 0%%:\n%s", pub)
+	}
 	priv, err := svc.ExportRoadmap(false)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if !strings.Contains(priv, "Weekly completion: 33%") {
+		t.Errorf("private weekly should count all projects:\n%s", priv)
 	}
 	if strings.Contains(priv, "Overall progress: 50%") {
 		t.Errorf("private overall should count all projects:\n%s", priv)
@@ -179,5 +187,26 @@ func TestPublicExportFailsClosedOnPrivacyError(t *testing.T) {
 	}
 	if out, err := svc.ExportRoadmap(true); err == nil {
 		t.Fatalf("expected error, got export:\n%s", out)
+	}
+}
+
+func TestPublicExportDoesNotLeakProjectImportedPrivateDuringExport(t *testing.T) {
+	svc, _ := exportPrivacyService(t)
+	armed := true
+	svc.Now = func() time.Time {
+		if armed {
+			armed = false // ImportRoadmapMarkdown calls Today() itself
+			if _, err := svc.ImportRoadmapMarkdown("# Fictional Campaign\n\n## Project: Fictional Hidden Atlas\nPrivate: yes\nDescription: Atlas secret words.\n- [ ] Map it\n"); err != nil {
+				t.Errorf("import during export: %v", err)
+			}
+		}
+		return time.Date(2026, time.June, 24, 12, 0, 0, 0, time.UTC)
+	}
+	out, err := svc.ExportRoadmap(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "Fictional Hidden Atlas") || strings.Contains(out, "Atlas secret words") {
+		t.Errorf("project imported private during export leaked:\n%s", out)
 	}
 }
