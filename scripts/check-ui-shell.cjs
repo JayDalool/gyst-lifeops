@@ -187,7 +187,10 @@ function parseCSS(text, media = null, out = []) {
     if (text[i] === '{') { if (depth++ === 0) { prelude = text.slice(start, i).trim(); start = i + 1; } }
     else if (text[i] === '}' && --depth === 0) {
       const body = text.slice(start, i); start = i + 1;
-      if (/^@media/.test(prelude)) parseCSS(body, prelude.slice(6).replace(/\s*:\s*/g, ': ').replace(/\s+/g, ' ').trim(), out);
+      if (/^@(media|supports|layer|container)\b/.test(prelude)) {
+        const at = prelude.replace(/^@media\s*/, '').replace(/\s*:\s*/g, ': ').replace(/\s+/g, ' ').trim();
+        parseCSS(body, media === null ? at : media + ' | ' + at, out);
+      }
       else if (!prelude.startsWith('@')) {
         const decls = {};
         for (const d of body.split(';')) { const k = d.indexOf(':'); if (k > 0) decls[d.slice(0, k).trim().toLowerCase()] = d.slice(k + 1).replace(/!important/i, '').trim(); }
@@ -220,25 +223,35 @@ const TARGETS = [
 ];
 function checkTargets(files, targets = TARGETS) {
   const rules = files.flatMap(text => parseCSS(text));
-  const tokens = {};
-  for (const r of rules) if (r.media === null && r.selectors.some(s => /^:root$/.test(s) || /^\[data-gyst-theme="light"\]$/.test(s)))
-    for (const [k, v] of Object.entries(r.decls)) if (k.startsWith('--') && !(k in tokens)) tokens[k] = v;
-  const resolve = v => { for (let n = 0; n < 5 && /var\(/.test(v); n++) v = v.replace(/var\(\s*(--[\w-]+)\s*(?:,[^)]*)?\)/g, (m, name) => tokens[name] ?? m); return v; };
+  // Every definition of every custom property, in any selector, theme or at-rule.
+  const defs = {};
+  for (const r of rules) for (const [k, v] of Object.entries(r.decls)) if (k.startsWith('--')) (defs[k] ??= []).push(v);
+  const resolveAll = (v, depth = 0) => {
+    const m = /var\(\s*(--[\w-]+)\s*(?:,[^)]*)?\)/.exec(v);
+    if (!m || depth > 6 || !defs[m[1]]) return [v];
+    return defs[m[1]].flatMap(d => resolveAll(v.replace(m[0], d), depth + 1));
+  };
   const errors = [];
   for (const [sel, media, needH, needW] of targets) {
-    const matching = rules.filter(r => r.media === media && r.selectors.includes(sel));
+    const mine = rules.filter(r => r.selectors.includes(sel));
     for (const [need, props] of [[needH, ['min-height', 'height']], [needW, ['min-width', 'width', 'inline-size']]]) {
       if (!need) continue;
       const label = `${sel}${media ? ' @media ' + media : ''}`;
+      const verify = (value, prop, where) => {
+        for (const v of resolveAll(value)) {
+          const m = /^(\d+(?:\.\d+)?)px$/.exec(v);
+          if (!m) errors.push(`${where}: ${prop} ${value} does not resolve to a plain px value`);
+          else if (parseFloat(m[1]) < 44) errors.push(`${where}: ${prop} ${value}${v === value ? '' : ' (' + v + ')'} is below 44px`);
+        }
+      };
       let value = null, prop = null;
-      for (const r of matching) for (const p of props) if (p in r.decls) { value = r.decls[p]; prop = p; }
-      if (value === null) { errors.push(`${label}: no ${props[0]} set`); continue; }
-      const m = /^(\d+(?:\.\d+)?)px$/.exec(resolve(value));
-      if (!m) errors.push(`${label}: ${prop} ${value} does not resolve to a plain px value`);
-      else if (parseFloat(m[1]) < 44) errors.push(`${label}: ${prop} ${value} is below 44px`);
+      for (const r of mine) if (r.media === media) for (const p of props) if (p in r.decls) { value = r.decls[p]; prop = p; }
+      if (value === null) errors.push(`${label}: no ${props[0]} set`); else verify(value, prop, label);
+      // Overrides under any other media or at-rule must not shrink the target either.
+      for (const r of mine) if (r.media !== media && r.media !== null) for (const p of props) if (p in r.decls) verify(r.decls[p], p, `${sel} @media ${r.media}`);
     }
   }
-  if (errors.length) throw new Error('Tap target check failed:\n  ' + errors.join('\n  '));
+  if (errors.length) throw new Error('Tap target check failed:\n  ' + [...new Set(errors)].join('\n  '));
 }
 // Which checked selector covers a control? Returns null when none does.
 function controlSelector(c) {
@@ -291,6 +304,13 @@ function tapTargetChecks() {
   assert.throws(one('.gyst-button--icon{width:40px}', '.gyst-button--icon', false, true), /\.gyst-button--icon.*40px/);
   assert.throws(one('.x{min-height:44px}', '.gyst-button'), /no min-height/);
   checkTargets([':root{--gyst-tab-height:56px}@media (max-width:1023px){.t > a{min-height:var(--gyst-tab-height)}}'], [['.t > a', '(max-width: 1023px)', true, false]]);
+  assert.throws(one('.gyst-button{min-height:44px}@media (max-width:767px){.gyst-button{min-height:32px}}', '.gyst-button'), /\.gyst-button.*32px/);
+  assert.throws(one('.gyst-button{min-height:44px}@supports (display:grid){.gyst-button{min-height:32px}}', '.gyst-button'), /\.gyst-button.*32px/);
+  const tok = extra => () => checkTargets([':root{--tab:56px}.t{min-height:var(--tab)}' + extra], [['.t', null, true, false]]);
+  tok('')();
+  assert.throws(tok('[data-gyst-theme="dark"]{--tab:30px}'), /\.t.*30px/);
+  assert.throws(tok('@media (max-width:600px){:root{--tab:30px}}'), /\.t.*30px/);
+  assert.throws(tok(':root{--tab:30px}'), /\.t.*30px/);
   const templates = {'ui_shell.html': fs.readFileSync('web/templates/ui_shell.html', 'utf8'), 'layout.html': fs.readFileSync('web/templates/layout.html', 'utf8')};
   coverageCheck(templates);
   assert.throws(() => coverageCheck({'ui_shell.html': templates['ui_shell.html'] + '<body><button type="button">Oops</button>'}), /<button> has no checked tap-target selector/);
