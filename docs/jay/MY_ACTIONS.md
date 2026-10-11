@@ -1,4 +1,4 @@
-- [ ] GYST-136 · Count goals with stale current value (backup copy) · PR_LINK
+- [ ] GYST-136 · Count goals with stale current value (backup copy) · https://github.com/JayDalool/gyst-lifeops/pull/135
 - [ ] #118 · After deploy: gyst-lifeops healthy; LogConfig 10m x 5 on both · https://github.com/JayDalool/gyst-lifeops/issues/118
 - [ ] #111 · Apply audit migration to backup copy; FK check clean · https://github.com/JayDalool/gyst-lifeops/issues/111
 - [ ] #112 · Run the restore drill once, record result · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/restore.md
