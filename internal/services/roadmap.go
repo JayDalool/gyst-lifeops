@@ -185,6 +185,15 @@ func (s *Service) CreateRoadmapWeeklyReview(review models.RoadmapWeeklyReview) e
 }
 
 func (s *Service) ExportRoadmap(public bool) (string, error) {
+	// Fail closed: a privacy lookup error means no public file at all.
+	var privacy map[int64]models.ProjectPrivacy
+	if public {
+		var err error
+		privacy, err = s.Repo.EffectiveProjectPrivacy()
+		if err != nil {
+			return "", err
+		}
+	}
 	data, err := s.Roadmap(0)
 	if err != nil {
 		return "", err
@@ -198,11 +207,28 @@ func (s *Service) ExportRoadmap(public bool) (string, error) {
 	}
 	fmt.Fprintf(&b, "Goal: %s\n", data.GoalTitle)
 	fmt.Fprintf(&b, "Deadline: %s\n", data.GoalDeadline)
-	fmt.Fprintf(&b, "Overall progress: %d%%\n", data.OverallProgress)
-	fmt.Fprintf(&b, "Weekly completion: %d%%\n\n", data.WeeklyCompletion)
+	overall, weekly := data.OverallProgress, data.WeeklyCompletion
+	if public {
+		// Totals count visible projects only, so hidden work does not leak.
+		weekStart, weekEnd := weekBounds(s.Today())
+		var total, done, weekTotal, weekDone int
+		for _, project := range data.Projects {
+			if privacy[project.Project.Project.ID].Hidden() {
+				continue
+			}
+			total += project.TotalWork
+			done += project.CompletedWork
+			t, c := roadmapWeeklyCounts(project.Items, project.Milestones, weekStart, weekEnd)
+			weekTotal += t
+			weekDone += c
+		}
+		overall, weekly = percentInt(done, total), percentInt(weekDone, weekTotal)
+	}
+	fmt.Fprintf(&b, "Overall progress: %d%%\n", overall)
+	fmt.Fprintf(&b, "Weekly completion: %d%%\n\n", weekly)
 
 	for _, project := range data.Projects {
-		if public && (project.Meta.IsPrivate || project.Meta.LocalOnly) {
+		if public && privacy[project.Project.Project.ID].Hidden() {
 			continue
 		}
 		fmt.Fprintf(&b, "## %s\n\n", project.Project.Project.Name)
