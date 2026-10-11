@@ -3,9 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -187,4 +190,89 @@ func (s *Service) RecordAudit(ctx context.Context, e repository.AuditEvent) erro
 	e.Detail = sanitizeAuditDetail(e.Detail)
 	e.At = clock.FormatInstant(s.Now())
 	return s.Repo.InsertAuditEvent(context.WithoutCancel(ctx), e)
+}
+
+// Retention (GYST-VN-084). Security rows (everything not listed in
+// lifecycleActions) are kept 365 days, lifecycle rows 180 days. Both cutoffs
+// are half-open: a row exactly at the cutoff is kept.
+const (
+	securityRetention  = 365 * 24 * time.Hour
+	lifecycleRetention = 180 * 24 * time.Hour
+)
+
+// lifecycleActions are the audit actions kept for the shorter period. It is
+// empty today: agent.* and automation.run are not GYST actions. Add a name
+// here when a lifecycle action joins auditActions. Tests replace it.
+var lifecycleActions = map[string]bool{}
+
+// auditPruneInterval is how often RunAuditPrune runs after the first pass.
+// A variable only so tests can shorten it.
+var auditPruneInterval = 24 * time.Hour
+
+func lifecycleActionList() []string {
+	out := make([]string, 0, len(lifecycleActions))
+	for a := range lifecycleActions {
+		out = append(out, a)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// PruneAuditEvents deletes expired audit rows and returns how many security
+// and lifecycle rows went. Each statement is bounded by `at` and, for the
+// lifecycle pass, by an action list; an empty list skips that DELETE.
+func (s *Service) PruneAuditEvents(ctx context.Context) (security, lifecycle int64, err error) {
+	now := s.Now()
+	lifecycleList := lifecycleActionList()
+	security, err = s.Repo.DeleteAuditEventsBefore(ctx, clock.FormatInstant(now.Add(-securityRetention)), lifecycleList, false)
+	if err != nil {
+		return 0, 0, err
+	}
+	if len(lifecycleList) == 0 {
+		return security, 0, nil
+	}
+	lifecycle, err = s.Repo.DeleteAuditEventsBefore(ctx, clock.FormatInstant(now.Add(-lifecycleRetention)), lifecycleList, true)
+	return security, lifecycle, err
+}
+
+// pruneAuditAndLog logs counts only, never row content. After shutdown
+// begins the database may be closed, so it logs nothing.
+func (s *Service) pruneAuditAndLog(ctx context.Context) {
+	sec, life, err := s.PruneAuditEvents(ctx)
+	if ctx.Err() != nil {
+		return
+	}
+	if err != nil {
+		slog.Error("audit prune failed", "event", "audit.prune_failed", "error", err.Error())
+		return
+	}
+	slog.Info("audit prune", "event", "audit.pruned", "deleted_security", sec, "deleted_lifecycle", life)
+}
+
+// PruneAuditAtStart is the first pass. The app calls it synchronously before
+// starting the loop, like SweepSessionsAtStart, so it cannot race Close.
+func (s *Service) PruneAuditAtStart(ctx context.Context) {
+	s.pruneAuditAndLog(ctx)
+}
+
+// RunAuditPruneLoop prunes every auditPruneInterval until ctx is cancelled.
+// A failed run is retried on the next tick.
+func (s *Service) RunAuditPruneLoop(ctx context.Context) {
+	ticker := time.NewTicker(auditPruneInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			s.pruneAuditAndLog(ctx)
+		}
+	}
+}
+
+// RunAuditPrune prunes once at start, then every auditPruneInterval, until
+// ctx is cancelled.
+func (s *Service) RunAuditPrune(ctx context.Context) {
+	s.PruneAuditAtStart(ctx)
+	s.RunAuditPruneLoop(ctx)
 }

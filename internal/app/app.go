@@ -95,6 +95,8 @@ func New(config Config) (*App, error) {
 	// Synchronous, before the loop: it cannot race Close.
 	service.SweepSessionsAtStart()
 	go service.RunSessionSweeper(pushContext)
+	service.PruneAuditAtStart(pushContext)
+	go service.RunAuditPruneLoop(pushContext)
 	if config.HevyAPIKey != "" {
 		service.Training = &services.TrainingSync{Provider: hevy.New(config.HevyAPIKey)}
 		go service.RunTrainingSync(pushContext)
