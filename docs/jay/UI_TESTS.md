@@ -1,3 +1,4 @@
+- [ ] GYST-072 · iPhone: search panel Esc and Add task easy to tap · https://github.com/JayDalool/gyst-lifeops/issues/123
 - [ ] #103 · iPhone PWA launches; Galaxy and Today toast work · https://gyst.zaylolabs.com/galaxy
 - [ ] #99 · iPhone: Today overdue rows and Do today · https://github.com/JayDalool/gyst-lifeops/pull/100
 - [ ] #89 · iPhone: state components and offline banner · https://github.com/JayDalool/gyst-lifeops/pull/93
