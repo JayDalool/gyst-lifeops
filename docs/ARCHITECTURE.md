@@ -414,8 +414,11 @@ Rollback: deploy the older binary and leave the table, index and
 
 ### Retention (GYST-VN-084)
 
-`Service.RunAuditPrune` (started in `internal/app/app.go`, stopped by
-`App.Close`) prunes once at startup and then every 24 hours. Security rows
+`Service.PruneAuditAtStart` (synchronous, in `internal/app/app.go`) prunes
+once at startup, then `go Service.RunAuditPruneLoop` repeats every 24 hours
+until `App.Close` cancels it. Clock-jump guard: if the security cutoff is
+later than the newest row (a clock far in the future) the run deletes nothing
+and logs one ERROR; an empty table is a no-op. Security rows
 (every action not in `lifecycleActions`) are deleted when `at` is more than
 365 days old; lifecycle rows more than 180 days old. `lifecycleActions` is
 empty today, so only the 365-day rule runs. A row exactly at the cutoff is

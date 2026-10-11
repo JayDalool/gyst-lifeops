@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -188,6 +189,7 @@ func TestPruneLogsCountsOnlyNoRowContent(t *testing.T) {
 	buf := captureLog(t)
 	svc := pruneService(t, prunePinned)
 	seedAuditAt(t, svc, prunePinned.Add(-400*24*time.Hour), AuditActionLoginFailed, "client:203.0.113")
+	seedAuditAt(t, svc, prunePinned, AuditActionLoginFailed, "keeper")
 	svc.pruneAuditAndLog(context.Background())
 	out := buf.String()
 	if strings.Count(out, "\n") != 1 || !strings.Contains(out, `"level":"INFO"`) ||
@@ -224,10 +226,12 @@ func TestRunAuditPruneRunsAtStartThenOnTickAndStopsOnCancel(t *testing.T) {
 	t.Cleanup(func() { auditPruneInterval = previous })
 
 	svc := pruneService(t, prunePinned)
+	seedAuditAt(t, svc, prunePinned, AuditActionLoginFailed, "keeper")
 	seedAuditAt(t, svc, prunePinned.Add(-400*24*time.Hour), AuditActionLoginFailed, "first")
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
-	go func() { svc.RunAuditPrune(ctx); close(done) }()
+	svc.PruneAuditAtStart(ctx)
+	go func() { svc.RunAuditPruneLoop(ctx); close(done) }()
 
 	waitFor(t, func() bool { return !remainingRefs(t, svc)["first"] }, "startup prune")
 	seedAuditAt(t, svc, prunePinned.Add(-401*24*time.Hour), AuditActionLoginFailed, "second")
@@ -237,7 +241,7 @@ func TestRunAuditPruneRunsAtStartThenOnTickAndStopsOnCancel(t *testing.T) {
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
-		t.Fatal("RunAuditPrune did not stop on cancel")
+		t.Fatal("RunAuditPruneLoop did not stop on cancel")
 	}
 }
 
@@ -251,4 +255,64 @@ func waitFor(t *testing.T, cond func() bool, what string) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	t.Fatalf("timed out waiting for %s", what)
+}
+
+func TestPruneClockJumpGuardSkipsAndLogsError(t *testing.T) {
+	buf := captureLog(t)
+	svc := pruneService(t, prunePinned.Add(2*365*24*time.Hour))
+	seedAuditAt(t, svc, prunePinned.Add(-time.Hour), AuditActionLoginFailed, "a")
+	seedAuditAt(t, svc, prunePinned, AuditActionLoginFailed, "b")
+	sec, life, err := svc.PruneAuditEvents(context.Background())
+	if !errors.Is(err, ErrAuditPruneSkipped) || sec != 0 || life != 0 {
+		t.Fatalf("sec=%d life=%d err=%v", sec, life, err)
+	}
+	if got := remainingRefs(t, svc); len(got) != 2 {
+		t.Fatalf("rows deleted by a skipped run: %v", got)
+	}
+	svc.pruneAuditAndLog(context.Background())
+	out := buf.String()
+	if strings.Count(out, "\n") != 1 || !strings.Contains(out, `"level":"ERROR"`) {
+		t.Fatalf("log = %q", out)
+	}
+}
+
+func TestPruneEmptyTableIsNoOp(t *testing.T) {
+	svc := pruneService(t, prunePinned)
+	sec, life, err := svc.PruneAuditEvents(context.Background())
+	if err != nil || sec != 0 || life != 0 {
+		t.Fatalf("sec=%d life=%d err=%v", sec, life, err)
+	}
+}
+
+// Rows written by RecordAudit under a non-UTC app clock with a sub-second
+// fraction compare correctly against the cutoff.
+func TestPruneEndToEndWithRecordAuditNonUTCClock(t *testing.T) {
+	toronto, err := time.LoadLocation("America/Toronto")
+	if err != nil {
+		t.Skip("no tzdata")
+	}
+	svc := testService(t)
+	pruneNow := time.Date(2026, 10, 11, 0, 30, 0, 500_000_000, toronto)
+	cutoff := pruneNow.Add(-securityRetention)
+	write := func(at time.Time, ref string) {
+		svc.Now = func() time.Time { return at.In(toronto) }
+		e := goodAudit()
+		e.ActorRef = ref
+		if err := svc.RecordAudit(context.Background(), e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(cutoff.Add(-time.Nanosecond), "before")
+	write(cutoff, "exact")
+	write(cutoff.Add(time.Nanosecond), "after")
+	write(pruneNow, "now")
+	svc.Now = func() time.Time { return pruneNow }
+	sec, _, err := svc.PruneAuditEvents(context.Background())
+	if err != nil || sec != 1 {
+		t.Fatalf("sec=%d err=%v", sec, err)
+	}
+	got := remainingRefs(t, svc)
+	if got["before"] || !got["exact"] || !got["after"] || !got["now"] {
+		t.Errorf("remaining = %v", got)
+	}
 }

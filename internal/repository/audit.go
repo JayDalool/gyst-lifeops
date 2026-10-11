@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"strings"
 )
@@ -82,4 +83,13 @@ func (r *Repository) RecentAuditEvents(ctx context.Context, limit int) ([]AuditE
 		out = append(out, e)
 	}
 	return out, rows.Err()
+}
+
+// LatestAuditEventAt returns the newest `at`, or "" when the table is empty.
+func (r *Repository) LatestAuditEventAt(ctx context.Context) (string, error) {
+	var at sql.NullString
+	if err := r.db.QueryRowContext(ctx, "SELECT MAX(at) FROM audit_events").Scan(&at); err != nil {
+		return "", err
+	}
+	return at.String, nil
 }

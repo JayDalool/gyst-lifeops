@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"regexp"
 	"sort"
@@ -205,7 +206,7 @@ const (
 // here when a lifecycle action joins auditActions. Tests replace it.
 var lifecycleActions = map[string]bool{}
 
-// auditPruneInterval is how often RunAuditPrune runs after the first pass.
+// auditPruneInterval is how often RunAuditPruneLoop runs after the first pass.
 // A variable only so tests can shorten it.
 var auditPruneInterval = 24 * time.Hour
 
@@ -218,13 +219,30 @@ func lifecycleActionList() []string {
 	return out
 }
 
+// ErrAuditPruneSkipped means the clock-jump guard refused to delete anything.
+var ErrAuditPruneSkipped = errors.New("audit prune skipped")
+
 // PruneAuditEvents deletes expired audit rows and returns how many security
 // and lifecycle rows went. Each statement is bounded by `at` and, for the
 // lifecycle pass, by an action list; an empty list skips that DELETE.
 func (s *Service) PruneAuditEvents(ctx context.Context) (security, lifecycle int64, err error) {
 	now := s.Now()
 	lifecycleList := lifecycleActionList()
-	security, err = s.Repo.DeleteAuditEventsBefore(ctx, clock.FormatInstant(now.Add(-securityRetention)), lifecycleList, false)
+	securityCutoff := clock.FormatInstant(now.Add(-securityRetention))
+	// Clock-jump guard: if the cutoff is later than the newest row, this run
+	// would delete every row (a clock far in the future). Skip it. An empty
+	// table is a no-op.
+	latest, err := s.Repo.LatestAuditEventAt(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	if latest == "" {
+		return 0, 0, nil
+	}
+	if securityCutoff > latest {
+		return 0, 0, fmt.Errorf("%w: cutoff %s is later than the newest row; clock may be wrong", ErrAuditPruneSkipped, securityCutoff)
+	}
+	security, err = s.Repo.DeleteAuditEventsBefore(ctx, securityCutoff, lifecycleList, false)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -268,11 +286,4 @@ func (s *Service) RunAuditPruneLoop(ctx context.Context) {
 			s.pruneAuditAndLog(ctx)
 		}
 	}
-}
-
-// RunAuditPrune prunes once at start, then every auditPruneInterval, until
-// ctx is cancelled.
-func (s *Service) RunAuditPrune(ctx context.Context) {
-	s.PruneAuditAtStart(ctx)
-	s.RunAuditPruneLoop(ctx)
 }
