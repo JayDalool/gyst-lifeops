@@ -9,7 +9,6 @@
 .today-page .gyst-section-title { font-size: 1.125rem; }
 .today-page .today-link { display: inline-flex; align-items: center; min-height: 44px; gap: 4px; color: var(--gyst-blue); font-size: .875rem; text-decoration: none; }
 .today-link .gyst-icon { width: 16px; height: 16px; }
-.today-focus-title { display: block; padding-block: 8px; min-height: 44px; color: var(--gyst-text); font-size: 1.125rem; font-weight: 600; text-decoration: none; }
 .today-checklist > .gyst-progress { margin-block: 12px 8px; }
 .today-page .tasks { margin: 8px 0 0; padding: 0; list-style: none; }
 .today-page .task { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--gyst-border); background: transparent; }
@@ -50,11 +49,10 @@
 /* Same centralized breakpoints as UI_SYSTEM: tablet 768, desktop 1024. */
 @media (min-width: 768px) { .today-grid { grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 24px; } .today-page { gap: 24px; } }
 @media (min-width: 1024px) { .today-grid { grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); } }
-.today-context { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .today-task-check { display: grid; place-items: center; min-width: 44px; min-height: 44px; cursor: pointer; }
 .today-page .today-task-check input { margin: 0; }
 .today-page [data-tracker-status] { display: block; font-size: .75rem; text-transform: capitalize; }
-@media (max-width: 374px) { .today-context, .today-metrics { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 374px) { .today-metrics { grid-template-columns: minmax(0,1fr); } }
 .today-page .tracker-dot { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; line-height: 1.4; }
 :root .today-page .tracker-dot small { margin: 0; color: var(--gyst-text-secondary); font-size: .75rem; }
 .today-page .tracker-dot > span:first-child { display: none; }
@@ -76,3 +74,12 @@
 .today-overdue-body .today-overdue + .today-overdue { border-top: 1px solid var(--gyst-border); }
 @media (prefers-reduced-motion: reduce) { .today-overdue-summary > .gyst-icon { transition: none; } }
 [data-motion="reduced"] .today-overdue-summary > .gyst-icon { transition: none; }
+/* GYST-077: collapsed "Done · n" row under the single task list (11 section N). */
+.today-done { margin-top: var(--vn-s2, 8px); border-top: 1px solid var(--gyst-border); }
+.today-done-summary { display: flex; align-items: center; justify-content: space-between; gap: var(--vn-s3, 12px); min-height: 44px; list-style: none; cursor: pointer; color: var(--gyst-text-secondary); font-size: .875rem; border-radius: var(--gyst-radius-sm); }
+.today-done-summary::-webkit-details-marker { display: none; }
+.today-done-summary:focus-visible { outline: 2px solid var(--gyst-blue); outline-offset: 2px; }
+.today-done-summary > .gyst-icon { flex: none; width: 20px; height: 20px; transition: transform var(--vn-fast, 120ms) var(--vn-ease, ease); }
+.today-done[open] > .today-done-summary > .gyst-icon { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .today-done-summary > .gyst-icon { transition: none; } }
+[data-motion="reduced"] .today-done-summary > .gyst-icon { transition: none; }

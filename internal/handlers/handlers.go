@@ -580,7 +580,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		Completed:      completed,
 		Skipped:        skipped,
 		OverdueTasks:   overdueTasks,
-		RemindersToday: remindersToday,
+		RemindersToday: standaloneReminders(remindersToday),
 		Learning:       learning,
 		Prayer: PrayerTodayData{
 			Schedule: schedule, Next: nextPrayer,

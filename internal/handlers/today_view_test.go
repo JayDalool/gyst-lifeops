@@ -84,14 +84,68 @@ func TestNextTodayReminder(t *testing.T) {
 
 func TestTodayPreservesActionsAndRealFocus(t *testing.T) {
 	body := renderBody(t, "today.html", TodayData{Page: "today", Today: "2026-09-11", Pending: []models.TaskOccurrence{{Task: models.Task{ID: 81, Title: "Actual pending task"}, Date: "2026-09-11"}}, Skipped: []models.TaskOccurrence{{Task: models.Task{ID: 82, Title: "Skipped fixture"}, Date: "2026-09-11"}}, Learning: models.TodayLearning{Blocks: []models.LearningBlock{{ID: 31, CourseID: 11, Title: "Real lesson"}}}})
-	for _, text := range []string{`action="/tasks/81/complete"`, `action="/tasks/81/skip"`, `action="/tasks/82/complete"`, `name="occurrence_date" value="2026-09-11"`, `value="/today#task-81"`, `action="/courses/11/blocks/31/complete"`, `action="/courses/11/blocks/31/postpone"`, `data-prayer-enable`, `data-prayer-test`, `data-prayer-audio`, `aria-label="Focus item"`, `href="/tasks/81"`, `Health snapshot`, `Today’s checklist`, `No upcoming timed reminders today.`} {
+	for _, text := range []string{`action="/tasks/81/complete"`, `action="/tasks/81/skip"`, `action="/tasks/82/complete"`, `name="occurrence_date" value="2026-09-11"`, `value="/today#task-81"`, `action="/courses/11/blocks/31/complete"`, `action="/courses/11/blocks/31/postpone"`, `data-prayer-enable`, `data-prayer-test`, `data-prayer-audio`, `Health snapshot`, `Today’s checklist`} {
 		if !strings.Contains(body, text) {
 			t.Errorf("lost %s", text)
 		}
 	}
-	if strings.Count(body, "Actual pending task") < 2 {
-		t.Fatal("focus does not use actual pending task")
+	// GYST-077 (RULES 2.2, deliberate): the Focus and Next up cards are gone, so
+	// the pending task is listed exactly once.
+	if strings.Count(body, `href="/tasks/81"`) != 1 || strings.Count(body, `action="/tasks/81/complete"`) != 1 {
+		t.Fatal("pending task is not listed exactly once")
 	}
+}
+
+func TestTodayListsEachItemOnce(t *testing.T) {
+	d := "2026-09-11"
+	pending := []models.TaskOccurrence{
+		{Task: models.Task{ID: 91, Title: "Fictional alpha", ReminderTime: "09:00"}, Date: d},
+		{Task: models.Task{ID: 92, Title: "Fictional bravo"}, Date: d},
+		{Task: models.Task{ID: 93, Title: "Fictional charlie"}, Date: d},
+	}
+	data := TodayData{Page: "today", Today: d, Pending: pending,
+		Completed: []models.TaskOccurrence{{Task: models.Task{ID: 94, Title: "Fictional done"}, Date: d, CompletedAt: d + " 08:00:00"}},
+		Skipped:   []models.TaskOccurrence{{Task: models.Task{ID: 95, Title: "Fictional skipped"}, Date: d}},
+		Learning: models.TodayLearning{Blocks: []models.LearningBlock{
+			{ID: 31, CourseID: 11, Title: "Fictional lesson one", CourseName: "Course A", BlockType: "lesson"},
+			{ID: 32, CourseID: 11, Title: "Fictional lesson two", CourseName: "Course A", BlockType: "lesson"},
+		}},
+		RemindersToday: standaloneReminders([]models.ReminderView{
+			{SourceType: "task", SourceID: 91, Title: "Fictional alpha", ReminderDate: d, ReminderTime: "09:00"},
+			{SourceType: "reminder", SourceID: 7, Title: "Fictional standalone reminder", ReminderDate: d, ReminderTime: "10:30"},
+		}),
+	}
+	body := renderBody(t, "today.html", data)
+	open, rest, ok := strings.Cut(body, `<details class="today-done"`)
+	if !ok {
+		t.Fatal("no Done disclosure")
+	}
+	if n := strings.Count(open, `class="task"`); n != 5 {
+		t.Fatalf("open rows before Done = %d, want 5", n)
+	}
+	for _, link := range []string{`href="/tasks/91"`, `href="/tasks/92"`, `href="/tasks/93"`, `href="/courses/11#block-31"`, `href="/courses/11#block-32"`, `href="/tasks/94"`, `href="/tasks/95"`} {
+		if c := strings.Count(body, link); c != 1 {
+			t.Errorf("%s appears %d times, want 1", link, c)
+		}
+	}
+	details, _, _ := strings.Cut(rest, `</details>`)
+	if !strings.Contains(details, "Done · 1 · 1 skipped") || !strings.Contains(details, "Fictional done") || !strings.Contains(details, "Fictional skipped") {
+		t.Errorf("Done disclosure wrong: %s", details)
+	}
+	if strings.Contains(body, `<details class="today-done" open`) {
+		t.Error("Done is open by default on Today")
+	}
+	if strings.Contains(body, `<span class="grow">Fictional alpha`) || strings.Count(body, `<span class="grow">Fictional standalone reminder`) != 1 {
+		t.Error("task reminder duplicated or standalone reminder missing")
+	}
+	if !strings.Contains(body, "09:00") {
+		t.Error("task reminder time missing from row meta")
+	}
+	if strings.Contains(body, `aria-label="Study blocks"`) || strings.Contains(body, "today-context") {
+		t.Error("removed cards are back")
+	}
+	// Zero-value data still renders.
+	renderOK(t, "today.html", TodayData{})
 }
 
 func TestDailyChecklistRoute(t *testing.T) {
@@ -128,11 +182,13 @@ func TestDailyChecklistRoute(t *testing.T) {
 }
 
 func TestTodayChecklistPreviewKeepsFullDestination(t *testing.T) {
+	// GYST-077 (RULES 2.2, deliberate): the 4-row preview cap is gone, so
+	// Today lists all 6 rows and still links to the dedicated checklist.
 	items := make([]models.TaskOccurrence, 6)
 	data := TodayData{Page: "today", Pending: items}
 	body := renderBody(t, "today.html", data)
-	if strings.Count(body, `class="task"`) != 4 || !strings.Contains(body, `href="/checklist"`) {
-		t.Fatal("Today preview is not bounded or lacks full destination")
+	if strings.Count(body, `class="task"`) != 6 || !strings.Contains(body, `href="/checklist"`) {
+		t.Fatal("Today does not list every row or lacks full destination")
 	}
 	data.ChecklistOnly = true
 	body = renderBody(t, "checklist.html", data)
