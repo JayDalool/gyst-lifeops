@@ -33,7 +33,7 @@ For OpenAI instead:
 ```
 HEALTH_AI_PROVIDER=openai
 OPENAI_API_KEY=<your key>
-# optional; default gpt-6-astra (OpenAI's flagship)
+# optional; default gpt-5.6-sol (GPT-5.6 flagship; gpt-6-astra is the newer, pricier option)
 HEALTH_AI_MODEL=
 ```
 

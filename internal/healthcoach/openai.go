@@ -12,8 +12,8 @@ import (
 
 // DefaultOpenAIModel is used when HEALTH_AI_MODEL is unset: OpenAI's flagship
 // model, the same tier as the Anthropic default. Checked against
-// https://developers.openai.com/api/docs/models on 2026-10-11.
-const DefaultOpenAIModel = "gpt-6-astra"
+// https://developers.openai.com/api/docs/models/gpt-5.6-sol on 2026-10-11.
+const DefaultOpenAIModel = "gpt-5.6-sol"
 
 // openAIBaseURL is a constant on purpose: no environment variable
 // (OPENAI_BASE_URL) can redirect health data and the key elsewhere. Tests use
@@ -237,7 +237,13 @@ func mapOpenAIError(status int, body []byte) error {
 			} `json:"error"`
 		}
 		_ = json.Unmarshal(body, &e)
-		if e.Error.Code == "insufficient_quota" || e.Error.Type == "insufficient_quota" || e.Error.Code == "credit_balance_exhausted" {
+		switch e.Error.Code {
+		case "insufficient_quota", "credit_balance_exhausted",
+			"organization_spend_limit_exceeded", "project_spend_limit_exceeded",
+			"organization_usage_limit_exceeded":
+			return ErrNotConfigured
+		}
+		if e.Error.Type == "insufficient_quota" {
 			return ErrNotConfigured
 		}
 		return ErrBusy

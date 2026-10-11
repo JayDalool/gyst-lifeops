@@ -102,7 +102,7 @@ func TestOpenAIToolLoop(t *testing.T) {
 	req := oaiReq()
 	req.Tools = []Tool{{Name: "get_today", Run: func(_ context.Context, in json.RawMessage) (string, error) {
 		got = string(in)
-		return `{"kg":80.5}`, nil
+		return `{"kg":99.9}`, nil
 	}}}
 	resp, err := o.Respond(context.Background(), req)
 	if err != nil || resp.Text != "Looks steady." {
@@ -117,7 +117,7 @@ func TestOpenAIToolLoop(t *testing.T) {
 		t.Fatalf("second input len %d: %v", len(in), in)
 	}
 	o1, o2 := in[6].(map[string]any), in[7].(map[string]any)
-	if o1["type"] != "function_call_output" || o1["call_id"] != "c1" || o1["output"] != `{"kg":80.5}` {
+	if o1["type"] != "function_call_output" || o1["call_id"] != "c1" || o1["output"] != `{"kg":99.9}` {
 		t.Fatalf("o1 %v", o1)
 	}
 	if o2["call_id"] != "c2" || o2["output"] != `{"error":"unknown tool"}` {
@@ -173,6 +173,11 @@ func TestOpenAIErrorsAreSanitised(t *testing.T) {
 		{"403", jsonReply(403, echo("x")), ErrNotConfigured},
 		{"429 rate", jsonReply(429, echo("rate_limit_exceeded")), ErrBusy},
 		{"429 quota", jsonReply(429, echo("insufficient_quota")), ErrNotConfigured},
+		{"429 org spend", jsonReply(429, echo("organization_spend_limit_exceeded")), ErrNotConfigured},
+		{"429 project spend", jsonReply(429, echo("project_spend_limit_exceeded")), ErrNotConfigured},
+		{"429 org usage", jsonReply(429, echo("organization_usage_limit_exceeded")), ErrNotConfigured},
+		{"429 credit", jsonReply(429, echo("credit_balance_exhausted")), ErrNotConfigured},
+		{"429 slow_down", jsonReply(429, echo("slow_down")), ErrBusy},
 		{"500", jsonReply(500, echo("x")), ErrUnavailable},
 		{"400", jsonReply(400, echo("x")), ErrUnavailable},
 		{"malformed", jsonReply(200, `{not json 99.9 kg`), ErrUnavailable},
@@ -231,6 +236,27 @@ func TestOpenAIDoesNotFollowRedirects(t *testing.T) {
 	}
 	if hits != 0 {
 		t.Fatalf("redirect target got %d requests", hits)
+	}
+}
+
+func TestOpenAIRedirect301Refused(t *testing.T) {
+	first := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://attacker.invalid/", http.StatusMovedPermanently)
+	}))
+	defer first.Close()
+	o := NewOpenAI("test-only-key", "")
+	o.baseURL = first.URL + "/v1"
+	if _, err := o.Respond(context.Background(), oaiReq()); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("err %v", err)
+	}
+}
+
+func TestOpenAICallerCancel(t *testing.T) {
+	o, _ := newOAIFake(t, jsonReply(200, oaiMsg))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := o.Respond(ctx, oaiReq()); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("err %v", err)
 	}
 }
 

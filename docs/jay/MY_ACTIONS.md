@@ -1,4 +1,4 @@
-- [ ] GYST-062 · Set OPENAI_API_KEY to enable OpenAI Coach (optional) · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
+- [ ] GYST-062 · Coach on OpenAI: set key, ask one question · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
 - [ ] #118 · After deploy: gyst-lifeops healthy; LogConfig 10m x 5 on both · https://github.com/JayDalool/gyst-lifeops/issues/118
 - [ ] #111 · Apply audit migration to backup copy; FK check clean · https://github.com/JayDalool/gyst-lifeops/issues/111
 - [ ] #112 · Run the restore drill once, record result · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/restore.md
