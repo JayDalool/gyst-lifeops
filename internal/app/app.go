@@ -33,6 +33,11 @@ type Config struct {
 	// false (production-safe); tokenized feeds are always available.
 	AllowPublicFeeds bool
 	HealthSyncToken  string
+	// N8NEventToken, N8NWorkflows and N8NURL configure n8n event ingestion
+	// (GYST-VN-110). Empty or invalid values leave the endpoint off (503).
+	N8NEventToken string
+	N8NWorkflows  string
+	N8NURL        string
 	// PasswordHash authenticates the web UI. Empty means nobody can sign in.
 	PasswordHash string
 	// AuthDisabled bypasses session enforcement entirely. Emergency use only.
@@ -102,6 +107,9 @@ func New(config Config) (*App, error) {
 	webHandler := handlers.New(service, config.TemplateDir)
 	webHandler.AllowPublicFeeds = config.AllowPublicFeeds
 	webHandler.HealthSyncToken = config.HealthSyncToken
+	webHandler.N8NEventToken = config.N8NEventToken
+	webHandler.N8NWorkflows = config.N8NWorkflows
+	webHandler.N8NURL = config.N8NURL
 	webHandler.Auth = services.AuthConfig{PasswordHash: config.PasswordHash}
 	webHandler.AuthDisabled = config.AuthDisabled
 	webHandler.Coach = healthCoachProvider(config.HealthAI)
@@ -110,6 +118,7 @@ func New(config Config) (*App, error) {
 		logger = slog.Default()
 	}
 	webHandler.Logger = logger
+	webHandler.LogAutomationConfig()
 
 	if config.AuthDisabled {
 		log.Println("=======================================================")

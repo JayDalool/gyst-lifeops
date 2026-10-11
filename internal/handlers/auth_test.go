@@ -128,6 +128,7 @@ func TestExemptPathsAreReachableWithoutASession(t *testing.T) {
 		{"login", "/login", "the page that issues a session"},
 		{"health sync", "/api/health/sync", "authenticates with its own bearer token"},
 		{"health api root", "/api/health", "same bearer-token surface"},
+		{"automation events", "/api/automation/events", "authenticates with its own bearer token (n8n has no cookie jar)"},
 		{"calendar feed", "/calendar/feed/sometoken.ics", "carries a path token; external calendar clients send no cookie"},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -154,6 +155,8 @@ func TestNonExemptPathsRequireASession(t *testing.T) {
 	for _, path := range []string{
 		"/", "/today", "/projects", "/health", "/health/plan", "/health/more",
 		"/settings", "/analytics", "/api/push/vapid-key",
+		// Only the exact n8n events path is exempt, not its neighbours.
+		"/api/automation", "/api/automation/eventsx", "/api/automation/events/extra", "/api/automation/other",
 		"/calendar.ics", "/calendar/feedback",
 		// /healthz is served by the app mux ahead of this middleware; it is
 		// deliberately not on the exempt list.

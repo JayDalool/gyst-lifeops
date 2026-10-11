@@ -63,6 +63,12 @@ func authExemptPath(path string) bool {
 	if path == "/api/health" || strings.HasPrefix(path, "/api/health/") {
 		return true
 	}
+	// n8n reports workflow events to exactly this path with its own bearer
+	// token (GYST_N8N_EVENT_TOKEN); n8n has no cookie jar. An exact match, not
+	// a prefix, so nothing under /api/automation inherits the exemption.
+	if path == "/api/automation/events" {
+		return true
+	}
 	// Tokenized calendar feeds carry their own token and are fetched by
 	// external calendar clients - Apple Calendar, Google Calendar - which never
 	// send a session cookie. Putting these behind the session would silently

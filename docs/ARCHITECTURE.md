@@ -441,6 +441,54 @@ still records the attack). Like the throttle state, the gate is lost on
 restart. A throttled refusal writes no auth log line, as before; the other
 rows each have one auth line with the same `request_id`.
 
+## Automation events (GYST-VN-110)
+
+n8n reports workflow runs to `POST /api/automation/events`. The endpoint
+records and derives status; it never acts on an event and never returns
+stored data.
+
+**Contract.** Bearer token `GYST_N8N_EVENT_TOKEN` (compared as SHA-256 digests,
+constant time). JSON object, at most 16 KiB, unknown fields rejected:
+`event_id` (1-128 printable ASCII), `workflow_id` (1-64 of `A-Za-z0-9_-`),
+`status` (`started`, `succeeded`, `failed`), `occurred_at` (RFC 3339, within
+5 minutes of server time in either direction), optional `error_summary`
+(control characters stripped, 200 runes). Responses: `200 {"status":"applied"}`,
+`200 {"status":"duplicate"}` (same `event_id`, nothing changes),
+`202 {"status":"ignored"}` (workflow not registered, nothing stored), `400`,
+`401` with `WWW-Authenticate: Bearer` (missing or wrong bearer, the Health
+token, or a session cookie alone), `405`, `413`, `415`, `429` (more than 60
+events a minute, fixed window). The Health token does not work here and this
+token does not work on `/api/health/sync`.
+
+**Fails closed.** The endpoint answers `503 ... not configured` unless
+`GYST_N8N_EVENT_TOKEN` is at least 32 bytes and differs from
+`GYST_HEALTH_SYNC_TOKEN`, and `GYST_N8N_WORKFLOWS` parses. The list is
+`id:name,id:name`; a bad id, a missing name, a repeated id or an empty list
+disables the endpoint. Startup logs the name of the offending variable only.
+`GYST_N8N_URL` is carried for later display and unused now.
+
+**Storage.** Table `automation_events`; `event_id` is the primary key, which is
+the deduplication; with the 5 minute window it replaces the dropped
+`processed_events` store (VN-083) for this source. Rows older than 30 days are
+deleted when a new event is stored. State per workflow is derived on read from
+`occurred_at`, never arrival order: Failed, Running (a start in the last 2
+hours with no later finish), Healthy, or No events. Consecutive failures: 1 or
+2 is a warning, 3 or more is critical. No Attention items are created; the
+future Attention service (VN-066) and the GYST-132 view read these statuses.
+
+**Reachability (deviation from 09 section F.1).** 09 put n8n ingress on an
+internal-only network. That listener (VN-073) is dropped, so Jay decided on
+2026-10-11 that events arrive on the public hostname, protected by the bearer
+alone, like Health sync. The session middleware exempts exactly
+`/api/automation/events`. If Cloudflare Access is added later (D-S1), this
+path joins its bypass inventory. Dropped dependencies, replaced as above:
+VN-073 (internal listener), VN-081 (machine credentials: one env token),
+VN-083 (idempotency store), VN-067 (Attention storage).
+
+**Audit.** Until the audit service covers machine ingress, an ignored event
+writes one sanitised log line (`automation.ignored`, workflow id and request id
+only; never the body, token or error summary).
+
 ## Designed for later
 
 The data model supports a future mobile sync client. AI roadmap and quest logic

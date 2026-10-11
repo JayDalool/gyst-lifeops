@@ -34,6 +34,14 @@ type Handler struct {
 	// unaffected. Enable in local/dev via ALLOW_PUBLIC_CALENDAR_FEEDS=true.
 	AllowPublicFeeds bool
 	HealthSyncToken  string // Server-only Health API secret; never rendered.
+	// N8NEventToken is the bearer for POST /api/automation/events (GYST-VN-110);
+	// never rendered or logged. N8NWorkflows is the registered id:name list.
+	// N8NURL is the n8n address, carried for later display; unused here.
+	N8NEventToken string
+	N8NWorkflows  string
+	N8NURL        string
+	// automationLimit caps accepted events per minute.
+	automationLimit automationLimiter
 	// Auth holds the password hash used to sign in. Never rendered or logged.
 	Auth services.AuthConfig
 	// AuthDisabled is an emergency escape hatch for a lockout. It serves every
@@ -399,6 +407,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "api":
 		if len(segments) >= 2 && segments[1] == "health" {
 			h.healthAPI(w, r, segments)
+		} else if len(segments) >= 2 && segments[1] == "automation" {
+			h.automationAPI(w, r, segments)
 		} else {
 			h.pushAPI(w, r, segments)
 		}

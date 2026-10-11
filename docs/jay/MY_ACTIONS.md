@@ -1,3 +1,4 @@
+- [ ] GYST-131 · Set n8n token and workflow list env vars · https://github.com/JayDalool/gyst-lifeops/issues/137
 - [ ] #118 · After deploy: gyst-lifeops healthy; LogConfig 10m x 5 on both · https://github.com/JayDalool/gyst-lifeops/issues/118
 - [ ] #111 · Apply audit migration to backup copy; FK check clean · https://github.com/JayDalool/gyst-lifeops/issues/111
 - [ ] #112 · Run the restore drill once, record result · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/restore.md
