@@ -19,6 +19,11 @@ type Service struct {
 	clock.Clock
 	Training *TrainingSync
 	Repo     *repository.Repository
+	// AttentionProducers feed Attention(); New fills in the GYST sources.
+	AttentionProducers []AttentionProducer
+	// BackupStatusPath is the backup status file (data/backups/last_run.json).
+	// Empty means unconfigured: the backup producer reports nothing.
+	BackupStatusPath string
 }
 
 type DailyStat struct {
@@ -30,10 +35,12 @@ type DailyStat struct {
 }
 
 func New(repo *repository.Repository) *Service {
-	return &Service{
+	s := &Service{
 		Clock: clock.System(),
 		Repo:  repo,
 	}
+	s.AttentionProducers = s.gystAttentionProducers()
+	return s
 }
 
 func (s *Service) Dashboard() (models.DashboardData, error) {
