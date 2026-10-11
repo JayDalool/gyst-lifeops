@@ -1,8 +1,9 @@
 {{define "content"}}
 <div class="gyst-scope projects-ui">
 <header class="gyst-header"><div><h1 class="gyst-page-title">Projects</h1><p class="gyst-caption">{{if .SelectedRoadmapID}}{{.SelectedRoadmap.Name}}{{else}}Make room for what you want to build.{{end}}</p></div><a class="gyst-button gyst-button--icon" href="/projects/new" aria-label="New project">{{template "gyst.icon" "plus"}}</a></header>
+{{template "gyst.projects-subnav" "projects"}}
 {{if .Unlocked}}<p class="gyst-card gyst-card--tinted" role="status">New destination unlocked — a planned route below is now open.</p>{{end}}
-{{template "gyst.segments" .Filters}}
+{{with .Filters}}<nav class="projects-roadmaps" aria-label="{{.Label}}">{{range .Items}}<a href="{{.URL}}" {{if .Selected}}aria-current="page"{{end}}>{{.Label}}</a>{{end}}</nav>{{end}}
 {{if eq .StatusFilter "active"}}<p class="gyst-caption">Includes active, paused and blocked projects; each retains its actual status.</p>{{end}}
 {{if ne .StatusFilter "all"}}<p class="gyst-caption">Parent projects remain visible when a matching subproject needs context.</p>{{end}}
 {{if .Roadmaps}}

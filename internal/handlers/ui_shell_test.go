@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"lifeops-tracker/internal/models"
 )
 
 func primaryMarkup(t *testing.T, body string) string {
@@ -28,12 +31,15 @@ func TestUIShellFiveLinksAndNestedSelection(t *testing.T) {
 			t.Fatalf("%s: %d", tt.path, rec.Code)
 		}
 		nav := primaryMarkup(t, rec.Body.String())
-		// Inside Health the sidebar also lists Health's own sections in a
-		// labelled group (#53, approved design C5). The five primary
-		// destinations and their single current item are checked without it.
-		if i := strings.Index(nav, `<div class="gyst-health-sub"`); i >= 0 {
-			end := strings.Index(nav[i:], "</div>")
-			nav = nav[:i] + nav[i+end+len("</div>"):]
+		// Inside Health and Projects the sidebar also lists the area's own
+		// sections in a labelled group (#53, approved design C5; #124). The
+		// five primary destinations and their single current item are checked
+		// without it.
+		for _, group := range []string{`<div class="gyst-health-sub"`, `<div class="gyst-projects-sub"`} {
+			if i := strings.Index(nav, group); i >= 0 {
+				end := strings.Index(nav[i:], "</div>")
+				nav = nav[:i] + nav[i+end+len("</div>"):]
+			}
 		}
 		if strings.Count(nav, "<a ") != 5 || strings.Count(nav, `aria-current="page"`) != 1 {
 			t.Fatalf("invalid nav: %s", nav)
@@ -111,6 +117,98 @@ func TestNavigationCleanupAndContextActions(t *testing.T) {
 		}
 		if !strings.Contains(primaryMarkup(t, body), "<span>Menu</span>") {
 			t.Fatal("Menu label missing")
+		}
+	}
+}
+
+// markupBetween returns the element that starts with open, up to its close tag.
+func markupBetween(body, open, close string) string {
+	start := strings.Index(body, open)
+	if start < 0 {
+		return ""
+	}
+	end := strings.Index(body[start:], close)
+	if end < 0 {
+		return ""
+	}
+	return body[start : start+end]
+}
+
+func TestProjectsArea(t *testing.T) {
+	for page, want := range map[string]string{"projects": "projects", "galaxy": "galaxy", "roadmap": "roadmaps", "roadmaps": "roadmaps", "health": "projects", "": "projects"} {
+		if got := projectsArea(page); got != want {
+			t.Fatalf("projectsArea(%q) = %q, want %q", page, got, want)
+		}
+	}
+}
+
+// GYST-VN-039 (#124): Projects, Galaxy and Roadmaps are one tap apart. The
+// in-page control is on the Projects and Roadmaps lists; the Galaxy page gets
+// it after #9 (Jay's split). The sidebar group is on every Projects page.
+func TestProjectsAreaSubNavigation(t *testing.T) {
+	h := testHandler(t)
+	project := models.Project{Name: "Fictional Orbit", Status: "active", ProjectKind: "main"}
+	if err := h.Service.Repo.CreateProject(&project); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		path, current string
+		inPage        bool
+	}{
+		{"/projects", "/projects", true},
+		{"/projects?status=completed", "/projects", true},
+		{"/roadmap", "/roadmap", true},
+		{fmt.Sprintf("/projects/%d", project.ID), "/projects", false},
+		{"/projects/new", "/projects", false},
+		{"/roadmaps/new", "/roadmap", false},
+		{"/galaxy", "/galaxy", false},
+	} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tt.path, nil))
+		if rec.Code != 200 {
+			t.Fatalf("%s: %d", tt.path, rec.Code)
+		}
+		body := rec.Body.String()
+		groups := map[string]string{"sidebar": markupBetween(body, `<div class="gyst-projects-sub"`, "</div>")}
+		if tt.inPage {
+			groups["in-page"] = markupBetween(body, `<nav class="gyst-scope gyst-segments gyst-subnav gyst-projects-subnav" aria-label="Projects areas">`, "</nav>")
+		} else if strings.Contains(body, "gyst-projects-subnav") {
+			t.Fatalf("%s must not render the in-page Projects control", tt.path)
+		}
+		for name, group := range groups {
+			if group == "" {
+				t.Fatalf("%s: %s Projects areas group absent", tt.path, name)
+			}
+			if strings.Count(group, "<a ") != 3 || strings.Count(group, `aria-current="page"`) != 1 {
+				t.Fatalf("%s: %s group needs three links and one current: %s", tt.path, name, group)
+			}
+			for _, href := range []string{"/projects", "/galaxy", "/roadmap"} {
+				if !strings.Contains(group, `href="`+href+`"`) {
+					t.Fatalf("%s: %s group missing %s", tt.path, name, href)
+				}
+			}
+			if !strings.Contains(group, `href="`+tt.current+`" aria-current="page"`) {
+				t.Fatalf("%s: %s group marks the wrong area: %s", tt.path, name, group)
+			}
+			if strings.Contains(group, "Development") {
+				t.Fatalf("%s: %s group shows Development before it has a destination", tt.path, name)
+			}
+		}
+		if strings.Count(body, `aria-label="Projects areas"`) != len(groups) {
+			t.Fatalf("%s: want %d Projects areas groups", tt.path, len(groups))
+		}
+	}
+	// The status filter is no longer a second segmented control.
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/projects", nil))
+	if !strings.Contains(rec.Body.String(), `<nav class="projects-roadmaps" aria-label="Project status">`) || strings.Count(rec.Body.String(), `class="gyst-segment"`) != 3 {
+		t.Fatal("projects status filter must use the pill links, leaving one segmented control")
+	}
+	for _, path := range []string{"/health", "/today", "/courses"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if strings.Contains(rec.Body.String(), "Projects areas") {
+			t.Fatalf("%s must not render the Projects areas navigation", path)
 		}
 	}
 }

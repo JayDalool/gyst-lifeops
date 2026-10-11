@@ -28,6 +28,10 @@
 /* Galaxy keeps its scene and controls; only its available shell rectangle changes. */
 :root body.galaxy-page .wrap.gyst-main { padding-top: 0; padding-inline: 0; max-width: none; }
 :root body.galaxy-page .galaxy-stage { height: calc(100vh - var(--gyst-header-clearance) - var(--gyst-nav-clearance)); height: calc(100dvh - var(--gyst-header-clearance) - var(--gyst-nav-clearance)); min-height: 0; }
+/* GYST-VN-039 Projects areas: a sticky segmented control below 1024 px, sidebar sub-items (as Health's) at 1024 px and wider. */
+.gyst-projects-sub { display: none; }
+.gyst-projects-subnav { position: sticky; top: var(--gyst-safe-top); z-index: 90; }
+:root .page-head + .gyst-projects-subnav { margin-top: var(--vn-s4); }
 /* Desktop uses a sidebar; phone and tablet use the same five bottom links. */
 @media (min-width: 1024px) {
   .gyst-topbar { margin-left: var(--gyst-sidebar-width); }
@@ -37,6 +41,11 @@
   .gyst-primary > a > span { text-align: left; }
   :root .wrap.gyst-main { width: calc(100% - var(--gyst-sidebar-width)); margin-left: var(--gyst-sidebar-width); margin-right: 0; max-width: none; }
   .gyst-main > :not(.galaxy-stage) { max-width: 1200px; margin-inline: auto; }
+  .gyst-projects-subnav { display: none; }
+  .gyst-projects-sub { display: grid; gap: 2px; margin: -4px 0 4px; padding-left: 44px; }
+  .gyst-projects-sub > a { display: flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; color: var(--gyst-text-secondary); font-size: .875rem; text-decoration: none; }
+  .gyst-projects-sub > a:hover { color: var(--gyst-blue); }
+  .gyst-projects-sub > a[aria-current="page"] { background: var(--gyst-blue-soft); color: var(--gyst-blue); font-weight: 600; }
 }
 
 @media (max-width: 1023px) { .gyst-more-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
