@@ -34,6 +34,10 @@ const (
 	// forward while the session is being used.
 	sessionLifetime = 30 * 24 * time.Hour
 
+	// sessionAbsoluteLifetime caps a session's whole life from creation, however
+	// often it is used (10A D-S5). Rolling renewal never reaches past it.
+	sessionAbsoluteLifetime = 90 * 24 * time.Hour
+
 	// sessionRefreshInterval throttles the rolling-expiry write. Extending the
 	// session on every request would mean a database write per page load - on
 	// SQLite that is a write lock taken on the request path, for a value whose
@@ -41,6 +45,16 @@ const (
 	// rolling behaviour while leaving ordinary reads read-only.
 	sessionRefreshInterval = 24 * time.Hour
 )
+
+// sessionExpiry is the earlier of the rolling idle expiry and the absolute
+// cap. Used for every write of expires_at so the sweeper sees the cap too.
+func sessionExpiry(createdAt, now time.Time) time.Time {
+	idle := now.Add(sessionLifetime)
+	if capAt := createdAt.Add(sessionAbsoluteLifetime); capAt.Before(idle) {
+		return capAt
+	}
+	return idle
+}
 
 // AuthConfig carries the server-side secret. The hash is supplied through the
 // environment and is never rendered, logged, or written to the database.
@@ -87,7 +101,7 @@ func (s *Service) CreateSession() (rawToken string, expiresAt time.Time, err err
 	rawToken = base64.RawURLEncoding.EncodeToString(buffer)
 
 	now := s.Now().UTC()
-	expiresAt = now.Add(sessionLifetime)
+	expiresAt = sessionExpiry(now, now)
 	if err = s.Repo.CreateSession(hashSessionToken(rawToken), expiresAt, now); err != nil {
 		return "", time.Time{}, err
 	}
@@ -122,7 +136,8 @@ func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err err
 	}
 
 	now := s.Now().UTC()
-	if !now.Before(session.ExpiresAt) {
+	if !now.Before(session.ExpiresAt) || !now.Before(session.CreatedAt.Add(sessionAbsoluteLifetime)) {
+		// Idle-expired or past the absolute cap, even if used yesterday.
 		// Clear it on the way past so lapsed rows do not accumulate between
 		// sweeps. A failure here must not deny an otherwise correct decision.
 		_, _ = s.Repo.DeleteSession(tokenHash)
@@ -130,7 +145,7 @@ func (s *Service) CheckSession(rawToken string) (renewedUntil time.Time, err err
 	}
 
 	if now.Sub(session.LastSeenAt) >= sessionRefreshInterval {
-		expiresAt := now.Add(sessionLifetime)
+		expiresAt := sessionExpiry(session.CreatedAt, now)
 		if err := s.Repo.TouchSession(tokenHash, expiresAt, now); err != nil {
 			return time.Time{}, err
 		}
