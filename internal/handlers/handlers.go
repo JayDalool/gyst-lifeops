@@ -1712,7 +1712,11 @@ func (h *Handler) addGoalProgress(w http.ResponseWriter, r *http.Request, id int
 		serverError(w, err)
 		return
 	}
-	value, _ := strconv.ParseFloat(r.FormValue("value"), 64)
+	value, err := parseGoalProgressValue(r.FormValue("value"))
+	if err != nil {
+		userError(w, err, http.StatusBadRequest, "")
+		return
+	}
 	entryDate, err := h.formLocalDate(r.FormValue("entry_date"))
 	if err != nil {
 		invalidDate(w, "entry_date")
@@ -2649,6 +2653,25 @@ func (h *Handler) formLocalDate(value string) (string, error) {
 }
 
 // invalidDate answers a malformed date with 400; nothing has been written.
+// parseGoalProgressValue validates a posted goal progress value. A blank or
+// garbled value must never become 0 (RULES §3.2: NULL is not 0; GYST-152); a
+// typed "0" is a real value and stays valid. The messages are fixed text and
+// never echo the input.
+func parseGoalProgressValue(raw string) (float64, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, &services.UserError{Message: "Enter a progress value."}
+	}
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil || math.IsNaN(value) || math.IsInf(value, 0) {
+		return 0, &services.UserError{Message: "Progress value must be a number, for example 12.5."}
+	}
+	if value < 0 {
+		return 0, &services.UserError{Message: "Progress value must be 0 or more."}
+	}
+	return value, nil
+}
+
 func invalidDate(w http.ResponseWriter, field string) {
 	http.Error(w, field+" must be a valid YYYY-MM-DD date", http.StatusBadRequest)
 }
