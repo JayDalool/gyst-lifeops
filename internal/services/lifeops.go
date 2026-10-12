@@ -24,6 +24,10 @@ type Service struct {
 	// BackupStatusPath is the backup status file (data/backups/last_run.json).
 	// Empty means unconfigured: the backup producer reports nothing.
 	BackupStatusPath string
+
+	// calendarAfterReads is a test seam run after the calendar's project data
+	// reads and before the privacy lookup. Nil in production.
+	calendarAfterReads func()
 }
 
 type DailyStat struct {

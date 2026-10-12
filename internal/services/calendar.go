@@ -181,9 +181,34 @@ func (s *Service) projectTaskEvents() ([]CalendarEvent, error) {
 	if err != nil {
 		return nil, err
 	}
+	tasks, err := s.Repo.ListTasks(false)
+	if err != nil {
+		return nil, err
+	}
+	items, err := s.Repo.ProjectItemDeadlines()
+	if err != nil {
+		return nil, err
+	}
+	milestones, err := s.Repo.MilestoneDeadlines()
+	if err != nil {
+		return nil, err
+	}
+
+	// Privacy is read AFTER the project, item and milestone reads it is applied
+	// to, so a project made (or imported) private in between is still hidden.
+	// A lookup failure fails the whole feed: no feed beats a leaky feed.
+	if s.calendarAfterReads != nil {
+		s.calendarAfterReads()
+	}
+	privacy, err := s.Repo.EffectiveProjectPrivacy()
+	if err != nil {
+		return nil, err
+	}
+	hidden := func(projectID int64) bool { return privacy[projectID].Hidden() }
+
 	for _, p := range projects {
 		pr := p.Project
-		if pr.TargetDate == "" || pr.Status == "archived" {
+		if pr.TargetDate == "" || pr.Status == "archived" || hidden(pr.ID) {
 			continue
 		}
 		events = append(events, CalendarEvent{
@@ -195,10 +220,6 @@ func (s *Service) projectTaskEvents() ([]CalendarEvent, error) {
 		})
 	}
 
-	tasks, err := s.Repo.ListTasks(false)
-	if err != nil {
-		return nil, err
-	}
 	for _, t := range tasks {
 		if t.DueDate == "" || t.RepeatType != "none" || t.Status != "pending" {
 			continue
@@ -213,11 +234,10 @@ func (s *Service) projectTaskEvents() ([]CalendarEvent, error) {
 	}
 
 	// Project mission items with a due date.
-	items, err := s.Repo.ProjectItemDeadlines()
-	if err != nil {
-		return nil, err
-	}
 	for _, it := range items {
+		if hidden(it.ProjectID) {
+			continue
+		}
 		events = append(events, CalendarEvent{
 			UID:         "item-" + it.UUID + "@gyst",
 			Summary:     it.Title,
@@ -228,11 +248,10 @@ func (s *Service) projectTaskEvents() ([]CalendarEvent, error) {
 	}
 
 	// Roadmap milestones with a due date.
-	milestones, err := s.Repo.MilestoneDeadlines()
-	if err != nil {
-		return nil, err
-	}
 	for _, m := range milestones {
+		if hidden(m.ProjectID) {
+			continue
+		}
 		events = append(events, CalendarEvent{
 			UID:         "milestone-" + m.UUID + "@gyst",
 			Summary:     m.Title,

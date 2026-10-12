@@ -23,6 +23,8 @@ GYST exports every dated item as a standard iCalendar feed:
 - Roadmap milestone due dates — `milestone-<uuid>@gyst`
 - Standalone reminders with a date — `reminder-<uuid>@gyst`
 
+**Privacy rule:** projects marked Private or Local only (or under such a parent, at any depth), with their missions and milestones, never appear in any feed. They are left out, not shown as "Busy". Privacy is checked on every request, so making a project public restores its events.
+
 **Reminders — included, but only standalone ones.** The `reminders` table holds
 two kinds (verified against `syncTaskReminder`): *task-derived* rows, which the
 app auto-creates with `reminder_date = the task's due_date`, and *standalone*
@@ -67,6 +69,7 @@ stays gated.
 - The token is 32 random bytes (64 hex chars) from `crypto/rand`, stored in
   `app_settings`. It is shown in Settings so you can copy the URL, but is **never
   logged**. Validation is constant-time; a wrong token returns `404`.
+- Projects marked Private or Local only (or under such a parent), with their missions and milestones, never appear in any feed.
 - **Anyone with the URL can read the feed** (that's how unauthenticated calendar
   fetchers work) — the Settings page warns about this. Regenerate to invalidate a
   leaked link.
