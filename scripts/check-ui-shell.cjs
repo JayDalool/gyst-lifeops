@@ -311,7 +311,7 @@ function tapTargetChecks() {
   assert.throws(tok('[data-gyst-theme="dark"]{--tab:30px}'), /\.t.*30px/);
   assert.throws(tok('@media (max-width:600px){:root{--tab:30px}}'), /\.t.*30px/);
   assert.throws(tok(':root{--tab:30px}'), /\.t.*30px/);
-  const templates = {'ui_shell.html': fs.readFileSync('web/templates/ui_shell.html', 'utf8'), 'layout.html': fs.readFileSync('web/templates/layout.html', 'utf8')};
+  const templates = {'ui_shell.html': fs.readFileSync('web/templates/ui_shell.html', 'utf8'), 'layout.html': fs.readFileSync('web/templates/layout.html', 'utf8'), 'reminders.html': fs.readFileSync('web/templates/reminders.html', 'utf8')};
   coverageCheck(templates);
   assert.throws(() => coverageCheck({'ui_shell.html': templates['ui_shell.html'] + '<body><button type="button">Oops</button>'}), /<button> has no checked tap-target selector/);
 }
