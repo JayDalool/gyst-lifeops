@@ -70,23 +70,6 @@ func TestTodayHealthSnapshotStates(t *testing.T) {
 	}
 }
 
-func TestNextTodayReminder(t *testing.T) {
-	now := time.Date(2026, 9, 11, 14, 0, 0, 0, time.FixedZone("local", -5*3600))
-	rows := []models.ReminderView{
-		{Title: "past", ReminderDate: "2026-09-11", ReminderTime: "09:00"},
-		{Title: "later", ReminderDate: "2026-09-11", ReminderTime: "18:00"},
-		{Title: "next", ReminderDate: "2026-09-11", ReminderTime: "15:00"},
-		{Title: "tomorrow", ReminderDate: "2026-09-12", ReminderTime: "14:01"},
-		{Title: "untimed", ReminderDate: "2026-09-11"},
-	}
-	if got := nextTodayReminder(rows, now); got == nil || got.Title != "next" {
-		t.Fatalf("next = %#v", got)
-	}
-	if nextTodayReminder(rows, now.Add(5*time.Hour)) != nil {
-		t.Fatal("past reminder presented as upcoming")
-	}
-}
-
 func TestTodayPreservesActionsAndRealFocus(t *testing.T) {
 	body := renderBody(t, "today.html", TodayData{Page: "today", Today: "2026-09-11", Pending: []models.TaskOccurrence{{Task: models.Task{ID: 81, Title: "Actual pending task"}, Date: "2026-09-11"}}, Skipped: []models.TaskOccurrence{{Task: models.Task{ID: 82, Title: "Skipped fixture"}, Date: "2026-09-11"}}, Learning: models.TodayLearning{Blocks: []models.LearningBlock{{ID: 31, CourseID: 11, Title: "Real lesson"}}}})
 	for _, text := range []string{`action="/tasks/81/complete"`, `action="/tasks/81/skip"`, `action="/tasks/82/complete"`, `name="occurrence_date" value="2026-09-11"`, `value="/today#task-81"`, `action="/courses/11/blocks/31/complete"`, `action="/courses/11/blocks/31/postpone"`, `data-prayer-enable`, `data-prayer-test`, `data-prayer-audio`, `Health snapshot`, `Today’s checklist`} {

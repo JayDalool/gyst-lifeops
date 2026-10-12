@@ -192,8 +192,14 @@ func TestLocalDayTodayOverdueAndReminder(t *testing.T) {
 	if len(today) != 1 {
 		t.Fatalf("today's reminders = %#v; want the 20:00 reminder", today)
 	}
-	if next := nextTodayReminder(today, h.Service.Now().In(h.Service.Location())); next == nil {
-		t.Fatal("the next reminder card is empty in the evening")
+	// The due-today task is the Now action; its own reminder is not repeated as
+	// the next timed item.
+	now, err := h.Service.TodayNow()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if now.Action == nil || now.Action.Task == nil || now.Action.Task.Task.Title != "Call the bank" {
+		t.Fatalf("the Now action is empty in the evening: %#v", now.Action)
 	}
 }
 
