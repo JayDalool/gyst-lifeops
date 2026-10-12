@@ -29,6 +29,7 @@ func healthRequest(h *Handler, method, path, body, token, contentType string) *h
 func TestHealthAPIAuthenticationAndValidation(t *testing.T) {
 	h := testHandler(t)
 	h.HealthSyncToken = healthTestToken
+	h.Service.Now = func() time.Time { return time.Date(2026, 9, 10, 18, 0, 0, 0, time.UTC) }
 	valid := `{"date":"2026-09-10","source":"apple_shortcuts","dietary_calories":130,"protein_g":8}`
 	for _, test := range []struct {
 		name, method, path, body, token, media string
