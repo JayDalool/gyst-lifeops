@@ -374,6 +374,9 @@ function launcherChecks() {
   assert.equal(L.enterAction('go', false, 'buy milk'), 'none');
   assert.equal(L.enterAction('go', false, ''), 'none');
   assert.equal(L.enterAction('go', true, 'buy milk'), 'open');
+  assert.equal(L.enterAction('go', true, 'garden', true), 'defer', 'stale results never open');
+  assert.equal(L.enterAction('go', false, 'garden', true), 'defer');
+  assert.equal(L.enterAction('capture', true, 'x', true), 'submit');
   assert.equal(L.enterAction('capture', false, 'buy milk'), 'submit');
   assert.equal(L.enterAction('capture', true, '  '), 'none');
   // Arrow keys wrap and an empty list has no selection.
@@ -382,6 +385,9 @@ function launcherChecks() {
   same({...L.parseCapture('Call Sam tomorrow !high', '2026-10-12', '2026-10-13')}, {title: 'Call Sam', due: '2026-10-13', priority: 'high'});
   same({...L.parseCapture('Pay rent today !low', '2026-10-12', '2026-10-13')}, {title: 'Pay rent', due: '2026-10-12', priority: 'low'});
   same({...L.parseCapture('Plain', 'a', 'b')}, {title: 'Plain', due: '', priority: ''});
+  // Source guard: input marks results stale, and only the current search may open its top hit.
+  assert(/setActive\(-1\); pending = true; openAfter = false;/.test(src), 'input marks results stale');
+  assert(/if \(mine !== seq \|\| mode !== "go"\) return;\s*pending = false;\s*render\(cleanGroups\(data\), query\);\s*if \(openAfter\)/.test(src), 'deferred open only after the current search renders');
   // The shell no longer carries the old palette, and the new script ships with the page and the worker.
   assert(!/initCommandPalette/.test(fs.readFileSync('web/static/js/app.js', 'utf8')), 'old palette removed from app.js');
   assert(/launcher\.js\?v=/.test(fs.readFileSync('web/static/service-worker.js', 'utf8')), 'launcher.js is precached');

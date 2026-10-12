@@ -42,8 +42,12 @@
   }
 
   // Enter opens the selected result in Go and never creates; it submits only from Capture.
-  function enterAction(mode, hasActive, title) {
+  // While results are stale (the query changed and the answer has not arrived)
+  // Enter never opens an old option: it asks for the current query and opens
+  // that query's top hit when it arrives ("defer").
+  function enterAction(mode, hasActive, title, pending) {
     if (mode === "capture") return String(title || "").trim() ? "submit" : "none";
+    if (pending) return "defer";
     return hasActive ? "open" : "none";
   }
 
@@ -83,7 +87,7 @@
     var panels = Array.prototype.slice.call(palette.querySelectorAll("[data-launcher-panel]"));
     var HELP = status ? status.textContent : "";
 
-    var mode = "go", options = [], active = -1, timer = 0, controller = null, seq = 0, trigger = null;
+    var mode = "go", options = [], active = -1, timer = 0, controller = null, seq = 0, trigger = null, pending = false, openAfter = false;
 
     // Today and tomorrow are the server's local days in the app timezone
     // (data-today / data-tomorrow); the browser date is only a fallback.
@@ -198,6 +202,7 @@
       if (controller) controller.abort();
       controller = typeof AbortController !== "undefined" ? new AbortController() : null;
       var mine = ++seq;
+      pending = true;
       var init = { credentials: "same-origin", headers: { Accept: "application/json" } };
       if (controller) init.signal = controller.signal;
       fetch("/api/search?q=" + encodeURIComponent(query), init).then(function (response) {
@@ -206,9 +211,12 @@
         return response.json();
       }).then(function (data) {
         if (mine !== seq || mode !== "go") return;
+        pending = false;
         render(cleanGroups(data), query);
+        if (openAfter) { openAfter = false; if (options[0]) options[0].click(); }
       }).catch(function (err) {
         if (mine !== seq || mode !== "go" || (err && err.name === "AbortError")) return;
+        pending = false; openAfter = false;
         render([], query);
         setStatus(err && err.auth ? "Your session ended. Reload the page to sign in." : "Search is unavailable right now.");
       });
@@ -231,6 +239,7 @@
     function setMode(next, focus) {
       if (next === mode) { if (focus) input.focus(); return; }
       mode = next;
+      pending = false; openAfter = false;
       modeButtons.forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.launcherMode === mode ? "true" : "false"); });
       panels.forEach(function (p) { p.hidden = p.dataset.launcherPanel !== mode; });
       if (mode === "capture") {
@@ -258,6 +267,7 @@
       priority.value = "medium";
       if (!palette.open) palette.showModal();
       mode = "capture"; // force the reset below
+      pending = false; openAfter = false;
       input.value = ""; title.value = "";
       setMode("go", false);
       input.focus();
@@ -265,6 +275,7 @@
     function close() { if (palette.open) palette.close(); }
 
     palette.addEventListener("close", function () {
+      pending = false; openAfter = false;
       clearTimeout(timer);
       seq++;
       if (controller) controller.abort();
@@ -278,7 +289,7 @@
       var parsed = parseInput(input.value, mode);
       if (parsed.mode !== mode) { input.value = parsed.text; setMode(parsed.mode, false); }
       if (mode === "capture") applyCapture();
-      else runSearch(false);
+      else { setActive(-1); pending = true; openAfter = false; runSearch(false); }
     });
 
     input.addEventListener("keydown", function (event) {
@@ -286,12 +297,13 @@
       if (event.key === "Tab" && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
         setMode(mode === "go" ? "capture" : "go", true);
-      } else if (mode === "go" && event.key === "ArrowDown") { event.preventDefault(); setActive(step(active, 1, options.length)); }
-      else if (mode === "go" && event.key === "ArrowUp") { event.preventDefault(); setActive(step(active, -1, options.length)); }
+      } else if (mode === "go" && !pending && event.key === "ArrowDown") { event.preventDefault(); setActive(step(active, 1, options.length)); }
+      else if (mode === "go" && !pending && event.key === "ArrowUp") { event.preventDefault(); setActive(step(active, -1, options.length)); }
       else if (event.key === "Enter") {
-        var action = enterAction(mode, !!options[active], title.value);
+        var action = enterAction(mode, !!options[active], title.value, pending);
         event.preventDefault();
         if (action === "open") options[active].click();
+        else if (action === "defer") { if (input.value.trim()) { openAfter = true; runSearch(true); } }
         else if (action === "submit") form.requestSubmit();
       }
     });
