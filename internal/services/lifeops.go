@@ -775,6 +775,63 @@ func completionKey(taskID int64, date string) string {
 	return strconv.FormatInt(taskID, 10) + "|" + date
 }
 
+// isRepeating reports whether a task repeats on a schedule.
+func isRepeating(task models.Task) bool {
+	switch task.RepeatType {
+	case "daily", "weekly", "monthly", "yearly":
+		return true
+	}
+	return false
+}
+
+// TaskActionDate is the date a Complete or Skip from the task list or detail
+// page books for a task. A one-time task uses its due date, or today when it has
+// none. A repeating task uses the current occurrence on the clock's local
+// calendar: today if it is due, else the latest due day before today, else the
+// series start when the series starts after today.
+func (s *Service) TaskActionDate(task models.Task) string {
+	today := s.Today()
+	if !isRepeating(task) {
+		if task.DueDate != "" {
+			return task.DueDate
+		}
+		return s.TodayString()
+	}
+	task.ArchivedAt = ""
+	start, ok := parseDate(task.DueDate, s.Location())
+	if !ok {
+		return s.TodayString()
+	}
+	if start.After(today) {
+		return start.Format(clock.DateLayout)
+	}
+	// The series start is always an occurrence, so the walk ends at or before it.
+	for day := today; !day.Before(start); day = day.AddDate(0, 0, -1) {
+		if taskDueOn(task, day) {
+			return day.Format(clock.DateLayout)
+		}
+	}
+	return start.Format(clock.DateLayout)
+}
+
+// IsTaskOccurrence reports whether date (a canonical YYYY-MM-DD) is a day the
+// task occurs on. One-time tasks and repeating tasks without a usable start
+// date have no series to check, so any date is accepted for them.
+func (s *Service) IsTaskOccurrence(task models.Task, date string) bool {
+	if !isRepeating(task) {
+		return true
+	}
+	if _, ok := parseDate(task.DueDate, s.Location()); !ok {
+		return true
+	}
+	day, ok := parseDate(date, s.Location())
+	if !ok {
+		return false
+	}
+	task.ArchivedAt = ""
+	return taskDueOn(task, day)
+}
+
 func taskDueOn(task models.Task, date time.Time) bool {
 	if task.ArchivedAt != "" || task.DueDate == "" {
 		return false
