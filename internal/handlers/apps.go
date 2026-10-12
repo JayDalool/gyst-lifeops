@@ -28,6 +28,19 @@ var appGroupTitles = map[string]string{
 	services.AppGroupLearning: "Learning",
 }
 
+// appURL is the link for one app on this request's host. A tailnet app has a
+// URL only on a .ts.net host (the placeholder becomes the request host); on
+// every other host it is empty. /apps and the launcher search share this rule.
+func appURL(a services.App, onTailnet bool, host string) string {
+	if a.Environment != services.AppEnvTailnet {
+		return a.URL
+	}
+	if !onTailnet {
+		return ""
+	}
+	return strings.ReplaceAll(a.URL, services.TailnetHostPlaceholder, host)
+}
+
 // apps lists the external tools in the registry (GYST-101). Tailnet apps are
 // links only on a .ts.net host, where the placeholder becomes the request
 // host. On every other host (fail safe) their URL is cleared here, so it never
@@ -60,16 +73,7 @@ func (h *Handler) apps(w http.ResponseWriter, r *http.Request) {
 			if a.Group != group {
 				continue
 			}
-			row := appRow{Name: a.Name, Monogram: a.Monogram, URL: a.URL}
-			if a.Environment == services.AppEnvTailnet {
-				row.Tailnet = true
-				if onTailnet {
-					row.URL = strings.ReplaceAll(a.URL, services.TailnetHostPlaceholder, host)
-				} else {
-					row.URL = ""
-				}
-			}
-			g.Rows = append(g.Rows, row)
+			g.Rows = append(g.Rows, appRow{Name: a.Name, Monogram: a.Monogram, URL: appURL(a, onTailnet, host), Tailnet: a.Environment == services.AppEnvTailnet})
 		}
 		if len(g.Rows) > 0 {
 			data.Groups = append(data.Groups, g)
