@@ -1,6 +1,43 @@
 package repository
 
-import "context"
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"strings"
+)
+
+// DeleteAuditEventsBefore removes rows with at strictly before cutoff (a row
+// exactly at the cutoff stays). actions narrows the delete: include=true
+// deletes only those actions, include=false deletes every action except
+// those. include=true with no actions deletes nothing. cutoff must be a
+// stored-instant string (clock.FormatInstant); an empty one is refused so the
+// statement can never match every row. Action names are bound parameters.
+func (r *Repository) DeleteAuditEventsBefore(ctx context.Context, cutoff string, actions []string, include bool) (int64, error) {
+	if cutoff == "" {
+		return 0, errors.New("audit delete: empty cutoff")
+	}
+	query := "DELETE FROM audit_events WHERE at < ?"
+	args := []any{cutoff}
+	if len(actions) > 0 {
+		marks := strings.TrimSuffix(strings.Repeat("?,", len(actions)), ",")
+		if include {
+			query += " AND action IN (" + marks + ")"
+		} else {
+			query += " AND action NOT IN (" + marks + ")"
+		}
+		for _, a := range actions {
+			args = append(args, a)
+		}
+	} else if include {
+		return 0, nil
+	}
+	res, err := r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
 
 // AuditEvent is one row of audit_events (GYST-VN-005). The service layer
 // validates and sanitises it; this type is storage only.
@@ -46,4 +83,13 @@ func (r *Repository) RecentAuditEvents(ctx context.Context, limit int) ([]AuditE
 		out = append(out, e)
 	}
 	return out, rows.Err()
+}
+
+// LatestAuditEventAt returns the newest `at`, or "" when the table is empty.
+func (r *Repository) LatestAuditEventAt(ctx context.Context) (string, error) {
+	var at sql.NullString
+	if err := r.db.QueryRowContext(ctx, "SELECT MAX(at) FROM audit_events").Scan(&at); err != nil {
+		return "", err
+	}
+	return at.String, nil
 }
