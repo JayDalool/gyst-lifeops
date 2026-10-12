@@ -177,3 +177,13 @@ type UIEmpty struct {
 
 // UIStale is the amber chip with the age the caller passes in ("6:40").
 type UIStale struct{ Source, Age string }
+
+// UIOverlayHead is the title and close button at the top of a sheet or popover (VN-023).
+type UIOverlayHead struct{ ID, Title string }
+
+// UIConfirm is an in-page confirmation dialog (VN-023, 13 §8). Destructive styles the
+// confirm button as dangerous; Cancel always takes the initial focus.
+type UIConfirm struct {
+	ID, Title, Consequence, ConfirmLabel string
+	Destructive                          bool
+}

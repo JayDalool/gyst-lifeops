@@ -23,7 +23,7 @@
         <li class="task" id="task-{{.ID}}">
           {{if eq .Status "pending"}}
             <form method="post" action="/tasks/{{.ID}}/complete">
-              <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
+              <input type="hidden" name="occurrence_date" value="{{index $.OccurrenceDates .ID}}">
               <input type="hidden" name="return_to" value="/tasks?status={{$.StatusFilter}}#task-{{.ID}}">
               <label class="task-check"><input type="checkbox" aria-label="Complete: {{.Title}}" data-autosubmit></label>
             </form>
@@ -38,13 +38,13 @@
               {{.Category}} &middot; {{.RepeatType}} &middot; {{.Priority}}
               {{- if .DueDate}} &middot; due {{niceDate .DueDate}}{{end}}
               {{- if ne .Status "pending"}} &middot; {{.Status}}{{end}}
-              {{- if and (eq .Status "pending") .DueDate (lt .DueDate $.Today)}} &middot; <span class="task-late">overdue</span>{{end}}
+              {{- if and (eq .Status "pending") (eq .RepeatType "none") .DueDate (lt .DueDate $.Today)}} &middot; <span class="task-late">overdue</span>{{end}}
             </div>
           </div>
           <div class="task-actions">
             {{if eq .Status "pending"}}
               <form method="post" action="/tasks/{{.ID}}/skip">
-                <input type="hidden" name="occurrence_date" value="{{if .DueDate}}{{.DueDate}}{{else}}{{$.Today}}{{end}}">
+                <input type="hidden" name="occurrence_date" value="{{index $.OccurrenceDates .ID}}">
                 <input type="hidden" name="return_to" value="/tasks?status={{$.StatusFilter}}#task-{{.ID}}">
                 <button class="btn quiet sm" type="submit" aria-label="Skip {{.Title}}">Skip</button>
               </form>

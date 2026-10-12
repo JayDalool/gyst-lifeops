@@ -19,6 +19,9 @@
 .gyst-card--inset { background: var(--gyst-control-bg); box-shadow: none; }
 .gyst-icon { width: 24px; height: 24px; flex-shrink: 0; vertical-align: middle; }
 .gyst-icon-tile { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--gyst-radius-sm); background: var(--gyst-blue-soft); color: var(--gyst-blue); }
+.gyst-icon-tile--mono { font-size: .75rem; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+.gyst-row .gyst-chip .gyst-icon { width: 14px; height: 14px; }
+.gyst-app-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .gyst-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--gyst-space-2); min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: var(--gyst-radius-sm); background: #2563eb; color: #fff; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color var(--gyst-duration), transform var(--vn-fast) var(--vn-ease); }
 .gyst-button:not(:disabled):active { transform: scale(.97); }
 .gyst-button:hover { background: #1d4ed8; }
@@ -78,8 +81,6 @@ a.gyst-row:hover { background: var(--gyst-blue-soft); }
 .gyst-skeleton--value { width: 55%; height: 40px; }
 .gyst-dialog { color: var(--gyst-text); background: var(--gyst-surface); border: 1px solid var(--gyst-border); border-radius: var(--gyst-radius-xl); padding: 24px; width: min(440px, calc(100% - 32px)); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px - var(--gyst-safe-top) - var(--gyst-safe-bottom)); overflow-y: auto; box-shadow: var(--gyst-shadow-floating); }
 .gyst-dialog::backdrop { background: rgb(15 23 42 / 35%); }
-.gyst-sheet { margin: auto auto 0; width: min(640px, 100%); border-radius: 24px 24px 0 0; padding-bottom: calc(24px + var(--gyst-safe-bottom)); }
-.gyst-sheet::before { content: ""; display: block; width: 36px; height: 4px; background: var(--gyst-control-border); border-radius: 999px; margin: -8px auto 20px; }
 .gyst-toast { display: flex; gap: 8px; align-items: center; padding: 12px 16px; border: 1px solid var(--gyst-border); border-radius: 12px; color: var(--gyst-positive-text); background: var(--gyst-surface); box-shadow: var(--gyst-shadow-raised); }
 /* VN-022 State components (11 §I/§N, 13 §17). Family via [data-state]: ok info warn crit idle. --vn-* tokens only.
    Healthy is quiet (ink-2 text, green dot). State is never colour alone: a word plus a dot or icon. */
@@ -127,3 +128,40 @@ a.gyst-row:hover { background: var(--gyst-blue-soft); }
 @view-transition { navigation: auto; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--vn-fast); animation-timing-function: var(--vn-ease); }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+/* VN-023 Overlays (11 §N, 13 §6-§9). Native <dialog class="gyst-overlay">; behaviour in ui-overlay.js. Neutral and accent tokens only. */
+html.gyst-scroll-lock { overflow-y: scroll; }
+html.gyst-scroll-lock body { position: fixed; left: 0; right: 0; width: 100%; }
+dialog.gyst-overlay { box-sizing: border-box; color: var(--vn-ink); background: var(--vn-elevated); border: 1px solid var(--vn-separator); border-radius: var(--vn-r-xl); padding: 0; box-shadow: var(--vn-e3); font-family: inherit; overflow-y: auto; overscroll-behavior: contain; }
+dialog.gyst-overlay::backdrop { background: rgb(15 23 42 / 35%); }
+dialog.gyst-overlay :where(h2, p) { margin: 0; }
+dialog.gyst-overlay :where(a, button, input, select, textarea):focus-visible { outline: 2px solid var(--vn-accent); outline-offset: 2px; }
+.gyst-overlay-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.gyst-overlay-close { display: grid; place-items: center; flex: none; width: 44px; height: 44px; margin: 0 -8px 0 0; padding: 0; border: 0; border-radius: var(--vn-r-pill); background: transparent; color: var(--vn-ink-2); cursor: pointer; }
+.gyst-overlay-close:hover { background: var(--vn-surface-2); color: var(--vn-ink); }
+.gyst-overlay-body { display: grid; gap: 16px; padding: 24px; }
+.gyst-overlay-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+dialog.gyst-confirm { width: min(440px, calc(100% - 32px)); max-height: calc(100dvh - 32px); }
+dialog.gyst-sheet { margin: auto 0 0; width: 100%; max-width: 100%; max-height: 88dvh; padding: 16px 16px calc(16px + var(--gyst-safe-bottom, 0px)); border-radius: var(--vn-r-xl) var(--vn-r-xl) 0 0; border-bottom: 0; }
+dialog.gyst-sheet[open] { animation: gyst-sheet-in var(--vn-base) var(--vn-ease); }
+dialog.gyst-sheet::before { content: ""; display: block; width: 36px; height: 4px; margin: 0 auto 8px; border-radius: var(--vn-r-pill); background: var(--vn-separator); }
+dialog.gyst-sheet > * + * { margin-top: 12px; }
+@media (min-width: 600px) {
+  dialog.gyst-sheet { margin: auto auto 24px; width: min(560px, calc(100% - 48px)); padding: 24px; border-radius: var(--vn-r-xl); border-bottom: 1px solid var(--vn-separator); }
+  dialog.gyst-sheet::before { display: none; }
+}
+@keyframes gyst-sheet-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+dialog.gyst-popover:not(.gyst-sheet) { position: fixed; inset: auto; margin: 0; padding: 4px; width: max-content; min-width: 200px; max-width: min(320px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); border-radius: var(--vn-r-md); box-shadow: var(--vn-e2); }
+dialog.gyst-popover:not(.gyst-sheet) .gyst-overlay-head { display: none; }
+.gyst-menu-item { display: flex; align-items: center; gap: 12px; box-sizing: border-box; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: var(--vn-r-sm); background: transparent; color: inherit; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.gyst-menu-item:hover { background: var(--vn-surface-2); }
+dialog.gyst-overlay .gyst-menu-item:focus-visible { outline-offset: -2px; }
+.gyst-menu-item.is-destructive { position: relative; margin-top: 9px; color: var(--vn-crit-text); }
+.gyst-menu-item.is-destructive::before { content: ""; position: absolute; left: 0; right: 0; top: -5px; border-top: 1px solid var(--vn-separator); }
+.gyst-inspector { display: none; }
+a.gyst-row[aria-current="true"] { background: var(--vn-accent-soft); }
+@media (min-width: 1280px) {
+  .gyst-has-inspector { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+  .gyst-inspector { display: block; position: sticky; top: 16px; min-width: 0; padding: 24px; background: var(--vn-surface); color: var(--vn-ink); border: 1px solid var(--vn-separator); border-radius: var(--vn-r-lg); }
+}
+@media (min-width: 1600px) { .gyst-has-inspector { grid-template-columns: minmax(0, 1fr) 440px; } }
+@media (prefers-reduced-motion: reduce) { dialog.gyst-sheet[open] { animation: none; } }

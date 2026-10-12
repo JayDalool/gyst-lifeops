@@ -1,0 +1,8 @@
+[
+  {"id": "expenses", "name": "Expenses", "monogram": "EXP", "group": "work", "environment": "public", "url": "https://expenses.zaylolabs.com"},
+  {"id": "samvision", "name": "SamVision", "monogram": "SV", "group": "work", "environment": "public", "url": "https://samvision.zaylolabs.com"},
+  {"id": "github-gyst", "name": "GitHub: gyst-lifeops", "monogram": "GH", "group": "work", "environment": "public", "url": "https://github.com/JayDalool/gyst-lifeops"},
+  {"id": "github-commandcenter", "name": "GitHub: CommandCenter", "monogram": "GH", "group": "work", "environment": "public", "url": "https://github.com/JayDalool/CommandCenter"},
+  {"id": "cloudflare", "name": "Cloudflare", "monogram": "CF", "group": "operate", "environment": "public", "url": "https://dash.cloudflare.com"},
+  {"id": "tailscale", "name": "Tailscale", "monogram": "TS", "group": "operate", "environment": "public", "url": "https://login.tailscale.com/admin"}
+]

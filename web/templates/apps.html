@@ -1,0 +1,8 @@
+{{define "content"}}
+<div class="gyst-scope gyst-more">
+  <header class="gyst-header"><div><h1 class="gyst-page-title">Apps</h1><p class="gyst-caption">Your other tools. Each opens in a new tab.</p></div></header>
+  {{range .Groups}}<section class="gyst-stack"><h2 class="gyst-section-title">{{.Title}}</h2><ul class="gyst-list">
+    {{range .Rows}}<li>{{if .URL}}<a class="gyst-row" href="{{.URL}}" target="_blank" rel="noopener noreferrer"><span class="gyst-icon-tile gyst-icon-tile--mono" aria-hidden="true">{{.Monogram}}</span><span class="gyst-row-copy"><span>{{.Name}}</span></span>{{if .Tailnet}}<span class="gyst-chip" data-state="idle">{{template "gyst.icon" "lock"}}Tailnet</span>{{end}}{{template "gyst.icon" "external-link"}}<span class="gyst-app-sr">(opens in a new tab)</span></a>{{else}}<div class="gyst-row"><span class="gyst-icon-tile gyst-icon-tile--mono" aria-hidden="true">{{.Monogram}}</span><span class="gyst-row-copy"><span>{{.Name}}</span><span class="gyst-caption">Tailnet only</span></span><span class="gyst-chip" data-state="idle">{{template "gyst.icon" "lock"}}Tailnet</span></div>{{end}}</li>{{end}}
+  </ul></section>{{end}}
+</div>
+{{end}}

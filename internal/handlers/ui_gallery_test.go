@@ -40,7 +40,14 @@ func galleryHTML(t *testing.T) []byte {
 		States          []UIStateCard
 		VN              vnGallery
 		SC              stateGallery
-	}{Tokens: read("ui-tokens.css"), Components: read("ui-components.css"), VN: vnGalleryData(), SC: stateGalleryData()}
+		Overlay         overlayGallery
+		OverlayJS       template.JS
+	}{Tokens: read("ui-tokens.css"), Components: read("ui-components.css"), VN: vnGalleryData(), SC: stateGalleryData(), Overlay: overlayGalleryData()}
+	js, err := os.ReadFile("../../web/static/js/ui-overlay.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data.OverlayJS = template.JS(js)
 	data.Colors = []struct {
 		Name  string
 		Value template.CSS

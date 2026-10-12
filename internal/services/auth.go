@@ -165,6 +165,51 @@ func (s *Service) RevokeSession(rawToken string) (revoked bool, err error) {
 	return s.Repo.DeleteSession(hashSessionToken(rawToken))
 }
 
+// RevokeAllSessions ends every session on every host and reports how many
+// rows went. Nothing about a session is returned or logged here.
+func (s *Service) RevokeAllSessions() (int64, error) {
+	return s.Repo.DeleteAllSessions()
+}
+
+// passwordFingerprintKey is the app_settings row holding the fingerprint of
+// the configured password hash, so a changed GYST_PASSWORD_HASH can be seen
+// at the next start.
+const passwordFingerprintKey = "auth.password_fingerprint"
+
+// passwordFingerprint is a one-way digest of the configured hash, domain
+// separated so it is never the bare SHA-256 of the hash. An empty hash has
+// its own value, so removing the hash counts as a change (fail closed).
+func passwordFingerprint(hash string) string {
+	digest := sha256.Sum256([]byte("gyst-password-fingerprint-v1:" + strings.TrimSpace(hash)))
+	return hex.EncodeToString(digest[:])
+}
+
+// RevokeSessionsOnPasswordChange compares the configured hash with the one
+// recorded at the last start. Same: nothing. Recorded and different: every
+// session is deleted first, then the new fingerprint is stored (a failure in
+// between retries the revocation next start). Nothing recorded (first start
+// after this feature): record it and revoke nothing. Errors must stop startup.
+func (s *Service) RevokeSessionsOnPasswordChange(hash string) (revoked int64, changed bool, err error) {
+	fingerprint := passwordFingerprint(hash)
+	stored, err := s.Repo.GetSetting(passwordFingerprintKey)
+	if err != nil {
+		return 0, false, err
+	}
+	if stored == fingerprint {
+		return 0, false, nil
+	}
+	if stored != "" {
+		if revoked, err = s.Repo.DeleteAllSessions(); err != nil {
+			return 0, false, err
+		}
+		changed = true
+	}
+	if err := s.Repo.SetSetting(passwordFingerprintKey, fingerprint); err != nil {
+		return revoked, false, err
+	}
+	return revoked, changed, nil
+}
+
 // SweepExpiredSessions deletes lapsed sessions and reports how many went.
 func (s *Service) SweepExpiredSessions() (int64, error) {
 	return s.Repo.DeleteExpiredSessions(s.Now().UTC())
