@@ -16,48 +16,6 @@
         {{template "gyst.status" .HealthSnapshot.Status}}
         <div class="today-metrics">{{range .HealthSnapshot.Metrics}}{{template "gyst.metric" .}}{{end}}</div>
       </section>
-      <div class="today-context">
-      <section class="gyst-card gyst-card--tinted gyst-stack" aria-label="Focus item">
-        <header class="gyst-header"><h2 class="gyst-section-title">Focus</h2>{{template "gyst.icon" "folder-heart"}}</header>
-        {{if .Pending}}{{with index .Pending 0}}<a class="today-focus-title" href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a><p class="gyst-caption">Next in your pending checklist · {{.Task.Priority}} priority</p>{{end}}{{else}}<p class="gyst-caption">No pending missions. Make room for what matters next.</p><a class="today-link" href="/tasks/new">Add a mission {{template "gyst.icon" "plus"}}</a>{{end}}
-      </section>
-      <section class="gyst-card gyst-stack" aria-label="Next reminder">
-        <header class="gyst-header"><h2 class="gyst-section-title">Next up</h2>{{template "gyst.icon" "bell"}}</header>
-        {{with .NextReminder}}<p><strong>{{.Title}}</strong></p><p class="gyst-caption">{{.ReminderTime}} · Reminder</p>{{else}}<p class="gyst-caption">No upcoming timed reminders today.</p>{{end}}
-        <a class="today-link" href="/reminders">View reminders {{template "gyst.icon" "chevron-right"}}</a>
-      </section>
-      </div>
-    {{if or .Learning.Blocks .Learning.SuggestStudy}}
-      <div class="day-group gyst-card" aria-label="Study blocks">
-        <h2 class="gyst-section-title">Study blocks</h2>
-        {{if .Learning.Blocks}}
-          <ul class="tasks">
-            {{range .Learning.Blocks}}
-              <li class="task" id="block-{{.ID}}">
-                <span class="slot-time num">{{if .StartTime}}{{.StartTime}}{{else}}&mdash;{{end}}</span>
-                <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/complete">
-                  <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
-                  <label class="today-task-check"><input type="checkbox" aria-label="Done: {{.Title}}" data-autosubmit></label>
-                </form>
-                <div class="task-body">
-                  <div class="task-title"><a href="/courses/{{.CourseID}}#block-{{.ID}}">{{.Title}}</a></div>
-                  <div class="task-meta">
-                    {{.CourseName}} &middot; {{blockLabel .BlockType}}{{if .IsCatchup}} &middot; catch-up{{end}}{{if .DueDate}} &middot; due {{niceDate .DueDate}}{{end}}
-                  </div>
-                </div>
-                <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/postpone">
-                  <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
-                  <button class="btn quiet sm" type="submit">Later</button>
-                </form>
-              </li>
-            {{end}}
-          </ul>
-        {{else}}
-          <p class="meta">Nothing scheduled from {{.Learning.SuggestCourse.Name}} today.
-            <a href="/courses/{{.Learning.SuggestCourse.ID}}">Add a study block &rarr;</a></p>
-        {{end}}
-      </div>
-    {{end}}
     </div>
     <aside class="gyst-stack today-side" aria-label="Daily rhythm and reminders">
     <section class="gyst-card gyst-stack">
