@@ -518,6 +518,32 @@ func (r *Repository) SetRoadmapProjectMeta(meta models.RoadmapProjectMeta) error
 	return err
 }
 
+// EffectiveProjectPrivacy returns, for every project that is private or
+// local-only itself or through any ancestor, its effective flags. Projects
+// missing from the map are public. Archived rows are not filtered, and UNION
+// (not UNION ALL) makes the walk terminate on parent cycles.
+func (r *Repository) EffectiveProjectPrivacy() (map[int64]models.ProjectPrivacy, error) {
+	rows, err := r.db.Query(`WITH RECURSIVE f(id, priv, loc) AS (
+		SELECT project_id, is_private, local_only FROM roadmap_project_meta WHERE is_private = 1 OR local_only = 1
+		UNION
+		SELECT p.id, f.priv, f.loc FROM projects p JOIN f ON p.parent_project_id = f.id
+	) SELECT id, MAX(priv), MAX(loc) FROM f GROUP BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make(map[int64]models.ProjectPrivacy)
+	for rows.Next() {
+		var id int64
+		var priv, loc int
+		if err := rows.Scan(&id, &priv, &loc); err != nil {
+			return nil, err
+		}
+		out[id] = models.ProjectPrivacy{Private: priv == 1, LocalOnly: loc == 1}
+	}
+	return out, rows.Err()
+}
+
 func (r *Repository) SetRoadmapMilestoneStatus(id int64, status string) error {
 	status = cleanItemStatus(status)
 	completedAt := "NULL"

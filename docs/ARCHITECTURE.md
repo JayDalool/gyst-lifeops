@@ -356,6 +356,22 @@ removed by `Service.RunSessionSweeper`, started in `app.New` on the context
 service clock (`s.Now`), the DELETE is scoped to `expires_at <= now`, and the
 log line carries only a count. Validation never depends on the sweep.
 
+Two things end every session at once (GYST-VN-078), both through
+`Repository.DeleteAllSessions`. **Sign out everywhere** is
+`POST /settings/sessions/revoke-all` (Settings, Security): behind the session
+guard and the same-origin guard (`postGuard`), never auth-exempt, GET is 405.
+It clears the browser's cookie, redirects 303 to `/login`, logs `session.revoked_all`
+with reason `user` and a count, and writes a `session.revoked_all` audit row (actor
+`human`, no token or hash). **Password change:** `app.New` calls
+`Service.RevokeSessionsOnPasswordChange` after the timezone is set and before any
+goroutine or listener. It compares a fingerprint (hex SHA-256 of a fixed prefix plus
+the trimmed hash) with `app_settings` key `auth.password_fingerprint`. Stored and
+different: delete all sessions, then store the new value, log
+`SECURITY: GYST_PASSWORD_HASH changed; session.revoked_all, N sessions` and write an
+audit row (actor `system`). Nothing stored (first start): record it, sign nobody out.
+An empty hash has its own fingerprint, so removing the hash revokes. Any error stops
+startup (fail closed). The fingerprint is never logged or rendered.
+
 ## Password hashing (GYST-VN-080)
 
 Every password hash comes from `services.HashPassword` at bcrypt cost 12
@@ -411,6 +427,22 @@ decision.
 
 Rollback: deploy the older binary and leave the table, index and
 `schema_migrations` row in place. The old binary ignores the table.
+
+### Retention (GYST-VN-084)
+
+`Service.PruneAuditAtStart` (synchronous, in `internal/app/app.go`) prunes
+once at startup, then `go Service.RunAuditPruneLoop` repeats every 24 hours
+until `App.Close` cancels it. Clock-jump guard: if the security cutoff is
+later than the newest row (a clock far in the future) the run deletes nothing
+and logs one ERROR; an empty table is a no-op. Security rows
+(every action not in `lifecycleActions`) are deleted when `at` is more than
+365 days old; lifecycle rows more than 180 days old. `lifecycleActions` is
+empty today, so only the 365-day rule runs. A row exactly at the cutoff is
+kept. Each run logs one INFO line with `deleted_security` and
+`deleted_lifecycle` counts only; a failure logs one ERROR line and the next
+tick retries. No migration: `idx_audit_events_at` serves the range. Backups
+include `audit_events`, so pruned rows can still exist in older backups until
+those expire. A viewer in Settings is a later change.
 
 ### Sign-in and sign-out rows (GYST-VN-007)
 

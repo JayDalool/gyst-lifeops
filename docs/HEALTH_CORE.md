@@ -64,6 +64,16 @@ is an input safeguard, not a health recommendation.
 - Success returns HTTP 200 with the merged snapshot. `last_synced_at` records the
   server receipt time in UTC and refreshes on successful retries.
 - Snapshot and source sync state commit together or both roll back.
+- **Date window.** Only today and the previous 7 local days are accepted (app
+  clock, `GYST_TIMEZONE`; constants `HealthSyncPastDays = 7`,
+  `HealthSyncFutureDays = 0`). Any other well-formed date, including a future
+  date, gets HTTP 422 `date must be between <earliest> and <latest>` and nothing
+  is written. Older backfill is refused; a backfill tool is out of scope. A
+  malformed date is still 400, and a wrong token is still 401 before the window
+  is checked. Each refusal logs one `SECURITY: health sync refused: date outside
+  window` line (date and bounds only). A `health.sync_refused` audit row is
+  written at most once per client per 15 minutes, so a burst cannot grow the
+  audit table.
 - Watch and phone steps remain independent; neither is labeled a reconciled
   total and they are never added together.
 

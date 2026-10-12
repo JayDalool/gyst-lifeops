@@ -178,4 +178,158 @@ function toastChecks() {
   assert.equal(T.parse('?celebrate=task&celebrate_level=1').level,0);
   assert.equal(innerHTMLWrites.length,0);
 }
-(async()=>{await workerChecks();themeChecks();motionChecks();toastChecks();console.log('UI shell: private/offline cache policy, appearance setting, motion preference and completion toast passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+// Tap targets (GYST-072): static CSS check, no browser. Real rendered sizes are measured in each UI PR.
+const CSS_DIR = 'web/static/css/';
+function parseCSS(text, media = null, out = []) {
+  text = text.replace(/\/\*[\s\S]*?\*\//g, '');
+  let depth = 0, start = 0, prelude = '';
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '{') { if (depth++ === 0) { prelude = text.slice(start, i).trim(); start = i + 1; } }
+    else if (text[i] === '}' && --depth === 0) {
+      const body = text.slice(start, i); start = i + 1;
+      if (/^@(media|supports|layer|container)\b/.test(prelude)) {
+        const at = prelude.replace(/^@media\s*/, '').replace(/\s*:\s*/g, ': ').replace(/\s+/g, ' ').trim();
+        parseCSS(body, media === null ? at : media + ' | ' + at, out);
+      }
+      else if (!prelude.startsWith('@')) {
+        const decls = {};
+        for (const d of body.split(';')) { const k = d.indexOf(':'); if (k > 0) decls[d.slice(0, k).trim().toLowerCase()] = d.slice(k + 1).replace(/!important/i, '').trim(); }
+        let paren = 0, from = 0; const sels = [];
+        for (let j = 0; j <= prelude.length; j++) {
+          if (prelude[j] === '(') paren++; else if (prelude[j] === ')') paren--;
+          else if (j === prelude.length || (prelude[j] === ',' && paren === 0)) { sels.push(prelude.slice(from, j).replace(/\s+/g, ' ').trim()); from = j + 1; }
+        }
+        out.push({selectors: sels, decls, media});
+      }
+    }
+  }
+  return out;
+}
+// [selector, media|null, checks height, checks width]
+const TARGETS = [
+  ['.gyst-primary > a', null, true, false], ['.gyst-primary > a', '(max-width: 1023px)', true, false],
+  ['.gyst-health-sub > a', '(min-width: 1024px)', true, false], ['.hv3-tabbar > a', '(max-width: 1023px)', true, false],
+  ['.gyst-brand', null, true, false], ['.gyst-skip', null, true, false],
+  ['.gyst-button', null, true, false], ['.gyst-button--icon', null, false, true],
+  ['.gyst-row', null, true, false], ['.gyst-segment', null, true, false], ['.gyst-input', null, true, false], ['.gyst-choice', null, true, false],
+  [':root .gyst-command .command-results a', null, true, false], [':root .gyst-command input', null, true, false],
+  [':root .gyst-command .btn', null, true, true],
+  // Galaxy DOM controls, read-only.
+  [':root body.galaxy-page .galaxy-stage :is(button,.btn)', null, true, true],
+  [':root body.galaxy-page .galaxy-context .galaxy-close', null, true, true],
+  [':root body.galaxy-page .galaxy-category-filter select', null, true, false],
+  [':root body.galaxy-page .galaxy-list button', null, true, false],
+  [':root body.galaxy-page .galaxy-actions a', null, true, false],
+];
+function checkTargets(files, targets = TARGETS) {
+  const rules = files.flatMap(text => parseCSS(text));
+  // Every definition of every custom property, in any selector, theme or at-rule.
+  const defs = {};
+  for (const r of rules) for (const [k, v] of Object.entries(r.decls)) if (k.startsWith('--')) (defs[k] ??= []).push(v);
+  const resolveAll = (v, depth = 0) => {
+    const m = /var\(\s*(--[\w-]+)\s*(?:,[^)]*)?\)/.exec(v);
+    if (!m || depth > 6 || !defs[m[1]]) return [v];
+    return defs[m[1]].flatMap(d => resolveAll(v.replace(m[0], d), depth + 1));
+  };
+  const errors = [];
+  for (const [sel, media, needH, needW] of targets) {
+    const mine = rules.filter(r => r.selectors.includes(sel));
+    for (const [need, props] of [[needH, ['min-height', 'height']], [needW, ['min-width', 'width', 'inline-size']]]) {
+      if (!need) continue;
+      const label = `${sel}${media ? ' @media ' + media : ''}`;
+      const verify = (value, prop, where) => {
+        for (const v of resolveAll(value)) {
+          const m = /^(\d+(?:\.\d+)?)px$/.exec(v);
+          if (!m) errors.push(`${where}: ${prop} ${value} does not resolve to a plain px value`);
+          else if (parseFloat(m[1]) < 44) errors.push(`${where}: ${prop} ${value}${v === value ? '' : ' (' + v + ')'} is below 44px`);
+        }
+      };
+      let value = null, prop = null;
+      for (const r of mine) if (r.media === media) for (const p of props) if (p in r.decls) { value = r.decls[p]; prop = p; }
+      if (value === null) errors.push(`${label}: no ${props[0]} set`); else verify(value, prop, label);
+      // Overrides under any other media or at-rule must not shrink the target either.
+      for (const r of mine) if (r.media !== media && r.media !== null) for (const p of props) if (p in r.decls) verify(r.decls[p], p, `${sel} @media ${r.media}`);
+    }
+  }
+  if (errors.length) throw new Error('Tap target check failed:\n  ' + [...new Set(errors)].join('\n  '));
+}
+// Which checked selector covers a control? Returns null when none does.
+function controlSelector(c) {
+  const has = cls => c.classes.includes(cls), within = (tag, cls) => c.stack.some(a => a.tag === tag && a.classes.includes(cls));
+  const parent = c.stack[c.stack.length - 1] || {tag: '', classes: []};
+  if (c.tag === 'input' && c.type === 'hidden') return 'hidden';
+  if (c.tag === 'a' && has('gyst-skip')) return '.gyst-skip';
+  if (c.tag === 'a' && has('gyst-brand')) return '.gyst-brand';
+  if (c.tag === 'button' && has('gyst-button--icon')) return '.gyst-button--icon';
+  if (c.tag === 'button' && has('gyst-button')) return '.gyst-button';
+  if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('gyst-primary')) return '.gyst-primary > a';
+  if (c.tag === 'a' && parent.classes.includes('gyst-health-sub')) return '.gyst-health-sub > a';
+  if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('hv3-tabbar')) return '.hv3-tabbar > a';
+  if (within('dialog', 'gyst-command')) {
+    if (c.tag === 'a' && within('div', 'command-results')) return ':root .gyst-command .command-results a';
+    if (c.tag === 'button' && has('btn')) return ':root .gyst-command .btn';
+    if (c.tag === 'input' || c.tag === 'select') return ':root .gyst-command input';
+  }
+  return null;
+}
+function templateControls(html) {
+  html = html.replace(/\{\{[\s\S]*?\}\}/g, '').replace(/<!--[\s\S]*?-->/g, '');
+  const body = html.indexOf('<body'); if (body >= 0) html = html.slice(body);
+  const VOID = new Set(['input', 'meta', 'link', 'br', 'img', 'hr', 'source']), CONTROLS = new Set(['a', 'button', 'input', 'select', 'textarea']);
+  const stack = [], found = [];
+  for (const m of html.matchAll(/<(\/?)([a-zA-Z][\w-]*)([^>]*)>/g)) {
+    const close = m[1], name = m[2].toLowerCase(), attrs = m[3];
+    if (close) { const i = stack.map(s => s.tag).lastIndexOf(name); if (i >= 0) stack.length = i; continue; }
+    const classes = ((/class="([^"]*)"/.exec(attrs) || [])[1] || '').split(/\s+/).filter(Boolean);
+    if (CONTROLS.has(name)) found.push({tag: name, classes, type: (/type="([^"]*)"/.exec(attrs) || [])[1] || '', stack: stack.slice()});
+    if (!VOID.has(name)) stack.push({tag: name, classes});
+  }
+  return found;
+}
+function coverageCheck(templates, targets = TARGETS) {
+  const known = new Set(targets.map(t => t[0]));
+  for (const [file, html] of Object.entries(templates)) for (const c of templateControls(html)) {
+    const sel = controlSelector(c);
+    assert(sel, `${file}: <${c.tag}${c.classes.length ? ' class="' + c.classes.join(' ') + '"' : ''}> has no checked tap-target selector; add one to TARGETS in scripts/check-ui-shell.cjs`);
+    assert(sel === 'hidden' || known.has(sel), `${file}: <${c.tag}> maps to ${sel}, which is not in TARGETS`);
+  }
+}
+function tapTargetChecks() {
+  const files = ['ui-tokens.css', 'ui-components.css', 'ui-shell.css', 'ui-health-v3.css', 'ui-galaxy.css'].map(f => fs.readFileSync(CSS_DIR + f, 'utf8'));
+  checkTargets(files);
+  // The check must reject undersized and unresolvable targets.
+  const one = (css, sel, h = true, w = false) => () => checkTargets([css], [[sel, null, h, w]]);
+  assert.throws(one('.gyst-button{min-height:32px}', '.gyst-button'), /\.gyst-button.*32px/);
+  assert.throws(one('.gyst-button{min-height:calc(40px + 2px)}', '.gyst-button'), /\.gyst-button.*calc/);
+  assert.throws(one('.gyst-button--icon{width:40px}', '.gyst-button--icon', false, true), /\.gyst-button--icon.*40px/);
+  assert.throws(one('.x{min-height:44px}', '.gyst-button'), /no min-height/);
+  checkTargets([':root{--gyst-tab-height:56px}@media (max-width:1023px){.t > a{min-height:var(--gyst-tab-height)}}'], [['.t > a', '(max-width: 1023px)', true, false]]);
+  assert.throws(one('.gyst-button{min-height:44px}@media (max-width:767px){.gyst-button{min-height:32px}}', '.gyst-button'), /\.gyst-button.*32px/);
+  assert.throws(one('.gyst-button{min-height:44px}@supports (display:grid){.gyst-button{min-height:32px}}', '.gyst-button'), /\.gyst-button.*32px/);
+  const tok = extra => () => checkTargets([':root{--tab:56px}.t{min-height:var(--tab)}' + extra], [['.t', null, true, false]]);
+  tok('')();
+  assert.throws(tok('[data-gyst-theme="dark"]{--tab:30px}'), /\.t.*30px/);
+  assert.throws(tok('@media (max-width:600px){:root{--tab:30px}}'), /\.t.*30px/);
+  assert.throws(tok(':root{--tab:30px}'), /\.t.*30px/);
+  const templates = {'ui_shell.html': fs.readFileSync('web/templates/ui_shell.html', 'utf8'), 'layout.html': fs.readFileSync('web/templates/layout.html', 'utf8')};
+  coverageCheck(templates);
+  assert.throws(() => coverageCheck({'ui_shell.html': templates['ui_shell.html'] + '<body><button type="button">Oops</button>'}), /<button> has no checked tap-target selector/);
+}
+function overlayChecks() {
+  const src = fs.readFileSync('web/static/js/ui-overlay.js', 'utf8');
+  assert(!/\bconfirm\s*\(/.test(src), 'overlay module must not call window.confirm');
+  const ctx = {}; ctx.globalThis = ctx; vm.runInNewContext(src, ctx);
+  const O = ctx.GYSTOverlay;
+  vm.runInNewContext(src, ctx); assert.equal(ctx.GYSTOverlay, O, 'second load must keep the first instance');
+  assert(/if \(root\.GYSTOverlay\) return;/.test(src), 'double-load guard');
+  assert.equal(O.mode(390), 'sheet'); assert.equal(O.mode(1023), 'sheet'); assert.equal(O.mode(1024), 'popover'); assert.equal(O.mode(1600), 'popover');
+  const vp = {width: 1280, height: 800}, size = {width: 220, height: 240};
+  for (const [l, t] of [[0, 0], [1200, 0], [0, 740], [1200, 740], [640, 400], [1280, 800]]) {
+    const trig = {left: l, top: t, right: Math.min(l + 80, 1280), bottom: Math.min(t + 44, 800), width: 80, height: 44};
+    const at = O.place(trig, size, vp);
+    assert(at.left >= 0 && at.top >= 0 && at.left + size.width <= vp.width && at.top + size.height <= vp.height, 'popover outside viewport for trigger ' + l + ',' + t + ': ' + JSON.stringify(at));
+  }
+  assert.equal(O.step(2, 1, 3), 0); assert.equal(O.step(0, -1, 3), 2); assert.equal(O.step(1, 1, 3), 2);
+  assert.equal(O.step(-1, 1, 3), 0); assert.equal(O.step(-1, -1, 3), 2); assert.equal(O.step(0, 1, 0), -1);
+}
+(async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast and overlay helpers passed');})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -154,7 +154,7 @@ func TestNonExemptPathsRequireASession(t *testing.T) {
 
 	for _, path := range []string{
 		"/", "/today", "/projects", "/health", "/health/plan", "/health/more",
-		"/settings", "/analytics", "/api/push/vapid-key",
+		"/settings", "/settings/sessions/revoke-all", "/analytics", "/api/push/vapid-key",
 		// Only the exact n8n events path is exempt, not its neighbours.
 		"/api/automation", "/api/automation/eventsx", "/api/automation/events/extra", "/api/automation/other",
 		"/calendar.ics", "/calendar/feedback",
