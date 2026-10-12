@@ -1,3 +1,4 @@
+- [ ] GYST-136 · Count goals with stale current value (backup copy) · https://github.com/JayDalool/gyst-lifeops/pull/135
 - [ ] GYST-133 · Run read-only count SQL on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/122
 - [ ] #118 · After deploy: gyst-lifeops healthy; LogConfig 10m x 5 on both · https://github.com/JayDalool/gyst-lifeops/issues/118
 - [ ] #111 · Apply audit migration to backup copy; FK check clean · https://github.com/JayDalool/gyst-lifeops/issues/111
