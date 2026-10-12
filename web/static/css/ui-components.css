@@ -19,6 +19,9 @@
 .gyst-card--inset { background: var(--gyst-control-bg); box-shadow: none; }
 .gyst-icon { width: 24px; height: 24px; flex-shrink: 0; vertical-align: middle; }
 .gyst-icon-tile { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--gyst-radius-sm); background: var(--gyst-blue-soft); color: var(--gyst-blue); }
+.gyst-icon-tile--mono { font-size: .75rem; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+.gyst-row .gyst-chip .gyst-icon { width: 14px; height: 14px; }
+.gyst-app-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .gyst-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--gyst-space-2); min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: var(--gyst-radius-sm); background: #2563eb; color: #fff; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color var(--gyst-duration), transform var(--vn-fast) var(--vn-ease); }
 .gyst-button:not(:disabled):active { transform: scale(.97); }
 .gyst-button:hover { background: #1d4ed8; }

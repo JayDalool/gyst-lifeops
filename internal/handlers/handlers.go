@@ -50,6 +50,9 @@ type Handler struct {
 	// configured: the Coach page shows that state and the rest of Health works.
 	Coach      healthcoach.Provider
 	coachLimit coachLimiter
+	// appRegistry loads the Apps registry (GYST-101). Nil means the embedded
+	// registry; tests inject fixtures.
+	appRegistry func() ([]services.App, error)
 }
 
 type TodayData struct {
@@ -325,6 +328,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case "more":
 		h.more(w, r)
+	case "apps":
+		h.apps(w, r)
 	case "monthly":
 		h.monthly(w, r)
 	case "tasks":
