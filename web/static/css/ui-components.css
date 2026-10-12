@@ -170,7 +170,7 @@ a.gyst-row[aria-current="true"] { background: var(--vn-accent-soft); }
 .goal-row-bar { display: flex !important; align-items: center; gap: 8px; margin-top: 6px; }
 .goal-row-bar .progress { flex: 1; min-width: 0; }
 .goal-row-bar .progress > span { background: var(--vn-accent); box-shadow: none; }
-.goal-row-bar .progress.done > span { background: var(--vn-ink-2); }
+:root .goal-row-bar .progress.done > span { background: var(--vn-ink-2); }
 .goal-completed > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-weight: 600; }
 .goal-edit-link { min-height: 44px; }
 .goal-progress-note { display: grid; gap: 4px; }

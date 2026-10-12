@@ -114,17 +114,18 @@ func TestGoalEditNotFoundAndMethods(t *testing.T) {
 
 func TestGoalEditInvalidValuesReturn400AndWriteNothing(t *testing.T) {
 	cases := map[string]func(url.Values){
-		"empty title":     func(f url.Values) { f.Set("title", "  ") },
-		"type daily":      func(f url.Values) { f.Set("type", "daily") },
-		"bad category":    func(f url.Values) { f.Set("category", "fun") },
-		"status archived": func(f url.Values) { f.Set("status", "archived") },
-		"status junk":     func(f url.Values) { f.Set("status", "paused") },
-		"target -1":       func(f url.Values) { f.Set("target_value", "-1") },
-		"target NaN":      func(f url.Values) { f.Set("target_value", "NaN") },
-		"target Inf":      func(f url.Values) { f.Set("target_value", "Inf") },
-		"target text":     func(f url.Values) { f.Set("target_value", "lots") },
-		"start 02-30":     func(f url.Values) { f.Set("start_date", "2026-02-30") },
-		"end bad":         func(f url.Values) { f.Set("end_date", "2026-3-1") },
+		"empty title":      func(f url.Values) { f.Set("title", "  ") },
+		"type daily":       func(f url.Values) { f.Set("type", "daily") },
+		"bad category":     func(f url.Values) { f.Set("category", "fun") },
+		"status archived":  func(f url.Values) { f.Set("status", "archived") },
+		"status junk":      func(f url.Values) { f.Set("status", "paused") },
+		"target -1":        func(f url.Values) { f.Set("target_value", "-1") },
+		"target NaN":       func(f url.Values) { f.Set("target_value", "NaN") },
+		"target Inf":       func(f url.Values) { f.Set("target_value", "Inf") },
+		"target text":      func(f url.Values) { f.Set("target_value", "lots") },
+		"start 02-30":      func(f url.Values) { f.Set("start_date", "2026-02-30") },
+		"end bad":          func(f url.Values) { f.Set("end_date", "2026-3-1") },
+		"end before start": func(f url.Values) { f.Set("end_date", "2026-02-28") },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {

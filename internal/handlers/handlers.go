@@ -2741,6 +2741,8 @@ func goalEditFromRequest(r *http.Request) (models.Goal, error) {
 		return goal, goalInvalid("Start date must be a valid YYYY-MM-DD date.")
 	case !validGoalDate(goal.EndDate):
 		return goal, goalInvalid("End date must be a valid YYYY-MM-DD date.")
+	case goal.StartDate != "" && goal.EndDate != "" && goal.EndDate < goal.StartDate:
+		return goal, goalInvalid("End date must not be before start date.")
 	}
 	return goal, nil
 }
