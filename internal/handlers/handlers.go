@@ -1718,6 +1718,13 @@ func (h *Handler) addGoalProgress(w http.ResponseWriter, r *http.Request, id int
 		invalidDate(w, "entry_date")
 		return
 	}
+	// GYST-150: a future-dated entry would pin the goal's current value until
+	// that day, so goal progress cannot be dated after the local today.
+	today := h.Service.TodayString()
+	if entryDate > today {
+		userError(w, &services.UserError{Message: "Progress can't be dated after today."}, http.StatusBadRequest, "")
+		return
+	}
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	if err := h.Service.Repo.AddGoalProgress(id, entryDate, value, notes); err != nil {
 		serverError(w, err)

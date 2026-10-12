@@ -1,3 +1,4 @@
+- [ ] #173 · Count future-dated goal entries on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/173
 - [ ] GYST-135 · Delete private items already copied by ics import · https://github.com/JayDalool/gyst-lifeops/issues/141
 - [ ] GYST-062 · Coach on OpenAI: set key, ask one question · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
 - [ ] GYST-116 · Run Health Shortcut once; confirm sync succeeds · https://github.com/JayDalool/gyst-lifeops/issues/139
