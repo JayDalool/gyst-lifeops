@@ -65,6 +65,9 @@ func (h *Handler) more(w http.ResponseWriter, r *http.Request) {
 			{Label: "Import a plan", URL: "/plan-import", Icon: "plus"},
 			{Label: "Archive", URL: "/archive", Icon: "inbox"},
 		}},
+		{Title: "Operate", Rows: []UIRow{
+			{Label: "Apps", Detail: "Open your other tools", URL: "/apps", Icon: "external-link"},
+		}},
 		{Title: "Preferences", Rows: []UIRow{
 			{Label: "Settings", Detail: "Appearance, prayer times and calendar feeds", URL: "/settings", Icon: "settings"},
 		}},

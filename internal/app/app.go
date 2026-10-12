@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -88,13 +89,33 @@ func New(config Config) (*App, error) {
 	service := services.New(repo)
 	// Set before any goroutine reads the clock.
 	service.Loc = location
+	service.BackupStatusPath = filepath.Join(filepath.Dir(config.DBPath), "backups", "last_run.json")
 	log.Printf("Application timezone: %s", location)
+	// Before any goroutine, handler or listener: a changed GYST_PASSWORD_HASH
+	// must end every old session, and a failure here stops startup rather
+	// than serve sessions the new password never approved.
+	if revoked, changed, err := service.RevokeSessionsOnPasswordChange(config.PasswordHash); err != nil {
+		database.Close()
+		return nil, fmt.Errorf("revoke sessions on password change: %w", err)
+	} else if changed {
+		log.Printf("SECURITY: GYST_PASSWORD_HASH changed; session.revoked_all, %d sessions", revoked)
+		if err := service.RecordAudit(context.Background(), repository.AuditEvent{
+			ActorType: services.AuditActorSystem, ActorRef: "system:startup",
+			Ingress: services.AuditIngressInternal, Action: services.AuditActionSessionRevokeAll,
+			TargetRef: "account:owner", Outcome: services.AuditOutcomeSuccess,
+			Detail: "credential-changed",
+		}); err != nil {
+			log.Printf("audit write failed: session.revoked_all")
+		}
+	}
 	pushContext, cancelPush := context.WithCancel(context.Background())
 	// pushContext is cancelled by Close and drives every background loop.
 	go service.RunPushScheduler(pushContext)
 	// Synchronous, before the loop: it cannot race Close.
 	service.SweepSessionsAtStart()
 	go service.RunSessionSweeper(pushContext)
+	service.PruneAuditAtStart(pushContext)
+	go service.RunAuditPruneLoop(pushContext)
 	if config.HevyAPIKey != "" {
 		service.Training = &services.TrainingSync{Provider: hevy.New(config.HevyAPIKey)}
 		go service.RunTrainingSync(pushContext)
@@ -162,8 +183,7 @@ type HealthAIConfig struct {
 }
 
 // healthCoachProvider returns nil (Coach disabled) unless a supported provider
-// and its key are both set. The OpenAI adapter isn't built yet (follow-up
-// Issue), so "openai" stays disabled rather than half-working.
+// and its key are both set. Each provider only ever uses its own key.
 func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
 	switch strings.ToLower(strings.TrimSpace(c.Provider)) {
 	case "anthropic":
@@ -173,7 +193,11 @@ func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
 		}
 		log.Printf("Health Coach: disabled (ANTHROPIC_API_KEY not set)")
 	case "openai":
-		log.Printf("Health Coach: disabled (OpenAI adapter not available yet)")
+		if c.OpenAIKey != "" {
+			log.Printf("Health Coach: provider openai enabled")
+			return healthcoach.NewOpenAI(c.OpenAIKey, c.Model)
+		}
+		log.Printf("Health Coach: disabled (OPENAI_API_KEY not set)")
 	case "":
 	default:
 		log.Printf("Health Coach: disabled (unknown HEALTH_AI_PROVIDER)")

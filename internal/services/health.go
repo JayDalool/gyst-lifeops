@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"math"
 	"strings"
 	"time"
@@ -20,6 +21,23 @@ func healthInvalid(message string) error       { return &HealthValidationError{M
 func validHealthNumber(value float64) bool {
 	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= 0 && value <= 1e9
 }
+
+// The Health sync accepts only today and the previous HealthSyncPastDays local
+// days (app clock, GYST_TIMEZONE). A leaked token must not be able to rewrite
+// old history. Jay's answer on GYST-116: no future dates.
+const (
+	HealthSyncPastDays   = 7
+	HealthSyncFutureDays = 0
+)
+
+// HealthDateWindowError means a well-formed sync date is outside the accepted
+// window. Earliest and Latest are YYYY-MM-DD.
+type HealthDateWindowError struct{ Date, Earliest, Latest string }
+
+func (e *HealthDateWindowError) Error() string {
+	return "date must be between " + e.Earliest + " and " + e.Latest
+}
+
 func ValidateHealthDate(date string) error {
 	if _, err := clock.ParseLocalDate(date); err != nil {
 		return healthInvalid("date must be YYYY-MM-DD")
@@ -151,6 +169,15 @@ func ValidateHealthSync(input models.HealthSyncRequest) error {
 func (s *Service) SyncHealth(input models.HealthSyncRequest) (models.DailyHealthSnapshot, error) {
 	if err := ValidateHealthSync(input); err != nil {
 		return models.DailyHealthSnapshot{}, err
+	}
+	today := s.Today()
+	earliest := today.AddDate(0, 0, -HealthSyncPastDays).Format(clock.DateLayout)
+	latest := today.AddDate(0, 0, HealthSyncFutureDays).Format(clock.DateLayout)
+	// Both bounds and input.Date are canonical YYYY-MM-DD, so string order is date order.
+	if input.Date < earliest || input.Date > latest {
+		// Date and bounds only: never a metric, the token or the body.
+		log.Printf("SECURITY: health sync refused: date outside window date=%s earliest=%s latest=%s", input.Date, earliest, latest)
+		return models.DailyHealthSnapshot{}, &HealthDateWindowError{Date: input.Date, Earliest: earliest, Latest: latest}
 	}
 	snapshot := models.DailyHealthSnapshot{Date: input.Date, HealthMetrics: input.HealthMetrics, LastSyncedAt: s.Now().UTC().Format(time.RFC3339Nano)}
 	return s.Repo.ApplyHealthSync(snapshot, input.Source)
