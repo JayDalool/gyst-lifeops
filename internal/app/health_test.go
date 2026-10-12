@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -47,6 +48,7 @@ func TestHealthAPIConfigAndRootMux(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer a.Close()
+			a.service.Now = func() time.Time { return time.Date(2026, 9, 10, 18, 0, 0, 0, time.UTC) }
 			// The Health API is write-only, so root-mux routing is probed with
 			// the sync endpoint rather than a read.
 			req := httptest.NewRequest(http.MethodPost, "/api/health/sync",
