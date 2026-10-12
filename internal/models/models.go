@@ -397,6 +397,16 @@ type SolarSystem struct {
 	Route      RocketRoute
 }
 
+// ProjectPrivacy is the effective privacy of a project: its own flags OR'd
+// with those of every ancestor. Used to keep hidden projects out of exports.
+type ProjectPrivacy struct {
+	Private   bool
+	LocalOnly bool
+}
+
+// Hidden reports whether the project must stay out of public output.
+func (p ProjectPrivacy) Hidden() bool { return p.Private || p.LocalOnly }
+
 type RoadmapProjectMeta struct {
 	ID               int64
 	ProjectID        int64

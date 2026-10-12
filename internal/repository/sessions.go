@@ -108,3 +108,14 @@ func (r *Repository) CountSessions() (int, error) {
 	}
 	return count, err
 }
+
+// DeleteAllSessions removes every session, on every host, and reports how
+// many rows went. Used by "sign out everywhere" and by the password-change
+// revocation; it is the only unscoped session delete.
+func (r *Repository) DeleteAllSessions() (int64, error) {
+	result, err := r.db.Exec(`DELETE FROM sessions`)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}

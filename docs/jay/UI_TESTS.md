@@ -1,4 +1,6 @@
 - [ ] GYST-077 · iPhone Today: each task once, Done · n opens · https://github.com/JayDalool/gyst-lifeops/pull/130
+- [ ] GYST-113 · Sign out everywhere: other device asks to sign in · https://gyst.zaylolabs.com/settings#security
+- [ ] GYST-133 · Weekly task off-day tick lands on last due day · https://github.com/JayDalool/gyst-lifeops/issues/122
 - [ ] #103 · iPhone PWA launches; Galaxy and Today toast work · https://gyst.zaylolabs.com/galaxy
 - [ ] #99 · iPhone: Today overdue rows and Do today · https://github.com/JayDalool/gyst-lifeops/pull/100
 - [ ] #89 · iPhone: state components and offline banner · https://github.com/JayDalool/gyst-lifeops/pull/93
