@@ -88,6 +88,7 @@ func New(config Config) (*App, error) {
 	service := services.New(repo)
 	// Set before any goroutine reads the clock.
 	service.Loc = location
+	service.BackupStatusPath = filepath.Join(filepath.Dir(config.DBPath), "backups", "last_run.json")
 	log.Printf("Application timezone: %s", location)
 	pushContext, cancelPush := context.WithCancel(context.Background())
 	// pushContext is cancelled by Close and drives every background loop.
