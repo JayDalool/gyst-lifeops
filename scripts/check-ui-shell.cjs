@@ -259,6 +259,8 @@ function controlSelector(c) {
   const parent = c.stack[c.stack.length - 1] || {tag: '', classes: []};
   if (c.tag === 'input' && c.type === 'hidden') return 'hidden';
   if (c.tag === 'a' && has('gyst-skip')) return '.gyst-skip';
+  if (c.tag === 'a' && has('gyst-row')) return '.gyst-row';
+  if (c.tag === 'a' && has('gyst-button')) return '.gyst-button';
   if (c.tag === 'a' && has('gyst-brand')) return '.gyst-brand';
   if (c.tag === 'button' && has('gyst-button--icon')) return '.gyst-button--icon';
   if (c.tag === 'button' && has('gyst-button')) return '.gyst-button';
@@ -311,7 +313,8 @@ function tapTargetChecks() {
   assert.throws(tok('[data-gyst-theme="dark"]{--tab:30px}'), /\.t.*30px/);
   assert.throws(tok('@media (max-width:600px){:root{--tab:30px}}'), /\.t.*30px/);
   assert.throws(tok(':root{--tab:30px}'), /\.t.*30px/);
-  const templates = {'ui_shell.html': fs.readFileSync('web/templates/ui_shell.html', 'utf8'), 'layout.html': fs.readFileSync('web/templates/layout.html', 'utf8')};
+  const templates = {'ui_shell.html': fs.readFileSync('web/templates/ui_shell.html', 'utf8'), 'layout.html': fs.readFileSync('web/templates/layout.html', 'utf8'),
+    'monthly.html': fs.readFileSync('web/templates/monthly.html', 'utf8')};
   coverageCheck(templates);
   assert.throws(() => coverageCheck({'ui_shell.html': templates['ui_shell.html'] + '<body><button type="button">Oops</button>'}), /<button> has no checked tap-target selector/);
 }
