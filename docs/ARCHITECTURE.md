@@ -428,6 +428,22 @@ decision.
 Rollback: deploy the older binary and leave the table, index and
 `schema_migrations` row in place. The old binary ignores the table.
 
+### Retention (GYST-VN-084)
+
+`Service.PruneAuditAtStart` (synchronous, in `internal/app/app.go`) prunes
+once at startup, then `go Service.RunAuditPruneLoop` repeats every 24 hours
+until `App.Close` cancels it. Clock-jump guard: if the security cutoff is
+later than the newest row (a clock far in the future) the run deletes nothing
+and logs one ERROR; an empty table is a no-op. Security rows
+(every action not in `lifecycleActions`) are deleted when `at` is more than
+365 days old; lifecycle rows more than 180 days old. `lifecycleActions` is
+empty today, so only the 365-day rule runs. A row exactly at the cutoff is
+kept. Each run logs one INFO line with `deleted_security` and
+`deleted_lifecycle` counts only; a failure logs one ERROR line and the next
+tick retries. No migration: `idx_audit_events_at` serves the range. Backups
+include `audit_events`, so pruned rows can still exist in older backups until
+those expire. A viewer in Settings is a later change.
+
 ### Sign-in and sign-out rows (GYST-VN-007)
 
 `login`/`logout` in `internal/handlers/auth.go` call `Handler.audit`

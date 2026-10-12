@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/services"
 )
 
 // The Day view renders observations, never inventions. Three rules shape every
@@ -108,11 +109,6 @@ type HealthTodayView struct {
 	// when Calories.HasBar.
 	caloriesLeft float64
 }
-
-// staleAfter is when the day's data stops being described as current. A
-// three-times-daily Shortcut means a gap this long is a missed run, not a
-// quiet afternoon.
-const staleAfter = 8 * time.Hour
 
 func formatThousands(value float64) string {
 	rounded := strconv.FormatFloat(math.Round(value), 'f', 0, 64)
@@ -222,7 +218,7 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 		if synced, err := time.Parse(time.RFC3339Nano, snapshot.LastSyncedAt); err == nil {
 			view.HasLastSynced = true
 			view.LastSynced = humaniseSince(now, synced)
-			view.LastSyncedStale = now.Sub(synced) >= staleAfter
+			view.LastSyncedStale = now.Sub(synced) >= services.HealthSyncStaleAfter
 		}
 	}
 
