@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/xp"
 )
 
@@ -173,7 +174,11 @@ func (s *Service) Roadmap(selectedRoadmapID int64) (models.RoadmapData, error) {
 
 func (s *Service) ImportRoadmapMarkdown(source string) (int64, error) {
 	plan := ParseRoadmapMarkdown(source, s.Today())
-	return s.Repo.ImportRoadmapPlan(plan)
+	id, err := s.Repo.ImportRoadmapPlan(plan)
+	if errors.Is(err, repository.ErrProjectParentCycle) {
+		return 0, userError("This roadmap would put a project inside itself. Give each sub-project its own name, then import again.")
+	}
+	return id, err
 }
 
 func (s *Service) CreateRoadmapWeeklyReview(review models.RoadmapWeeklyReview) error {
