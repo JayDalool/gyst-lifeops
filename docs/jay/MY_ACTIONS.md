@@ -1,3 +1,4 @@
+- [ ] #176 · Count project links lost to archived parents (backup copies) · https://github.com/JayDalool/gyst-lifeops/issues/176#issuecomment-6133715342
 - [ ] #173 · Count future-dated goal entries on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/173
 - [ ] #170 · Count project parent cycles on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/170
 - [ ] GYST-135 · Delete private items already copied by ics import · https://github.com/JayDalool/gyst-lifeops/issues/141
