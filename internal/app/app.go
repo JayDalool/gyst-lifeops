@@ -183,8 +183,7 @@ type HealthAIConfig struct {
 }
 
 // healthCoachProvider returns nil (Coach disabled) unless a supported provider
-// and its key are both set. The OpenAI adapter isn't built yet (follow-up
-// Issue), so "openai" stays disabled rather than half-working.
+// and its key are both set. Each provider only ever uses its own key.
 func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
 	switch strings.ToLower(strings.TrimSpace(c.Provider)) {
 	case "anthropic":
@@ -194,7 +193,11 @@ func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
 		}
 		log.Printf("Health Coach: disabled (ANTHROPIC_API_KEY not set)")
 	case "openai":
-		log.Printf("Health Coach: disabled (OpenAI adapter not available yet)")
+		if c.OpenAIKey != "" {
+			log.Printf("Health Coach: provider openai enabled")
+			return healthcoach.NewOpenAI(c.OpenAIKey, c.Model)
+		}
+		log.Printf("Health Coach: disabled (OPENAI_API_KEY not set)")
 	case "":
 	default:
 		log.Printf("Health Coach: disabled (unknown HEALTH_AI_PROVIDER)")

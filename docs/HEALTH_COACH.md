@@ -28,10 +28,23 @@ ANTHROPIC_API_KEY=<your key>
 HEALTH_AI_MODEL=
 ```
 
-Without both values the Coach page says "AI provider not configured", the
-Coach tab is hidden and the rest of Health is unchanged.
-`HEALTH_AI_PROVIDER=openai` is accepted but stays disabled until the OpenAI
-adapter exists.
+For OpenAI instead:
+
+```
+HEALTH_AI_PROVIDER=openai
+OPENAI_API_KEY=<your key>
+# optional; default gpt-5.6-sol (GPT-5.6 flagship; gpt-6-astra is the newer, pricier option)
+HEALTH_AI_MODEL=
+```
+
+Each provider uses only its own key. `HEALTH_AI_MODEL` must be a model of the
+selected provider: clear it when you switch. The OpenAI adapter talks to
+`https://api.openai.com/v1/responses` only (the address is fixed in code, no
+environment variable changes it), follows no redirects and sends `store: false`
+so OpenAI keeps no application state for the conversation.
+
+Without both values for the chosen provider the Coach page says "AI provider
+not configured", the Coach tab is hidden and the rest of Health is unchanged.
 
 ## Privacy and limits
 
@@ -45,7 +58,12 @@ adapter exists.
   messages.
 - Anthropic's API doesn't train on API data by default. Retention follows
   your Anthropic organisation's settings.
+- OpenAI: per its data-controls guide, data sent to the API isn't used to train
+  models unless you opt in, and abuse-monitoring logs are kept up to 30 days.
+  GYST sends `store: false`, so the 30-day Responses application state isn't
+  created. Source: https://developers.openai.com/api/docs/guides/your-data
+  (checked 2026-10-11). Zero Data Retention needs OpenAI approval.
 - One request at a time, at least 3 s apart, at most 40 an hour.
-- Cost: each question is one to six Messages API calls on the configured
+- Cost: each question is one to six API calls on the configured provider's
   model at effort `low`.
 - General guidance only, not medical advice.
