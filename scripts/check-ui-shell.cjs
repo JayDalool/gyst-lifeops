@@ -268,6 +268,7 @@ function controlSelector(c) {
   if (within('dialog', 'gyst-command')) {
     if (c.tag === 'a' && within('div', 'command-results')) return ':root .gyst-command .command-results a';
     if (c.tag === 'button' && has('btn')) return ':root .gyst-command .btn';
+    if (c.tag === 'button' && has('gyst-segment')) return '.gyst-segment';
     if (c.tag === 'input' || c.tag === 'select') return ':root .gyst-command input';
   }
   return null;
@@ -332,4 +333,57 @@ function overlayChecks() {
   assert.equal(O.step(2, 1, 3), 0); assert.equal(O.step(0, -1, 3), 2); assert.equal(O.step(1, 1, 3), 2);
   assert.equal(O.step(-1, 1, 3), 0); assert.equal(O.step(-1, -1, 3), 2); assert.equal(O.step(0, 1, 0), -1);
 }
-(async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast and overlay helpers passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+// Launcher v2 (GYST-102): pure helpers run in a vm with no DOM; the source is scanned for unsafe writes.
+function launcherChecks() {
+  const src = fs.readFileSync('web/static/js/launcher.js', 'utf8');
+  assert(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(src), 'launcher must not write HTML strings');
+  assert(!/location\s*(\.href)?\s*=[^=]/.test(src) && !/location\.(assign|replace)\(/.test(src), 'launcher must not navigate through location');
+  // Only the Cmd/Ctrl-K opener may listen on document; every other key handler is on the dialog or input.
+  assert.equal((src.match(/document\.addEventListener\("keydown"/g) || []).length, 1, 'one document keydown (the opener)');
+  assert(!/palette\.showModal\(\)/.test(src.replace(/function open[\s\S]*?function close/, '')), 'only open() shows the dialog');
+  const sandbox = {Array, JSON, String, Math}; sandbox.window = sandbox; sandbox.globalThis = sandbox;
+  vm.runInNewContext(src, sandbox);
+  const L = sandbox.GystLauncher;
+  const same = (a, b) => assert.equal(JSON.stringify(a), JSON.stringify(b));
+  assert(L, 'GystLauncher exposed without a DOM');
+  assert.equal(L.safeHref('/projects/3', false), '/projects/3');
+  for (const bad of ['//evil.example', '//evil.example/x', 'javascript:alert(1)', 'data:text/html,hi', 'http://', 'http:///x', 'https://', '/\\evil.example', 'projects', '', null, undefined, 5, '/a b', '/x\ny', 'https://u:p@evil.example/', 'ftp://example.com/']) {
+    assert.equal(L.safeHref(bad, false), '', 'internal rejects ' + String(bad));
+    assert.equal(L.safeHref(bad, true), '', 'external rejects ' + String(bad));
+  }
+  assert.equal(L.safeHref('https://example.com/a?b=1#c', true), 'https://example.com/a?b=1#c');
+  assert.equal(L.safeHref('http://box.ts.net:9443/dash', true), 'http://box.ts.net:9443/dash');
+  assert.equal(L.safeHref('https://example.com/', false), '', 'an absolute URL is not an internal path');
+  assert.equal(L.safeHref('/x', true), '', 'external needs http(s)');
+  // Recents: at most 5, newest first, no duplicates, invalid entries dropped.
+  let list = [];
+  for (let i = 0; i < 8; i++) list = L.addRecent(list, {label: 'Item ' + i, href: '/p/' + i});
+  assert.equal(list.length, 5); assert.equal(list[0].href, '/p/7'); assert.equal(list[4].href, '/p/3');
+  list = L.addRecent(list, {label: 'Again', href: '/p/5'});
+  same(list.map(e => e.href), ['/p/5', '/p/7', '/p/6', '/p/4', '/p/3']);
+  const dirty = L.cleanRecents([{label: 'ok', href: '/ok'}, {label: 'x', href: '//evil.example'}, {label: 'js', href: 'javascript:1'}, {label: '', href: '/e'}, {href: '/n'}, null, 'str', {label: 'dup', href: '/ok'}, {label: 'ext', href: 'https://example.com/'}]);
+  same(dirty.map(e => e.href), ['/ok']);
+  same(L.cleanRecents('nope'), []); same(L.cleanRecents(null), []);
+  assert.equal(L.cleanRecents(Array.from({length: 20}, (_, i) => ({label: 'L' + i, href: '/' + i}))).length, 5);
+  // '+' as the first character switches Go to Capture and is stripped; never the other way, never mid-text.
+  same({...L.parseInput('+call sam', 'go')}, {mode: 'capture', text: 'call sam'});
+  same({...L.parseInput('+ call sam', 'go')}, {mode: 'capture', text: 'call sam'});
+  same({...L.parseInput('a+b', 'go')}, {mode: 'go', text: 'a+b'});
+  same({...L.parseInput('+x', 'capture')}, {mode: 'capture', text: '+x'});
+  // Enter never creates in Go, with or without results; Capture submits only with a title.
+  assert.equal(L.enterAction('go', false, 'buy milk'), 'none');
+  assert.equal(L.enterAction('go', false, ''), 'none');
+  assert.equal(L.enterAction('go', true, 'buy milk'), 'open');
+  assert.equal(L.enterAction('capture', false, 'buy milk'), 'submit');
+  assert.equal(L.enterAction('capture', true, '  '), 'none');
+  // Arrow keys wrap and an empty list has no selection.
+  assert.equal(L.step(-1, 1, 3), 0); assert.equal(L.step(2, 1, 3), 0); assert.equal(L.step(0, -1, 3), 2); assert.equal(L.step(-1, -1, 3), 2); assert.equal(L.step(0, 1, 0), -1);
+  // Capture chips.
+  same({...L.parseCapture('Call Sam tomorrow !high', '2026-10-12', '2026-10-13')}, {title: 'Call Sam', due: '2026-10-13', priority: 'high'});
+  same({...L.parseCapture('Pay rent today !low', '2026-10-12', '2026-10-13')}, {title: 'Pay rent', due: '2026-10-12', priority: 'low'});
+  same({...L.parseCapture('Plain', 'a', 'b')}, {title: 'Plain', due: '', priority: ''});
+  // The shell no longer carries the old palette, and the new script ships with the page and the worker.
+  assert(!/initCommandPalette/.test(fs.readFileSync('web/static/js/app.js', 'utf8')), 'old palette removed from app.js');
+  assert(/launcher\.js\?v=/.test(fs.readFileSync('web/static/service-worker.js', 'utf8')), 'launcher.js is precached');
+}
+(async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers and launcher passed');})().catch(error=>{console.error(error);process.exitCode=1;});

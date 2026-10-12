@@ -409,6 +409,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "api":
 		if len(segments) >= 2 && segments[1] == "health" {
 			h.healthAPI(w, r, segments)
+		} else if len(segments) == 2 && segments[1] == "search" {
+			h.searchAPI(w, r)
 		} else {
 			h.pushAPI(w, r, segments)
 		}

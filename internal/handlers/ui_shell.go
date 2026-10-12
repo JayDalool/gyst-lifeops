@@ -38,7 +38,13 @@ func (h *Handler) more(w http.ResponseWriter, r *http.Request) {
 		methodNotAllowed(w)
 		return
 	}
-	h.render(w, "more.html", moreData{Page: "more", Sections: []moreSection{
+	h.render(w, "more.html", moreData{Page: "more", Sections: moreSections()})
+}
+
+// moreSections is the fixed destination list. More renders it and the
+// launcher's Go search (search.go) reads the same rows, so they cannot drift.
+func moreSections() []moreSection {
+	return []moreSection{
 		{Title: "Daily planning", Rows: []UIRow{
 			{Label: "Today", URL: "/today", Icon: "house"},
 			{Label: "Daily checklist", Detail: "Your daily task checklist", URL: "/checklist", Icon: "check"},
@@ -71,5 +77,5 @@ func (h *Handler) more(w http.ResponseWriter, r *http.Request) {
 		{Title: "Preferences", Rows: []UIRow{
 			{Label: "Settings", Detail: "Appearance, prayer times and calendar feeds", URL: "/settings", Icon: "settings"},
 		}},
-	}})
+	}
 }
