@@ -322,6 +322,35 @@ func TestRenderTasksListRow(t *testing.T) {
 	}
 }
 
+func TestRenderTasksListRepeatingUsesOccurrenceDate(t *testing.T) {
+	body := renderBody(t, "tasks_list.html", TaskListData{Page: "tasks", Today: "2026-10-10", StatusFilter: "all",
+		OccurrenceDates: map[int64]string{1: "2026-10-10", 2: "2026-09-01"},
+		Tasks: []models.Task{
+			{ID: 1, Title: "Daily fixture", Category: "coding", RepeatType: "daily", Priority: "low", Status: "pending", DueDate: "2026-10-01"},
+			{ID: 2, Title: "One-time fixture", Category: "coding", RepeatType: "none", Priority: "low", Status: "pending", DueDate: "2026-09-01"},
+		}})
+	if got := strings.Count(body, `name="occurrence_date" value="2026-10-10"`); got != 2 {
+		t.Errorf("daily task posts the occurrence date %d times; want 2 (complete and skip)", got)
+	}
+	if got := strings.Count(body, `name="occurrence_date" value="2026-09-01"`); got != 2 {
+		t.Errorf("one-time task posts its due date %d times; want 2", got)
+	}
+	if strings.Count(body, `class="task-late">overdue`) != 1 {
+		t.Errorf("want exactly one overdue label (the one-time task)")
+	}
+}
+
+func TestRenderTaskDetailPostsOccurrenceDate(t *testing.T) {
+	body := renderBody(t, "task_detail.html", TaskDetailData{Page: "tasks", OccurrenceDate: "2026-10-10",
+		Task: models.Task{ID: 1, Title: "Daily fixture", RepeatType: "daily", Status: "pending", DueDate: "2026-10-01"}})
+	if got := strings.Count(body, `name="occurrence_date" value="2026-10-10"`); got != 2 {
+		t.Errorf("detail page posts the occurrence date %d times; want 2", got)
+	}
+	if strings.Contains(body, `name="occurrence_date" value="2026-10-01"`) {
+		t.Errorf("detail page must not post the series start date")
+	}
+}
+
 func TestEmptyProjectShowsNoMissionsYet(t *testing.T) {
 	list := renderBody(t, "projects_list.html", ProjectListData{Page: "projects", RoadmapNames: map[int64]string{}, StatusFilter: "all",
 		Tree: models.ProjectTree{
