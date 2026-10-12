@@ -117,7 +117,7 @@ Today, Workout and More from PR #54; Nutrition v3 from PR #58 (see Real Gaps bel
 **Shape:** Live GYST context + retrieval + allowlisted **read-only** tools first (today, plan, weight trend, training, foods, checklist). Any later write needs explicit user confirmation. Provider-neutral (OpenAI or Anthropic), keys server-side only.  
 - Not model fine-tuning on Jay's data
 - Not scheduled work
-- Anthropic adapter built; OpenAI adapter is a follow-up
+- Anthropic adapter built; OpenAI adapter built, not yet tried against the real API
 
 ---
 
@@ -145,7 +145,7 @@ Done 2026-10-05 (merged and deployed, Winnipeg time):
 
 Still open:
 
-1. **Health Coach** (Issue #64 / PR #65): merged 2026-10-06 and off until Jay sets `HEALTH_AI_PROVIDER` and `ANTHROPIC_API_KEY` (see `docs/HEALTH_COACH.md`). The OpenAI adapter is a follow-up. Since GYST-063 (Issue #101) the Coach's today tool also carries today's water (logged litres, taps, target); no taps is null, never 0.
+1. **Health Coach** (Issue #64 / PR #65): merged 2026-10-06 and off until Jay sets `HEALTH_AI_PROVIDER` and `ANTHROPIC_API_KEY` (see `docs/HEALTH_COACH.md`). OpenAI adapter built (`OPENAI_API_KEY`), not yet tried against the real API. Since GYST-063 (Issue #101) the Coach's today tool also carries today's water (logged litres, taps, target); no taps is null, never 0.
 
 2. **Real device QA** — End-to-end testing on iPhone + Watch
    - Apple Health Shortcut nutrition flow
@@ -218,7 +218,7 @@ Still open:
 
 **For Agent (Feature Work):**
 
-1. **Health Coach**: the OpenAI adapter
+1. **Health Coach**: OpenAI adapter built, not yet tried against the real API
 
 ---
 
@@ -240,7 +240,7 @@ Still open:
 **Next feature sequence:**
 1. Verify Apple Health / MyFitnessPal nutrition end-to-end (Jay)
 2. Health Coach: Jay sets the provider key or leaves it off
-3. OpenAI adapter (follow-up to Issue #64)
+3. OpenAI adapter built, not yet tried against the real API (Jay: GYST-062 line)
 4. Real iPhone/PWA QA (Jay)
 
 ---

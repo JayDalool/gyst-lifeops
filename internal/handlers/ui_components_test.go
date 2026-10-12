@@ -89,7 +89,7 @@ func TestUIFoundationDoesNotExposeGallery(t *testing.T) {
 	if strings.Contains(body, "fictional fixtures") {
 		t.Fatal("UI-0 opted the production page into demo markup")
 	}
-	for _, asset := range []string{"ui-tokens.css?v=vn-2", "ui-components.css?v=apps-1"} {
+	for _, asset := range []string{"ui-tokens.css?v=vn-2", "ui-components.css?v=apps-overlay-1"} {
 		if !strings.Contains(body, asset) {
 			t.Fatalf("foundation asset %s not loaded", asset)
 		}

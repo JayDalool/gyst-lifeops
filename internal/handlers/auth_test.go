@@ -153,7 +153,7 @@ func TestNonExemptPathsRequireASession(t *testing.T) {
 
 	for _, path := range []string{
 		"/", "/today", "/projects", "/health", "/health/plan", "/health/more",
-		"/settings", "/analytics", "/api/push/vapid-key",
+		"/settings", "/settings/sessions/revoke-all", "/analytics", "/api/push/vapid-key",
 		"/calendar.ics", "/calendar/feedback",
 		// /healthz is served by the app mux ahead of this middleware; it is
 		// deliberately not on the exempt list.

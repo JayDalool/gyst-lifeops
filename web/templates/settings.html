@@ -2,7 +2,7 @@
 <div class="page-head">
   <div>
     <h1 class="page-title">Settings</h1>
-    <p class="page-sub">Prayer times, calendar feed, appearance, and motion.</p>
+    <p class="page-sub">Prayer times, calendar feed, appearance, motion, and security.</p>
   </div>
 </div>
 
@@ -135,6 +135,19 @@
       <p>Turns off Galaxy camera drift and travel animation. Your system preference is honored automatically.</p>
     </div>
     <label class="switch"><input type="checkbox" data-motion-toggle aria-label="Reduce motion"><i></i></label>
+  </div>
+</section>
+
+<section class="card mt-16 settings-card" id="security">
+  <h2 class="section-title">Security</h2>
+  <div class="setting setting-wrap mt-8">
+    <div>
+      <b>Sign out everywhere</b>
+      <p>Ends every signed-in session, including this device. You will sign in again with your password.</p>
+    </div>
+    <form class="gyst-scope" method="post" action="/settings/sessions/revoke-all">
+      <button class="gyst-button gyst-button--secondary" type="submit">Sign out everywhere</button>
+    </form>
   </div>
 </section>
 
