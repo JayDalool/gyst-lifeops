@@ -88,6 +88,7 @@ func New(config Config) (*App, error) {
 	service := services.New(repo)
 	// Set before any goroutine reads the clock.
 	service.Loc = location
+	service.BackupStatusPath = filepath.Join(filepath.Dir(config.DBPath), "backups", "last_run.json")
 	log.Printf("Application timezone: %s", location)
 	pushContext, cancelPush := context.WithCancel(context.Background())
 	// pushContext is cancelled by Close and drives every background loop.
@@ -95,6 +96,8 @@ func New(config Config) (*App, error) {
 	// Synchronous, before the loop: it cannot race Close.
 	service.SweepSessionsAtStart()
 	go service.RunSessionSweeper(pushContext)
+	service.PruneAuditAtStart(pushContext)
+	go service.RunAuditPruneLoop(pushContext)
 	if config.HevyAPIKey != "" {
 		service.Training = &services.TrainingSync{Provider: hevy.New(config.HevyAPIKey)}
 		go service.RunTrainingSync(pushContext)
