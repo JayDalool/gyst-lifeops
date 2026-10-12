@@ -1,3 +1,4 @@
+- [ ] #170 · Edit project: own sub-projects not offered as parent · https://github.com/JayDalool/gyst-lifeops/pull/172
 - [ ] #169 · Goal Log progress: blank value blocked, goal unchanged · https://github.com/JayDalool/gyst-lifeops/pull/171
 - [ ] GYST-102 · iPhone launcher: search, open, capture, VoiceOver · https://github.com/JayDalool/gyst-lifeops/pull/168
 - [ ] GYST-072 · iPhone: search panel Esc and Add task easy to tap · https://github.com/JayDalool/gyst-lifeops/pull/128
