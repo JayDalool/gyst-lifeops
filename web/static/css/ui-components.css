@@ -165,3 +165,14 @@ a.gyst-row[aria-current="true"] { background: var(--vn-accent-soft); }
 }
 @media (min-width: 1600px) { .gyst-has-inspector { grid-template-columns: minmax(0, 1fr) 440px; } }
 @media (prefers-reduced-motion: reduce) { dialog.gyst-sheet[open] { animation: none; } }
+
+/* Goals list and edit (GYST-099): rows reuse gyst-list; the bar is a solid accent, never the violet gradient. */
+.goal-row-bar { display: flex !important; align-items: center; gap: 8px; margin-top: 6px; }
+.goal-row-bar .progress { flex: 1; min-width: 0; }
+.goal-row-bar .progress > span { background: var(--vn-accent); box-shadow: none; }
+.goal-row-bar .progress.done > span { background: var(--vn-ink-2); }
+.goal-completed > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-weight: 600; }
+.goal-edit-link { min-height: 44px; }
+.goal-progress-note { display: grid; gap: 4px; }
+.goal-log-link { display: inline-flex; align-items: center; min-height: 44px; }
+.goal-form :is(input, select, textarea):not([type="hidden"]) { min-height: 44px; }

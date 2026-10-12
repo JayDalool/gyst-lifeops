@@ -1,3 +1,13 @@
+{{define "goal.row"}}<li><a class="gyst-row" href="/goals/{{.Goal.ID}}">
+  <span class="gyst-icon-tile" aria-hidden="true">{{if eq .Goal.Category "health"}}{{template "gyst.icon" "heart"}}{{else}}{{template "gyst.icon" "chart-column"}}{{end}}</span>
+  <span class="gyst-row-copy">
+    <span><strong>{{.Goal.Title}}</strong></span>
+    <span class="gyst-row-meta">{{.Goal.Type}}{{if and .Goal.StartDate .Goal.EndDate}} &middot; {{niceDate .Goal.StartDate}} to {{niceDate .Goal.EndDate}}{{else if .Goal.EndDate}} &middot; by {{niceDate .Goal.EndDate}}{{end}} &middot; {{niceNumber .Goal.CurrentValue}} of {{niceNumber .Goal.TargetValue}} {{.Goal.Unit}}</span>
+    <span class="goal-row-bar"><span class="progress{{if eq .Progress 100}} done{{end}}"><span style="width: {{progressWidth .Progress}}"></span></span><span class="meta num">{{.Progress}}%</span></span>
+  </span>
+  {{if .HasPace}}<span class="gyst-chip" data-state="{{if eq .Pace "On track"}}ok{{else}}warn{{end}}">{{.Pace}}</span>{{end}}
+  {{template "gyst.icon" "chevron-right"}}
+</a></li>{{end}}
 {{define "content"}}
 <div class="page-head">
   <div>
@@ -5,30 +15,18 @@
     <h1 class="page-title">Goals</h1>
     <p class="page-sub">Yearly, monthly, and weekly targets, tracked over time.</p>
   </div>
-  <a class="btn ghost" href="/goals/new">New goal</a>
+  <a class="btn ghost goal-edit-link" href="/goals/new">New goal</a>
 </div>
 
-{{if .Goals}}
-  <ul class="project-list mt-24">
-    {{range .Goals}}
-      <li>
-        <a class="project-row" href="/goals/{{.Goal.ID}}">
-          <span class="status {{if eq .Goal.Status "completed"}}done{{else if eq .Goal.Status "active"}}current{{else}}pending{{end}}"><span class="dot"></span></span>
-          <span class="grow">
-            <h3>{{.Goal.Title}}</h3>
-            <p class="meta">
-              {{.Goal.Type}} &middot; {{.Goal.Category}} &middot; {{niceNumber .Goal.CurrentValue}} of {{niceNumber .Goal.TargetValue}} {{.Goal.Unit}}
-              {{- if .Goal.EndDate}} &middot; by {{niceDate .Goal.EndDate}}{{end}}
-              {{- if ne .Goal.Status "active"}} &middot; {{.Goal.Status}}{{end}}
-            </p>
-          </span>
-          <div class="progress{{if eq .Progress 100}} done{{end}}"><span style="width: {{progressWidth .Progress}}"></span></div>
-          <span class="meta num">{{.Progress}}%</span>
-        </a>
-      </li>
-    {{end}}
-  </ul>
+{{if or .Goals .Completed}}
+  {{if .Goals}}<ul class="gyst-list mt-24">{{range .Goals}}{{template "goal.row" .}}{{end}}</ul>{{end}}
+  {{if .Completed}}
+  <details class="goal-completed mt-24">
+    <summary>Completed ({{len .Completed}})</summary>
+    <ul class="gyst-list mt-12">{{range .Completed}}{{template "goal.row" .}}{{end}}</ul>
+  </details>
+  {{end}}
 {{else}}
-  <p class="meta mt-24">No goals yet. <a href="/goals/new">Create a yearly, monthly, or weekly target</a> and track progress over time.</p>
+  <section class="gyst-card gyst-state mt-24"><h2 class="gyst-section-title">No goals</h2><p class="gyst-caption">Create a yearly, monthly, or weekly target and track progress over time.</p><a class="gyst-button" href="/goals/new">New goal</a></section>
 {{end}}
 {{end}}

@@ -9,6 +9,7 @@
     </p>
     {{if .Goal.Goal.Description}}<p class="page-sub">{{.Goal.Goal.Description}}</p>{{end}}
   </div>
+  {{if and (ne .Goal.Goal.Status "archived") (not .Goal.Goal.ArchivedAt)}}<a class="btn ghost goal-edit-link" href="/goals/{{.Goal.Goal.ID}}/edit">Edit</a>{{end}}
 </div>
 
 <div class="card tight mt-24">
@@ -52,7 +53,7 @@
   </div>
 
   <aside>
-    <section class="card tight">
+    <section class="card tight" id="log">
       <h2 class="section-title card-title">Log progress</h2>
       <form class="form-stack" method="post" action="/goals/{{.Goal.Goal.ID}}/progress">
         <div class="form-row">

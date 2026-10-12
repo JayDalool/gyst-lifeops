@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -216,9 +217,10 @@ type ProjectDetailData struct {
 }
 
 type GoalListData struct {
-	Page  string
-	Goals []models.GoalWithProgress
-	Chart models.ChartData
+	Page      string
+	Goals     []models.GoalWithProgress
+	Completed []models.GoalWithProgress
+	Chart     models.ChartData
 }
 
 type GoalFormData struct {
@@ -227,6 +229,8 @@ type GoalFormData struct {
 	Title  string
 	Action string
 	Goal   models.Goal
+	IsEdit bool
+	Error  string
 }
 
 type GoalDetailData struct {
@@ -1600,15 +1604,21 @@ func (h *Handler) goals(w http.ResponseWriter, r *http.Request, segments []strin
 			serverError(w, err)
 			return
 		}
+		today := h.Service.TodayString()
+		chart := models.ChartData{}
+		var active, completed []models.GoalWithProgress
 		for index := range goals {
 			goals[index].Momentum = services.TrendChart(goals[index].Progress)
+			goals[index].Pace, goals[index].HasPace = services.GoalPace(goals[index].Goal, today)
+			chart.Labels = append(chart.Labels, goals[index].Goal.Title)
+			chart.Values = append(chart.Values, goals[index].Progress)
+			if goals[index].Goal.Status == "completed" {
+				completed = append(completed, goals[index])
+			} else {
+				active = append(active, goals[index])
+			}
 		}
-		chart := models.ChartData{}
-		for _, goal := range goals {
-			chart.Labels = append(chart.Labels, goal.Goal.Title)
-			chart.Values = append(chart.Values, goal.Progress)
-		}
-		h.render(w, "goals_list.html", GoalListData{Page: "goals", Goals: goals, Chart: chart})
+		h.render(w, "goals_list.html", GoalListData{Page: "goals", Goals: active, Completed: completed, Chart: chart})
 		return
 	}
 
@@ -1629,6 +1639,8 @@ func (h *Handler) goals(w http.ResponseWriter, r *http.Request, segments []strin
 	}
 
 	switch segments[2] {
+	case "edit":
+		h.editGoal(w, r, id)
 	case "progress":
 		h.addGoalProgress(w, r, id)
 	case "archive":
@@ -1670,6 +1682,54 @@ func (h *Handler) newGoal(w http.ResponseWriter, r *http.Request) {
 	default:
 		methodNotAllowed(w)
 	}
+}
+
+func (h *Handler) editGoal(w http.ResponseWriter, r *http.Request, id int64) {
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	existing, err := h.Service.Repo.GoalByID(id)
+	if err == nil && (existing.ArchivedAt != "" || existing.Status == "archived") {
+		err = sql.ErrNoRows
+	}
+	if err != nil {
+		notFoundOrError(w, err)
+		return
+	}
+	form := func(goal models.Goal, status int, message string) {
+		h.renderStatus(w, status, "goal_form.html", GoalFormData{
+			Page:   "goals",
+			Today:  h.Service.TodayString(),
+			Title:  "Edit goal",
+			Action: fmt.Sprintf("/goals/%d/edit", id),
+			Goal:   goal,
+			IsEdit: true,
+			Error:  message,
+		})
+	}
+	if r.Method == http.MethodGet {
+		form(existing, http.StatusOK, "")
+		return
+	}
+	goal, err := goalEditFromRequest(r)
+	if err != nil {
+		var invalid goalInvalid
+		if errors.As(err, &invalid) {
+			// Keep what was typed; current progress is never editable here.
+			goal.ID, goal.CurrentValue = id, existing.CurrentValue
+			form(goal, http.StatusBadRequest, invalid.Error())
+			return
+		}
+		serverError(w, err)
+		return
+	}
+	goal.ID = id
+	if err := h.Service.Repo.UpdateGoal(&goal); err != nil {
+		notFoundOrError(w, err)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/goals/%d", id), http.StatusSeeOther)
 }
 
 func (h *Handler) goalDetail(w http.ResponseWriter, r *http.Request, id int64) {
@@ -2413,6 +2473,12 @@ func (h *Handler) appClock() clock.Clock {
 }
 
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {
+	h.renderStatus(w, http.StatusOK, page, data)
+}
+
+// renderStatus renders a page with an explicit status, for a form re-shown
+// with its typed values and an error.
+func (h *Handler) renderStatus(w http.ResponseWriter, status int, page string, data any) {
 	playerXP := models.PlayerStats{CurrentLevel: 1}
 	if h.Service != nil && h.Service.Repo != nil {
 		var err error
@@ -2520,6 +2586,9 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
 	if err := tmpl.ExecuteTemplate(w, "layout", data); err != nil {
 		serverError(w, err)
 	}
@@ -2623,6 +2692,57 @@ func goalFromRequest(r *http.Request) (models.Goal, error) {
 		EndDate:      strings.TrimSpace(r.FormValue("end_date")),
 		Status:       cleanForm(r.FormValue("status"), "active"),
 	}, nil
+}
+
+// goalInvalid is a field error from the goal edit form: shown on the form with
+// a 400, nothing written.
+type goalInvalid string
+
+func (e goalInvalid) Error() string { return string(e) }
+
+// validGoalDate is the one place goal start/end dates are checked: empty, or a
+// canonical YYYY-MM-DD. GYST-138 will decide any further start/end rules.
+func validGoalDate(value string) bool { return validDueDate(value) }
+
+// goalEditFromRequest reads the editable goal fields. current_value is never
+// read: only logged progress writes it. On a goalInvalid error the returned
+// goal still holds the typed values.
+func goalEditFromRequest(r *http.Request) (models.Goal, error) {
+	if err := r.ParseForm(); err != nil {
+		return models.Goal{}, err
+	}
+	goal := models.Goal{
+		Title:       strings.TrimSpace(r.FormValue("title")),
+		Description: strings.TrimSpace(r.FormValue("description")),
+		Type:        cleanForm(r.FormValue("type"), "yearly"),
+		Category:    cleanForm(r.FormValue("category"), "personal"),
+		Unit:        cleanForm(r.FormValue("unit"), "tasks"),
+		StartDate:   strings.TrimSpace(r.FormValue("start_date")),
+		EndDate:     strings.TrimSpace(r.FormValue("end_date")),
+		Status:      cleanForm(r.FormValue("status"), "active"),
+	}
+	if raw := strings.TrimSpace(r.FormValue("target_value")); raw != "" {
+		parsed, err := strconv.ParseFloat(raw, 64)
+		if err != nil || math.IsNaN(parsed) || math.IsInf(parsed, 0) || parsed < 0 {
+			return goal, goalInvalid("Target must be a number of 0 or more.")
+		}
+		goal.TargetValue = parsed
+	}
+	switch {
+	case goal.Title == "":
+		return goal, goalInvalid("Title is required.")
+	case goal.Type != "yearly" && goal.Type != "monthly" && goal.Type != "weekly":
+		return goal, goalInvalid("Type must be yearly, monthly or weekly.")
+	case !slices.Contains([]string{"health", "coding", "business", "finance", "personal", "other"}, goal.Category):
+		return goal, goalInvalid("Category is not one of the listed choices.")
+	case goal.Status != "active" && goal.Status != "completed":
+		return goal, goalInvalid("Status must be active or completed.")
+	case !validGoalDate(goal.StartDate):
+		return goal, goalInvalid("Start date must be a valid YYYY-MM-DD date.")
+	case !validGoalDate(goal.EndDate):
+		return goal, goalInvalid("End date must be a valid YYYY-MM-DD date.")
+	}
+	return goal, nil
 }
 
 func parseID(value string) (int64, bool) {

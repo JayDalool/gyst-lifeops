@@ -639,6 +639,8 @@ type GoalWithProgress struct {
 	Goal     Goal
 	Progress int
 	Momentum ChartData
+	Pace     string // "On track" or "Behind"; empty when no pace applies
+	HasPace  bool
 }
 
 type Reminder struct {
