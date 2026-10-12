@@ -210,10 +210,15 @@
         if (!response.ok) throw new Error("search " + response.status);
         return response.json();
       }).then(function (data) {
-        if (mine !== seq || mode !== "go") return;
+        if (mine !== seq || mode !== "go" || query !== input.value.trim()) return;
         pending = false;
         render(cleanGroups(data), query);
-        if (openAfter) { openAfter = false; if (options[0]) options[0].click(); }
+        if (openAfter) {
+          openAfter = false;
+          // Only an internal link is opened on a deferred Enter (a new tab opened
+          // after a fetch is not a user gesture); an external top hit is just selected.
+          if (options[0] && options[0].target !== "_blank") options[0].click();
+        }
       }).catch(function (err) {
         if (mine !== seq || mode !== "go" || (err && err.name === "AbortError")) return;
         pending = false; openAfter = false;
@@ -289,7 +294,12 @@
       var parsed = parseInput(input.value, mode);
       if (parsed.mode !== mode) { input.value = parsed.text; setMode(parsed.mode, false); }
       if (mode === "capture") applyCapture();
-      else { setActive(-1); pending = true; openAfter = false; runSearch(false); }
+      else {
+        // Anything already asked for or in flight is now about an older query.
+        seq++;
+        if (controller) controller.abort();
+        setActive(-1); pending = true; openAfter = false; runSearch(false);
+      }
     });
 
     input.addEventListener("keydown", function (event) {

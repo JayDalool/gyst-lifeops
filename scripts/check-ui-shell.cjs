@@ -385,11 +385,98 @@ function launcherChecks() {
   same({...L.parseCapture('Call Sam tomorrow !high', '2026-10-12', '2026-10-13')}, {title: 'Call Sam', due: '2026-10-13', priority: 'high'});
   same({...L.parseCapture('Pay rent today !low', '2026-10-12', '2026-10-13')}, {title: 'Pay rent', due: '2026-10-12', priority: 'low'});
   same({...L.parseCapture('Plain', 'a', 'b')}, {title: 'Plain', due: '', priority: ''});
-  // Source guard: input marks results stale, and only the current search may open its top hit.
-  assert(/setActive\(-1\); pending = true; openAfter = false;/.test(src), 'input marks results stale');
-  assert(/if \(mine !== seq \|\| mode !== "go"\) return;\s*pending = false;\s*render\(cleanGroups\(data\), query\);\s*if \(openAfter\)/.test(src), 'deferred open only after the current search renders');
   // The shell no longer carries the old palette, and the new script ships with the page and the worker.
   assert(!/initCommandPalette/.test(fs.readFileSync('web/static/js/app.js', 'utf8')), 'old palette removed from app.js');
   assert(/launcher\.js\?v=/.test(fs.readFileSync('web/static/service-worker.js', 'utf8')), 'launcher.js is precached');
 }
-(async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers and launcher passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+// Launcher v2 race checks: drives the real launcher.js in a fake DOM with fake timers and a fetch the test answers by hand.
+async function launcherRaceChecks() {
+  const src = fs.readFileSync('web/static/js/launcher.js', 'utf8');
+  const strip = s => s.slice(1, -1);
+  let clicked = [], submitted = 0;
+  function el(tag) {
+    const e = {tag, attrs: {}, children: [], listeners: {}, dataset: {}, hidden: false, value: '', className: '', id: '', textContent: '', href: '', target: '',
+      classList: {set: new Set(), add(c) { this.set.add(c); }, remove(c) { this.set.delete(c); }},
+      setAttribute(k, v) { this.attrs[k] = String(v); },
+      getAttribute(k) { return k === 'href' ? this.href : this.attrs[k]; },
+      removeAttribute(k) { delete this.attrs[k]; },
+      addEventListener(t, f) { (this.listeners[t] ||= []).push(f); },
+      dispatch(t, ev) { ev = Object.assign({type: t, preventDefault() {}, target: this, currentTarget: this}, ev); (this.listeners[t] || []).forEach(f => f(ev)); return ev; },
+      appendChild(c) { c.parent = this; this.children.push(c); return c; },
+      removeChild(c) { this.children.splice(this.children.indexOf(c), 1); },
+      get firstChild() { return this.children[0] || null; },
+      focus() {}, querySelector() { return null; }, isConnected: true, scrollIntoView() {}, requestSubmit() { submitted++; },
+      closest() { let n = this; while (n) { if (n.className === 'launcher-item') return n; n = n.parent; } return null; },
+      click() { clicked.push(this.href); let n = this; while (n) { (n.listeners.click || []).forEach(f => f({target: this, preventDefault() {}})); n = n.parent; } }};
+    return e;
+  }
+  const input = el('input'), results = el('div'), form = el('form'), title = el('input'), date = el('input'), priority = el('select'), ret = el('input'), status = el('p'), closeBtn = el('button');
+  const goBtn = el('button'), capBtn = el('button'); goBtn.dataset.launcherMode = 'go'; capBtn.dataset.launcherMode = 'capture';
+  const goPanel = el('div'), capPanel = el('div'); goPanel.dataset.launcherPanel = 'go'; capPanel.dataset.launcherPanel = 'capture';
+  const palette = el('dialog'); palette.open = false; palette.dataset.today = '2026-10-12'; palette.dataset.tomorrow = '2026-10-13';
+  palette.showModal = function () { this.open = true; };
+  palette.close = function () { this.open = false; this.dispatch('close'); };
+  const byName = {'data-command-search': input, 'data-command-results': results, 'data-quick-task': form, 'data-quick-title': title, 'data-quick-date': date, 'data-quick-priority': priority, 'data-command-return': ret, 'data-launcher-status': status, 'data-command-close': closeBtn};
+  palette.querySelector = s => byName[strip(s)] || null;
+  palette.querySelectorAll = s => strip(s) === 'data-launcher-mode' ? [goBtn, capBtn] : strip(s) === 'data-launcher-panel' ? [goPanel, capPanel] : [];
+  const opener = el('button');
+  const fakeDoc = {readyState: 'complete', activeElement: opener, querySelector: s => strip(s) === 'data-command-palette' ? palette : null, querySelectorAll: s => strip(s) === 'data-command-open' ? [opener] : [], createElement: t => el(t), addEventListener() {}};
+  let now = 0, timers = [], tid = 0;
+  const fakeSetTimeout = (f, ms) => { tid++; timers.push({id: tid, at: now + ms, f}); return tid; };
+  const fakeClearTimeout = id => { timers = timers.filter(t => t.id !== id); };
+  const inflight = [];
+  const fakeFetch = (url, init) => new Promise((res, rej) => {
+    inflight.push({q: decodeURIComponent(url.split('q=')[1]), res});
+    if (init.signal) init.signal.addEventListener('abort', () => { const e = new Error('aborted'); e.name = 'AbortError'; rej(e); });
+  });
+  const reply = (q, groups) => { const i = inflight.findIndex(r => r.q === q); if (i < 0) return false; inflight.splice(i, 1)[0].res({status: 200, ok: true, json: () => ({groups})}); return true; };
+  const answer = (q, external) => reply(q, q ? [{label: 'Top hit', items: [{label: 'Hit for ' + q, href: external ? 'https://example.com/' + q : '/hit/' + q, external: !!external}]}] : []);
+  const flush = () => new Promise(r => setImmediate(r));
+  async function advance(ms) { const end = now + ms; for (;;) { timers.sort((a, b) => a.at - b.at); const t = timers[0]; if (!t || t.at > end) break; timers.shift(); now = t.at; t.f(); await flush(); } now = end; await flush(); }
+  const sandbox = {document: fakeDoc, fetch: fakeFetch, setTimeout: fakeSetTimeout, clearTimeout: fakeClearTimeout, AbortController, localStorage: {getItem() { return null; }, setItem() {}}, location: {pathname: '/today', search: '', hash: ''}, Array, JSON, String, Math, Date, Error};
+  sandbox.window = sandbox; sandbox.globalThis = sandbox;
+  vm.runInNewContext(src, sandbox);
+  const type = v => { input.value = v; input.dispatch('input'); };
+  const key = k => input.dispatch('keydown', {key: k});
+  const got = () => clicked.join(',') || '(nothing)';
+  async function reopen() { if (palette.open) palette.close(); inflight.length = 0; timers = []; clicked = []; submitted = 0; opener.dispatch('click'); await flush(); answer(''); await flush(); }
+  const is = (label, want) => assert.equal(got(), want, label + ': opened ' + got());
+
+  await reopen();
+  type('gar'); key('Enter'); await flush(); answer('gar'); await flush();
+  is('Enter inside the debounce with nothing in flight opens the current top hit', '/hit/gar');
+  // The reviewer's race: "g" in flight, user types "ga", the "g" answer lands, Enter.
+  await reopen();
+  type('g'); await advance(130); type('ga'); await advance(20);
+  answer('g'); await flush(); key('Enter'); await flush();
+  is('an older answer must not open', '(nothing)');
+  await advance(200); answer('ga'); await flush();
+  is('the current query hit opens once it renders', '/hit/ga');
+  await reopen();
+  type('g'); await advance(130); type('ga'); await advance(20);
+  key('Enter'); answer('g'); await flush();
+  is('Enter before the older answer', '(nothing)');
+  await advance(200); answer('ga'); await flush();
+  is('then only the current hit', '/hit/ga');
+  await reopen();
+  type('ab'); key('Enter'); type('abc'); answer('ab'); await flush();
+  is('Enter then more typing opens nothing', '(nothing)');
+  await advance(200); answer('abc'); await flush();
+  is('and no second Enter means still nothing', '(nothing)');
+  await reopen();
+  type('xy'); key('Enter'); palette.dispatch('keydown', {key: 'Escape'}); answer('xy'); await flush();
+  is('Escape while deferred', '(nothing)'); assert.equal(palette.open, false);
+  await reopen();
+  type('zz'); key('Enter'); key('Tab'); answer('zz'); await flush();
+  is('Tab to Capture while deferred', '(nothing)'); assert.equal(submitted, 0);
+  await reopen();
+  type('qq'); key('Enter'); type('+qq'); answer('qq'); await flush();
+  is('plus to Capture while deferred', '(nothing)'); assert.equal(submitted, 0);
+  await reopen();
+  type('nomatch'); key('Enter'); reply('nomatch', []); await flush();
+  is('empty answer', '(nothing)'); assert.equal(submitted, 0);
+  await reopen();
+  type('app'); key('Enter'); answer('app', true); await flush();
+  is('a deferred Enter never opens an external new-tab link', '(nothing)');
+}
+(async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers and launcher passed');})().catch(error=>{console.error(error);process.exitCode=1;});
