@@ -285,12 +285,18 @@ func (h *Handler) courseBlocks(w http.ResponseWriter, r *http.Request, courseID 
 		}
 	case "postpone":
 		block, err := h.Service.Repo.LearningBlockByID(blockID)
+		if errors.Is(err, sql.ErrNoRows) || (err == nil && block.CourseID != courseID) {
+			http.NotFound(w, r)
+			return
+		}
 		if err != nil {
 			serverError(w, err)
 			return
 		}
 		newDue := h.Service.CatchupDueDate(block.DueDate)
-		if err := h.Service.Repo.PostponeLearningBlock(courseID, blockID, newDue); err != nil {
+		// A block that is no longer pending is a quiet no-op: the redirect
+		// shows the page's true state (GYST-147).
+		if _, err := h.Service.Repo.PostponeLearningBlock(courseID, blockID, newDue); err != nil {
 			serverError(w, err)
 			return
 		}
