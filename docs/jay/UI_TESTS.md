@@ -1,4 +1,4 @@
-- [ ] GYST-143 · iPhone Monthly: rows tap easily, chips readable · https://github.com/JayDalool/gyst-lifeops/pulls
+- [ ] GYST-143 · iPhone Monthly: rows tap easily, chips readable · https://github.com/JayDalool/gyst-lifeops/pull/164
 - [ ] GYST-072 · iPhone: search panel Esc and Add task easy to tap · https://github.com/JayDalool/gyst-lifeops/pull/128
 - [ ] GYST-101 · Apps page: grouped rows, links open in new tab · https://github.com/JayDalool/gyst-lifeops/pull/155
 - [ ] GYST-126 · Gallery overlays: open, close, focus return · https://github.com/JayDalool/gyst-lifeops/pull/149
