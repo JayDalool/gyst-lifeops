@@ -88,6 +88,11 @@ Keep the token private on your device; it is not your GYST login password.
     date and `last_synced_at`. Check `dietary_calories` matches Apple Health.
     If the response has an `error`, fix it before proceeding.
 
+    The server accepts only today and the previous 7 days (Winnipeg time). A
+    date outside that window, including a future date or a phone clock set
+    ahead, gets HTTP 422 `date must be between ... and ...` and is not saved.
+    Older backfill is refused. Run the Shortcut at least once a week.
+
 [Apple's HTTP request instructions](https://support.apple.com/guide/shortcuts/apd58d46713f/ios).
 
 ## 4. Duplicate for the other nutrients

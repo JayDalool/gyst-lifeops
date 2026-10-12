@@ -83,9 +83,12 @@ type TaskListData struct {
 	Page  string
 	Today string
 	Tasks []models.Task
+	// OccurrenceDates is the date each task's Complete and Skip post: the
+	// current occurrence for a repeating task (GYST-133).
+	OccurrenceDates map[int64]string
 	// StatusFilter is the ?status= view filter: pending | completed | skipped |
-	// overdue | all. Presentation-only; "overdue" means pending with a past due
-	// date.
+	// overdue | all. Presentation-only; "overdue" means a pending one-time task
+	// with a past due date. Repeating tasks are never overdue.
 	StatusFilter string
 }
 
@@ -98,11 +101,13 @@ type TaskFormData struct {
 }
 
 type TaskDetailData struct {
-	Page          string
-	Task          models.Task
-	Checklist     []models.TaskChecklistItem
-	ShipStats     models.ShipStats
-	ExternalLinks []models.ExternalLink
+	Page string
+	Task models.Task
+	// OccurrenceDate is the date Complete and Skip post (GYST-133).
+	OccurrenceDate string
+	Checklist      []models.TaskChecklistItem
+	ShipStats      models.ShipStats
+	ExternalLinks  []models.ExternalLink
 }
 
 type PlanImportData struct {
@@ -580,7 +585,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		Completed:      completed,
 		Skipped:        skipped,
 		OverdueTasks:   overdueTasks,
-		RemindersToday: remindersToday,
+		RemindersToday: standaloneReminders(remindersToday),
 		Learning:       learning,
 		Prayer: PrayerTodayData{
 			Schedule: schedule, Next: nextPrayer,
@@ -635,7 +640,7 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 			for _, task := range tasks {
 				switch filter {
 				case "overdue":
-					if task.Status == "pending" && task.DueDate != "" && task.DueDate < today {
+					if task.Status == "pending" && task.RepeatType == "none" && task.DueDate != "" && task.DueDate < today {
 						filtered = append(filtered, task)
 					}
 				default:
@@ -648,7 +653,11 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 		default:
 			filter = "all"
 		}
-		h.render(w, "tasks_list.html", TaskListData{Page: "tasks", Today: today, Tasks: tasks, StatusFilter: filter})
+		dates := make(map[int64]string, len(tasks))
+		for _, task := range tasks {
+			dates[task.ID] = h.Service.TaskActionDate(task)
+		}
+		h.render(w, "tasks_list.html", TaskListData{Page: "tasks", Today: today, Tasks: tasks, OccurrenceDates: dates, StatusFilter: filter})
 		return
 	}
 
@@ -692,7 +701,7 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 			serverError(w, err)
 			return
 		}
-		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, Checklist: checklist, ShipStats: stats, ExternalLinks: links})
+		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, OccurrenceDate: h.Service.TaskActionDate(task), Checklist: checklist, ShipStats: stats, ExternalLinks: links})
 		return
 	}
 
@@ -890,6 +899,37 @@ func (h *Handler) editTask(w http.ResponseWriter, r *http.Request, id int64) {
 	}
 }
 
+// taskOccurrenceDate loads the task and resolves the date a complete, skip or
+// undo books. A malformed date is 400. For a repeating task an empty date means
+// the current occurrence; with validate set, a well-formed date the series does
+// not repeat on is 400. On failure it has answered and the caller must stop;
+// nothing is written here (GYST-133).
+func (h *Handler) taskOccurrenceDate(w http.ResponseWriter, r *http.Request, id int64, validate bool) (models.Task, string, bool) {
+	raw := strings.TrimSpace(r.FormValue("occurrence_date"))
+	if raw != "" {
+		if _, err := clock.ParseLocalDate(raw); err != nil {
+			invalidDate(w, "occurrence_date")
+			return models.Task{}, "", false
+		}
+	}
+	task, err := h.Service.Repo.TaskByID(id)
+	if err != nil {
+		notFoundOrError(w, err)
+		return models.Task{}, "", false
+	}
+	if raw == "" {
+		if task.RepeatType != "none" && task.RepeatType != "" {
+			return task, h.Service.TaskActionDate(task), true
+		}
+		return task, h.Service.TodayString(), true
+	}
+	if validate && !h.Service.IsTaskOccurrence(task, raw) {
+		http.Error(w, "occurrence_date is not a day this task repeats on", http.StatusBadRequest)
+		return models.Task{}, "", false
+	}
+	return task, raw, true
+}
+
 func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64, status string) {
 	if r.Method != http.MethodPost {
 		methodNotAllowed(w)
@@ -899,9 +939,8 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 		serverError(w, err)
 		return
 	}
-	date, err := h.formLocalDate(r.FormValue("occurrence_date"))
-	if err != nil {
-		invalidDate(w, "occurrence_date")
+	task, date, ok := h.taskOccurrenceDate(w, r, id, true)
+	if !ok {
 		return
 	}
 	var before models.PlayerStats
@@ -917,15 +956,12 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 		return
 	}
 	if status == "completed" {
-		task, err := h.Service.Repo.TaskByID(id)
-		if err == nil {
-			gained, level := h.rewardDelta(before, haveBefore)
-			redirectWithCelebration(w, r, fmt.Sprintf("/today#task-%d", id), celebration{
-				Kind: "task", Title: task.Title, XP: gained, Level: level,
-				Undo: fmt.Sprintf("/tasks/%d/undo", id), Date: date,
-			})
-			return
-		}
+		gained, level := h.rewardDelta(before, haveBefore)
+		redirectWithCelebration(w, r, fmt.Sprintf("/today#task-%d", id), celebration{
+			Kind: "task", Title: task.Title, XP: gained, Level: level,
+			Undo: fmt.Sprintf("/tasks/%d/undo", id), Date: date,
+		})
+		return
 	}
 	redirectAfter(w, r, fmt.Sprintf("/today#task-%d", id))
 }
@@ -941,9 +977,8 @@ func (h *Handler) undoTaskCompletion(w http.ResponseWriter, r *http.Request, id 
 		serverError(w, err)
 		return
 	}
-	date, err := h.formLocalDate(r.FormValue("occurrence_date"))
-	if err != nil {
-		invalidDate(w, "occurrence_date")
+	_, date, ok := h.taskOccurrenceDate(w, r, id, false)
+	if !ok {
 		return
 	}
 	if _, err := h.Service.Repo.UndoTaskCompletion(id, date); err != nil {
@@ -1904,6 +1939,13 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 			return
 		}
 		http.Redirect(w, r, "/settings#prayer", http.StatusSeeOther)
+		return
+	}
+	// POST /settings/sessions/revoke-all: sign out every device, this one
+	// included. Behind the session guard (not auth-exempt) and the
+	// same-origin guard; GET is 405.
+	if len(segments) == 3 && segments[1] == "sessions" && segments[2] == "revoke-all" {
+		h.revokeAllSessions(w, r)
 		return
 	}
 	// POST /settings/calendar-token — generate/rotate or revoke the feed token.
