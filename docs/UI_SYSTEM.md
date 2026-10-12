@@ -472,6 +472,8 @@ unavailable. Evidence: [UI-6](tasks/UI-6-nutrition.md).
 
 ## NAV1 — Approved navigation revision
 
+> Replaced by D11 (GYST-073): the last two tabs are now Learn (`/learn`, an alias of the course list; `/courses` still works) and More. The rest of this section still describes the shell.
+
 Jay approved simplifying the shell after UI-10. This supersedes UI-1 shell
 placement: desktop (>=1024 px) has a left sidebar, phone/tablet have five bottom
 links: Today, Projects, Health, Courses, Menu. The top bar has GYST and Search.

@@ -38,9 +38,14 @@ func TestPrimaryNavigationHasFiveDestinations(t *testing.T) {
 		t.Fatal("primary navigation end not found")
 	}
 	nav := body[start : start+end]
-	for _, label := range []string{"Today", "Projects", "Health", "Courses", "Menu"} {
+	for _, label := range []string{"Today", "Projects", "Health", "Learn", "More"} {
 		if !strings.Contains(nav, label) {
 			t.Fatalf("primary navigation missing %q", label)
+		}
+	}
+	for _, gone := range []string{"Courses", "Menu"} {
+		if strings.Contains(nav, gone) {
+			t.Fatalf("old NAV1 label %q still in primary navigation", gone)
 		}
 	}
 	if strings.Contains(nav, "<summary>Add</summary>") {
@@ -65,6 +70,7 @@ func TestGalaxyAndSecondaryRoutesRemainReachable(t *testing.T) {
 		"/projects",
 		"/roadmap",
 		"/courses",
+		"/learn",
 		"/monthly",
 		"/analytics",
 		"/health",
@@ -128,7 +134,7 @@ func TestHealthFoundation(t *testing.T) {
 		// Unbuilt features are not offered on Health (05A D8, GYST-VN-052).
 		// These placeholders were required here before; they are now banned.
 		assertNoUnbuiltHealthMarkup(t, body)
-		for _, path := range []string{"/today", "/galaxy", "/projects", "/health", "/courses", "/more", "/tasks", "/settings", "/plan-import"} {
+		for _, path := range []string{"/today", "/galaxy", "/projects", "/health", "/learn", "/more", "/tasks", "/settings", "/plan-import"} {
 			if !strings.Contains(body, `href="`+path+`"`) {
 				t.Errorf("missing navigation %s", path)
 			}
