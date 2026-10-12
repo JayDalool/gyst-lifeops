@@ -206,7 +206,8 @@ func TestAutomationAPIRateLimit(t *testing.T) {
 
 func TestAutomationTokensAreScoped(t *testing.T) {
 	h := autoHandler(t)
-	health := `{"date":"2026-09-10","source":"apple_shortcuts","dietary_calories":130}`
+	// Inside the Health sync window (today-7..today, GYST-116) on the test clock.
+	health := `{"date":"` + autoNow.Format("2006-01-02") + `","source":"apple_shortcuts","dietary_calories":130}`
 	if rec := healthRequest(h, "POST", "/api/health/sync", health, autoTestToken, "application/json"); rec.Code != 401 {
 		t.Fatalf("automation token on health sync: %d", rec.Code)
 	}
