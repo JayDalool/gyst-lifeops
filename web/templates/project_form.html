@@ -10,6 +10,7 @@
 </div>
 
 <form class="card form-card form-stack mt-24" method="post" action="{{.Action}}">
+  {{with .Error}}<div role="alert">{{template "gyst.banner" .}}</div>{{end}}
   <label class="field">
     <span>Name <em class="req">*</em></span>
     <input name="name" required value="{{.Project.Name}}">
@@ -70,7 +71,7 @@
       <select name="parent_project_id">
         <option value="">None</option>
         {{range .Projects}}
-          {{if ne .Project.ID $.Project.ID}}
+          {{if and (ne .Project.ID $.Project.ID) (or (eq .Project.ID $.Project.ParentProjectID) (not (index $.ExcludeParents .Project.ID)))}}
             <option value="{{.Project.ID}}" {{if eq .Project.ID $.Project.ParentProjectID}}selected{{end}}>{{.Project.Name}}</option>
           {{end}}
         {{end}}

@@ -100,9 +100,19 @@ func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, er
 	// dependencies declared before their target appears in the Markdown while
 	// preserving the normal parent-before-child hierarchy.
 	for _, imported := range importedProjects {
+		// The first pass already linked the parent that existed when this
+		// project was inserted. Re-resolve by name only when it found none:
+		// a later project with the same name must not become the parent.
 		parentID := imported.plan.ParentProjectID
-		if imported.plan.ParentName != "" {
+		if parentID == 0 && imported.plan.ParentName != "" {
 			parentID = projectIDsByName[strings.ToLower(imported.plan.ParentName)]
+		}
+		cycle, err := parentCreatesCycle(tx, imported.id, parentID)
+		if err != nil {
+			return 0, err
+		}
+		if cycle {
+			return 0, ErrProjectParentCycle
 		}
 		dependencyID := imported.plan.DependsOnProjectID
 		if imported.plan.DependsOn != "" {
