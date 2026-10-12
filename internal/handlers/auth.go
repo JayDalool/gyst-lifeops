@@ -225,3 +225,34 @@ func defaultIfEmpty(value, fallback string) string {
 	}
 	return value
 }
+
+// revokeAllSessions is POST /settings/sessions/revoke-all. It deletes every
+// session row (public and tailnet hosts share the table), clears this
+// browser's cookie and sends it to /login. The log line and the audit row
+// carry the action and a count only, never a token or hash.
+func (h *Handler) revokeAllSessions(w http.ResponseWriter, r *http.Request) {
+	if !postGuard(w, r, "POST") {
+		return
+	}
+	ref := services.SessionActorRef(sessionToken(r)) // before revocation
+	count, err := h.Service.RevokeAllSessions()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	ingress, _, client := loginClient(r)
+	h.audit(r, repository.AuditEvent{
+		ActorRef: ref, Action: services.AuditActionSessionRevokeAll,
+		Outcome: services.AuditOutcomeSuccess, Detail: "user",
+	}, ingress)
+	h.log().LogAttrs(r.Context(), slog.LevelInfo, "auth",
+		slog.String("event", "session.revoked_all"),
+		slog.String("reason", "user"),
+		slog.Int64("count", count),
+		slog.String("ingress", ingress),
+		slog.String("client", client),
+		slog.String("request_id", requestIDFrom(r.Context())),
+	)
+	h.clearSessionCookie(w, r)
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}

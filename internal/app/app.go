@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -90,6 +91,23 @@ func New(config Config) (*App, error) {
 	service.Loc = location
 	service.BackupStatusPath = filepath.Join(filepath.Dir(config.DBPath), "backups", "last_run.json")
 	log.Printf("Application timezone: %s", location)
+	// Before any goroutine, handler or listener: a changed GYST_PASSWORD_HASH
+	// must end every old session, and a failure here stops startup rather
+	// than serve sessions the new password never approved.
+	if revoked, changed, err := service.RevokeSessionsOnPasswordChange(config.PasswordHash); err != nil {
+		database.Close()
+		return nil, fmt.Errorf("revoke sessions on password change: %w", err)
+	} else if changed {
+		log.Printf("SECURITY: GYST_PASSWORD_HASH changed; session.revoked_all, %d sessions", revoked)
+		if err := service.RecordAudit(context.Background(), repository.AuditEvent{
+			ActorType: services.AuditActorSystem, ActorRef: "system:startup",
+			Ingress: services.AuditIngressInternal, Action: services.AuditActionSessionRevokeAll,
+			TargetRef: "account:owner", Outcome: services.AuditOutcomeSuccess,
+			Detail: "credential-changed",
+		}); err != nil {
+			log.Printf("audit write failed: session.revoked_all")
+		}
+	}
 	pushContext, cancelPush := context.WithCancel(context.Background())
 	// pushContext is cancelled by Close and drives every background loop.
 	go service.RunPushScheduler(pushContext)
