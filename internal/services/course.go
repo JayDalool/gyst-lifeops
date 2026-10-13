@@ -71,6 +71,12 @@ func (s *Service) CourseDeck() ([]models.CourseWithProgress, error) {
 func decorateCourse(c models.Course, blocks []models.LearningBlock) models.CourseWithProgress {
 	cw := models.CourseWithProgress{Course: c}
 	for _, b := range blocks {
+		// A postponed block is replaced by its catch-up, and a skipped block is
+		// dropped, so neither counts toward "X of Y blocks". The ICS feed
+		// (internal/repository/courses.go) leaves out the same two statuses.
+		if b.Status == "postponed" || b.Status == "skipped" {
+			continue
+		}
 		cw.BlockCount++
 		if b.Status == "completed" {
 			cw.CompletedBlocks++
