@@ -137,7 +137,7 @@ func TestPostponeCreatesCatchup(t *testing.T) {
 	if newDue != "2026-07-01" {
 		t.Fatalf("catch-up due date = %q, want 2026-07-01", newDue)
 	}
-	if err := svc.Repo.PostponeLearningBlock(course.ID, block.ID, newDue); err != nil {
+	if ok, err := svc.Repo.PostponeLearningBlock(course.ID, block.ID, newDue); err != nil || !ok {
 		t.Fatalf("postpone: %v", err)
 	}
 
