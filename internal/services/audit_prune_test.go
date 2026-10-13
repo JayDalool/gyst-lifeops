@@ -316,3 +316,59 @@ func TestPruneEndToEndWithRecordAuditNonUTCClock(t *testing.T) {
 		t.Errorf("remaining = %v", got)
 	}
 }
+
+// GYST-146: with lifecycle actions in use, the guard checks the shorter
+// (lifecycle) cutoff and a jump skips the whole run.
+func TestPruneLifecycleClockJumpSkipsWholeRun(t *testing.T) {
+	withLifecycle(t, "agent.test_action")
+	buf := captureLog(t)
+	svc := pruneService(t, prunePinned.Add(200*24*time.Hour))
+	seedAuditAt(t, svc, prunePinned.Add(-400*24*time.Hour), AuditActionLoginFailed, "sec-400d")
+	seedAuditAt(t, svc, prunePinned.Add(-time.Hour), "agent.test_action", "life-a")
+	seedAuditAt(t, svc, prunePinned, AuditActionLoginFailed, "sec-b")
+	sec, life, err := svc.PruneAuditEvents(context.Background())
+	if !errors.Is(err, ErrAuditPruneSkipped) || sec != 0 || life != 0 {
+		t.Fatalf("sec=%d life=%d err=%v", sec, life, err)
+	}
+	if got := remainingRefs(t, svc); len(got) != 3 {
+		t.Fatalf("rows deleted by a skipped run: %v", got)
+	}
+	svc.pruneAuditAndLog(context.Background())
+	out := buf.String()
+	if strings.Count(out, "\n") != 1 || !strings.Contains(out, `"level":"ERROR"`) || strings.Contains(out, "life-a") {
+		t.Fatalf("log = %q", out)
+	}
+}
+
+func TestPruneLifecycleGuardBoundary(t *testing.T) {
+	withLifecycle(t, "agent.test_action")
+	latest := prunePinned
+	for _, tc := range []struct {
+		name string
+		now  time.Time
+		skip bool
+	}{
+		{"exactly 180d after newest runs", latest.Add(lifecycleRetention), false},
+		{"180d plus 1ns skips", latest.Add(lifecycleRetention + time.Nanosecond), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := pruneService(t, tc.now)
+			seedAuditAt(t, svc, latest, AuditActionLoginFailed, "newest")
+			_, _, err := svc.PruneAuditEvents(context.Background())
+			if got := errors.Is(err, ErrAuditPruneSkipped); got != tc.skip || (!tc.skip && err != nil) {
+				t.Fatalf("err=%v, want skipped=%v", err, tc.skip)
+			}
+		})
+	}
+}
+
+func TestPruneEmptyLifecycleListJumpStillRunsSecurityPass(t *testing.T) {
+	withLifecycle(t) // empty
+	svc := pruneService(t, prunePinned.Add(200*24*time.Hour))
+	seedAuditAt(t, svc, prunePinned.Add(-400*24*time.Hour), AuditActionLoginFailed, "sec-400d")
+	seedAuditAt(t, svc, prunePinned, AuditActionLoginFailed, "newest")
+	sec, life, err := svc.PruneAuditEvents(context.Background())
+	if err != nil || sec != 1 || life != 0 {
+		t.Fatalf("got sec=%d life=%d err=%v, want 1 0 nil", sec, life, err)
+	}
+}
