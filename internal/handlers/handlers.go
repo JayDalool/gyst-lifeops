@@ -203,6 +203,12 @@ type ProjectFormData struct {
 	// project's own sub-projects, which the Parent picker must not offer.
 	Error          *UIBanner
 	ExcludeParents map[int64]bool
+	// Linked* hold the project's current parent, dependency and roadmap when
+	// they are archived (so absent from the lists above): the form offers them
+	// as the selected option, so saving does not silently clear the link.
+	LinkedParent    *models.Project
+	LinkedDependsOn *models.Project
+	LinkedRoadmap   *models.Roadmap
 }
 
 type ProjectDetailData struct {
@@ -1449,6 +1455,26 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 		serverError(w, err)
 		return
 	}
+	linkedParent, err := h.linkedArchivedProject(project.ParentProjectID, id, projects)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	linkedDependsOn, err := h.linkedArchivedProject(project.DependsOnProjectID, id, projects)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	var linkedRoadmap *models.Roadmap
+	if project.RoadmapID != 0 && !roadmapListed(roadmaps, project.RoadmapID) {
+		rm, err := h.Service.Repo.GetRoadmap(project.RoadmapID)
+		if err == nil {
+			linkedRoadmap = &rm
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			serverError(w, err)
+			return
+		}
+	}
 	if status != http.StatusOK {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(status)
@@ -1463,7 +1489,42 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 		Roadmaps:       roadmaps,
 		Error:          banner,
 		ExcludeParents: exclude,
+
+		LinkedParent:    linkedParent,
+		LinkedDependsOn: linkedDependsOn,
+		LinkedRoadmap:   linkedRoadmap,
 	})
+}
+
+// linkedArchivedProject returns the project linkID points at when it is not in
+// the active list (it is archived), so the edit form can keep offering it.
+// It returns nil for no link, a self link, a listed project or a missing row.
+func (h *Handler) linkedArchivedProject(linkID, selfID int64, active []models.ProjectWithProgress) (*models.Project, error) {
+	if linkID == 0 || linkID == selfID {
+		return nil, nil
+	}
+	for _, p := range active {
+		if p.Project.ID == linkID {
+			return nil, nil
+		}
+	}
+	p, err := h.Service.Repo.ProjectByID(linkID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func roadmapListed(roadmaps []models.Roadmap, id int64) bool {
+	for _, r := range roadmaps {
+		if r.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Handler) archiveProject(w http.ResponseWriter, r *http.Request, id int64) {

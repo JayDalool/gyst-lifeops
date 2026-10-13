@@ -1,3 +1,4 @@
+- [ ] #176 · Edit child of archived parent; links stay · https://github.com/JayDalool/gyst-lifeops/issues/176
 - [ ] #175 · Later twice, or on done block: one catch-up · https://github.com/JayDalool/gyst-lifeops/issues/175
 - [ ] #170 · Edit project: own sub-projects not offered as parent · https://github.com/JayDalool/gyst-lifeops/pull/172
 - [ ] #169 · Goal Log progress: blank value blocked, goal unchanged · https://github.com/JayDalool/gyst-lifeops/pull/171

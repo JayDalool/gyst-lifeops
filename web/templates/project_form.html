@@ -64,6 +64,7 @@
         {{range .Roadmaps}}
           <option value="{{.ID}}" {{if eq .ID $.Project.RoadmapID}}selected{{end}}>{{.Name}}</option>
         {{end}}
+        {{with .LinkedRoadmap}}<option value="{{.ID}}" selected>{{.Name}} (archived)</option>{{end}}
       </select>
     </label>
     <label class="field">
@@ -75,6 +76,7 @@
             <option value="{{.Project.ID}}" {{if eq .Project.ID $.Project.ParentProjectID}}selected{{end}}>{{.Project.Name}}</option>
           {{end}}
         {{end}}
+        {{with .LinkedParent}}<option value="{{.ID}}" selected>{{.Name}} (archived)</option>{{end}}
       </select>
     </label>
   </div>
@@ -113,6 +115,7 @@
           <option value="{{.Project.ID}}" {{if eq .Project.ID $.Project.DependsOnProjectID}}selected{{end}}>{{.Project.Name}}</option>
         {{end}}
       {{end}}
+      {{with .LinkedDependsOn}}<option value="{{.ID}}" selected>{{.Name}} (archived)</option>{{end}}
     </select>
   </label>
   <label class="field">
