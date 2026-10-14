@@ -190,6 +190,16 @@ func parseICS(t *testing.T, ics string) {
 // structurally valid (CRLF, UID+DTSTAMP+DTSTART per event).
 func TestUnifiedICSIncludesAllSources(t *testing.T) {
 	svc := testService(t)
+	// Migration 006 makes the default roadmap private; this test covers feed
+	// structure and project events, so make that roadmap public first.
+	rm, err := svc.Repo.GetDashboardRoadmap()
+	if err != nil {
+		t.Fatalf("default roadmap: %v", err)
+	}
+	rm.Privacy = "public"
+	if err := svc.Repo.UpdateRoadmap(&rm); err != nil {
+		t.Fatalf("make roadmap public: %v", err)
+	}
 
 	course := models.Course{Name: "SQL, Advanced", Status: "active"}
 	if err := svc.Repo.CreateCourse(&course); err != nil {
