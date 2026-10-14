@@ -67,6 +67,10 @@ func TestEffectiveProjectPrivacyInheritsFromAncestors(t *testing.T) {
 
 func TestEffectiveProjectPrivacyTerminatesOnCycles(t *testing.T) {
 	repo := testRepository(t)
+	// Public default roadmap, so b can only be hidden through its cycle with a.
+	if _, err := repo.db.Exec(`UPDATE roadmaps SET privacy = 'public'`); err != nil {
+		t.Fatal(err)
+	}
 	self := privTestProject(t, repo, "Fictional Self Loop", 0, true, false)
 	a := privTestProject(t, repo, "Fictional Cycle A", 0, true, false)
 	b := privTestProject(t, repo, "Fictional Cycle B", 0, false, false)
