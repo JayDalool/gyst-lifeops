@@ -1,3 +1,4 @@
+- [ ] #184 · iPhone Archive: grouped rows open details · PR_LINK
 - [ ] #179 · Courses: block count reaches Y of Y after Later · https://github.com/JayDalool/gyst-lifeops/issues/179
 - [ ] #176 · Edit child of archived parent; links stay · https://github.com/JayDalool/gyst-lifeops/issues/176
 - [ ] #175 · Later twice, or on done block: one catch-up · https://github.com/JayDalool/gyst-lifeops/issues/175
