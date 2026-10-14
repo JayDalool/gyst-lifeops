@@ -529,12 +529,28 @@ func (r *Repository) SetRoadmapProjectMeta(meta models.RoadmapProjectMeta) error
 }
 
 // EffectiveProjectPrivacy returns, for every project that is private or
-// local-only itself or through any ancestor, its effective flags. Projects
-// missing from the map are public. Archived rows are not filtered, and UNION
-// (not UNION ALL) makes the walk terminate on parent cycles.
+// local-only itself, through any ancestor, or through its roadmap, its
+// effective flags. Projects missing from the map are public. Roadmap privacy
+// ('private' or 'local_only') seeds every project of that roadmap, and the
+// walk carries it to all descendants whatever roadmap they point at. Orphan
+// projects (roadmap_id NULL) use the roadmap GetDashboardRoadmap would pick;
+// with no active roadmap they are not hidden by roadmap privacy. Archived
+// rows and archived roadmaps are not filtered, and UNION (not UNION ALL)
+// makes the walk terminate on parent cycles.
 func (r *Repository) EffectiveProjectPrivacy() (map[int64]models.ProjectPrivacy, error) {
+	// The orphan fallback subquery must stay in sync with GetDashboardRoadmap
+	// (internal/repository/roadmaps.go).
 	rows, err := r.db.Query(`WITH RECURSIVE f(id, priv, loc) AS (
-		SELECT project_id, is_private, local_only FROM roadmap_project_meta WHERE is_private = 1 OR local_only = 1
+		SELECT id, priv, loc FROM (
+			SELECT project_id AS id, is_private AS priv, local_only AS loc FROM roadmap_project_meta WHERE is_private = 1 OR local_only = 1
+			UNION ALL
+			SELECT p.id, r.privacy = 'private', r.privacy = 'local_only'
+			FROM projects p
+			JOIN roadmaps r ON r.id = COALESCE(p.roadmap_id, (
+				SELECT id FROM roadmaps WHERE status = 'active' AND archived_at IS NULL
+				ORDER BY featured DESC, priority DESC, updated_at DESC, id DESC LIMIT 1))
+			WHERE r.privacy IN ('private', 'local_only')
+		)
 		UNION
 		SELECT p.id, f.priv, f.loc FROM projects p JOIN f ON p.parent_project_id = f.id
 	) SELECT id, MAX(priv), MAX(loc) FROM f GROUP BY id`)

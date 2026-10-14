@@ -196,6 +196,9 @@ func (s *Service) ExportRoadmap(public bool) (string, error) {
 	}
 	// Looked up after the roadmap read so a project made private in between
 	// is never treated as public. A lookup error means no public file at all.
+	// The lookup includes roadmap privacy: projects of a Private or Local-only
+	// roadmap (and their descendants) are hidden, orphans via the dashboard
+	// roadmap.
 	var privacy map[int64]models.ProjectPrivacy
 	if public {
 		privacy, err = s.Repo.EffectiveProjectPrivacy()

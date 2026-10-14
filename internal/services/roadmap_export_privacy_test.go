@@ -45,6 +45,11 @@ func exportPrivacyService(t *testing.T) (*Service, *sql.DB) {
 	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
 		t.Fatalf("migrate db: %v", err)
 	}
+	// Migration 006 makes the default roadmap private; this test covers
+	// project-level flags, so make that roadmap public first.
+	if _, err := database.Exec(`UPDATE roadmaps SET privacy = 'public'`); err != nil {
+		t.Fatalf("make roadmap public: %v", err)
+	}
 	t.Cleanup(func() { database.Close() })
 	svc := New(repository.New(database))
 	svc.Now = func() time.Time { return time.Date(2026, time.June, 24, 12, 0, 0, 0, time.UTC) }
@@ -166,6 +171,16 @@ func TestPublicExportHidesPhasesAfterParentFlippedPrivate(t *testing.T) {
 
 func TestPublicExportResourcesUnchanged(t *testing.T) {
 	svc := testService(t)
+	// Migration 006 makes the default roadmap private; this test covers
+	// resource export, so make that roadmap public first.
+	rm, err := svc.Repo.GetDashboardRoadmap()
+	if err != nil {
+		t.Fatalf("default roadmap: %v", err)
+	}
+	rm.Privacy = "public"
+	if err := svc.Repo.UpdateRoadmap(&rm); err != nil {
+		t.Fatalf("make roadmap public: %v", err)
+	}
 	svc.Now = func() time.Time { return time.Date(2026, time.June, 24, 12, 0, 0, 0, time.UTC) }
 	src := "# Fictional Campaign\n\n## Project: Fictional Open Book\n- [ ] Write chapter\n[Fictional Guide](https://example.com/guide)\n"
 	if _, err := svc.ImportRoadmapMarkdown(src); err != nil {
@@ -208,5 +223,55 @@ func TestPublicExportDoesNotLeakProjectImportedPrivateDuringExport(t *testing.T)
 	}
 	if strings.Contains(out, "Fictional Hidden Atlas") || strings.Contains(out, "Atlas secret words") {
 		t.Errorf("project imported private during export leaked:\n%s", out)
+	}
+}
+
+func TestPublicExportOmitsProjectsOfPrivateRoadmap(t *testing.T) {
+	svc, database := exportPrivacyService(t)
+	names := []string{"Fictional Garden Planner", "Seed Catalog", "Seed Labels", "Fictional Open Book", "Open Chapter"}
+	// Put the default roadmap back to private (the migration 006 default).
+	setPrivacy := func(p string) {
+		if _, err := database.Exec(`UPDATE roadmaps SET privacy = ?`, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	setPrivacy("private")
+	pub, err := svc.ExportRoadmap(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range names {
+		if strings.Contains(pub, n) {
+			t.Errorf("public export leaks %q from a private roadmap:\n%s", n, pub)
+		}
+	}
+	if !strings.Contains(pub, "Overall progress: 0%") || !strings.Contains(pub, "Weekly completion: 0%") {
+		t.Errorf("totals must count visible projects only (none):\n%s", pub)
+	}
+	priv, err := svc.ExportRoadmap(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range names {
+		if !strings.Contains(priv, n) {
+			t.Errorf("private export missing %q", n)
+		}
+	}
+	// Setting the roadmap to Public brings the public project back (the
+	// project-level Private one stays hidden).
+	setPrivacy("public")
+	pub, err = svc.ExportRoadmap(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []string{"Fictional Open Book", "Open Chapter"} {
+		if !strings.Contains(pub, n) {
+			t.Errorf("public roadmap export missing %q", n)
+		}
+	}
+	for _, n := range []string{"Fictional Garden Planner", "Seed Catalog", "Seed Labels"} {
+		if strings.Contains(pub, n) {
+			t.Errorf("project-level private %q leaked", n)
+		}
 	}
 }
