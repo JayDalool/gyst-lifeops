@@ -112,11 +112,6 @@ func (r *Repository) listProjectsWhere(where string, args ...any) ([]models.Proj
 	return projects, rows.Err()
 }
 
-func (r *Repository) SetGalaxyPosition(id int64, x, y, z float64) error {
-	_, err := r.db.Exec(`UPDATE projects SET pos_x = ?, pos_y = ?, pos_z = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, x, y, z, id)
-	return err
-}
-
 func (r *Repository) ProjectTree() (models.ProjectTree, error) {
 	projects, err := r.ListProjects(false)
 	if err != nil {
@@ -205,7 +200,7 @@ func (r *Repository) CreateProject(project *models.Project) error {
 	res, err := r.db.Exec(`INSERT INTO projects
 		(parent_project_id, name, description, category, project_kind, status, start_date, target_date, notes,
 		 unlock_notes, depends_on_project_id, auto_unlock, roadmap_id, color)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, (`+dashboardRoadmapIDSQL+`)), ?)`,
 		nullableInt64(project.ParentProjectID),
 		project.Name,
 		project.Description,
@@ -259,7 +254,7 @@ func (r *Repository) UpdateProject(project *models.Project) error {
 		unlock_notes = ?,
 		depends_on_project_id = ?,
 		auto_unlock = ?,
-		roadmap_id = ?,
+		roadmap_id = COALESCE(?, (`+dashboardRoadmapIDSQL+`)),
 		color = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1

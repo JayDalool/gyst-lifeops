@@ -1,6 +1,8 @@
 package services
 
 import (
+	"database/sql"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 
@@ -11,6 +13,12 @@ import (
 
 func testService(t *testing.T) *Service {
 	t.Helper()
+	svc, _ := testServiceDB(t)
+	return svc
+}
+
+func testServiceDB(t *testing.T) (*Service, *sql.DB) {
+	t.Helper()
 	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
 	if err != nil {
 		t.Fatalf("open db: %v", err)
@@ -19,7 +27,7 @@ func testService(t *testing.T) *Service {
 		t.Fatalf("migrate db: %v", err)
 	}
 	t.Cleanup(func() { database.Close() })
-	return New(repository.New(database))
+	return New(repository.New(database)), database
 }
 
 func TestRocketRouteForRoadmapExcludesSubprojects(t *testing.T) {
@@ -49,7 +57,7 @@ func TestRocketRouteForRoadmapExcludesSubprojects(t *testing.T) {
 	}
 }
 
-func TestGalaxyDataPersistsStablePositionsAndMoons(t *testing.T) {
+func TestGalaxyDataStablePositionsAndMoonsWithoutWrites(t *testing.T) {
 	svc := testService(t)
 	top := models.Project{Name: "Stable Planet", ProjectKind: "main", Status: "active", AutoUnlock: true}
 	if err := svc.Repo.CreateProject(&top); err != nil {
@@ -71,17 +79,48 @@ func TestGalaxyDataPersistsStablePositionsAndMoons(t *testing.T) {
 	if len(first) != 1 || len(first[0].Moons) != 1 {
 		t.Fatalf("galaxy hierarchy = %+v", first)
 	}
-	if first[0].X != second[0].X || first[0].Y != second[0].Y || first[0].Z != second[0].Z {
-		t.Fatal("position changed between reads")
+	a, _ := json.Marshal(first)
+	b, _ := json.Marshal(second)
+	if string(a) != string(b) {
+		t.Fatal("galaxy JSON changed between reads")
 	}
+	// Reads compute the deterministic hash position and never store it.
 	projects, err := svc.Repo.ListProjects(false)
 	if err != nil {
 		t.Fatal(err)
 	}
+	byID := map[int64]models.Project{}
 	for _, project := range projects {
-		if project.Project.PosX == nil || project.Project.PosY == nil || project.Project.PosZ == nil {
-			t.Fatalf("position not persisted for %q", project.Project.Name)
+		byID[project.Project.ID] = project.Project
+		if project.Project.PosX != nil || project.Project.PosY != nil || project.Project.PosZ != nil {
+			t.Fatalf("position stored by a read for %q", project.Project.Name)
 		}
+	}
+	x, y, z := galaxyPosition(byID[top.ID])
+	if first[0].X != x || first[0].Y != y || first[0].Z != z {
+		t.Fatal("planet position is not the UUID hash")
+	}
+	mx, my, mz := galaxyPosition(byID[moon.ID])
+	if first[0].Moons[0].X != mx || first[0].Moons[0].Y != my || first[0].Moons[0].Z != mz {
+		t.Fatal("moon position is not the UUID hash")
+	}
+}
+
+func TestGalaxyDataReturnsStoredPositionsUnchanged(t *testing.T) {
+	svc, database := testServiceDB(t)
+	p := models.Project{Name: "Pinned Planet", ProjectKind: "main", Status: "active", AutoUnlock: true}
+	if err := svc.Repo.CreateProject(&p); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(`UPDATE projects SET pos_x = 1.5, pos_y = -2.25, pos_z = 3 WHERE id = ?`, p.ID); err != nil {
+		t.Fatal(err)
+	}
+	data, err := svc.GalaxyData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) != 1 || data[0].X != 1.5 || data[0].Y != -2.25 || data[0].Z != 3 {
+		t.Fatalf("stored position not returned unchanged: %+v", data)
 	}
 }
 

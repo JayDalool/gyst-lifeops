@@ -1109,15 +1109,6 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 			return
 		}
 
-		// Self-heal: adopt orphan trips into the dashboard roadmap so every trip
-		// lands in a group (mirrors the dashboard's adoption).
-		if dashboard, drErr := h.Service.Repo.GetDashboardRoadmap(); drErr == nil {
-			if err := h.Service.Repo.AdoptOrphanProjects(dashboard.ID); err != nil {
-				serverError(w, err)
-				return
-			}
-		}
-
 		groups := make([]RoadmapGroup, 0, len(roadmaps))
 		anyProjects := false
 		for _, roadmap := range roadmaps {

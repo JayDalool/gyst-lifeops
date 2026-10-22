@@ -81,9 +81,11 @@ func (r *Repository) CreateRoadmap(roadmap *models.Roadmap) error {
 		return err
 	}
 	if roadmap.Featured {
-		return r.SetFeaturedRoadmap(roadmap.ID)
+		if err := r.SetFeaturedRoadmap(roadmap.ID); err != nil {
+			return err
+		}
 	}
-	return nil
+	return r.AdoptOrphanProjects()
 }
 
 func (r *Repository) UpdateRoadmap(roadmap *models.Roadmap) error {
@@ -100,7 +102,10 @@ func (r *Repository) UpdateRoadmap(roadmap *models.Roadmap) error {
 		cleanRoadmapColor(roadmap.Color),
 		roadmap.ID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	return r.AdoptOrphanProjects()
 }
 
 func (r *Repository) ArchiveRoadmap(id int64) error {
@@ -128,11 +133,18 @@ func (r *Repository) SetFeaturedRoadmap(id int64) error {
 	return tx.Commit()
 }
 
+// dashboardRoadmapIDSQL is a scalar subquery giving the id of the roadmap
+// GetDashboardRoadmap picks (NULL when no active roadmap exists). Keep its
+// filter and ORDER BY identical to GetDashboardRoadmap; EffectiveProjectPrivacy
+// (roadmap.go) and the project and roadmap writes reuse it.
+const dashboardRoadmapIDSQL = `SELECT id FROM roadmaps
+	WHERE status = 'active' AND archived_at IS NULL
+	ORDER BY featured DESC, priority DESC, updated_at DESC, id DESC LIMIT 1`
+
 // GetDashboardRoadmap selects the single roadmap shown on the bridge:
 // featured beats priority; among equals, the most recently updated wins.
 // Steps 1-4 of the spec collapse to one ordered query over active roadmaps.
-// EffectiveProjectPrivacy (roadmap.go) repeats this selection for orphan
-// projects; keep the two in sync.
+// dashboardRoadmapIDSQL repeats this selection as SQL; keep the two in sync.
 func (r *Repository) GetDashboardRoadmap() (models.Roadmap, error) {
 	return scanRoadmap(r.db.QueryRow(fmt.Sprintf(`SELECT %s FROM roadmaps
 		WHERE status = 'active' AND archived_at IS NULL
@@ -141,9 +153,13 @@ func (r *Repository) GetDashboardRoadmap() (models.Roadmap, error) {
 }
 
 // AdoptOrphanProjects assigns projects with no roadmap (created before this
-// feature, via seed, or via the project form) to the given roadmap. Idempotent.
-func (r *Repository) AdoptOrphanProjects(roadmapID int64) error {
-	_, err := r.db.Exec(`UPDATE projects SET roadmap_id = ? WHERE roadmap_id IS NULL`, roadmapID)
+// feature, via seed, or while no active roadmap existed) to the dashboard
+// roadmap. It is a no-op without an active roadmap and idempotent. It runs at
+// startup and after roadmap writes, never on a GET.
+func (r *Repository) AdoptOrphanProjects() error {
+	_, err := r.db.Exec(`UPDATE projects SET roadmap_id = (` + dashboardRoadmapIDSQL + `)
+		WHERE roadmap_id IS NULL AND EXISTS (
+			SELECT 1 FROM roadmaps WHERE status = 'active' AND archived_at IS NULL)`)
 	return err
 }
 

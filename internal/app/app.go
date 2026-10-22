@@ -86,6 +86,12 @@ func New(config Config) (*App, error) {
 	}
 
 	repo := repository.New(database)
+	// Group projects that have no roadmap into the dashboard roadmap once, here,
+	// so GET requests never have to (GYST-VN-028). Idempotent.
+	if err := repo.AdoptOrphanProjects(); err != nil {
+		database.Close()
+		return nil, fmt.Errorf("adopt orphan projects: %w", err)
+	}
 	service := services.New(repo)
 	// Set before any goroutine reads the clock.
 	service.Loc = location

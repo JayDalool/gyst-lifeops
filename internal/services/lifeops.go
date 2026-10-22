@@ -184,12 +184,6 @@ func (s *Service) Dashboard() (models.DashboardData, error) {
 		return models.DashboardData{}, drErr
 	}
 	if hasRoadmap {
-		// Self-heal: adopt any projects not yet bound to a roadmap (seed rows,
-		// projects created via the form) into the featured roadmap so the bridge
-		// hero is populated.
-		if err := s.Repo.AdoptOrphanProjects(dashboardRoadmap.ID); err != nil {
-			return models.DashboardData{}, err
-		}
 		tree, err := s.Repo.ProjectTreeByRoadmap(dashboardRoadmap.ID)
 		if err != nil {
 			return models.DashboardData{}, err
