@@ -21,6 +21,7 @@ import (
 	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 	"lifeops-tracker/internal/services/providers"
 	"lifeops-tracker/internal/xp"
@@ -206,6 +207,16 @@ type ProjectFormData struct {
 	Project  models.Project
 	Projects []models.ProjectWithProgress
 	Roadmaps []models.Roadmap
+	// Error is a fixed-text banner for a refused save; ExcludeParents holds the
+	// project's own sub-projects, which the Parent picker must not offer.
+	Error          *UIBanner
+	ExcludeParents map[int64]bool
+	// Linked* hold the project's current parent, dependency and roadmap when
+	// they are archived (so absent from the lists above): the form offers them
+	// as the selected option, so saving does not silently clear the link.
+	LinkedParent    *models.Project
+	LinkedDependsOn *models.Project
+	LinkedRoadmap   *models.Roadmap
 }
 
 type ProjectDetailData struct {
@@ -419,6 +430,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.healthAPI(w, r, segments)
 		} else if len(segments) >= 2 && segments[1] == "automation" {
 			h.automationAPI(w, r, segments)
+		} else if len(segments) == 2 && segments[1] == "search" {
+			h.searchAPI(w, r)
 		} else {
 			h.pushAPI(w, r, segments)
 		}
@@ -1408,25 +1421,7 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 			notFoundOrError(w, err)
 			return
 		}
-		projects, err := h.Service.Repo.ListProjects(false)
-		if err != nil {
-			serverError(w, err)
-			return
-		}
-		roadmaps, err := h.Service.Repo.ListRoadmaps(false)
-		if err != nil {
-			serverError(w, err)
-			return
-		}
-		h.render(w, "project_form.html", ProjectFormData{
-			Page:     "projects",
-			Today:    h.Service.TodayString(),
-			Title:    "Edit Project",
-			Action:   fmt.Sprintf("/projects/%d/edit", id),
-			Project:  project,
-			Projects: projects,
-			Roadmaps: roadmaps,
-		})
+		h.renderEditProject(w, id, project, nil, http.StatusOK)
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
 		if err != nil {
@@ -1435,6 +1430,13 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 		}
 		project.ID = id
 		if err := h.Service.Repo.UpdateProject(&project); err != nil {
+			if errors.Is(err, repository.ErrProjectParentCycle) {
+				h.renderEditProject(w, id, project, &UIBanner{
+					State:   UIState{Kind: "warn", Word: "Not saved"},
+					Message: "A project can't sit inside its own sub-project. Choose another parent, or None.",
+				}, http.StatusUnprocessableEntity)
+				return
+			}
 			serverError(w, err)
 			return
 		}
@@ -1442,6 +1444,97 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 	default:
 		methodNotAllowed(w)
 	}
+}
+
+// renderEditProject shows the edit form for project (the saved row, or the
+// posted values after a refused save) without offering its sub-projects as
+// its parent.
+func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project models.Project, banner *UIBanner, status int) {
+	projects, err := h.Service.Repo.ListProjects(false)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	roadmaps, err := h.Service.Repo.ListRoadmaps(false)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	exclude, err := h.Service.Repo.ProjectDescendantIDs(id)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	linkedParent, err := h.linkedArchivedProject(project.ParentProjectID, id, projects)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	linkedDependsOn, err := h.linkedArchivedProject(project.DependsOnProjectID, id, projects)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	var linkedRoadmap *models.Roadmap
+	if project.RoadmapID != 0 && !roadmapListed(roadmaps, project.RoadmapID) {
+		rm, err := h.Service.Repo.GetRoadmap(project.RoadmapID)
+		if err == nil {
+			linkedRoadmap = &rm
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			serverError(w, err)
+			return
+		}
+	}
+	if status != http.StatusOK {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(status)
+	}
+	h.render(w, "project_form.html", ProjectFormData{
+		Page:           "projects",
+		Today:          h.Service.TodayString(),
+		Title:          "Edit Project",
+		Action:         fmt.Sprintf("/projects/%d/edit", id),
+		Project:        project,
+		Projects:       projects,
+		Roadmaps:       roadmaps,
+		Error:          banner,
+		ExcludeParents: exclude,
+
+		LinkedParent:    linkedParent,
+		LinkedDependsOn: linkedDependsOn,
+		LinkedRoadmap:   linkedRoadmap,
+	})
+}
+
+// linkedArchivedProject returns the project linkID points at when it is not in
+// the active list (it is archived), so the edit form can keep offering it.
+// It returns nil for no link, a self link, a listed project or a missing row.
+func (h *Handler) linkedArchivedProject(linkID, selfID int64, active []models.ProjectWithProgress) (*models.Project, error) {
+	if linkID == 0 || linkID == selfID {
+		return nil, nil
+	}
+	for _, p := range active {
+		if p.Project.ID == linkID {
+			return nil, nil
+		}
+	}
+	p, err := h.Service.Repo.ProjectByID(linkID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func roadmapListed(roadmaps []models.Roadmap, id int64) bool {
+	for _, r := range roadmaps {
+		if r.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Handler) archiveProject(w http.ResponseWriter, r *http.Request, id int64) {
@@ -1722,10 +1815,21 @@ func (h *Handler) addGoalProgress(w http.ResponseWriter, r *http.Request, id int
 		serverError(w, err)
 		return
 	}
-	value, _ := strconv.ParseFloat(r.FormValue("value"), 64)
+	value, err := parseGoalProgressValue(r.FormValue("value"))
+	if err != nil {
+		userError(w, err, http.StatusBadRequest, "")
+		return
+	}
 	entryDate, err := h.formLocalDate(r.FormValue("entry_date"))
 	if err != nil {
 		invalidDate(w, "entry_date")
+		return
+	}
+	// GYST-150: a future-dated entry would pin the goal's current value until
+	// that day, so goal progress cannot be dated after the local today.
+	today := h.Service.TodayString()
+	if entryDate > today {
+		userError(w, &services.UserError{Message: "Progress can't be dated after today."}, http.StatusBadRequest, "")
 		return
 	}
 	notes := strings.TrimSpace(r.FormValue("notes"))
@@ -2177,6 +2281,10 @@ func (h *Handler) importRoadmap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := h.Service.ImportRoadmapMarkdown(source); err != nil {
+		if _, ok := services.UserMessage(err); ok {
+			userError(w, err, http.StatusUnprocessableEntity, "")
+			return
+		}
 		serverError(w, err)
 		return
 	}
@@ -2659,6 +2767,25 @@ func (h *Handler) formLocalDate(value string) (string, error) {
 }
 
 // invalidDate answers a malformed date with 400; nothing has been written.
+// parseGoalProgressValue validates a posted goal progress value. A blank or
+// garbled value must never become 0 (RULES §3.2: NULL is not 0; GYST-152); a
+// typed "0" is a real value and stays valid. The messages are fixed text and
+// never echo the input.
+func parseGoalProgressValue(raw string) (float64, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, &services.UserError{Message: "Enter a progress value."}
+	}
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil || math.IsNaN(value) || math.IsInf(value, 0) {
+		return 0, &services.UserError{Message: "Progress value must be a number, for example 12.5."}
+	}
+	if value < 0 {
+		return 0, &services.UserError{Message: "Progress value must be 0 or more."}
+	}
+	return value, nil
+}
+
 func invalidDate(w http.ResponseWriter, field string) {
 	http.Error(w, field+" must be a valid YYYY-MM-DD date", http.StatusBadRequest)
 }

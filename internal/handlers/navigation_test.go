@@ -128,9 +128,16 @@ func TestHealthFoundation(t *testing.T) {
 		// Unbuilt features are not offered on Health (05A D8, GYST-VN-052).
 		// These placeholders were required here before; they are now banned.
 		assertNoUnbuiltHealthMarkup(t, body)
-		for _, path := range []string{"/today", "/galaxy", "/projects", "/health", "/courses", "/more", "/tasks", "/settings", "/plan-import"} {
+		for _, path := range []string{"/today", "/projects", "/health", "/courses", "/more"} {
 			if !strings.Contains(body, `href="`+path+`"`) {
 				t.Errorf("missing navigation %s", path)
+			}
+		}
+		// The launcher no longer carries fixed links (GYST-102): the rest are
+		// listed on More, and Go search finds them (search_test.go).
+		for _, path := range []string{"/galaxy", "/tasks", "/settings", "/plan-import"} {
+			if !strings.Contains(more.Body.String(), `href="`+path+`"`) {
+				t.Errorf("destination missing from More: %s", path)
 			}
 		}
 	}
