@@ -2543,6 +2543,7 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
 		"primarySection": primarySection,
+		"projectsArea":   projectsArea,
 		"projectCard":    projectCard,
 		"xpStats":        func() models.PlayerStats { return playerXP },
 		"join":           strings.Join,

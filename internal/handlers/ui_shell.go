@@ -19,6 +19,19 @@ func primarySection(page string) string {
 	}
 }
 
+// projectsArea names the Projects sub-navigation item a page belongs to
+// (GYST-VN-039). Detail pages and forms belong to their list's area.
+func projectsArea(page string) string {
+	switch page {
+	case "galaxy":
+		return "galaxy"
+	case "roadmap", "roadmaps":
+		return "roadmaps"
+	default:
+		return "projects"
+	}
+}
+
 type moreSection struct {
 	Title string
 	Rows  []UIRow

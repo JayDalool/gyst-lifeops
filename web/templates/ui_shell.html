@@ -12,6 +12,11 @@
 <nav aria-label="Primary" class="gyst-scope gyst-primary">
   <a href="/today" {{if eq $section "today"}}aria-current="page"{{end}}>{{template "gyst.icon" "house"}}<span>Today</span></a>
   <a href="/projects" {{if eq $section "projects"}}aria-current="page"{{end}}>{{template "gyst.icon" "folder-heart"}}<span>Projects</span></a>
+  {{if eq $section "projects"}}{{$area := projectsArea .Page}}<div class="gyst-projects-sub" role="group" aria-label="Projects areas">
+    <a href="/projects"{{if eq $area "projects"}} aria-current="page"{{end}}>Projects</a>
+    <a href="/galaxy"{{if eq $area "galaxy"}} aria-current="page"{{end}}>Galaxy</a>
+    <a href="/roadmap"{{if eq $area "roadmaps"}} aria-current="page"{{end}}>Roadmaps</a>
+  </div>{{end}}
   <a href="/health" {{if eq $section "health"}}aria-current="page"{{end}}>{{template "gyst.icon" "heart"}}<span>Health</span></a>
   {{if eq $section "health"}}{{$tab := healthTab .}}<div class="gyst-health-sub" role="group" aria-label="Health sections">
     <a href="/health"{{if eq $tab "today"}} aria-current="page"{{end}}>Today</a>
