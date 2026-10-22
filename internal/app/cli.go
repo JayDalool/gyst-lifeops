@@ -1,17 +1,20 @@
 package app
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
-	"strconv"
+
+	"lifeops-tracker/internal/config"
 )
 
 func Run() {
-	// The subcommand is checked before any flag is defined: `lifeops backup`
-	// and `lifeops passwordhash` take their own flag sets, and the server's
+	// The subcommand is checked before any flag is defined: `lifeops backup`,
+	// `lifeops config` and `lifeops passwordhash` take their own flag sets, and the server's
 	// flags are not valid for them.
 	if backupRequested(os.Args) {
 		runBackupAndExit()
@@ -19,6 +22,10 @@ func Run() {
 	}
 	if healthcheckRequested(os.Args) {
 		runHealthcheckAndExit()
+		return
+	}
+	if configRequested(os.Args) {
+		runConfigAndExit()
 		return
 	}
 	if passwordHashRequested(os.Args) {
@@ -32,54 +39,36 @@ func Run() {
 	// and passwordhash keep their plain output.
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
-	addr := flag.String("addr", ":8080", "HTTP listen address")
-	passwordHashFlag := flag.Bool("passwordhash", false, "generate a bcrypt password hash")
-	dbPath := flag.String("db", "data/lifeops.db", "SQLite database path")
-	migrationsDir := flag.String("migrations", "migrations", "migrations directory")
-	seedPath := flag.String("seed-file", "seeds/example.sql", "example seed data file")
-	templateDir := flag.String("templates", "web/templates", "HTML templates directory")
-	staticDir := flag.String("static", "web/static", "static assets directory")
-	loadSeed := flag.Bool("seed", true, "load example seed data when the database is empty")
-	flag.Parse()
+	getenv, readFile := config.OS()
+	cfg, err := config.Load(os.Args[1:], getenv, readFile)
+	if err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			fmt.Fprintln(os.Stderr, "usage: lifeops [-addr] [-db] [-migrations] [-seed-file] [-templates] [-static] [-seed]")
+			fmt.Fprintln(os.Stderr, "       lifeops config | backup | healthcheck | passwordhash")
+			return
+		}
+		// Named errors only: they never contain a secret value.
+		log.Fatalf("configuration error: %v", err)
+	}
 
 	// Check -passwordhash flag after parsing
-	if *passwordHashFlag {
+	if cfg.GeneratePasswordHash {
 		runPasswordHashAndExit()
 		return
 	}
 
-	// Plain (unauthenticated) .ics feeds are off unless explicitly enabled, so a
-	// production deploy never exposes the schedule publicly. Tokenized feeds work
-	// regardless. ParseBool treats an unset/invalid value as false.
-	allowPublicFeeds, _ := strconv.ParseBool(os.Getenv("ALLOW_PUBLIC_CALENDAR_FEEDS"))
+	for _, line := range cfg.Summary() {
+		log.Printf("config: %s", line)
+	}
 
-	lifeOps, err := New(Config{
-		DBPath:     *dbPath,
-		HevyAPIKey: os.Getenv("HEVY_API_KEY"),
-		HealthAI: HealthAIConfig{
-			Provider:     os.Getenv("HEALTH_AI_PROVIDER"),
-			AnthropicKey: os.Getenv("ANTHROPIC_API_KEY"),
-			OpenAIKey:    os.Getenv("OPENAI_API_KEY"),
-			Model:        os.Getenv("HEALTH_AI_MODEL"),
-		},
-		MigrationsDir:    *migrationsDir,
-		SeedPath:         *seedPath,
-		TemplateDir:      *templateDir,
-		StaticDir:        *staticDir,
-		LoadSeed:         *loadSeed,
-		AllowPublicFeeds: allowPublicFeeds,
-		HealthSyncToken:  os.Getenv("GYST_HEALTH_SYNC_TOKEN"),
-		PasswordHash:     os.Getenv("GYST_PASSWORD_HASH"),
-		AuthDisabled:     os.Getenv("GYST_AUTH_DISABLED") == "1",
-		Timezone:         os.Getenv("GYST_TIMEZONE"),
-	})
+	lifeOps, err := New(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer lifeOps.Close()
 
-	log.Printf("LifeOps Tracker running at http://localhost%s", *addr)
-	if err := http.ListenAndServe(*addr, lifeOps.Handler); err != nil {
+	log.Printf("LifeOps Tracker running at http://localhost%s", cfg.Addr)
+	if err := http.ListenAndServe(cfg.Addr, lifeOps.Handler); err != nil {
 		log.Fatal(err)
 	}
 }

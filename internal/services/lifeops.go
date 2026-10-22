@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/clock"
+	"lifeops-tracker/internal/config"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 )
@@ -24,6 +25,11 @@ type Service struct {
 	// BackupStatusPath is the backup status file (data/backups/last_run.json).
 	// Empty means unconfigured: the backup producer reports nothing.
 	BackupStatusPath string
+	// Push is the VAPID trio and ProviderCreds the external-link credentials;
+	// both are injected by app.New from config.Load and never read from the
+	// environment here. Zero values mean not configured.
+	Push          PushConfig
+	ProviderCreds config.Providers
 
 	// calendarAfterReads is a test seam run after the calendar's project data
 	// reads and before the privacy lookup. Nil in production.

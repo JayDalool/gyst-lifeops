@@ -17,11 +17,11 @@ func (s *Service) SyncExternalLink(ctx context.Context, id int64) error {
 	var provider providers.Provider
 	switch link.Provider {
 	case "github":
-		provider = providers.GitHub{}
+		provider = providers.GitHub{Token: s.ProviderCreds.GitHubToken}
 	case "jira":
-		provider = providers.Jira{}
+		provider = providers.Jira{Email: s.ProviderCreds.JiraEmail, Token: s.ProviderCreds.JiraToken, BaseURL: s.ProviderCreds.JiraBaseURL}
 	case "slack":
-		provider = providers.Slack{}
+		provider = providers.Slack{Token: s.ProviderCreds.SlackToken}
 	default:
 		return userError(link.Provider + " does not support API sync")
 	}

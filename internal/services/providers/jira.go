@@ -6,18 +6,23 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"lifeops-tracker/internal/models"
 )
 
-type Jira struct{ Client *http.Client }
+// Jira holds the credentials and base URL injected from config.
+type Jira struct {
+	Client  *http.Client
+	Email   string
+	Token   string
+	BaseURL string
+}
 
-// jiraBase parses JIRA_BASE_URL. It must be https with a host, and carry no
+// jiraBase parses the configured JIRA_BASE_URL. It must be https with a host, and carry no
 // userinfo, query or fragment. Any other value means Jira is not configured.
-func jiraBase() (*url.URL, error) {
-	raw := strings.TrimSpace(os.Getenv("JIRA_BASE_URL"))
+func jiraBase(raw string) (*url.URL, error) {
+	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil, ErrNotConfigured
 	}
@@ -32,11 +37,11 @@ func jiraBase() (*url.URL, error) {
 }
 
 func (p Jira) Fetch(ctx context.Context, link models.ExternalLink) (LinkSnapshot, error) {
-	token, email := strings.TrimSpace(os.Getenv("JIRA_API_TOKEN")), strings.TrimSpace(os.Getenv("JIRA_EMAIL"))
+	token, email := strings.TrimSpace(p.Token), strings.TrimSpace(p.Email)
 	if token == "" || email == "" {
 		return LinkSnapshot{}, ErrNotConfigured
 	}
-	base, err := jiraBase()
+	base, err := jiraBase(p.BaseURL)
 	if err != nil {
 		return LinkSnapshot{}, err
 	}

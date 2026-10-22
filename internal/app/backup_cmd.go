@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"lifeops-tracker/internal/config"
 	"lifeops-tracker/internal/db"
 )
 
@@ -22,8 +23,15 @@ import (
 // one cron line around this command, and a backup tool that runs unattended is
 // a daemon with its own failure modes.
 func RunBackup(args []string) error {
+	getenv, _ := config.OS()
+	return runBackup(args, getenv)
+}
+
+// runBackup takes the environment reader so tests can set DB_PATH without
+// touching the process environment. The -db default follows DB_PATH.
+func runBackup(args []string, getenv func(string) string) error {
 	flags := flag.NewFlagSet("backup", flag.ContinueOnError)
-	dbPath := flags.String("db", "data/lifeops.db", "SQLite database path to back up")
+	dbPath := flags.String("db", config.DBPathFromEnv(getenv), "SQLite database path to back up")
 	out := flags.String("out", "", "destination file (default: backups/<name>-<UTC timestamp>.db)")
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), "Usage: lifeops backup [options]\n\n"+
