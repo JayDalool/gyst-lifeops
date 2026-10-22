@@ -1,5 +1,8 @@
-/* Launcher v2 (GYST-102): Go mode searches GYST, Capture mode adds a task.
-   Go never creates anything. Results are real links built with
+/* Launcher v2 (GYST-102, GYST-103): Go mode searches GYST, Do mode runs a fixed
+   list of commands, Capture mode adds a task. Go never creates anything. Do
+   mode only links, applies the appearance choice, or shows a confirm step that
+   holds a real <form method=post> to an allowlisted action; nothing posts
+   before Confirm and the client never writes with fetch. Results are real links built with
    createElement/textContent (no HTML strings). Every key handler except the
    Cmd/Ctrl-K opener lives on the dialog, so it is inert while the dialog is
    closed (the Galaxy page shares this layout and keeps Escape and the arrows). */
@@ -15,6 +18,91 @@
     if (external) return /^https?:\/\/[^\/?#@:]+(:\d+)?([\/?#]\S*)?$/i.test(href) ? href : "";
     return href.charAt(0) === "/" && href.charAt(1) !== "/" ? href : "";
   }
+
+  // Do mode: the only writes the launcher can ever offer. Anything else the
+  // server sends is dropped, so a hostile response cannot aim a form elsewhere.
+  var POST_ACTION = /^\/tasks\/\d+\/complete$|^\/health\/water$|^\/health\/training\/sync$/;
+  var DATE_FIELD = /^\d{4}-\d{2}-\d{2}$/;
+  var MODES = ["go", "do", "capture"];
+
+  function safePostAction(action) {
+    return typeof action === "string" && action.length < 80 && POST_ACTION.test(action) ? action : "";
+  }
+
+  // Hidden fields: only occurrence_date, only YYYY-MM-DD.
+  function cleanFields(fields) {
+    var out = {};
+    if (fields && typeof fields === "object" && !Array.isArray(fields) && typeof fields.occurrence_date === "string" && DATE_FIELD.test(fields.occurrence_date)) {
+      out.occurrence_date = fields.occurrence_date;
+    }
+    return out;
+  }
+
+  function text(value, max) { return typeof value === "string" ? value.slice(0, max) : ""; }
+
+  // Returns the commands the dialog may show: links with a safe internal href,
+  // posts with an allowlisted action (or disabled, with a reason), nothing else.
+  function cleanCommands(data) {
+    var out = [];
+    if (!data || !Array.isArray(data.commands)) return out;
+    data.commands.slice(0, 20).forEach(function (c) {
+      if (!c || typeof c.label !== "string" || !c.label.trim()) return;
+      var cmd = { label: text(c.label, 120), meta: text(c.meta, 60), kind: "", href: "", action: "", fields: {}, confirm: text(c.confirm, 200), disabledReason: text(c.disabledReason, 120) };
+      if (cmd.disabledReason) { cmd.kind = "disabled"; out.push(cmd); return; }
+      if (c.kind === "link") {
+        cmd.href = safeHref(c.href, false);
+        if (!cmd.href) return;
+        cmd.kind = "link";
+      } else if (c.kind === "post") {
+        cmd.action = safePostAction(c.action);
+        if (!cmd.action) return;
+        cmd.fields = cleanFields(c.fields);
+        cmd.kind = "post";
+      } else return;
+      out.push(cmd);
+    });
+    return out;
+  }
+
+  // The confirm step: a real form, built with createElement only, or null for an action off the allowlist.
+  function buildConfirmForm(doc, cmd) {
+    var action = cmd && cmd.kind === "post" ? safePostAction(cmd.action) : "";
+    if (!action) return null;
+    var form = doc.createElement("form");
+    form.setAttribute("method", "post");
+    form.setAttribute("action", action);
+    form.className = "launcher-confirm-form";
+    var fields = cleanFields(cmd.fields);
+    Object.keys(fields).forEach(function (name) {
+      var hidden = doc.createElement("input");
+      hidden.setAttribute("type", "hidden");
+      hidden.setAttribute("name", name);
+      hidden.setAttribute("value", fields[name]);
+      form.appendChild(hidden);
+    });
+    var message = doc.createElement("p");
+    message.className = "launcher-confirm-text";
+    message.textContent = text(cmd.confirm, 200) || text(cmd.label, 120);
+    form.appendChild(message);
+    var row = doc.createElement("div");
+    row.className = "launcher-confirm-actions";
+    var confirm = doc.createElement("button");
+    confirm.setAttribute("type", "submit");
+    confirm.className = "btn";
+    confirm.dataset.doConfirmSubmit = "1";
+    confirm.textContent = "Confirm";
+    var cancel = doc.createElement("button");
+    cancel.setAttribute("type", "button");
+    cancel.className = "btn quiet";
+    cancel.dataset.doCancel = "1";
+    cancel.textContent = "Cancel";
+    row.appendChild(confirm);
+    row.appendChild(cancel);
+    form.appendChild(row);
+    return form;
+  }
+
+  function nextMode(mode) { return MODES[(MODES.indexOf(mode) + 1) % MODES.length]; }
 
   function cleanRecents(list) {
     var out = [], seen = {};
@@ -34,9 +122,11 @@
     return cleanRecents([entry].concat(Array.isArray(list) ? list : []));
   }
 
-  // '+' as the first character switches to Capture and is not part of the title.
+  // '+' as the first character switches to Capture and is not part of the title;
+  // '>' switches to Do.
   function parseInput(value, mode) {
     value = String(value == null ? "" : value);
+    if (mode === "go" && value.charAt(0) === ">") return { mode: "do", text: value.slice(1).replace(/^\s+/, "") };
     if (mode === "go" && value.charAt(0) === "+") return { mode: "capture", text: value.slice(1).replace(/^\s+/, "") };
     return { mode: mode, text: value };
   }
@@ -66,7 +156,7 @@
     return { title: title, due: due, priority: priority };
   }
 
-  root.GystLauncher = { safeHref: safeHref, cleanRecents: cleanRecents, addRecent: addRecent, parseInput: parseInput, enterAction: enterAction, step: step, parseCapture: parseCapture, RECENTS_MAX: RECENTS_MAX };
+  root.GystLauncher = { safeHref: safeHref, cleanRecents: cleanRecents, addRecent: addRecent, parseInput: parseInput, enterAction: enterAction, step: step, parseCapture: parseCapture, safePostAction: safePostAction, cleanFields: cleanFields, cleanCommands: cleanCommands, buildConfirmForm: buildConfirmForm, nextMode: nextMode, RECENTS_MAX: RECENTS_MAX };
 
   if (typeof document === "undefined") return;
 
@@ -82,12 +172,15 @@
     var returnTo = palette.querySelector("[data-command-return]");
     var status = palette.querySelector("[data-launcher-status]");
     var closeButton = palette.querySelector("[data-command-close]");
+    var appearance = palette.querySelector("[data-do-appearance]");
+    var confirmBox = palette.querySelector("[data-do-confirm]");
     if (!input || !results || !form || !title || !date || !priority) return;
     var modeButtons = Array.prototype.slice.call(palette.querySelectorAll("[data-launcher-mode]"));
     var panels = Array.prototype.slice.call(palette.querySelectorAll("[data-launcher-panel]"));
     var HELP = status ? status.textContent : "";
 
-    var mode = "go", options = [], active = -1, timer = 0, controller = null, seq = 0, trigger = null, pending = false, openAfter = false;
+    var mode = "go", options = [], active = -1, timer = 0, controller = null, seq = 0, trigger = null, pending = false, openAfter = false, confirming = false, appearanceShown = false;
+    var APPEARANCE_TERMS = "appearance theme system light dark";
 
     // Today and tomorrow are the server's local days in the app timezone
     // (data-today / data-tomorrow); the browser date is only a fallback.
@@ -198,21 +291,128 @@
       }
     }
 
+    function appearanceMatches(query) {
+      var hay = APPEARANCE_TERMS;
+      return query.toLowerCase().split(/\s+/).filter(Boolean).every(function (w) { return hay.indexOf(w) >= 0; });
+    }
+
+    function addCommands(cmds) {
+      if (!cmds.length) return;
+      var group = document.createElement("div");
+      group.setAttribute("role", "group");
+      group.className = "launcher-group";
+      group.setAttribute("aria-label", "Commands");
+      var heading = document.createElement("div");
+      heading.className = "launcher-group-label";
+      heading.setAttribute("aria-hidden", "true");
+      heading.textContent = "Commands";
+      group.appendChild(heading);
+      cmds.forEach(function (cmd) {
+        var item;
+        if (cmd.kind === "link") {
+          item = document.createElement("a");
+          item.href = cmd.href;
+        } else {
+          item = document.createElement("div");
+          if (cmd.kind === "post") item.dataset.doPost = "1";
+          else item.setAttribute("aria-disabled", "true");
+        }
+        item.id = "launcher-option-" + options.length;
+        item.className = "launcher-item";
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", "false");
+        item.setAttribute("tabindex", "-1");
+        item.dataset.recent = "";
+        item.gystCommand = cmd;
+        var name = document.createElement("span");
+        name.className = "launcher-item-label";
+        name.textContent = cmd.label;
+        item.appendChild(name);
+        var metaText = cmd.kind === "disabled" ? cmd.disabledReason : cmd.meta;
+        if (metaText) {
+          var meta = document.createElement("span");
+          meta.className = "launcher-item-meta";
+          meta.textContent = metaText;
+          item.appendChild(meta);
+        }
+        group.appendChild(item);
+        options.push(item);
+      });
+      results.appendChild(group);
+    }
+
+    function showAppearance(show) {
+      appearanceShown = !!show;
+      if (!appearance) return;
+      appearance.hidden = !show;
+      if (!show) return;
+      // The three theme buttons stay where the layout put them (theme.js owns
+      // them); they join the arrow-key list so the keyboard can reach them.
+      Array.prototype.forEach.call(appearance.querySelectorAll ? appearance.querySelectorAll("[data-theme-choice]") : [], function (b) {
+        b.id = "launcher-option-" + options.length;
+        options.push(b);
+      });
+    }
+
+    function renderDo(cmds, query) {
+      clearResults();
+      addCommands(cmds);
+      showAppearance(!query || appearanceMatches(query));
+      input.setAttribute("aria-expanded", options.length ? "true" : "false");
+      if (options.length) {
+        setActive(0);
+        setStatus(HELP);
+      } else {
+        setStatus("No commands match “" + query + "”.");
+      }
+    }
+
+    // Confirm step: swaps the list for a real form. Nothing is sent until Confirm is activated.
+    function askConfirm(cmd) {
+      var form = buildConfirmForm(document, cmd);
+      if (!form || !confirmBox) { setStatus("That command is not available."); return; }
+      while (confirmBox.firstChild) confirmBox.removeChild(confirmBox.firstChild);
+      confirmBox.appendChild(form);
+      confirming = true;
+      results.hidden = true;
+      if (appearance) appearance.hidden = true;
+      confirmBox.hidden = false;
+      form.addEventListener("submit", function () {
+        // Block a double tap; the page navigates away with the response.
+        setTimeout(function () { var b = form.querySelector ? form.querySelector("[data-do-confirm-submit]") : null; if (b) b.disabled = true; }, 0);
+      });
+      var go = form.querySelector ? form.querySelector("[data-do-confirm-submit]") : null;
+      if (go && go.focus) go.focus();
+    }
+
+    function endConfirm(focusInput) {
+      if (!confirming) return;
+      confirming = false;
+      if (confirmBox) {
+        while (confirmBox.firstChild) confirmBox.removeChild(confirmBox.firstChild);
+        confirmBox.hidden = true;
+      }
+      results.hidden = false;
+      if (appearance && mode === "do") appearance.hidden = !appearanceShown;
+      if (focusInput) input.focus();
+    }
+
     function search(query) {
       if (controller) controller.abort();
       controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-      var mine = ++seq;
+      var mine = ++seq, asked = mode;
       pending = true;
       var init = { credentials: "same-origin", headers: { Accept: "application/json" } };
       if (controller) init.signal = controller.signal;
-      fetch("/api/search?q=" + encodeURIComponent(query), init).then(function (response) {
+      fetch("/api/search?" + (asked === "do" ? "mode=do&" : "") + "q=" + encodeURIComponent(query), init).then(function (response) {
         if (response.status === 401) { var auth = new Error("auth"); auth.auth = true; throw auth; }
         if (!response.ok) throw new Error("search " + response.status);
         return response.json();
       }).then(function (data) {
-        if (mine !== seq || mode !== "go" || query !== input.value.trim()) return;
+        if (mine !== seq || mode !== asked || query !== input.value.trim()) return;
         pending = false;
-        render(cleanGroups(data), query);
+        if (asked === "do") renderDo(cleanCommands(data), query);
+        else render(cleanGroups(data), query);
         if (openAfter) {
           openAfter = false;
           // Only an internal link is opened on a deferred Enter (a new tab opened
@@ -220,9 +420,9 @@
           if (options[0] && options[0].target !== "_blank") options[0].click();
         }
       }).catch(function (err) {
-        if (mine !== seq || mode !== "go" || (err && err.name === "AbortError")) return;
+        if (mine !== seq || mode !== asked || (err && err.name === "AbortError")) return;
         pending = false; openAfter = false;
-        render([], query);
+        if (asked === "do") renderDo([], query); else render([], query);
         setStatus(err && err.auth ? "Your session ended. Reload the page to sign in." : "Search is unavailable right now.");
       });
     }
@@ -243,10 +443,13 @@
 
     function setMode(next, focus) {
       if (next === mode) { if (focus) input.focus(); return; }
+      endConfirm(false);
       mode = next;
       pending = false; openAfter = false;
       modeButtons.forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.launcherMode === mode ? "true" : "false"); });
-      panels.forEach(function (p) { p.hidden = p.dataset.launcherPanel !== mode; });
+      // The "go" panel (results list, status line) is shared by Go and Do.
+      panels.forEach(function (p) { p.hidden = p.dataset.launcherPanel !== (mode === "do" ? "go" : mode); });
+      if (appearance) appearance.hidden = true;
       if (mode === "capture") {
         clearTimeout(timer);
         seq++;
@@ -258,8 +461,8 @@
         applyCapture();
       } else {
         input.setAttribute("aria-controls", "launcher-results");
-        input.setAttribute("aria-label", "Search GYST");
-        input.placeholder = "Search GYST, or + to add a task";
+        input.setAttribute("aria-label", mode === "do" ? "Filter commands" : "Search GYST");
+        input.placeholder = mode === "do" ? "Filter commands" : "Search GYST, or > for commands, + to add a task";
         runSearch(true);
       }
       if (focus) input.focus();
@@ -273,6 +476,7 @@
       if (!palette.open) palette.showModal();
       mode = "capture"; // force the reset below
       pending = false; openAfter = false;
+      endConfirm(false);
       input.value = ""; title.value = "";
       setMode("go", false);
       input.focus();
@@ -281,6 +485,7 @@
 
     palette.addEventListener("close", function () {
       pending = false; openAfter = false;
+      endConfirm(false);
       clearTimeout(timer);
       seq++;
       if (controller) controller.abort();
@@ -292,7 +497,7 @@
 
     input.addEventListener("input", function () {
       var parsed = parseInput(input.value, mode);
-      if (parsed.mode !== mode) { input.value = parsed.text; setMode(parsed.mode, false); }
+      if (parsed.mode !== mode) { input.value = parsed.text; setMode(parsed.mode, false); if (mode === "do") return; }
       if (mode === "capture") applyCapture();
       else {
         // Anything already asked for or in flight is now about an older query.
@@ -306,9 +511,9 @@
       if (event.isComposing) return;
       if (event.key === "Tab" && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
-        setMode(mode === "go" ? "capture" : "go", true);
-      } else if (mode === "go" && !pending && event.key === "ArrowDown") { event.preventDefault(); setActive(step(active, 1, options.length)); }
-      else if (mode === "go" && !pending && event.key === "ArrowUp") { event.preventDefault(); setActive(step(active, -1, options.length)); }
+        setMode(nextMode(mode), true);
+      } else if (mode !== "capture" && !pending && event.key === "ArrowDown") { event.preventDefault(); setActive(step(active, 1, options.length)); }
+      else if (mode !== "capture" && !pending && event.key === "ArrowUp") { event.preventDefault(); setActive(step(active, -1, options.length)); }
       else if (event.key === "Enter") {
         var action = enterAction(mode, !!options[active], title.value, pending);
         event.preventDefault();
@@ -320,11 +525,23 @@
 
     // Escape and result clicks live on the dialog, so nothing runs while it is closed.
     palette.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") { event.preventDefault(); close(); }
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      if (confirming) endConfirm(true); else close();
+    });
+    if (confirmBox) confirmBox.addEventListener("click", function (event) {
+      var t = event.target;
+      if (t && t.dataset && t.dataset.doCancel === "1") { event.preventDefault(); endConfirm(true); }
     });
     results.addEventListener("click", function (event) {
-      var a = event.target && event.target.closest ? event.target.closest("a.launcher-item") : null;
+      var a = event.target && event.target.closest ? event.target.closest(".launcher-item") : null;
       if (!a) return;
+      if (a.dataset.doPost === "1") { event.preventDefault(); askConfirm(a.gystCommand); return; }
+      if (a.getAttribute("aria-disabled") === "true") {
+        event.preventDefault();
+        setStatus(a.gystCommand && a.gystCommand.disabledReason ? a.gystCommand.disabledReason : "Not available right now.");
+        return;
+      }
       if (a.dataset.recent === "1") {
         var label = a.querySelector(".launcher-item-label");
         saveRecent(label ? label.textContent : a.textContent, a.getAttribute("href"));

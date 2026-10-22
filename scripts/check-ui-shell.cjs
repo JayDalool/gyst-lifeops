@@ -341,6 +341,11 @@ function launcherChecks() {
   assert(!/location\s*(\.href)?\s*=[^=]/.test(src) && !/location\.(assign|replace)\(/.test(src), 'launcher must not navigate through location');
   // Only the Cmd/Ctrl-K opener may listen on document; every other key handler is on the dialog or input.
   assert.equal((src.match(/document\.addEventListener\("keydown"/g) || []).length, 1, 'one document keydown (the opener)');
+  // Do mode never writes with fetch: the only fetch is the GET search, and nothing sets a method.
+  assert.equal((src.match(/fetch\(/g) || []).length, 1, 'one fetch (the search)');
+  assert(!/method\s*:\s*["']/i.test(src) && !/XMLHttpRequest|sendBeacon/.test(src), 'no fetch-based writes');
+  assert(!/\.submit\(\)/.test(src), 'a form is never submitted by script');
+  assert.equal((src.match(/requestSubmit/g) || []).length, 1, 'only the Capture form uses requestSubmit');
   assert(!/palette\.showModal\(\)/.test(src.replace(/function open[\s\S]*?function close/, '')), 'only open() shows the dialog');
   const sandbox = {Array, JSON, String, Math}; sandbox.window = sandbox; sandbox.globalThis = sandbox;
   vm.runInNewContext(src, sandbox);
@@ -371,12 +376,59 @@ function launcherChecks() {
   same({...L.parseInput('+ call sam', 'go')}, {mode: 'capture', text: 'call sam'});
   same({...L.parseInput('a+b', 'go')}, {mode: 'go', text: 'a+b'});
   same({...L.parseInput('+x', 'capture')}, {mode: 'capture', text: '+x'});
+  // '>' as the first character switches Go to Do and is stripped; Tab cycles Go, Do, Capture.
+  same({...L.parseInput('>water', 'go')}, {mode: 'do', text: 'water'});
+  same({...L.parseInput('> water', 'go')}, {mode: 'do', text: 'water'});
+  same({...L.parseInput('a>b', 'go')}, {mode: 'go', text: 'a>b'});
+  same({...L.parseInput('>x', 'capture')}, {mode: 'capture', text: '>x'});
+  assert.equal(L.nextMode('go'), 'do'); assert.equal(L.nextMode('do'), 'capture'); assert.equal(L.nextMode('capture'), 'go');
+  // Do mode: a POST action is accepted only from the allowlist; nothing else can be aimed at a form.
+  for (const ok of ['/tasks/7/complete', '/tasks/123/complete', '/health/water', '/health/training/sync']) assert.equal(L.safePostAction(ok), ok, ok);
+  for (const bad of ['//evil.example', '//evil.example/health/water', '/tasks/1/delete', '/tasks/1/archive', '/tasks/x/complete', '/tasks//complete', '/tasks/1/complete/', '/tasks/1/complete?x=1', '/tasks/1/complete#x', '/health/water/undo', '/health/water\n', '/Health/water', 'javascript:alert(1)', 'https://evil.example/health/water', '/backup', '/admin/restart', '', null, undefined, 5, {}]) {
+    assert.equal(L.safePostAction(bad), '', 'rejects ' + String(bad));
+  }
+  same(L.cleanFields({occurrence_date: '2026-10-12'}), {occurrence_date: '2026-10-12'});
+  same(L.cleanFields({occurrence_date: '2026-10-12', return_to: '//evil.example', status: 'completed', action: '/x'}), {occurrence_date: '2026-10-12'});
+  same(L.cleanFields({occurrence_date: 'tomorrow'}), {}); same(L.cleanFields({occurrence_date: '2026-10-12x'}), {}); same(L.cleanFields({return_to: '/x'}), {});
+  same(L.cleanFields(null), {}); same(L.cleanFields('x'), {}); same(L.cleanFields([]), {});
+  const cc = L.cleanCommands({commands: [
+    {label: 'New task', meta: 'Open', kind: 'link', href: '/tasks/new'},
+    {label: 'Evil link', kind: 'link', href: '//evil.example'},
+    {label: 'JS link', kind: 'link', href: 'javascript:alert(1)'},
+    {label: 'Add a bottle of water', kind: 'post', action: '/health/water', confirm: 'Log one bottle?'},
+    {label: 'Complete: x', kind: 'post', action: '/tasks/4/complete', fields: {occurrence_date: '2026-10-12', return_to: '//evil.example'}, confirm: 'Done?'},
+    {label: 'Delete everything', kind: 'post', action: '/tasks/4/delete'},
+    {label: 'Backup now', kind: 'post', action: '/admin/backup'},
+    {label: 'Unknown kind', kind: 'script', action: '/health/water'},
+    {label: 'Sync Hevy now', kind: 'post', disabledReason: 'Hevy not connected', action: '/evil'},
+    {kind: 'link', href: '/x'}, null, 'str']});
+  same(cc.map(c => c.label), ['New task', 'Add a bottle of water', 'Complete: x', 'Sync Hevy now']);
+  same(cc[2].fields, {occurrence_date: '2026-10-12'});
+  assert.equal(cc[3].kind, 'disabled'); assert.equal(cc[3].action, '', 'a disabled command carries no action');
+  same(L.cleanCommands(null), []); same(L.cleanCommands({commands: 'x'}), []);
+  assert.equal(L.cleanCommands({commands: Array.from({length: 50}, () => ({label: 'a', kind: 'link', href: '/a'}))}).length, 20);
+  // The confirm step is a real <form method=post> for allowlisted actions only, with Confirm and Cancel.
+  const mk = t => ({tag: t, attrs: {}, children: [], dataset: {}, className: '', textContent: '', setAttribute(k, v) { this.attrs[k] = String(v); }, appendChild(c) { this.children.push(c); return c; }});
+  const fdoc = {createElement: mk};
+  assert.equal(L.buildConfirmForm(fdoc, {kind: 'post', action: '//evil.example'}), null);
+  assert.equal(L.buildConfirmForm(fdoc, {kind: 'post', action: '/tasks/1/delete'}), null);
+  assert.equal(L.buildConfirmForm(fdoc, {kind: 'link', action: '/health/water'}), null);
+  assert.equal(L.buildConfirmForm(fdoc, {kind: 'disabled', action: '/health/water'}), null);
+  assert.equal(L.buildConfirmForm(fdoc, null), null);
+  const f = L.buildConfirmForm(fdoc, {kind: 'post', action: '/tasks/4/complete', fields: {occurrence_date: '2026-10-12', return_to: '//evil.example', evil: 'x'}, confirm: 'Mark it done?', label: 'Complete: x'});
+  assert.equal(f.tag, 'form'); assert.equal(f.attrs.method, 'post'); assert.equal(f.attrs.action, '/tasks/4/complete');
+  const hidden = f.children.filter(c => c.tag === 'input');
+  same(hidden.map(h => [h.attrs.type, h.attrs.name, h.attrs.value]), [['hidden', 'occurrence_date', '2026-10-12']]);
+  const btns = f.children.find(c => c.tag === 'div').children;
+  same(btns.map(b => [b.attrs.type, b.textContent]), [['submit', 'Confirm'], ['button', 'Cancel']]);
+  assert.equal(f.children.find(c => c.tag === 'p').textContent, 'Mark it done?');
   // Enter never creates in Go, with or without results; Capture submits only with a title.
   assert.equal(L.enterAction('go', false, 'buy milk'), 'none');
   assert.equal(L.enterAction('go', false, ''), 'none');
   assert.equal(L.enterAction('go', true, 'buy milk'), 'open');
   assert.equal(L.enterAction('go', true, 'garden', true), 'defer', 'stale results never open');
   assert.equal(L.enterAction('go', false, 'garden', true), 'defer');
+  assert.equal(L.enterAction('do', true, ''), 'open'); assert.equal(L.enterAction('do', false, ''), 'none'); assert.equal(L.enterAction('do', true, '', true), 'defer');
   assert.equal(L.enterAction('capture', true, 'x', true), 'submit');
   assert.equal(L.enterAction('capture', false, 'buy milk'), 'submit');
   assert.equal(L.enterAction('capture', true, '  '), 'none');
@@ -411,15 +463,15 @@ async function launcherRaceChecks() {
       click() { clicked.push(this.href); let n = this; while (n) { (n.listeners.click || []).forEach(f => f({target: this, preventDefault() {}})); n = n.parent; } }};
     return e;
   }
-  const input = el('input'), results = el('div'), form = el('form'), title = el('input'), date = el('input'), priority = el('select'), ret = el('input'), status = el('p'), closeBtn = el('button');
-  const goBtn = el('button'), capBtn = el('button'); goBtn.dataset.launcherMode = 'go'; capBtn.dataset.launcherMode = 'capture';
+  const confirmBox = el('div'), input = el('input'), results = el('div'), form = el('form'), title = el('input'), date = el('input'), priority = el('select'), ret = el('input'), status = el('p'), closeBtn = el('button');
+  const goBtn = el('button'), doBtn = el('button'), capBtn = el('button'); goBtn.dataset.launcherMode = 'go'; doBtn.dataset.launcherMode = 'do'; capBtn.dataset.launcherMode = 'capture';
   const goPanel = el('div'), capPanel = el('div'); goPanel.dataset.launcherPanel = 'go'; capPanel.dataset.launcherPanel = 'capture';
   const palette = el('dialog'); palette.open = false; palette.dataset.today = '2026-10-12'; palette.dataset.tomorrow = '2026-10-13';
   palette.showModal = function () { this.open = true; };
   palette.close = function () { this.open = false; this.dispatch('close'); };
-  const byName = {'data-command-search': input, 'data-command-results': results, 'data-quick-task': form, 'data-quick-title': title, 'data-quick-date': date, 'data-quick-priority': priority, 'data-command-return': ret, 'data-launcher-status': status, 'data-command-close': closeBtn};
+  const byName = {'data-command-search': input, 'data-command-results': results, 'data-quick-task': form, 'data-quick-title': title, 'data-quick-date': date, 'data-quick-priority': priority, 'data-command-return': ret, 'data-launcher-status': status, 'data-command-close': closeBtn, 'data-do-confirm': confirmBox};
   palette.querySelector = s => byName[strip(s)] || null;
-  palette.querySelectorAll = s => strip(s) === 'data-launcher-mode' ? [goBtn, capBtn] : strip(s) === 'data-launcher-panel' ? [goPanel, capPanel] : [];
+  palette.querySelectorAll = s => strip(s) === 'data-launcher-mode' ? [goBtn, doBtn, capBtn] : strip(s) === 'data-launcher-panel' ? [goPanel, capPanel] : [];
   const opener = el('button');
   const fakeDoc = {readyState: 'complete', activeElement: opener, querySelector: s => strip(s) === 'data-command-palette' ? palette : null, querySelectorAll: s => strip(s) === 'data-command-open' ? [opener] : [], createElement: t => el(t), addEventListener() {}};
   let now = 0, timers = [], tid = 0;
@@ -427,9 +479,10 @@ async function launcherRaceChecks() {
   const fakeClearTimeout = id => { timers = timers.filter(t => t.id !== id); };
   const inflight = [];
   const fakeFetch = (url, init) => new Promise((res, rej) => {
-    inflight.push({q: decodeURIComponent(url.split('q=')[1]), res});
+    urls.push([url, init]); inflight.push({q: decodeURIComponent(url.split('q=')[1]), res});
     if (init.signal) init.signal.addEventListener('abort', () => { const e = new Error('aborted'); e.name = 'AbortError'; rej(e); });
   });
+  const urls = []; const same = (a, b) => assert.equal(JSON.stringify(a), JSON.stringify(b));
   const reply = (q, groups) => { const i = inflight.findIndex(r => r.q === q); if (i < 0) return false; inflight.splice(i, 1)[0].res({status: 200, ok: true, json: () => ({groups})}); return true; };
   const answer = (q, external) => reply(q, q ? [{label: 'Top hit', items: [{label: 'Hit for ' + q, href: external ? 'https://example.com/' + q : '/hit/' + q, external: !!external}]}] : []);
   const flush = () => new Promise(r => setImmediate(r));
@@ -468,7 +521,7 @@ async function launcherRaceChecks() {
   type('xy'); key('Enter'); palette.dispatch('keydown', {key: 'Escape'}); answer('xy'); await flush();
   is('Escape while deferred', '(nothing)'); assert.equal(palette.open, false);
   await reopen();
-  type('zz'); key('Enter'); key('Tab'); answer('zz'); await flush();
+  type('zz'); key('Enter'); key('Tab'); key('Tab'); answer('zz'); await flush();
   is('Tab to Capture while deferred', '(nothing)'); assert.equal(submitted, 0);
   await reopen();
   type('qq'); key('Enter'); type('+qq'); answer('qq'); await flush();
@@ -479,5 +532,35 @@ async function launcherRaceChecks() {
   await reopen();
   type('app'); key('Enter'); answer('app', true); await flush();
   is('a deferred Enter never opens an external new-tab link', '(nothing)');
+  // Do mode: '>' asks the server for the fixed commands (GET only); a POST command opens the confirm step and posts nothing.
+  await reopen();
+  urls.length = 0;
+  type('>'); await flush();
+  assert(urls.some(([u]) => u.startsWith('/api/search?mode=do&q=')), 'Do mode asks for mode=do');
+  assert.equal(input.attrs['aria-label'], 'Filter commands'); assert.equal(input.value, '', '> is not part of the filter');
+  const doReply = cmds => { const i = inflight.findIndex(r => r.q === ''); inflight.splice(i, 1)[0].res({status: 200, ok: true, json: () => ({commands: cmds})}); };
+  doReply([
+    {id: 'new-task', label: 'New task', meta: 'Open', kind: 'link', href: '/tasks/new'},
+    {id: 'water', label: 'Add a bottle of water', meta: 'Health', kind: 'post', action: '/health/water', confirm: 'Log one bottle of water for today?'},
+    {id: 'bad', label: 'Delete all', meta: '', kind: 'post', action: '/tasks/1/delete', confirm: 'x'},
+    {id: 'sync', label: 'Sync Hevy now', meta: 'Training', kind: 'post', disabledReason: 'Hevy not connected'}]);
+  await flush();
+  const rows = results.children[0].children.slice(1);
+  same(rows.map(r => r.children[0].textContent), ['New task', 'Add a bottle of water', 'Sync Hevy now']);
+  assert.equal(rows[0].tag, 'a'); assert.equal(rows[0].href, '/tasks/new');
+  assert.equal(rows[1].tag, 'div'); assert.equal(rows[1].dataset.doPost, '1');
+  assert.equal(rows[2].attrs['aria-disabled'], 'true'); assert.equal(rows[2].children[1].textContent, 'Hevy not connected');
+  const before = urls.length;
+  key('ArrowDown'); key('Enter'); await flush();
+  assert.equal(confirmBox.hidden, false, 'Enter on a POST command opens the confirm step');
+  const cf = confirmBox.children[0];
+  assert.equal(cf.attrs.action, '/health/water'); assert.equal(cf.attrs.method, 'post');
+  assert.equal(urls.length, before, 'opening the confirm step sends nothing');
+  assert(urls.every(([, i]) => !i.method && !i.body), 'no fetch carries a write');
+  palette.dispatch('keydown', {key: 'Escape'});
+  assert.equal(confirmBox.hidden, true, 'Escape cancels the confirm step'); assert.equal(palette.open, true, 'and keeps the launcher open');
+  assert.equal(confirmBox.children.length, 0);
+  palette.dispatch('keydown', {key: 'Escape'});
+  assert.equal(palette.open, false, 'a second Escape closes the launcher');
 }
 (async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers and launcher passed');})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -13,15 +13,15 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=appearance-1">
   <link rel="stylesheet" href="/static/css/ui-tokens.css?v=vn-2">
   <link rel="stylesheet" href="/static/css/ui-components.css?v=apps-overlay-1">
-  <link rel="stylesheet" href="/static/css/ui-shell.css?v=launcher-3">
+  <link rel="stylesheet" href="/static/css/ui-shell.css?v=launcher-4">
   {{if eq .Page "today"}}<link rel="stylesheet" href="/static/css/ui-today.css?v=dedupe-1">{{end}}
   {{if eq .Page "projects"}}<link rel="stylesheet" href="/static/css/ui-projects.css?v=ui-4">{{end}}
   {{if eq .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-galaxy.css?v=galaxywin-1">{{end}}
   {{if eq .Page "health"}}<link rel="stylesheet" href="/static/css/ui-health.css?v=weight-1"><link rel="stylesheet" href="/static/css/ui-training.css?v=train-2"><link rel="stylesheet" href="/static/css/ui-health-v3.css?v=hv3-9">{{end}}
   {{if eq .Page "courses"}}<link rel="stylesheet" href="/static/css/ui-courses.css?v=ui-10">{{end}}
   <script defer src="/static/js/charts.js?v=ui-2"></script>
-	<script defer src="/static/js/app.js?v=launcher-3"></script>
-  <script defer src="/static/js/launcher.js?v=launcher-3"></script>
+	<script defer src="/static/js/app.js?v=launcher-4"></script>
+  <script defer src="/static/js/launcher.js?v=launcher-4"></script>
   <script defer src="/static/js/completion-toast.js?v=toast-1"></script>
 </head>
 <body class="gyst-app{{if eq .Page "galaxy"}} galaxy-page{{end}}{{if eq .Page "health"}} is-health{{end}}">
@@ -39,11 +39,21 @@
 	  </div>
 	  <div class="gyst-segments launcher-modes" role="group" aria-label="Launcher mode">
 		<button type="button" class="gyst-segment" data-launcher-mode="go" aria-pressed="true">Go</button>
+		<button type="button" class="gyst-segment" data-launcher-mode="do" aria-pressed="false">Do</button>
 		<button type="button" class="gyst-segment" data-launcher-mode="capture" aria-pressed="false">Capture</button>
 	  </div>
 	  <div data-launcher-panel="go">
 		<div class="command-results" id="launcher-results" role="listbox" aria-label="Results" data-command-results></div>
-		<p class="command-help meta" data-launcher-status aria-live="polite">↑↓ move · Enter open · Tab switches Go and Capture · + starts a task</p>
+		<div class="launcher-do-extra" data-do-appearance role="group" aria-label="Appearance" hidden>
+		  <span class="launcher-group-label" aria-hidden="true">Appearance</span>
+		  <div class="gyst-segments">
+			<button type="button" class="gyst-segment" data-theme-choice="system" aria-pressed="true">System</button>
+			<button type="button" class="gyst-segment" data-theme-choice="light" aria-pressed="false">Light</button>
+			<button type="button" class="gyst-segment" data-theme-choice="dark" aria-pressed="false">Dark</button>
+		  </div>
+		</div>
+		<div class="launcher-confirm" data-do-confirm role="group" aria-label="Confirm" hidden></div>
+		<p class="command-help meta" data-launcher-status aria-live="polite">↑↓ move · Enter open · Tab switches Go, Do and Capture · &gt; runs a command · + starts a task</p>
 	  </div>
 	  <div data-launcher-panel="capture" hidden>
 	  <form class="command-capture" method="post" action="/tasks/quick" data-quick-task>
