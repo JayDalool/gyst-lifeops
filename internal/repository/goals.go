@@ -103,6 +103,32 @@ func (r *Repository) CreateGoal(goal *models.Goal, today string) error {
 	return nil
 }
 
+// UpdateGoal saves the editable fields of a live (not archived) goal. It never
+// touches current_value or the progress entries: only AddGoalProgress writes
+// those. Returns sql.ErrNoRows when the goal is missing or archived.
+func (r *Repository) UpdateGoal(goal *models.Goal) error {
+	res, err := r.db.Exec(`UPDATE goals SET
+		title = ?, description = ?, type = ?, category = ?, target_value = ?,
+		unit = ?, start_date = ?, end_date = ?, status = ?,
+		updated_at = CURRENT_TIMESTAMP,
+		sync_version = sync_version + 1
+		WHERE id = ? AND archived_at IS NULL AND status != 'archived'`,
+		goal.Title, goal.Description, goal.Type, goal.Category, goal.TargetValue,
+		goal.Unit, nullString(goal.StartDate), nullString(goal.EndDate), goal.Status,
+		goal.ID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // AddGoalProgress records a progress entry and recomputes the goal's current
 // value from the latest-dated entry, so a backdated entry never overwrites a
 // newer value.
