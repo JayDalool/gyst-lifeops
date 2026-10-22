@@ -198,10 +198,14 @@ func TestProjectsAreaSubNavigation(t *testing.T) {
 			t.Fatalf("%s: want %d Projects areas groups", tt.path, len(groups))
 		}
 	}
-	// The status filter is no longer a second segmented control.
+	// The status filter is no longer a second segmented control. The launcher
+	// renders its own segments on every page, so count only what /projects adds.
+	base := httptest.NewRecorder()
+	h.ServeHTTP(base, httptest.NewRequest(http.MethodGet, "/today", nil))
+	shellSegments := strings.Count(base.Body.String(), `class="gyst-segment"`)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/projects", nil))
-	if !strings.Contains(rec.Body.String(), `<nav class="projects-roadmaps" aria-label="Project status">`) || strings.Count(rec.Body.String(), `class="gyst-segment"`) != 3 {
+	if !strings.Contains(rec.Body.String(), `<nav class="projects-roadmaps" aria-label="Project status">`) || strings.Count(rec.Body.String(), `class="gyst-segment"`)-shellSegments != 3 {
 		t.Fatal("projects status filter must use the pill links, leaving one segmented control")
 	}
 	for _, path := range []string{"/health", "/today", "/courses"} {
