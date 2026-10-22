@@ -21,6 +21,7 @@ import (
 	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 	"lifeops-tracker/internal/services/providers"
 	"lifeops-tracker/internal/xp"
@@ -50,6 +51,9 @@ type Handler struct {
 	// configured: the Coach page shows that state and the rest of Health works.
 	Coach      healthcoach.Provider
 	coachLimit coachLimiter
+	// appRegistry loads the Apps registry (GYST-101). Nil means the embedded
+	// registry; tests inject fixtures.
+	appRegistry func() ([]services.App, error)
 }
 
 type TodayData struct {
@@ -83,9 +87,12 @@ type TaskListData struct {
 	Page  string
 	Today string
 	Tasks []models.Task
+	// OccurrenceDates is the date each task's Complete and Skip post: the
+	// current occurrence for a repeating task (GYST-133).
+	OccurrenceDates map[int64]string
 	// StatusFilter is the ?status= view filter: pending | completed | skipped |
-	// overdue | all. Presentation-only; "overdue" means pending with a past due
-	// date.
+	// overdue | all. Presentation-only; "overdue" means a pending one-time task
+	// with a past due date. Repeating tasks are never overdue.
 	StatusFilter string
 }
 
@@ -98,11 +105,13 @@ type TaskFormData struct {
 }
 
 type TaskDetailData struct {
-	Page          string
-	Task          models.Task
-	Checklist     []models.TaskChecklistItem
-	ShipStats     models.ShipStats
-	ExternalLinks []models.ExternalLink
+	Page string
+	Task models.Task
+	// OccurrenceDate is the date Complete and Skip post (GYST-133).
+	OccurrenceDate string
+	Checklist      []models.TaskChecklistItem
+	ShipStats      models.ShipStats
+	ExternalLinks  []models.ExternalLink
 }
 
 type PlanImportData struct {
@@ -190,6 +199,16 @@ type ProjectFormData struct {
 	Project  models.Project
 	Projects []models.ProjectWithProgress
 	Roadmaps []models.Roadmap
+	// Error is a fixed-text banner for a refused save; ExcludeParents holds the
+	// project's own sub-projects, which the Parent picker must not offer.
+	Error          *UIBanner
+	ExcludeParents map[int64]bool
+	// Linked* hold the project's current parent, dependency and roadmap when
+	// they are archived (so absent from the lists above): the form offers them
+	// as the selected option, so saving does not silently clear the link.
+	LinkedParent    *models.Project
+	LinkedDependsOn *models.Project
+	LinkedRoadmap   *models.Roadmap
 }
 
 type ProjectDetailData struct {
@@ -320,6 +339,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case "more":
 		h.more(w, r)
+	case "apps":
+		h.apps(w, r)
 	case "monthly":
 		h.monthly(w, r)
 	case "tasks":
@@ -399,6 +420,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "api":
 		if len(segments) >= 2 && segments[1] == "health" {
 			h.healthAPI(w, r, segments)
+		} else if len(segments) == 2 && segments[1] == "search" {
+			h.searchAPI(w, r)
 		} else {
 			h.pushAPI(w, r, segments)
 		}
@@ -580,7 +603,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		Completed:      completed,
 		Skipped:        skipped,
 		OverdueTasks:   overdueTasks,
-		RemindersToday: remindersToday,
+		RemindersToday: standaloneReminders(remindersToday),
 		Learning:       learning,
 		Prayer: PrayerTodayData{
 			Schedule: schedule, Next: nextPrayer,
@@ -635,7 +658,7 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 			for _, task := range tasks {
 				switch filter {
 				case "overdue":
-					if task.Status == "pending" && task.DueDate != "" && task.DueDate < today {
+					if task.Status == "pending" && task.RepeatType == "none" && task.DueDate != "" && task.DueDate < today {
 						filtered = append(filtered, task)
 					}
 				default:
@@ -648,7 +671,11 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 		default:
 			filter = "all"
 		}
-		h.render(w, "tasks_list.html", TaskListData{Page: "tasks", Today: today, Tasks: tasks, StatusFilter: filter})
+		dates := make(map[int64]string, len(tasks))
+		for _, task := range tasks {
+			dates[task.ID] = h.Service.TaskActionDate(task)
+		}
+		h.render(w, "tasks_list.html", TaskListData{Page: "tasks", Today: today, Tasks: tasks, OccurrenceDates: dates, StatusFilter: filter})
 		return
 	}
 
@@ -692,7 +719,7 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 			serverError(w, err)
 			return
 		}
-		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, Checklist: checklist, ShipStats: stats, ExternalLinks: links})
+		h.render(w, "task_detail.html", TaskDetailData{Page: "tasks", Task: task, OccurrenceDate: h.Service.TaskActionDate(task), Checklist: checklist, ShipStats: stats, ExternalLinks: links})
 		return
 	}
 
@@ -890,6 +917,37 @@ func (h *Handler) editTask(w http.ResponseWriter, r *http.Request, id int64) {
 	}
 }
 
+// taskOccurrenceDate loads the task and resolves the date a complete, skip or
+// undo books. A malformed date is 400. For a repeating task an empty date means
+// the current occurrence; with validate set, a well-formed date the series does
+// not repeat on is 400. On failure it has answered and the caller must stop;
+// nothing is written here (GYST-133).
+func (h *Handler) taskOccurrenceDate(w http.ResponseWriter, r *http.Request, id int64, validate bool) (models.Task, string, bool) {
+	raw := strings.TrimSpace(r.FormValue("occurrence_date"))
+	if raw != "" {
+		if _, err := clock.ParseLocalDate(raw); err != nil {
+			invalidDate(w, "occurrence_date")
+			return models.Task{}, "", false
+		}
+	}
+	task, err := h.Service.Repo.TaskByID(id)
+	if err != nil {
+		notFoundOrError(w, err)
+		return models.Task{}, "", false
+	}
+	if raw == "" {
+		if task.RepeatType != "none" && task.RepeatType != "" {
+			return task, h.Service.TaskActionDate(task), true
+		}
+		return task, h.Service.TodayString(), true
+	}
+	if validate && !h.Service.IsTaskOccurrence(task, raw) {
+		http.Error(w, "occurrence_date is not a day this task repeats on", http.StatusBadRequest)
+		return models.Task{}, "", false
+	}
+	return task, raw, true
+}
+
 func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64, status string) {
 	if r.Method != http.MethodPost {
 		methodNotAllowed(w)
@@ -899,9 +957,8 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 		serverError(w, err)
 		return
 	}
-	date, err := h.formLocalDate(r.FormValue("occurrence_date"))
-	if err != nil {
-		invalidDate(w, "occurrence_date")
+	task, date, ok := h.taskOccurrenceDate(w, r, id, true)
+	if !ok {
 		return
 	}
 	var before models.PlayerStats
@@ -917,15 +974,12 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 		return
 	}
 	if status == "completed" {
-		task, err := h.Service.Repo.TaskByID(id)
-		if err == nil {
-			gained, level := h.rewardDelta(before, haveBefore)
-			redirectWithCelebration(w, r, fmt.Sprintf("/today#task-%d", id), celebration{
-				Kind: "task", Title: task.Title, XP: gained, Level: level,
-				Undo: fmt.Sprintf("/tasks/%d/undo", id), Date: date,
-			})
-			return
-		}
+		gained, level := h.rewardDelta(before, haveBefore)
+		redirectWithCelebration(w, r, fmt.Sprintf("/today#task-%d", id), celebration{
+			Kind: "task", Title: task.Title, XP: gained, Level: level,
+			Undo: fmt.Sprintf("/tasks/%d/undo", id), Date: date,
+		})
+		return
 	}
 	redirectAfter(w, r, fmt.Sprintf("/today#task-%d", id))
 }
@@ -941,9 +995,8 @@ func (h *Handler) undoTaskCompletion(w http.ResponseWriter, r *http.Request, id 
 		serverError(w, err)
 		return
 	}
-	date, err := h.formLocalDate(r.FormValue("occurrence_date"))
-	if err != nil {
-		invalidDate(w, "occurrence_date")
+	_, date, ok := h.taskOccurrenceDate(w, r, id, false)
+	if !ok {
 		return
 	}
 	if _, err := h.Service.Repo.UndoTaskCompletion(id, date); err != nil {
@@ -1358,25 +1411,7 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 			notFoundOrError(w, err)
 			return
 		}
-		projects, err := h.Service.Repo.ListProjects(false)
-		if err != nil {
-			serverError(w, err)
-			return
-		}
-		roadmaps, err := h.Service.Repo.ListRoadmaps(false)
-		if err != nil {
-			serverError(w, err)
-			return
-		}
-		h.render(w, "project_form.html", ProjectFormData{
-			Page:     "projects",
-			Today:    h.Service.TodayString(),
-			Title:    "Edit Project",
-			Action:   fmt.Sprintf("/projects/%d/edit", id),
-			Project:  project,
-			Projects: projects,
-			Roadmaps: roadmaps,
-		})
+		h.renderEditProject(w, id, project, nil, http.StatusOK)
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
 		if err != nil {
@@ -1385,6 +1420,13 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 		}
 		project.ID = id
 		if err := h.Service.Repo.UpdateProject(&project); err != nil {
+			if errors.Is(err, repository.ErrProjectParentCycle) {
+				h.renderEditProject(w, id, project, &UIBanner{
+					State:   UIState{Kind: "warn", Word: "Not saved"},
+					Message: "A project can't sit inside its own sub-project. Choose another parent, or None.",
+				}, http.StatusUnprocessableEntity)
+				return
+			}
 			serverError(w, err)
 			return
 		}
@@ -1392,6 +1434,97 @@ func (h *Handler) editProject(w http.ResponseWriter, r *http.Request, id int64) 
 	default:
 		methodNotAllowed(w)
 	}
+}
+
+// renderEditProject shows the edit form for project (the saved row, or the
+// posted values after a refused save) without offering its sub-projects as
+// its parent.
+func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project models.Project, banner *UIBanner, status int) {
+	projects, err := h.Service.Repo.ListProjects(false)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	roadmaps, err := h.Service.Repo.ListRoadmaps(false)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	exclude, err := h.Service.Repo.ProjectDescendantIDs(id)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	linkedParent, err := h.linkedArchivedProject(project.ParentProjectID, id, projects)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	linkedDependsOn, err := h.linkedArchivedProject(project.DependsOnProjectID, id, projects)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	var linkedRoadmap *models.Roadmap
+	if project.RoadmapID != 0 && !roadmapListed(roadmaps, project.RoadmapID) {
+		rm, err := h.Service.Repo.GetRoadmap(project.RoadmapID)
+		if err == nil {
+			linkedRoadmap = &rm
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			serverError(w, err)
+			return
+		}
+	}
+	if status != http.StatusOK {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(status)
+	}
+	h.render(w, "project_form.html", ProjectFormData{
+		Page:           "projects",
+		Today:          h.Service.TodayString(),
+		Title:          "Edit Project",
+		Action:         fmt.Sprintf("/projects/%d/edit", id),
+		Project:        project,
+		Projects:       projects,
+		Roadmaps:       roadmaps,
+		Error:          banner,
+		ExcludeParents: exclude,
+
+		LinkedParent:    linkedParent,
+		LinkedDependsOn: linkedDependsOn,
+		LinkedRoadmap:   linkedRoadmap,
+	})
+}
+
+// linkedArchivedProject returns the project linkID points at when it is not in
+// the active list (it is archived), so the edit form can keep offering it.
+// It returns nil for no link, a self link, a listed project or a missing row.
+func (h *Handler) linkedArchivedProject(linkID, selfID int64, active []models.ProjectWithProgress) (*models.Project, error) {
+	if linkID == 0 || linkID == selfID {
+		return nil, nil
+	}
+	for _, p := range active {
+		if p.Project.ID == linkID {
+			return nil, nil
+		}
+	}
+	p, err := h.Service.Repo.ProjectByID(linkID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func roadmapListed(roadmaps []models.Roadmap, id int64) bool {
+	for _, r := range roadmaps {
+		if r.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Handler) archiveProject(w http.ResponseWriter, r *http.Request, id int64) {
@@ -1672,10 +1805,21 @@ func (h *Handler) addGoalProgress(w http.ResponseWriter, r *http.Request, id int
 		serverError(w, err)
 		return
 	}
-	value, _ := strconv.ParseFloat(r.FormValue("value"), 64)
+	value, err := parseGoalProgressValue(r.FormValue("value"))
+	if err != nil {
+		userError(w, err, http.StatusBadRequest, "")
+		return
+	}
 	entryDate, err := h.formLocalDate(r.FormValue("entry_date"))
 	if err != nil {
 		invalidDate(w, "entry_date")
+		return
+	}
+	// GYST-150: a future-dated entry would pin the goal's current value until
+	// that day, so goal progress cannot be dated after the local today.
+	today := h.Service.TodayString()
+	if entryDate > today {
+		userError(w, &services.UserError{Message: "Progress can't be dated after today."}, http.StatusBadRequest, "")
 		return
 	}
 	notes := strings.TrimSpace(r.FormValue("notes"))
@@ -1906,6 +2050,13 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 		http.Redirect(w, r, "/settings#prayer", http.StatusSeeOther)
 		return
 	}
+	// POST /settings/sessions/revoke-all: sign out every device, this one
+	// included. Behind the session guard (not auth-exempt) and the
+	// same-origin guard; GET is 405.
+	if len(segments) == 3 && segments[1] == "sessions" && segments[2] == "revoke-all" {
+		h.revokeAllSessions(w, r)
+		return
+	}
 	// POST /settings/calendar-token — generate/rotate or revoke the feed token.
 	if len(segments) == 2 && segments[1] == "calendar-token" {
 		if r.Method != http.MethodPost {
@@ -2120,6 +2271,10 @@ func (h *Handler) importRoadmap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := h.Service.ImportRoadmapMarkdown(source); err != nil {
+		if _, ok := services.UserMessage(err); ok {
+			userError(w, err, http.StatusUnprocessableEntity, "")
+			return
+		}
 		serverError(w, err)
 		return
 	}
@@ -2603,6 +2758,25 @@ func (h *Handler) formLocalDate(value string) (string, error) {
 }
 
 // invalidDate answers a malformed date with 400; nothing has been written.
+// parseGoalProgressValue validates a posted goal progress value. A blank or
+// garbled value must never become 0 (RULES §3.2: NULL is not 0; GYST-152); a
+// typed "0" is a real value and stays valid. The messages are fixed text and
+// never echo the input.
+func parseGoalProgressValue(raw string) (float64, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, &services.UserError{Message: "Enter a progress value."}
+	}
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil || math.IsNaN(value) || math.IsInf(value, 0) {
+		return 0, &services.UserError{Message: "Progress value must be a number, for example 12.5."}
+	}
+	if value < 0 {
+		return 0, &services.UserError{Message: "Progress value must be 0 or more."}
+	}
+	return value, nil
+}
+
 func invalidDate(w http.ResponseWriter, field string) {
 	http.Error(w, field+" must be a valid YYYY-MM-DD date", http.StatusBadRequest)
 }

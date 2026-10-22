@@ -100,9 +100,19 @@ func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, er
 	// dependencies declared before their target appears in the Markdown while
 	// preserving the normal parent-before-child hierarchy.
 	for _, imported := range importedProjects {
+		// The first pass already linked the parent that existed when this
+		// project was inserted. Re-resolve by name only when it found none:
+		// a later project with the same name must not become the parent.
 		parentID := imported.plan.ParentProjectID
-		if imported.plan.ParentName != "" {
+		if parentID == 0 && imported.plan.ParentName != "" {
 			parentID = projectIDsByName[strings.ToLower(imported.plan.ParentName)]
+		}
+		cycle, err := parentCreatesCycle(tx, imported.id, parentID)
+		if err != nil {
+			return 0, err
+		}
+		if cycle {
+			return 0, ErrProjectParentCycle
 		}
 		dependencyID := imported.plan.DependsOnProjectID
 		if imported.plan.DependsOn != "" {
@@ -516,6 +526,48 @@ func (r *Repository) SetRoadmapProjectMeta(meta models.RoadmapProjectMeta) error
 		meta.ProjectID,
 	)
 	return err
+}
+
+// EffectiveProjectPrivacy returns, for every project that is private or
+// local-only itself, through any ancestor, or through its roadmap, its
+// effective flags. Projects missing from the map are public. Roadmap privacy
+// ('private' or 'local_only') seeds every project of that roadmap, and the
+// walk carries it to all descendants whatever roadmap they point at. Orphan
+// projects (roadmap_id NULL) use the roadmap GetDashboardRoadmap would pick;
+// with no active roadmap they are not hidden by roadmap privacy. Archived
+// rows and archived roadmaps are not filtered, and UNION (not UNION ALL)
+// makes the walk terminate on parent cycles.
+func (r *Repository) EffectiveProjectPrivacy() (map[int64]models.ProjectPrivacy, error) {
+	// The orphan fallback subquery must stay in sync with GetDashboardRoadmap
+	// (internal/repository/roadmaps.go).
+	rows, err := r.db.Query(`WITH RECURSIVE f(id, priv, loc) AS (
+		SELECT id, priv, loc FROM (
+			SELECT project_id AS id, is_private AS priv, local_only AS loc FROM roadmap_project_meta WHERE is_private = 1 OR local_only = 1
+			UNION ALL
+			SELECT p.id, r.privacy = 'private', r.privacy = 'local_only'
+			FROM projects p
+			JOIN roadmaps r ON r.id = COALESCE(p.roadmap_id, (
+				SELECT id FROM roadmaps WHERE status = 'active' AND archived_at IS NULL
+				ORDER BY featured DESC, priority DESC, updated_at DESC, id DESC LIMIT 1))
+			WHERE r.privacy IN ('private', 'local_only')
+		)
+		UNION
+		SELECT p.id, f.priv, f.loc FROM projects p JOIN f ON p.parent_project_id = f.id
+	) SELECT id, MAX(priv), MAX(loc) FROM f GROUP BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make(map[int64]models.ProjectPrivacy)
+	for rows.Next() {
+		var id int64
+		var priv, loc int
+		if err := rows.Scan(&id, &priv, &loc); err != nil {
+			return nil, err
+		}
+		out[id] = models.ProjectPrivacy{Private: priv == 1, LocalOnly: loc == 1}
+	}
+	return out, rows.Err()
 }
 
 func (r *Repository) SetRoadmapMilestoneStatus(id int64, status string) error {

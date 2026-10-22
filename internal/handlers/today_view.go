@@ -78,10 +78,15 @@ func (d TodayData) ChecklistReturnPath() string {
 	return "/today"
 }
 
-// Today previews the loop; its dedicated checklist keeps every occurrence.
-func (d TodayData) ChecklistItems(items []models.TaskOccurrence, limit int) []models.TaskOccurrence {
-	if !d.ChecklistOnly && len(items) > limit {
-		return items[:limit]
+// standaloneReminders drops task-sourced reminders: the task row already
+// carries its reminder time, so listing it again would duplicate it. A task-typed
+// row without a source id (the column default) is standalone and stays.
+func standaloneReminders(rows []models.ReminderView) []models.ReminderView {
+	out := make([]models.ReminderView, 0, len(rows))
+	for _, r := range rows {
+		if r.SourceType != "task" || r.SourceID == 0 {
+			out = append(out, r)
+		}
 	}
-	return items
+	return out
 }

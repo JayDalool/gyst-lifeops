@@ -30,12 +30,12 @@
     </ul>
     <div class="flag-row mt-16">
       <form method="post" action="/tasks/{{.Task.ID}}/complete">
-        <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
+        <input type="hidden" name="occurrence_date" value="{{.OccurrenceDate}}">
         <input type="hidden" name="return_to" value="/tasks/{{.Task.ID}}">
         <button class="btn sm" type="submit">Complete</button>
       </form>
       <form method="post" action="/tasks/{{.Task.ID}}/skip">
-        <input type="hidden" name="occurrence_date" value="{{.Task.DueDate}}">
+        <input type="hidden" name="occurrence_date" value="{{.OccurrenceDate}}">
         <input type="hidden" name="return_to" value="/tasks/{{.Task.ID}}">
         <button class="btn sm ghost" type="submit">Skip</button>
       </form>

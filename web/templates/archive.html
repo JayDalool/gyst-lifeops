@@ -1,59 +1,14 @@
 {{define "content"}}
-<div class="page-head">
-  <div>
-    <p class="kicker">History</p>
-    <h1 class="page-title">Archive</h1>
-    <p class="page-sub">Archived tasks, projects, and goals. Open one to restore it from its own page.</p>
-  </div>
-</div>
-
-<div class="page-body">
-  <p class="group-label">Tasks</p>
-  {{if .Tasks}}
-    <div class="card tight">
-      <ul class="list">
-        {{range .Tasks}}
-          <li>
-            <span class="grow"><a href="/tasks/{{.ID}}">{{.Title}}</a></span>
-            <span class="meta num">{{niceDateTime .ArchivedAt}}</span>
-          </li>
-        {{end}}
-      </ul>
-    </div>
-  {{else}}
-    <p class="meta">No archived tasks.</p>
-  {{end}}
-
-  <p class="group-label">Projects</p>
-  {{if .Projects}}
-    <div class="card tight">
-      <ul class="list">
-        {{range .Projects}}
-          <li>
-            <span class="grow"><a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a></span>
-            <span class="meta num">{{.Progress}}% complete</span>
-          </li>
-        {{end}}
-      </ul>
-    </div>
-  {{else}}
-    <p class="meta">No archived projects.</p>
-  {{end}}
-
-  <p class="group-label">Goals</p>
-  {{if .Goals}}
-    <div class="card tight">
-      <ul class="list">
-        {{range .Goals}}
-          <li>
-            <span class="grow"><a href="/goals/{{.Goal.ID}}">{{.Goal.Title}}</a></span>
-            <span class="meta num">{{.Progress}}% complete</span>
-          </li>
-        {{end}}
-      </ul>
-    </div>
-  {{else}}
-    <p class="meta">No archived goals.</p>
-  {{end}}
+<div class="gyst-scope gyst-more">
+  <header class="gyst-header"><div><h1 class="gyst-page-title">Archive</h1></div></header>
+  <section class="gyst-stack"><h2 class="gyst-section-title">Tasks</h2>
+  {{if .Tasks}}<ul class="gyst-list">{{range .Tasks}}<li><a class="gyst-row" href="/tasks/{{.ID}}"><span class="gyst-row-copy"><span>{{.Title}}</span></span><span class="gyst-row-meta">{{niceDateTime .ArchivedAt}}</span>{{template "gyst.icon" "chevron-right"}}</a></li>{{end}}</ul>
+  {{else}}<div class="gyst-empty"><p>No archived tasks.</p></div>{{end}}</section>
+  <section class="gyst-stack"><h2 class="gyst-section-title">Projects</h2>
+  {{if .Projects}}<ul class="gyst-list">{{range .Projects}}<li><a class="gyst-row" href="/projects/{{.Project.ID}}"><span class="gyst-row-copy"><span>{{.Project.Name}}</span></span><span class="gyst-row-meta">{{.Progress}}% complete</span>{{template "gyst.icon" "chevron-right"}}</a></li>{{end}}</ul>
+  {{else}}<div class="gyst-empty"><p>No archived projects.</p></div>{{end}}</section>
+  <section class="gyst-stack"><h2 class="gyst-section-title">Goals</h2>
+  {{if .Goals}}<ul class="gyst-list">{{range .Goals}}<li><a class="gyst-row" href="/goals/{{.Goal.ID}}"><span class="gyst-row-copy"><span>{{.Goal.Title}}</span></span><span class="gyst-row-meta">{{.Progress}}% complete</span>{{template "gyst.icon" "chevron-right"}}</a></li>{{end}}</ul>
+  {{else}}<div class="gyst-empty"><p>No archived goals.</p></div>{{end}}</section>
 </div>
 {{end}}

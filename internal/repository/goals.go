@@ -103,53 +103,80 @@ func (r *Repository) CreateGoal(goal *models.Goal, today string) error {
 	return nil
 }
 
+// AddGoalProgress records a progress entry and recomputes the goal's current
+// value from the latest-dated entry, so a backdated entry never overwrites a
+// newer value.
 func (r *Repository) AddGoalProgress(goalID int64, entryDate string, value float64, notes string) error {
 	if entryDate == "" {
 		return fmt.Errorf("entry date is required")
-	}
-
-	goal, err := r.GoalByID(goalID)
-	if err != nil {
-		return err
-	}
-
-	status := goal.Status
-	if goal.TargetValue > 0 && value >= goal.TargetValue {
-		status = "completed"
-	} else if status == "completed" {
-		status = "active"
 	}
 
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
+
+	var exists int
+	if err := tx.QueryRow(`SELECT 1 FROM goals WHERE id = ?`, goalID).Scan(&exists); err != nil {
+		return err
+	}
 
 	if _, err := tx.Exec(`INSERT INTO goal_progress_entries
 		(goal_id, entry_date, value, notes)
 		VALUES (?, ?, ?, ?)`, goalID, entryDate, value, notes); err != nil {
-		tx.Rollback()
 		return err
 	}
 
-	if _, err := tx.Exec(`UPDATE goals SET
+	if err := recomputeGoalProgressTx(tx, goalID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// recomputeGoalProgressTx sets current_value (and status) from the entry with
+// the latest entry_date, ties broken by the highest id.
+func recomputeGoalProgressTx(tx *sql.Tx, goalID int64) error {
+	var target float64
+	var status string
+	if err := tx.QueryRow(`SELECT target_value, status FROM goals WHERE id = ?`, goalID).Scan(&target, &status); err != nil {
+		return err
+	}
+
+	var value float64
+	err := tx.QueryRow(`SELECT value FROM goal_progress_entries
+		WHERE goal_id = ?
+		ORDER BY entry_date DESC, id DESC
+		LIMIT 1`, goalID).Scan(&value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	if status != "archived" {
+		if target > 0 && value >= target {
+			status = "completed"
+		} else if status == "completed" {
+			status = "active"
+		}
+	}
+
+	_, err = tx.Exec(`UPDATE goals SET
 		current_value = ?,
 		status = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
-		WHERE id = ?`, value, status, goalID); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
+		WHERE id = ?`, value, status, goalID)
+	return err
 }
 
 func (r *Repository) GoalProgressEntries(goalID int64) ([]models.GoalProgressEntry, error) {
 	rows, err := r.db.Query(`SELECT id, goal_id, entry_date, value, notes, created_at
 		FROM goal_progress_entries
 		WHERE goal_id = ?
-		ORDER BY entry_date, created_at`, goalID)
+		ORDER BY entry_date, id`, goalID)
 	if err != nil {
 		return nil, err
 	}

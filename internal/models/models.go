@@ -229,7 +229,8 @@ type LearningBlock struct {
 }
 
 // CourseWithProgress decorates a course with block counts and the next block /
-// next deadline for the Learning Deck.
+// next deadline for the Learning Deck. BlockCount and CompletedBlocks do not
+// count postponed blocks (their catch-up replaces them) or skipped blocks.
 type CourseWithProgress struct {
 	Course          Course
 	BlockCount      int
@@ -396,6 +397,16 @@ type SolarSystem struct {
 	Missions   []ProjectItem
 	Route      RocketRoute
 }
+
+// ProjectPrivacy is the effective privacy of a project: its own flags OR'd
+// with those of every ancestor. Used to keep hidden projects out of exports.
+type ProjectPrivacy struct {
+	Private   bool
+	LocalOnly bool
+}
+
+// Hidden reports whether the project must stay out of public output.
+func (p ProjectPrivacy) Hidden() bool { return p.Private || p.LocalOnly }
 
 type RoadmapProjectMeta struct {
 	ID               int64
