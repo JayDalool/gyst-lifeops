@@ -131,6 +131,8 @@ func (r *Repository) SetFeaturedRoadmap(id int64) error {
 // GetDashboardRoadmap selects the single roadmap shown on the bridge:
 // featured beats priority; among equals, the most recently updated wins.
 // Steps 1-4 of the spec collapse to one ordered query over active roadmaps.
+// EffectiveProjectPrivacy (roadmap.go) repeats this selection for orphan
+// projects; keep the two in sync.
 func (r *Repository) GetDashboardRoadmap() (models.Roadmap, error) {
 	return scanRoadmap(r.db.QueryRow(fmt.Sprintf(`SELECT %s FROM roadmaps
 		WHERE status = 'active' AND archived_at IS NULL

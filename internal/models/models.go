@@ -229,7 +229,8 @@ type LearningBlock struct {
 }
 
 // CourseWithProgress decorates a course with block counts and the next block /
-// next deadline for the Learning Deck.
+// next deadline for the Learning Deck. BlockCount and CompletedBlocks do not
+// count postponed blocks (their catch-up replaces them) or skipped blocks.
 type CourseWithProgress struct {
 	Course          Course
 	BlockCount      int

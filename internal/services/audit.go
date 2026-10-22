@@ -231,9 +231,16 @@ func (s *Service) PruneAuditEvents(ctx context.Context) (security, lifecycle int
 	now := s.Now()
 	lifecycleList := lifecycleActionList()
 	securityCutoff := clock.FormatInstant(now.Add(-securityRetention))
-	// Clock-jump guard: if the cutoff is later than the newest row, this run
-	// would delete every row (a clock far in the future). Skip it. An empty
-	// table is a no-op.
+	lifecycleCutoff := clock.FormatInstant(now.Add(-lifecycleRetention))
+	// Clock-jump guard: the shortest retention in use decides. If its cutoff is
+	// later than the newest row, this run would delete every row of that kind
+	// (a clock far in the future), so skip the WHOLE run before any DELETE.
+	// With no lifecycle actions the security retention is the shortest. An
+	// empty table is a no-op.
+	guardCutoff := securityCutoff
+	if len(lifecycleList) > 0 {
+		guardCutoff = lifecycleCutoff
+	}
 	latest, err := s.Repo.LatestAuditEventAt(ctx)
 	if err != nil {
 		return 0, 0, err
@@ -241,8 +248,8 @@ func (s *Service) PruneAuditEvents(ctx context.Context) (security, lifecycle int
 	if latest == "" {
 		return 0, 0, nil
 	}
-	if securityCutoff > latest {
-		return 0, 0, fmt.Errorf("%w: cutoff %s is later than the newest row; clock may be wrong", ErrAuditPruneSkipped, securityCutoff)
+	if guardCutoff > latest {
+		return 0, 0, fmt.Errorf("%w: cutoff %s is later than the newest row; clock may be wrong", ErrAuditPruneSkipped, guardCutoff)
 	}
 	security, err = s.Repo.DeleteAuditEventsBefore(ctx, securityCutoff, lifecycleList, false)
 	if err != nil {
@@ -251,7 +258,7 @@ func (s *Service) PruneAuditEvents(ctx context.Context) (security, lifecycle int
 	if len(lifecycleList) == 0 {
 		return security, 0, nil
 	}
-	lifecycle, err = s.Repo.DeleteAuditEventsBefore(ctx, clock.FormatInstant(now.Add(-lifecycleRetention)), lifecycleList, true)
+	lifecycle, err = s.Repo.DeleteAuditEventsBefore(ctx, lifecycleCutoff, lifecycleList, true)
 	return security, lifecycle, err
 }
 

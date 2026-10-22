@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
 )
 
 func (s *Service) GalaxyData() ([]models.GalaxyPlanet, error) {
@@ -14,15 +15,24 @@ func (s *Service) GalaxyData() ([]models.GalaxyPlanet, error) {
 	if err != nil {
 		return nil, err
 	}
+	// A parent cycle has no root and its worlds would vanish; the lowest ID of
+	// each cycle counts as a top-level world.
+	roots := repository.ParentCycleRoots(projects)
+	parentOf := func(project models.ProjectWithProgress) int64 {
+		if roots[project.Project.ID] {
+			return 0
+		}
+		return project.Project.ParentProjectID
+	}
 	children := make(map[int64][]models.ProjectWithProgress)
 	for _, project := range projects {
-		if project.Project.ParentProjectID != 0 && !galaxyProjectComplete(project.Project.Status) {
-			children[project.Project.ParentProjectID] = append(children[project.Project.ParentProjectID], project)
+		if parentOf(project) != 0 && !galaxyProjectComplete(project.Project.Status) {
+			children[parentOf(project)] = append(children[parentOf(project)], project)
 		}
 	}
 	planets := make([]models.GalaxyPlanet, 0)
 	for _, project := range projects {
-		if project.Project.ParentProjectID != 0 || galaxyProjectComplete(project.Project.Status) {
+		if parentOf(project) != 0 || galaxyProjectComplete(project.Project.Status) {
 			continue
 		}
 		planet, err := s.galaxyPlanet(project, children[project.Project.ID])
