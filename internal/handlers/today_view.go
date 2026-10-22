@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"lifeops-tracker/internal/models"
-	"time"
+	"strconv"
 )
 
 // TodayHealthSnapshot reuses the Health presentation layer. It never computes
@@ -52,23 +52,52 @@ func buildTodayHealthSnapshot(view HealthTodayView, err error) TodayHealthSnapsh
 	return out
 }
 
-// Only existing, timed reminders later today qualify. Past and all-day rows
-// remain visible in the full reminders/deadlines list.
-func nextTodayReminder(reminders []models.ReminderView, now time.Time) *models.ReminderView {
-	var next *models.ReminderView
-	var nextAt time.Time
-	for _, reminder := range reminders {
-		at, err := time.ParseInLocation("2006-01-02 15:04", reminder.ReminderDate+" "+reminder.ReminderTime, now.Location())
-		if err != nil || reminder.ReminderDate != now.Format("2006-01-02") || !at.After(now) {
+// ListPending is the checklist's pending rows: every pending occurrence except
+// the one the Now block already shows, so that task appears once on Today. The
+// checklist-only page has no Now block and lists them all. Counts and progress
+// keep reading Pending.
+func (d TodayData) ListPending() []models.TaskOccurrence {
+	action := d.Now.Action
+	if d.ChecklistOnly || action == nil || action.Kind != "task" || action.Task == nil {
+		return d.Pending
+	}
+	out := make([]models.TaskOccurrence, 0, len(d.Pending))
+	for _, item := range d.Pending {
+		if item.Task.ID == action.Task.Task.ID && item.Date == action.Task.Date {
 			continue
 		}
-		if next == nil || at.Before(nextAt) {
-			copy := reminder
-			next = &copy
-			nextAt = at
+		out = append(out, item)
+	}
+	return out
+}
+
+// ListBlocks is today's study blocks without the one shown as the Now action.
+func (d TodayData) ListBlocks() []models.LearningBlock {
+	action := d.Now.Action
+	if d.ChecklistOnly || action == nil || action.Kind != "session" || action.Block == nil {
+		return d.Learning.Blocks
+	}
+	out := make([]models.LearningBlock, 0, len(d.Learning.Blocks))
+	for _, block := range d.Learning.Blocks {
+		if block.ID != action.Block.ID {
+			out = append(out, block)
 		}
 	}
-	return next
+	return out
+}
+
+// NowTimedHref is where the next timed item links: the course for a study
+// session, otherwise the reminders page.
+func (d TodayData) NowTimedHref() string {
+	timed := d.Now.Timed
+	if timed != nil && timed.Kind == "session" {
+		for _, block := range d.Learning.Blocks {
+			if block.ID == timed.SourceID {
+				return "/courses/" + strconv.FormatInt(block.CourseID, 10) + "#block-" + strconv.FormatInt(block.ID, 10)
+			}
+		}
+	}
+	return "/reminders"
 }
 
 func (d TodayData) ChecklistReturnPath() string {

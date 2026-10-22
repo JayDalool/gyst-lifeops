@@ -58,7 +58,7 @@ type Handler struct {
 
 type TodayData struct {
 	ChecklistOnly  bool
-	NextReminder   *models.ReminderView
+	Now            services.NowSet
 	Greeting       string
 	HealthSnapshot TodayHealthSnapshot
 	Page           string
@@ -564,11 +564,13 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	nextPrayer, err := h.Service.NextPrayer(now)
+	// The Now block (GYST-078) owns the next prayer, so Today has one source.
+	nowSet, err := h.Service.TodayNow()
 	if err != nil {
 		serverError(w, err)
 		return
 	}
+	nextPrayer := nowSet.Prayer
 	currentName := ""
 	for i, prayer := range schedule.Times {
 		if !prayer.At.After(now) {
@@ -592,7 +594,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 	h.render(w, page, TodayData{
 		ChecklistOnly:  checklistOnly,
 		Greeting:       greeting,
-		NextReminder:   nextTodayReminder(remindersToday, now),
+		Now:            nowSet,
 		HealthSnapshot: healthSnapshot,
 		Page:           "today",
 		Today:          h.Service.TodayString(),
