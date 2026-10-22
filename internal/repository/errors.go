@@ -8,4 +8,7 @@ import "errors"
 var (
 	ErrProjectNotActive = errors.New("project is not active")
 	ErrProofRequired    = errors.New("proof required")
+	// ErrProjectParentCycle marks a parent change that would put a project
+	// inside itself (directly or through its own sub-projects).
+	ErrProjectParentCycle = errors.New("project parent would form a cycle")
 )

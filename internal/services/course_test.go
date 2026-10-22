@@ -137,7 +137,7 @@ func TestPostponeCreatesCatchup(t *testing.T) {
 	if newDue != "2026-07-01" {
 		t.Fatalf("catch-up due date = %q, want 2026-07-01", newDue)
 	}
-	if err := svc.Repo.PostponeLearningBlock(course.ID, block.ID, newDue); err != nil {
+	if ok, err := svc.Repo.PostponeLearningBlock(course.ID, block.ID, newDue); err != nil || !ok {
 		t.Fatalf("postpone: %v", err)
 	}
 
@@ -190,6 +190,16 @@ func parseICS(t *testing.T, ics string) {
 // structurally valid (CRLF, UID+DTSTAMP+DTSTART per event).
 func TestUnifiedICSIncludesAllSources(t *testing.T) {
 	svc := testService(t)
+	// Migration 006 makes the default roadmap private; this test covers feed
+	// structure and project events, so make that roadmap public first.
+	rm, err := svc.Repo.GetDashboardRoadmap()
+	if err != nil {
+		t.Fatalf("default roadmap: %v", err)
+	}
+	rm.Privacy = "public"
+	if err := svc.Repo.UpdateRoadmap(&rm); err != nil {
+		t.Fatalf("make roadmap public: %v", err)
+	}
 
 	course := models.Course{Name: "SQL, Advanced", Status: "active"}
 	if err := svc.Repo.CreateCourse(&course); err != nil {
@@ -262,5 +272,71 @@ func TestICSAllDayVsTimed(t *testing.T) {
 	}
 	if !strings.Contains(ics, "DTSTART:20260706T140000") || !strings.Contains(ics, "DTEND:20260706T153000") {
 		t.Fatalf("timed block should use floating local DTSTART/DTEND:\n%s", ics)
+	}
+}
+
+// Postponed and skipped blocks are left out of both counts (GYST-148).
+func TestDecorateCourseCounts(t *testing.T) {
+	blk := func(status string, catchup bool) models.LearningBlock {
+		return models.LearningBlock{Status: status, IsCatchup: catchup}
+	}
+	cases := []struct {
+		name            string
+		blocks          []models.LearningBlock
+		count, complete int
+	}{
+		{"pending only", []models.LearningBlock{blk("pending", false), blk("pending", false)}, 2, 0},
+		{"completed, postponed, completed catch-up", []models.LearningBlock{blk("completed", false), blk("postponed", false), blk("completed", true)}, 2, 2},
+		{"postponed with pending catch-up", []models.LearningBlock{blk("postponed", false), blk("pending", true)}, 1, 0},
+		{"chained later", []models.LearningBlock{blk("postponed", false), blk("postponed", true), blk("completed", true)}, 1, 1},
+		{"skipped excluded", []models.LearningBlock{blk("skipped", false), blk("completed", false), blk("pending", false)}, 2, 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := decorateCourse(models.Course{Name: "Fictional Course"}, tc.blocks)
+			if got.BlockCount != tc.count || got.CompletedBlocks != tc.complete {
+				t.Fatalf("got %d of %d, want %d of %d", got.CompletedBlocks, got.BlockCount, tc.complete, tc.count)
+			}
+		})
+	}
+}
+
+// Later on the only block, then completing its catch-up, reads "1 of 1".
+func TestCourseDeckReachesAllAfterLater(t *testing.T) {
+	svc := testService(t)
+	course := models.Course{Name: "Fictional Course", Status: "active"}
+	if err := svc.Repo.CreateCourse(&course); err != nil {
+		t.Fatalf("create course: %v", err)
+	}
+	block := models.LearningBlock{CourseID: course.ID, Title: "Lesson 1", BlockType: "lesson", DueDate: "2026-03-02"}
+	if err := svc.Repo.CreateLearningBlock(&block); err != nil {
+		t.Fatalf("create block: %v", err)
+	}
+	changed, err := svc.Repo.PostponeLearningBlock(course.ID, block.ID, "2026-03-03")
+	if err != nil || !changed {
+		t.Fatalf("postpone: changed=%v err=%v", changed, err)
+	}
+	blocks, err := svc.Repo.ListLearningBlocks(course.ID)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	var catchupID int64
+	for _, b := range blocks {
+		if b.IsCatchup && b.Status == "pending" {
+			catchupID = b.ID
+		}
+	}
+	if catchupID == 0 {
+		t.Fatalf("no pending catch-up in %+v", blocks)
+	}
+	if err := svc.Repo.SetLearningBlockStatus(course.ID, catchupID, "completed"); err != nil {
+		t.Fatalf("complete catch-up: %v", err)
+	}
+	deck, err := svc.CourseDeck()
+	if err != nil || len(deck) != 1 {
+		t.Fatalf("deck: got %d err %v", len(deck), err)
+	}
+	if deck[0].BlockCount != 1 || deck[0].CompletedBlocks != deck[0].BlockCount {
+		t.Fatalf("got %d of %d, want 1 of 1", deck[0].CompletedBlocks, deck[0].BlockCount)
 	}
 }
