@@ -36,7 +36,7 @@ func TestPWAShellAssetsMatchTemplates(t *testing.T) {
 			t.Fatalf("stale precache version %s", asset)
 		}
 	}
-	for _, match := range regexp.MustCompile(`(?:href|src)="(/static/(?:css/[^" ]+|js/(?:theme|app|charts|completion-toast)\.js[^" ]*))"`).FindAllStringSubmatch(string(layout), -1) {
+	for _, match := range regexp.MustCompile(`(?:href|src)="(/static/(?:css/[^" ]+|js/(?:theme|app|charts|completion-toast|launcher)\.js[^" ]*))"`).FindAllStringSubmatch(string(layout), -1) {
 		if !strings.Contains(line, `"`+match[1]+`"`) {
 			t.Fatalf("shell file missing from precache: %s", match[1])
 		}
