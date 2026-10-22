@@ -137,12 +137,15 @@ func (r *Repository) ProjectTreeByRoadmap(roadmapID int64) (models.ProjectTree, 
 
 func buildProjectTree(projects []models.ProjectWithProgress) models.ProjectTree {
 	tree := models.ProjectTree{Children: map[int64][]models.ProjectWithProgress{}}
+	// A project inside a parent cycle has no root and would vanish; the lowest
+	// ID of each cycle is shown as a top-level project instead.
+	roots := ParentCycleRoots(projects)
 	for _, project := range projects {
 		project.Momentum = models.ChartData{}
 		// Parentage is decided before status: a subproject (any status, incl.
 		// locked/upcoming) always nests under its parent and never appears as a
 		// top-level destination. Only top-level planned trips reach Upcoming.
-		if project.Project.ParentProjectID != 0 {
+		if project.Project.ParentProjectID != 0 && !roots[project.Project.ID] {
 			tree.Children[project.Project.ParentProjectID] = append(tree.Children[project.Project.ParentProjectID], project)
 			continue
 		}
@@ -231,7 +234,19 @@ func (r *Repository) UpdateProject(project *models.Project) error {
 	project.ProjectKind = cleanProjectKind(project.ProjectKind)
 	project.Color = cleanProjectColor(project.Color)
 
-	_, err := r.db.Exec(`UPDATE projects SET
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	cycle, err := parentCreatesCycle(tx, project.ID, project.ParentProjectID)
+	if err != nil {
+		return err
+	}
+	if cycle {
+		return ErrProjectParentCycle
+	}
+	if _, err := tx.Exec(`UPDATE projects SET
 		parent_project_id = ?,
 		name = ?,
 		description = ?,
@@ -264,8 +279,10 @@ func (r *Repository) UpdateProject(project *models.Project) error {
 		nullableInt64(project.RoadmapID),
 		project.Color,
 		project.ID,
-	)
-	return err
+	); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *Repository) ArchiveProject(id int64) error {
@@ -309,7 +326,19 @@ func (r *Repository) SetProjectStatus(id int64, status string) error {
 }
 
 func (r *Repository) MoveProject(id, parentID int64, kind string) error {
-	_, err := r.db.Exec(`UPDATE projects SET
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	cycle, err := parentCreatesCycle(tx, id, parentID)
+	if err != nil {
+		return err
+	}
+	if cycle {
+		return ErrProjectParentCycle
+	}
+	if _, err := tx.Exec(`UPDATE projects SET
 		parent_project_id = ?,
 		project_kind = ?,
 		updated_at = CURRENT_TIMESTAMP,
@@ -318,8 +347,108 @@ func (r *Repository) MoveProject(id, parentID int64, kind string) error {
 		nullableInt64(parentID),
 		cleanProjectKind(kind),
 		id,
+	); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// parentCreatesCycle reports whether making parentID the parent of id would put
+// id inside itself: parentID is id or already below it. It walks the ancestors
+// of parentID, so it ends even when the data already holds a cycle.
+func parentCreatesCycle(q queryRower, id, parentID int64) (bool, error) {
+	if id == 0 || parentID == 0 {
+		return false, nil
+	}
+	var found bool
+	err := q.QueryRow(`WITH RECURSIVE anc(id) AS (
+			SELECT ?
+			UNION
+			SELECT p.parent_project_id FROM projects p JOIN anc ON p.id = anc.id
+			WHERE p.parent_project_id IS NOT NULL
+		) SELECT EXISTS(SELECT 1 FROM anc WHERE id = ?)`, parentID, id).Scan(&found)
+	return found, err
+}
+
+type queryRower interface {
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+// ProjectDescendantIDs returns every project below id, archived ones included.
+// The edit form uses it to leave them out of the Parent picker.
+func (r *Repository) ProjectDescendantIDs(id int64) (map[int64]bool, error) {
+	rows, err := r.db.Query(`WITH RECURSIVE sub(id) AS (
+			SELECT id FROM projects WHERE parent_project_id = ?
+			UNION
+			SELECT p.id FROM projects p JOIN sub ON p.parent_project_id = sub.id
+		) SELECT id FROM sub`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64]bool{}
+	for rows.Next() {
+		var d int64
+		if err := rows.Scan(&d); err != nil {
+			return nil, err
+		}
+		out[d] = true
+	}
+	return out, rows.Err()
+}
+
+// ParentCycleRoots finds projects whose parent chain loops back on itself and
+// returns the lowest ID of each loop. A parent missing from the slice ends the
+// walk and is not a cycle. Linear in the number of projects.
+func ParentCycleRoots(projects []models.ProjectWithProgress) map[int64]bool {
+	parent := make(map[int64]int64, len(projects))
+	for _, p := range projects {
+		parent[p.Project.ID] = p.Project.ParentProjectID
+	}
+	const (
+		inWalk = 1
+		done   = 2
 	)
-	return err
+	state := make(map[int64]int, len(projects))
+	roots := map[int64]bool{}
+	for _, p := range projects {
+		start := p.Project.ID
+		if state[start] != 0 {
+			continue
+		}
+		var path []int64
+		cur := start
+		for {
+			if state[cur] == inWalk {
+				// cur is on this walk's path: the loop is path from cur onward.
+				lowest := cur
+				for i := len(path) - 1; i >= 0; i-- {
+					if path[i] < lowest {
+						lowest = path[i]
+					}
+					if path[i] == cur {
+						break
+					}
+				}
+				roots[lowest] = true
+				break
+			}
+			if state[cur] == done {
+				break
+			}
+			next, ok := parent[cur]
+			state[cur] = inWalk
+			path = append(path, cur)
+			if !ok || next == 0 {
+				break
+			}
+			cur = next
+		}
+		for _, id := range path {
+			state[id] = done
+		}
+	}
+	return roots
 }
 
 func (r *Repository) UpdateProjectNotes(id int64, notes, unlockNotes string) error {

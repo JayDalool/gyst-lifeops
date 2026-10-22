@@ -231,6 +231,21 @@ func TestRenderProjectForm(t *testing.T) {
 			{ID: 2, Name: "Sim Rig Build"},
 		},
 	})
+	body := renderBody(t, "project_form.html", ProjectFormData{
+		Page:            "projects",
+		Today:           "2026-06-26",
+		Title:           "Edit Project",
+		Action:          "/projects/5/edit",
+		Project:         models.Project{ID: 5, Category: "other", ProjectKind: "subproject", Status: "active", RoadmapID: 9, ParentProjectID: 8, DependsOnProjectID: 7},
+		LinkedRoadmap:   &models.Roadmap{ID: 9, Name: "Old Roadmap"},
+		LinkedParent:    &models.Project{ID: 8, Name: "Old Parent"},
+		LinkedDependsOn: &models.Project{ID: 7, Name: "Old Dependency"},
+	})
+	for _, want := range []string{"Old Roadmap (archived)", "Old Parent (archived)", "Old Dependency (archived)"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("form missing %q", want)
+		}
+	}
 }
 
 func TestRenderRoadmapForm(t *testing.T) {

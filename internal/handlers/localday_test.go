@@ -243,7 +243,8 @@ func TestMalformedDatesAreRejectedWithoutWriting(t *testing.T) {
 }
 
 // Valid supplied dates are stored as given: back-dating is allowed and there is
-// no future-date clamp.
+// no future-date clamp. Exception: goal progress
+// entries (GYST-150).
 func TestValidSuppliedDatesAreKept(t *testing.T) {
 	h := testHandler(t)
 	pinClock(t, h, "2026-07-16T04:30:00Z") // 2026-07-15 local

@@ -22,6 +22,11 @@ func TestCalendarRoutesOmitPrivateAndLocalOnlyProjects(t *testing.T) {
 	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
 		t.Fatalf("migrate db: %v", err)
 	}
+	// Migration 006 makes the default roadmap private; this test covers
+	// project-level flags, so make that roadmap public first.
+	if _, err := database.Exec(`UPDATE roadmaps SET privacy = 'public'`); err != nil {
+		t.Fatalf("make roadmap public: %v", err)
+	}
 	t.Cleanup(func() { database.Close() })
 	repo := repository.New(database)
 	h := New(services.New(repo), "../../web/templates")
