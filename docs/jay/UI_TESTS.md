@@ -1,3 +1,10 @@
+- [ ] #184 · iPhone Archive: grouped rows open details · https://github.com/JayDalool/gyst-lifeops/pull/185
+- [ ] #179 · Courses: block count reaches Y of Y after Later · https://github.com/JayDalool/gyst-lifeops/issues/179
+- [ ] #176 · Edit child of archived parent; links stay · https://github.com/JayDalool/gyst-lifeops/issues/176
+- [ ] #175 · Later twice, or on done block: one catch-up · https://github.com/JayDalool/gyst-lifeops/issues/175
+- [ ] #170 · Edit project: own sub-projects not offered as parent · https://github.com/JayDalool/gyst-lifeops/pull/172
+- [ ] #169 · Goal Log progress: blank value blocked, goal unchanged · https://github.com/JayDalool/gyst-lifeops/pull/171
+- [ ] GYST-102 · iPhone launcher: search, open, capture, VoiceOver · https://github.com/JayDalool/gyst-lifeops/pull/168
 - [ ] GYST-079 · iPhone Today: Now block, prayer sheet alerts · https://github.com/JayDalool/gyst-lifeops/pull/159
 - [ ] GYST-072 · iPhone: search panel Esc and Add task easy to tap · https://github.com/JayDalool/gyst-lifeops/pull/128
 - [ ] GYST-101 · Apps page: grouped rows, links open in new tab · https://github.com/JayDalool/gyst-lifeops/pull/155

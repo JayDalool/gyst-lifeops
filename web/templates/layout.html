@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=appearance-1">
   <link rel="stylesheet" href="/static/css/ui-tokens.css?v=vn-2">
   <link rel="stylesheet" href="/static/css/ui-components.css?v=apps-overlay-1">
-  <link rel="stylesheet" href="/static/css/ui-shell.css?v=tap-1">
+  <link rel="stylesheet" href="/static/css/ui-shell.css?v=launcher-3">
   {{if eq .Page "today"}}<link rel="stylesheet" href="/static/css/ui-today.css?v=now-1">{{end}}
   {{if eq .Page "projects"}}<link rel="stylesheet" href="/static/css/ui-projects.css?v=ui-4">{{end}}
   {{if eq .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-galaxy.css?v=galaxywin-1">{{end}}
@@ -21,6 +21,7 @@
   {{if eq .Page "courses"}}<link rel="stylesheet" href="/static/css/ui-courses.css?v=ui-10">{{end}}
   <script defer src="/static/js/charts.js?v=ui-2"></script>
 	<script defer src="/static/js/app.js?v=now-1"></script>
+  <script defer src="/static/js/launcher.js?v=launcher-3"></script>
   <script defer src="/static/js/completion-toast.js?v=toast-1"></script>
   {{if eq .Page "today"}}<script defer src="/static/js/ui-overlay.js?v=now-1"></script>{{end}}
 </head>
@@ -32,22 +33,20 @@
     {{template "content" .}}
   </main>
 
-	<dialog class="command-palette gyst-command" data-command-palette data-today="{{appToday}}" data-tomorrow="{{appTomorrow}}" aria-label="Command palette">
+	<dialog class="command-palette gyst-command" data-command-palette data-today="{{appToday}}" data-tomorrow="{{appTomorrow}}" aria-label="Launcher">
 	  <div class="command-search-row">
-		<input type="search" data-command-search placeholder="Search commands or type a task…" autocomplete="off" aria-label="Search commands">
-		<button type="button" class="btn sm quiet" data-command-close>Esc</button>
+		<input type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="launcher-results" aria-activedescendant="" data-command-search maxlength="100" placeholder="Search GYST, or + to add a task" autocomplete="off" aria-label="Search GYST">
+		<button type="button" class="btn sm quiet" data-command-close aria-label="Close launcher">Esc</button>
 	  </div>
-	  <div class="command-results" data-command-results>
-		<a href="/today" data-command-item data-command-terms="today home daily missions"><span>Open Today</span><kbd>Home</kbd></a>
-		<a href="/galaxy" data-command-item data-command-terms="galaxy projects planets"><span>Open Galaxy</span></a>
-        <a href="/projects" data-command-item data-command-terms="projects list"><span>Open projects</span></a>
-        <a href="/more" data-command-item data-command-terms="menu more tools reminders analytics"><span>Open Menu</span></a>
-		<a href="/tasks" data-command-item data-command-terms="tasks missions all"><span>Open all tasks</span></a>
-		<a href="/projects/new" data-command-item data-command-terms="new add create project"><span>Create project</span></a>
-		<a href="/plan-import" data-command-item data-command-terms="import ai chatgpt markdown plan tasks checklist"><span>Import AI plan</span></a>
-		<a href="/courses" data-command-item data-command-terms="courses study learning"><span>Open courses</span></a>
-		<a href="/settings" data-command-item data-command-terms="settings prayer preferences"><span>Open settings</span></a>
+	  <div class="gyst-segments launcher-modes" role="group" aria-label="Launcher mode">
+		<button type="button" class="gyst-segment" data-launcher-mode="go" aria-pressed="true">Go</button>
+		<button type="button" class="gyst-segment" data-launcher-mode="capture" aria-pressed="false">Capture</button>
 	  </div>
+	  <div data-launcher-panel="go">
+		<div class="command-results" id="launcher-results" role="listbox" aria-label="Results" data-command-results></div>
+		<p class="command-help meta" data-launcher-status aria-live="polite">↑↓ move · Enter open · Tab switches Go and Capture · + starts a task</p>
+	  </div>
+	  <div data-launcher-panel="capture" hidden>
 	  <form class="command-capture" method="post" action="/tasks/quick" data-quick-task>
 		<input type="hidden" name="return_to" data-command-return>
 		<input type="hidden" name="status" value="pending">
@@ -61,7 +60,8 @@
 		</div>
 		<button class="btn" type="submit">Add task</button>
 	  </form>
-	  <p class="command-help meta">↑↓ navigate · Enter open · type “tomorrow” or “!high” for quick capture</p>
+	  <p class="command-help meta">Enter adds the task · type “tomorrow” or “!high” to set the date or priority</p>
+	  </div>
 	</dialog>
 
   {{if eq .Page "galaxy"}}<script type="module" src="/static/js/galaxy.js?v=mobile-2"></script>{{end}}

@@ -200,29 +200,43 @@ func (r *Repository) DeleteLearningBlock(courseID, blockID int64) error {
 	return err
 }
 
-// PostponeLearningBlock marks the original block 'postponed' and spawns a fresh
-// pending catch-up block due on newDue. This is the only place catch-ups are
-// created.
-func (r *Repository) PostponeLearningBlock(courseID, blockID int64, newDue string) error {
+// PostponeLearningBlock marks a pending block 'postponed' and spawns a fresh
+// pending catch-up block due on newDue. Only a pending block is postponed: any
+// other status (completed, skipped, already postponed) or a block of another
+// course is a no-op that returns false. The UPDATE and the catch-up INSERT run
+// in one transaction, and the catch-up is created only when the UPDATE changed
+// a row, so a repeated Later never duplicates it. This is the only place
+// catch-ups are created.
+func (r *Repository) PostponeLearningBlock(courseID, blockID int64, newDue string) (bool, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
-		return err
+		return false, err
 	}
-	if _, err := tx.Exec(`UPDATE learning_blocks SET status = 'postponed',
+	defer tx.Rollback()
+	res, err := tx.Exec(`UPDATE learning_blocks SET status = 'postponed',
 		updated_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1
-		WHERE id = ? AND course_id = ?`, blockID, courseID); err != nil {
-		tx.Rollback()
-		return err
+		WHERE id = ? AND course_id = ? AND status = 'pending'`, blockID, courseID)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if n == 0 {
+		return false, nil
 	}
 	if _, err := tx.Exec(`INSERT INTO learning_blocks
 		(course_id, title, block_type, status, start_time, end_time, due_date, url, repeat_type, notes, sort_order, is_catchup)
 		SELECT course_id, title, block_type, 'pending', start_time, end_time, ?, url, 'none', notes, sort_order, 1
 		FROM learning_blocks WHERE id = ? AND course_id = ?`,
 		nullString(newDue), blockID, courseID); err != nil {
-		tx.Rollback()
-		return err
+		return false, err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // LearningBlocksThrough returns pending dated blocks due on or before date

@@ -27,6 +27,11 @@ func newCalPriv(t *testing.T) *calPriv {
 	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
 		t.Fatal(err)
 	}
+	// Migration 006 makes the default roadmap private; this test covers
+	// project-level flags, so make that roadmap public first.
+	if _, err := database.Exec(`UPDATE roadmaps SET privacy = 'public'`); err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() { database.Close() })
 	svc := New(repository.New(database))
 	svc.Now = func() time.Time { return time.Date(2026, time.June, 24, 12, 0, 0, 0, time.UTC) }
@@ -207,6 +212,37 @@ func TestFeedDoesNotLeakProjectMadePrivateMidBuild(t *testing.T) {
 			if strings.Contains(ics, leak) {
 				t.Errorf("%s feed leaks %q", feed, leak)
 			}
+		}
+	}
+}
+
+// A private roadmap hides its projects' target, item and milestone events;
+// tasks and course blocks stay in the feeds.
+func TestFeedsOmitProjectsOfPrivateRoadmap(t *testing.T) {
+	c := newCalPriv(t)
+	c.project("Fictional Bakery Site", 0)
+	task := models.Task{Title: "Fictional Task Visible", Status: "pending", DueDate: "2026-07-10", RepeatType: "none", StarsReward: 1}
+	if err := c.svc.Repo.CreateTask(&task); err != nil {
+		t.Fatal(err)
+	}
+	course := models.Course{Name: "Fictional Course", Status: "active"}
+	if err := c.svc.Repo.CreateCourse(&course); err != nil {
+		t.Fatal(err)
+	}
+	block := models.LearningBlock{CourseID: course.ID, Title: "Fictional Block Visible", BlockType: "assignment", DueDate: "2026-07-05"}
+	if err := c.svc.Repo.CreateLearningBlock(&block); err != nil {
+		t.Fatal(err)
+	}
+	c.assertShown("Fictional Bakery Site")
+
+	if _, err := c.db.Exec(`UPDATE roadmaps SET privacy = 'private'`); err != nil {
+		t.Fatal(err)
+	}
+	c.assertHidden("Fictional Bakery Site")
+	feeds := c.feeds()
+	for _, want := range []string{"Fictional Task Visible", "Fictional Block Visible"} {
+		if !strings.Contains(feeds["all"], want) {
+			t.Errorf("all feed should keep %q", want)
 		}
 	}
 }
