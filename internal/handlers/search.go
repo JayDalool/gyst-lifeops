@@ -92,7 +92,7 @@ func (h *Handler) searchFixed(r *http.Request) ([]services.SearchSource, error) 
 	if h.Coach != nil {
 		add(services.SearchGroupHealth, "Health coach", "/health/coach", "Health")
 	}
-	add(services.SearchGroupPages, "Menu", "/more", "Page")
+	add(services.SearchGroupPages, "More", "/more", "Page")
 	add(services.SearchGroupPages, "New project", "/projects/new", "Page")
 
 	load := h.appRegistry

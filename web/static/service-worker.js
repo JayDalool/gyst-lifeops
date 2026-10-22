@@ -1,6 +1,6 @@
 // Cache only public static assets. Private pages, API responses and redirects
 // never enter CacheStorage, including pages viewed before signing out.
-const CACHE = "lifeops-shell-v73-launcher3";
+const CACHE = "lifeops-shell-v74-nav";
 const SHELL = ["/static/css/styles.css?v=appearance-1", "/static/css/ui-tokens.css?v=vn-2", "/static/css/ui-components.css?v=apps-overlay-1", "/static/css/ui-shell.css?v=launcher-3", "/static/css/ui-today.css?v=dedupe-1", "/static/css/ui-projects.css?v=ui-4", "/static/css/ui-galaxy.css?v=galaxywin-1", "/static/css/ui-health.css?v=weight-1", "/static/css/ui-training.css?v=train-2", "/static/css/ui-health-v3.css?v=hv3-9", "/static/css/ui-courses.css?v=ui-10", "/static/js/theme.js?v=appearance-1", "/static/js/charts.js?v=ui-2", "/static/js/app.js?v=launcher-3", "/static/js/launcher.js?v=launcher-3", "/static/js/completion-toast.js?v=toast-1","/static/favicon.svg"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("lifeops-shell-") && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));

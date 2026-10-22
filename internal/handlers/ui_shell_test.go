@@ -21,7 +21,7 @@ func primaryMarkup(t *testing.T, body string) string {
 }
 func TestUIShellFiveLinksAndNestedSelection(t *testing.T) {
 	h := testHandler(t)
-	for _, tt := range []struct{ path, current string }{{"/", "today"}, {"/today", "today"}, {"/projects", "projects"}, {"/projects/new", "projects"}, {"/galaxy", "projects"}, {"/roadmap", "projects"}, {"/health", "health"}, {"/health/plan", "health"}, {"/courses", "courses"}, {"/courses/new", "courses"}, {"/more", "more"}, {"/settings", "more"}, {"/tasks/new", "more"}, {"/plan-import", "more"}} {
+	for _, tt := range []struct{ path, current string }{{"/", "today"}, {"/today", "today"}, {"/projects", "projects"}, {"/projects/new", "projects"}, {"/galaxy", "projects"}, {"/roadmap", "projects"}, {"/health", "health"}, {"/health/plan", "health"}, {"/learn", "learn"}, {"/courses", "learn"}, {"/courses/new", "learn"}, {"/more", "more"}, {"/settings", "more"}, {"/tasks/new", "more"}, {"/plan-import", "more"}} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tt.path, nil))
 		if rec.Code != 200 {
@@ -38,7 +38,7 @@ func TestUIShellFiveLinksAndNestedSelection(t *testing.T) {
 		if strings.Count(nav, "<a ") != 5 || strings.Count(nav, `aria-current="page"`) != 1 {
 			t.Fatalf("invalid nav: %s", nav)
 		}
-		for _, path := range []string{"today", "projects", "health", "courses", "more"} {
+		for _, path := range []string{"today", "projects", "health", "learn", "more"} {
 			if !strings.Contains(nav, `href="/`+path+`"`) {
 				t.Fatalf("missing destination %s", path)
 			}
@@ -93,7 +93,7 @@ func TestMoreMethodAndReachability(t *testing.T) {
 func TestNavigationCleanupAndContextActions(t *testing.T) {
 	h := testHandler(t)
 	for _, tc := range []struct{ page, action string }{
-		{"/today", "/tasks/new"}, {"/projects", "/projects/new"}, {"/courses", "/courses/new"}, {"/more", "/plan-import"},
+		{"/today", "/tasks/new"}, {"/projects", "/projects/new"}, {"/courses", "/courses/new"}, {"/learn", "/courses/new"}, {"/more", "/plan-import"},
 	} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tc.page, nil))
@@ -109,8 +109,8 @@ func TestNavigationCleanupAndContextActions(t *testing.T) {
 		if !strings.Contains(body[mainStart:mainStart+mainEnd], `href="`+tc.action+`"`) {
 			t.Fatalf("%s lost contextual action %s", tc.page, tc.action)
 		}
-		if !strings.Contains(primaryMarkup(t, body), "<span>Menu</span>") {
-			t.Fatal("Menu label missing")
+		if !strings.Contains(primaryMarkup(t, body), "<span>More</span>") {
+			t.Fatal("More label missing")
 		}
 	}
 }
