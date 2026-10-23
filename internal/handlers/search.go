@@ -28,6 +28,10 @@ type searchResponse struct {
 	Groups []services.SearchGroup `json:"groups"`
 }
 
+type doResponse struct {
+	Commands []services.LauncherCommand `json:"commands"`
+}
+
 func (h *Handler) searchAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -37,6 +41,15 @@ func (h *Handler) searchAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := services.NormalizeSearchQuery(r.URL.Query().Get("q"))
+	if r.URL.Query().Get("mode") == "do" {
+		cmds, err := h.Service.LauncherCommands(h.Service.Training != nil)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(doResponse{Commands: services.FilterLauncherCommands(cmds, q)})
+		return
+	}
 	groups := []services.SearchGroup{}
 	if q == "" {
 		groups = append(groups, searchSuggestions())

@@ -188,7 +188,9 @@ func TestLauncherMarkup(t *testing.T) {
 	if strings.Contains(html, "Open Galaxy") || strings.Contains(html, "data-command-item") {
 		t.Fatal("the fixed palette links must be gone")
 	}
-	if strings.Contains(strings.ToLower(html), "data-launcher-mode=\"do\"") {
-		t.Fatal("no Do tab until GYST-103")
+	for _, want := range []string{`data-launcher-mode="do"`, "data-do-appearance", "data-do-confirm", `data-theme-choice="system"`} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("Do mode markup missing %q", want)
+		}
 	}
 }

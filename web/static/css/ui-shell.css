@@ -84,3 +84,20 @@
   :root .gyst-command [data-launcher-panel]:not([hidden]) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   :root .gyst-command .command-results { flex: 1; max-height: none; }
 }
+
+/* Launcher Do mode (GYST-103): command rows, appearance choice, confirm step. */
+:root .gyst-command .command-results[hidden], :root .gyst-command .launcher-do-extra[hidden], :root .gyst-command .launcher-confirm[hidden] { display: none; }
+:root .gyst-command .command-results div.launcher-item { display: flex; align-items: center; justify-content: space-between; gap: var(--gyst-space-3); min-height: 44px; padding: 10px 11px; border-radius: 7px; color: var(--gyst-text); cursor: pointer; }
+:root .gyst-command .command-results div.launcher-item:hover { background: var(--gyst-blue-soft); }
+:root .gyst-command .command-results div.launcher-item.active { background: var(--gyst-blue-soft); color: var(--gyst-blue); }
+:root .gyst-command .command-results div.launcher-item.active .launcher-item-meta { color: inherit; }
+:root .gyst-command .command-results div.launcher-item[aria-disabled="true"] { color: var(--gyst-text-secondary); cursor: default; }
+:root .gyst-command .command-results div.launcher-item[aria-disabled="true"] .launcher-item-meta { text-align: right; }
+:root .gyst-command .launcher-do-extra { display: grid; gap: var(--gyst-space-2); padding: 0 var(--gyst-space-3) var(--gyst-space-2); }
+:root .gyst-command .launcher-do-extra .launcher-group-label { padding-inline: 0; }
+:root .gyst-command .launcher-do-extra .gyst-segment.active { outline: 2px solid var(--gyst-blue); outline-offset: 2px; }
+:root .gyst-command .launcher-confirm { display: grid; gap: var(--gyst-space-3); padding: var(--gyst-space-3); }
+:root .gyst-command .launcher-confirm-form { display: grid; gap: var(--gyst-space-3); }
+:root .gyst-command .launcher-confirm-text { margin: 0; overflow-wrap: anywhere; font-weight: 600; }
+:root .gyst-command .launcher-confirm-actions { display: flex; flex-wrap: wrap; gap: var(--gyst-space-2); }
+:root .gyst-command .launcher-confirm-actions .btn { flex: 1; min-width: 120px; }

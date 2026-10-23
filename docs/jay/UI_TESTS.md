@@ -1,3 +1,4 @@
+- [ ] #187 · iPhone launcher Do: water, complete focus, confirm shows · https://gyst.zaylolabs.com/today
 - [ ] #184 · iPhone Archive: grouped rows open details · https://github.com/JayDalool/gyst-lifeops/pull/185
 - [ ] #179 · Courses: block count reaches Y of Y after Later · https://github.com/JayDalool/gyst-lifeops/issues/179
 - [ ] #176 · Edit child of archived parent; links stay · https://github.com/JayDalool/gyst-lifeops/issues/176
