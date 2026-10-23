@@ -21,14 +21,23 @@ flowchart LR
 ## Process and routing
 
 - `main.go` and `cmd/lifeops/main.go` are equivalent entrypoints.
-- `internal/app/cli.go` reads command-line configuration and starts the HTTP
-  server.
+- `internal/config/` is the only place that reads command-line flags and the
+  environment. `config.Load(args, getenv, readFile)` returns one `Config`
+  (or named errors); `internal/app/cli.go` logs its startup summary (secrets
+  show only CONFIGURED / NOT CONFIGURED) and starts the HTTP server. VAPID and
+  the GitHub, Jira and Slack credentials are injected into the service, not
+  read at call time.
 - `internal/app/app.go` opens the database, applies migrations, constructs the
   application, and registers routes.
 - `internal/handlers/` handles requests and renders `web/templates/`.
 
 Runtime paths are configured with command-line flags such as `-addr`, `-db`,
-`-migrations`, `-templates`, and `-static`. Public calendar feeds are disabled
+`-migrations`, `-templates`, and `-static`; `PORT` and `DB_PATH` supply the
+defaults for `-addr` and `-db`. Any secret may come from `NAME_FILE` instead of
+`NAME`. A half-set VAPID trio or Jira email/token pair, a bad `PORT` or an
+invalid `GYST_TIMEZONE` stops startup with a named error;
+`lifeops config` runs the same checks without opening the database. Every
+variable is listed in `.env.example`. Public calendar feeds are disabled
 unless `ALLOW_PUBLIC_CALENDAR_FEEDS` is explicitly enabled; tokenized feeds stay
 available.
 
