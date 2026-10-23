@@ -74,19 +74,19 @@
       {{range .ScopedTree.Main}}
         <li>
           <a class="project-row" href="/projects/{{.Project.ID}}">
-            <span class="status {{template "rmStatusClass" (nodeState .Project.Status .Progress)}}"><span class="dot"></span></span>
+            <span class="status {{template "rmStatusClass" (routeState .Project.Status .Progress)}}"><span class="dot"></span></span>
             <span class="grow">
               <h3>{{.Project.Name}}</h3>
               <p class="meta">{{.Project.Status}}</p>
             </span>
-            <div class="progress{{if eq (nodeState .Project.Status .Progress) "done"}} done{{end}}"><span style="width: {{progressWidth .Progress}}"></span></div>
+            <div class="progress{{if eq (routeState .Project.Status .Progress) "done"}} done{{end}}"><span style="width: {{progressWidth .Progress}}"></span></div>
             <span class="meta num">{{.Progress}}%</span>
           </a>
           {{with index $.ScopedTree.Children .Project.ID}}
             <ul class="subprojects">
               {{range .}}
                 <li>
-                  <span class="status {{template "rmStatusClass" (nodeState .Project.Status .Progress)}}"><span class="dot"></span></span>
+                  <span class="status {{template "rmStatusClass" (routeState .Project.Status .Progress)}}"><span class="dot"></span></span>
                   <a href="/projects/{{.Project.ID}}">{{.Project.Name}}</a>
                   <span class="meta num">{{.Progress}}%</span>
                 </li>

@@ -12,7 +12,7 @@ func projectNode(p models.ProjectWithProgress) models.RouteNode {
 	return models.RouteNode{
 		Name:  p.Project.Name,
 		URL:   "/projects/" + strconv.FormatInt(p.Project.ID, 10),
-		State: RouteState(p.Project.Status, p.Progress),
+		State: models.RouteState(p.Project.Status, p.Progress),
 	}
 }
 

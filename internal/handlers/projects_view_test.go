@@ -50,6 +50,22 @@ func TestProjectFiltersPreserveHierarchyAndStatus(t *testing.T) {
 	}
 }
 
+func TestProjectDetailStatusDotUsesOneMapping(t *testing.T) {
+	data := ProjectDetailData{Page: "projects", Project: models.ProjectWithProgress{Project: models.Project{ID: 20, Name: "Fictional project", Status: "active"}}}
+	for _, tt := range []struct {
+		status   string
+		progress int
+		class    string
+	}{{"paused", 0, "locked"}, {"upcoming", 0, "locked"}, {"locked", 0, "locked"}, {"done", 0, "done"}, {"active", 100, "done"}, {"active", 40, "current"}} {
+		data.Project.Project.Status = tt.status
+		data.Project.Progress = tt.progress
+		body := renderBody(t, "project_detail.html", data)
+		if !strings.Contains(body, `<span class="status `+tt.class+`"><span class="dot"></span>`+tt.status) {
+			t.Errorf("%s at %d%%: want status dot %q", tt.status, tt.progress, tt.class)
+		}
+	}
+}
+
 func TestProjectDetailPreservesActionsAndSections(t *testing.T) {
 	data := ProjectDetailData{Page: "projects", HasRoadmap: true, Roadmap: models.Roadmap{ID: 7, Name: "Real roadmap"}, Project: models.ProjectWithProgress{Project: models.Project{ID: 20, Name: "Real project", Status: "active", Notes: "Existing notes"}}, Items: []models.ProjectItem{{ID: 21, Title: "Open item", Status: "pending", ProofType: "link", ProofRequired: true}, {ID: 22, Title: "Done item", Status: "completed", ProofType: "none"}}, ExternalLinks: []models.ExternalLink{{ID: 9, Provider: "github", URL: "https://example.com/work", Summary: "Real external work"}}}
 	body := renderBody(t, "project_detail.html", data)

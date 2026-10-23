@@ -26,13 +26,13 @@ func (s *Service) GalaxyData() ([]models.GalaxyPlanet, error) {
 	}
 	children := make(map[int64][]models.ProjectWithProgress)
 	for _, project := range projects {
-		if parentOf(project) != 0 && !galaxyProjectComplete(project.Project.Status) {
+		if parentOf(project) != 0 && !models.ProjectStateOf(project.Project.Status).Finished() {
 			children[parentOf(project)] = append(children[parentOf(project)], project)
 		}
 	}
 	planets := make([]models.GalaxyPlanet, 0)
 	for _, project := range projects {
-		if parentOf(project) != 0 || galaxyProjectComplete(project.Project.Status) {
+		if parentOf(project) != 0 || models.ProjectStateOf(project.Project.Status).Finished() {
 			continue
 		}
 		planet, err := s.galaxyPlanet(project, children[project.Project.ID])
@@ -44,10 +44,6 @@ func (s *Service) GalaxyData() ([]models.GalaxyPlanet, error) {
 	return planets, nil
 }
 
-func galaxyProjectComplete(status string) bool {
-	return status == "done" || status == "completed" || status == "archived"
-}
-
 func (s *Service) galaxyPlanet(project models.ProjectWithProgress, moons []models.ProjectWithProgress) (models.GalaxyPlanet, error) {
 	x, y, z := galaxyPosition(project.Project)
 	if project.Project.PosX == nil || project.Project.PosY == nil || project.Project.PosZ == nil {
@@ -55,7 +51,7 @@ func (s *Service) galaxyPlanet(project models.ProjectWithProgress, moons []model
 			return models.GalaxyPlanet{}, err
 		}
 	}
-	result := models.GalaxyPlanet{ID: project.Project.ID, Name: project.Project.Name, Category: project.Project.Category, Color: project.Project.Color, Summary: project.Project.Description, Target: project.Project.TargetDate, Next: project.NextDueItem, Missions: project.TotalItems, URL: "/projects/" + strconv.FormatInt(project.Project.ID, 10), State: RouteState(project.Project.Status, project.Progress), Size: math.Min(3, 1+float64(project.TotalItems)/8), Progress: project.Progress, X: x, Y: y, Z: z, Moons: []models.GalaxyPlanet{}}
+	result := models.GalaxyPlanet{ID: project.Project.ID, Name: project.Project.Name, Category: project.Project.Category, Color: project.Project.Color, Summary: project.Project.Description, Target: project.Project.TargetDate, Next: project.NextDueItem, Missions: project.TotalItems, URL: "/projects/" + strconv.FormatInt(project.Project.ID, 10), State: models.RouteState(project.Project.Status, project.Progress), Size: math.Min(3, 1+float64(project.TotalItems)/8), Progress: project.Progress, X: x, Y: y, Z: z, Moons: []models.GalaxyPlanet{}}
 	for _, moon := range moons {
 		m, err := s.galaxyPlanet(moon, nil)
 		if err != nil {
