@@ -86,6 +86,9 @@ func TestStartupLogsNeverContainSecrets(t *testing.T) {
 	for _, line := range cfg.Summary() {
 		log.Printf("config: %s", line)
 	}
+	// Hevy stays in the summary assertion above, but is cleared for New so
+	// that no training-sync goroutine makes a network call in this test.
+	cfg.HevyAPIKey = ""
 	a, err := New(cfg)
 	if err != nil {
 		t.Fatal(err)
