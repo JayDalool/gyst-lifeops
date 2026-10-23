@@ -562,5 +562,27 @@ async function launcherRaceChecks() {
   assert.equal(confirmBox.children.length, 0);
   palette.dispatch('keydown', {key: 'Escape'});
   assert.equal(palette.open, false, 'a second Escape closes the launcher');
+  // Typing while the confirm step shows ends it; the list is visible again and Enter/arrows never act on hidden options.
+  await reopen();
+  type('>'); await flush();
+  doReply([{id: 'new-task', label: 'New task', meta: 'Open', kind: 'link', href: '/tasks/new'}, {id: 'water', label: 'Add a bottle of water', meta: 'Health', kind: 'post', action: '/health/water', confirm: 'Log one bottle of water for today?'}]);
+  await flush();
+  key('ArrowDown'); key('Enter'); await flush();
+  assert.equal(confirmBox.hidden, false); assert.equal(results.hidden, true);
+  clicked = [];
+  key('Enter'); key('ArrowUp'); key('Enter');
+  assert.equal(clicked.length, 0, 'Enter never acts on hidden options while confirming');
+  assert.equal(confirmBox.hidden, false, 'Enter does not re-open or alter the confirm step');
+  type('x'); await flush();
+  assert.equal(confirmBox.hidden, true, 'typing closes the confirm step'); assert.equal(confirmBox.children.length, 0);
+  assert.equal(results.hidden, false, 'the list is visible again');
+  type(''); await flush(); doReply([{id: 'new-task', label: 'New task', meta: 'Open', kind: 'link', href: '/tasks/new'}]);
+  await flush();
+  assert.equal(results.hidden, false);
+  clicked = []; key('Enter'); await flush();
+  assert(clicked.length <= 1 && clicked.every(h => h === '/tasks/new' || h === ''), 'Enter acts only on a visible, current option');
+  // Appearance buttons never reuse the Go result id prefix.
+  const src2 = fs.readFileSync('web/static/js/launcher.js', 'utf8');
+  assert(!/b\.id = "launcher-option-"/.test(src2), 'appearance ids have their own prefix');
 }
 (async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers and launcher passed');})().catch(error=>{console.error(error);process.exitCode=1;});

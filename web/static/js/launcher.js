@@ -349,7 +349,7 @@
       // The three theme buttons stay where the layout put them (theme.js owns
       // them); they join the arrow-key list so the keyboard can reach them.
       Array.prototype.forEach.call(appearance.querySelectorAll ? appearance.querySelectorAll("[data-theme-choice]") : [], function (b) {
-        b.id = "launcher-option-" + options.length;
+        b.id = "launcher-appearance-" + options.length;
         options.push(b);
       });
     }
@@ -496,6 +496,7 @@
     modeButtons.forEach(function (b) { b.addEventListener("click", function () { setMode(b.dataset.launcherMode, true); }); });
 
     input.addEventListener("input", function () {
+      endConfirm(false); // typing leaves the confirm step and shows the list again
       var parsed = parseInput(input.value, mode);
       if (parsed.mode !== mode) { input.value = parsed.text; setMode(parsed.mode, false); if (mode === "do") return; }
       if (mode === "capture") applyCapture();
@@ -509,6 +510,8 @@
 
     input.addEventListener("keydown", function (event) {
       if (event.isComposing) return;
+      // While a confirm is showing, the hidden list must not react.
+      if (confirming && (event.key === "Enter" || event.key === "ArrowDown" || event.key === "ArrowUp")) { event.preventDefault(); return; }
       if (event.key === "Tab" && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
         setMode(nextMode(mode), true);
