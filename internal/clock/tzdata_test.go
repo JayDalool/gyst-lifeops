@@ -12,32 +12,32 @@ import (
 // offsets, and nothing changes after 2026-11-01. Offsets, not abbreviations,
 // because IANA labels the new time EST for compatibility.
 func TestWinnipegPermanentUTCMinus5(t *testing.T) {
-	const cst, cdt = -6 * 3600, -5 * 3600
+	const utcMinus6, utcMinus5 = -6 * 3600, -5 * 3600
 	cases := []struct {
 		instant string
 		offset  int
 	}{
-		{"2025-11-02T06:59:59Z", cdt}, // last fall back still happened
-		{"2025-11-02T07:00:00Z", cst},
-		{"2026-01-15T18:00:00Z", cst},
-		{"2026-03-08T07:59:59Z", cst},
-		{"2026-03-08T08:00:00Z", cdt},
-		{"2026-07-15T18:00:00Z", cdt},
-		{"2026-10-31T18:00:00Z", cdt},
-		{"2026-11-01T06:59:59Z", cdt},
-		{"2026-11-01T07:00:00Z", cdt}, // former fall-back instant
-		{"2026-11-01T08:00:00Z", cdt},
-		{"2026-11-02T05:30:00Z", cdt},
-		{"2026-12-21T18:00:00Z", cdt},
-		{"2027-01-15T18:00:00Z", cdt},
-		{"2027-03-14T07:59:59Z", cdt}, // no spring forward
-		{"2027-03-14T08:00:00Z", cdt},
-		{"2027-03-14T18:00:00Z", cdt},
-		{"2027-07-15T18:00:00Z", cdt},
-		{"2027-11-07T06:59:59Z", cdt}, // no fall back
-		{"2027-11-07T07:00:00Z", cdt},
-		{"2027-11-07T18:00:00Z", cdt},
-		{"2030-01-15T18:00:00Z", cdt},
+		{"2025-11-02T06:59:59Z", utcMinus5}, // last fall back still happened
+		{"2025-11-02T07:00:00Z", utcMinus6},
+		{"2026-01-15T18:00:00Z", utcMinus6},
+		{"2026-03-08T07:59:59Z", utcMinus6},
+		{"2026-03-08T08:00:00Z", utcMinus5},
+		{"2026-07-15T18:00:00Z", utcMinus5},
+		{"2026-10-31T18:00:00Z", utcMinus5},
+		{"2026-11-01T06:59:59Z", utcMinus5},
+		{"2026-11-01T07:00:00Z", utcMinus5}, // former fall-back instant
+		{"2026-11-01T08:00:00Z", utcMinus5},
+		{"2026-11-02T05:30:00Z", utcMinus5},
+		{"2026-12-21T18:00:00Z", utcMinus5},
+		{"2027-01-15T18:00:00Z", utcMinus5},
+		{"2027-03-14T07:59:59Z", utcMinus5}, // no spring forward
+		{"2027-03-14T08:00:00Z", utcMinus5},
+		{"2027-03-14T18:00:00Z", utcMinus5},
+		{"2027-07-15T18:00:00Z", utcMinus5},
+		{"2027-11-07T06:59:59Z", utcMinus5}, // no fall back
+		{"2027-11-07T07:00:00Z", utcMinus5},
+		{"2027-11-07T18:00:00Z", utcMinus5},
+		{"2030-01-15T18:00:00Z", utcMinus5},
 	}
 	loc := (Clock{}).Location()
 	for _, tc := range cases {

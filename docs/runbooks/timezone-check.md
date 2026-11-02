@@ -39,35 +39,43 @@ the app ignores it, so after the deploy also check what the app shows:
 
 While a stale build ran (from 2026-11-01 07:00 UTC until the deploy):
 
-- Rows created between 00:00 and 01:00 local (05:00-06:00 UTC), from
+- Rows written between 00:00 and 01:00 local (05:00-06:00 UTC), from
   2026-11-02 on, carry the previous day's date: task completions, tracker and
-  prayer logs, water, goal progress and quick-capture due dates.
-- Manually typed weight times are stored 1 h late (the time was read as
-  UTC-06).
-- UTC instants (sessions, audit, sync times) and synced Health days from the
-  phone are not affected. Prayer push notifications fired on time.
+  prayer logs, Health checklist ticks, water, goal progress and quick-capture
+  due dates. A toggle or completion in that hour could also update or undo the
+  previous day's row instead of the current day's.
+- Weights with a typed "measured" time after 2026-11-01 02:00 local are
+  stored 1 h late, with a `-06:00` offset. Weights logged without a time use
+  the current UTC instant and are correct.
+- UTC instants (sessions, audit, sync times) are not affected, and prayer push
+  notifications fired on time. The phone supplies its own Health dates, so
+  stored Health days are right; between 00:00 and 01:00 a stale build refused
+  a sync for the new date (no future days allowed), and the next sync after
+  01:00 filled it in.
 
-Issue #193 does not rewrite any row. To size the problem, count on a backup copy
-only, never on `data/lifeops.db` (make the copy with `lifeops backup`, as in
-`restore.md` A2):
+Issue #193 does not rewrite any row. To size the problem, count on a backup
+copy only, never on `data/lifeops.db` (make the copy with `lifeops backup`, as
+in `restore.md` A2):
 
 ```sql
-SELECT 'task_completions', COUNT(*) FROM task_completions WHERE created_at >= '2026-11-02' AND strftime('%H', created_at) = '05';
-SELECT 'tracker_logs', COUNT(*) FROM tracker_logs WHERE created_at >= '2026-11-02' AND strftime('%H', created_at) = '05';
+SELECT 'task_completions', COUNT(*) FROM task_completions WHERE (created_at >= '2026-11-02' AND strftime('%H', created_at) = '05') OR (completed_at >= '2026-11-02' AND strftime('%H', completed_at) = '05');
+SELECT 'tracker_logs', COUNT(*) FROM tracker_logs WHERE (created_at >= '2026-11-02' AND strftime('%H', created_at) = '05') OR (updated_at >= '2026-11-02' AND strftime('%H', updated_at) = '05');
+SELECT 'health_checklist_log', COUNT(*) FROM health_checklist_log WHERE done_at >= '2026-11-02' AND strftime('%H', done_at) = '05';
 SELECT 'health_water_log', COUNT(*) FROM health_water_log WHERE created_at >= '2026-11-02' AND strftime('%H', created_at) = '05';
 SELECT 'goal_progress_entries', COUNT(*) FROM goal_progress_entries WHERE created_at >= '2026-11-02' AND strftime('%H', created_at) = '05';
 SELECT 'tasks (quick capture)', COUNT(*) FROM tasks WHERE created_at >= '2026-11-02' AND strftime('%H', created_at) = '05';
-SELECT 'manual weights', COUNT(*) FROM health_weight_entries WHERE source = 'manual' AND measured_at >= '2026-11-01T07:00:00Z';
+SELECT 'typed manual weights', COUNT(*) FROM health_weight_entries WHERE source = 'manual' AND measured_at LIKE '%-06:00' AND julianday(measured_at) >= julianday('2026-11-01T07:00:00Z');
 ```
 
-The 05:xx window over-counts a little: a row made at 00:30 local that was
-meant for that day is counted too. Any correction is a separate Issue with its
-own review.
+The 05:xx counts are an upper bound for review, not a list to fix: a row
+written at 00:30 that was meant for the previous day is counted too, and a
+row deleted in that hour (an undone completion or toggle) can't be counted.
+Any correction is a separate Issue with its own review.
 
 ## 3. Rollback
 
 The pin adds no migration and stores nothing new, so rolling back is the
-image alone (deploy runbook §3 R-A):
+image alone:
 
 ```bash
 # before deploying
