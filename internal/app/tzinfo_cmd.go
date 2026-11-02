@@ -38,6 +38,10 @@ func RunTzinfo(w io.Writer, args []string, timezone string, now time.Time) error
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+	if fs.NArg() > 0 {
+		// "tzinfo check" (no dash) must not look like a passing check.
+		return fmt.Errorf("unexpected argument %q (flags: -check)", fs.Arg(0))
+	}
 	fmt.Fprintf(w, "tzdb: %s, pinned in the binary (zoneinfo.zip sha256 %s)\n", tzdb.Version(), tzdb.SHA256())
 	fmt.Fprintf(w, "tzdb source: %s%s, signed by %s\n", tzdb.Field("source"), tzdb.Field("tzdata"), tzdb.Field("signing_key"))
 	fmt.Fprintf(w, "go: %s\n", runtime.Version())

@@ -81,6 +81,13 @@ func TestTzinfoCheckFailsOnInvalidZone(t *testing.T) {
 	if err := RunTzinfo(&out, nil, "Mars/Base", now); err != nil {
 		t.Fatalf("tzinfo without -check: %v", err)
 	}
+	// A typo such as "tzinfo check" must fail, not pass silently.
+	for _, args := range [][]string{{"check"}, {"-check", "extra"}} {
+		out.Reset()
+		if err := RunTzinfo(&out, args, "Mars/Base", now); err == nil {
+			t.Fatalf("tzinfo %v accepted a stray argument:\n%s", args, out.String())
+		}
+	}
 }
 
 // tzinfo is read-only and prints no secret: it is never given the

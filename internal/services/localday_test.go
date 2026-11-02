@@ -44,7 +44,7 @@ func TestTaskActionDate(t *testing.T) {
 		// Permanent UTC-05 from 2026-11-01 (Issue #193): no fall-back, no 2027 spring forward.
 		{"2026-11-01 night, UTC-05", "2026-11-02T04:30:00Z", models.Task{DueDate: "2026-10-01", RepeatType: "daily"}, "2026-11-01"},
 		{"00:30 on 2026-11-02, not 23:30 CST", "2026-11-02T05:30:00Z", models.Task{DueDate: "2026-10-01", RepeatType: "daily"}, "2026-11-02"},
-		{"2027-03-14 night, UTC-05", "2027-03-15T04:30:00Z", models.Task{DueDate: "2027-03-01", RepeatType: "daily"}, "2027-03-14"},
+		{"00:30 on 2027-03-14, not 23:30 CST", "2027-03-14T05:30:00Z", models.Task{DueDate: "2027-03-01", RepeatType: "daily"}, "2027-03-14"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

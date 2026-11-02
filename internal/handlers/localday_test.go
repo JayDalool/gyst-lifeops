@@ -43,7 +43,7 @@ var localDayCases = []struct {
 	{"2026-11-02, 00:30 UTC-05 (not 23:30 CST)", "2026-11-02T05:30:00Z", "2026-11-02"},
 	{"winter UTC-05, 23:30", "2027-01-16T04:30:00Z", "2027-01-15"},
 	{"winter UTC-05, 00:00", "2027-01-16T05:00:00Z", "2027-01-16"},
-	{"2027-03-14, 23:30 (no spring forward)", "2027-03-15T04:30:00Z", "2027-03-14"},
+	{"2027-03-14, 00:30 UTC-05 (not 23:30 CST on the 13th)", "2027-03-14T05:30:00Z", "2027-03-14"},
 }
 
 // The local days above run from 2025 to 2027; the windows below cover them.

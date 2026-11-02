@@ -46,8 +46,21 @@ func TestBuildHealthWeight(t *testing.T) {
 
 func TestDayLabel(t *testing.T) {
 	loc, _ := clock.Load("America/Winnipeg")
-	// The morning after DST ends: a 25-hour day must still be "Yesterday".
-	now := time.Date(2026, 11, 2, 8, 0, 0, 0, loc)
+	// The morning after Winnipeg's last fall-back (2025-11-02): a 25-hour
+	// day must still be "Yesterday".
+	now := time.Date(2025, 11, 3, 8, 0, 0, 0, loc)
+	for at, want := range map[time.Time]string{
+		time.Date(2025, 11, 3, 0, 5, 0, 0, loc):  "Today",
+		time.Date(2025, 11, 2, 0, 5, 0, 0, loc):  "Yesterday",
+		time.Date(2025, 10, 20, 9, 0, 0, 0, loc): "Oct 20",
+		time.Date(2024, 5, 6, 19, 0, 0, 0, loc):  "May 6, 2024",
+	} {
+		if got := dayLabel(at, now, loc); got != want {
+			t.Errorf("dayLabel(%v) = %q, want %q", at, got, want)
+		}
+	}
+	// 2026-11-01 had no fall-back (permanent UTC-05, Issue #193).
+	now = time.Date(2026, 11, 2, 8, 0, 0, 0, loc)
 	for at, want := range map[time.Time]string{
 		time.Date(2026, 11, 2, 0, 5, 0, 0, loc):  "Today",
 		time.Date(2026, 11, 1, 0, 5, 0, 0, loc):  "Yesterday",

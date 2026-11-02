@@ -1,9 +1,9 @@
 # Time zone data runbook (Issue #193)
 
-**Operator: Jay only.** Every command here is read-only: it opens no
-database, changes nothing and prints no environment values. An agent wrote
-this and ran the `tzinfo` commands against local builds only. Nobody has run
-any of it against production.
+**Operator: Jay only.** Every command in steps 1–3 is read-only: it opens no
+database, changes nothing and prints no secrets. Step 5 is a development task
+on a dev machine. An agent wrote this and ran the `tzinfo` commands against
+local builds only. Nobody has run any of it against production.
 
 ## What this is about
 
@@ -67,11 +67,18 @@ TZ=America/Winnipeg date   # the correct local time, to compare with GYST's
 Record only the outcome (the release seen, and whether Dhuhr was right or an
 hour early). Do not record any real data.
 
+One behaviour change to know before deploying: `GYST_TIMEZONE` must now be a
+zone in the pinned IANA database. Host-only names such as `posixrules`,
+`posix/…` or `right/…` stop startup. `docker-compose.yml` does not pass
+`GYST_TIMEZONE` to the container, so with it production uses the default,
+`America/Winnipeg`, and is not affected.
+
 ## 2. After deploying #193: verify
 
 ```bash
 docker compose exec -T gyst-lifeops /app/lifeops tzinfo -check; echo "exit=$?"
 docker compose logs --tail 50 gyst-lifeops | grep 'Application timezone'
+docker compose images gyst-lifeops   # record the IMAGE ID of what you verified
 ```
 
 Pass:
@@ -122,5 +129,7 @@ On a Linux or WSL development machine with `curl`, `make`, a C compiler,
    the OS build of the same release, where one is installed.
 5. Open a PR for the Issue. Deploy only after Jay merges it.
 
-Anyone can confirm the committed zip without trusting this repository:
-`scripts/tzdb/update.sh --check` rebuilds it from IANA's signed release.
+A reviewer can rebuild the committed zip with `scripts/tzdb/update.sh
+--check`. It downloads IANA's release, checks the SHA-512 pins and, where
+`gpg` is installed, the release signature, and compares the result byte for
+byte. The script and its pins come from this repository, so review them too.

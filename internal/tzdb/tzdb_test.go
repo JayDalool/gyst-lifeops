@@ -166,11 +166,14 @@ func compareDir() string {
 	return "/usr/share/zoneinfo"
 }
 
-// Manitoba's rules are the same in every release from 2026e on, so the
-// pinned America/Winnipeg must agree (1970-2100) with any system database
-// that new, even when the OS package lags the pin (the CI image's Ubuntu
-// tzdata is 2026e). If a later release changes Winnipeg again, a host with
-// that release fails here until the pin is refreshed.
+// Manitoba's UTC offsets are the same in every release from 2026e on, so
+// the pinned America/Winnipeg must have the same offsets (1970-2100) as any
+// system database that new, even when the OS package lags the pin (the CI
+// image's Ubuntu tzdata is 2026e). Offsets only: IANA calls the "EST"
+// abbreviation from 2026-11-01 a temporary modelling choice, and a later
+// release may change it without changing any time. If a later release
+// changes Winnipeg's offsets, a host with it fails here until the pin is
+// refreshed.
 func TestWinnipegAgreesWithSystemDatabase2026eOrLater(t *testing.T) {
 	dir := compareDir()
 	version, err := systemVersion(dir)
@@ -194,10 +197,10 @@ func TestWinnipegAgreesWithSystemDatabase2026eOrLater(t *testing.T) {
 	}
 	from := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC)
-	if diff := firstDifference(pinned, other, from, to); diff != "" {
+	if diff := firstDifference(pinned, other, from, to, false); diff != "" {
 		t.Fatalf("America/Winnipeg, pinned tzdb %s vs %s (tzdb %s): %s", Version(), dir, version, diff)
 	}
-	t.Logf("America/Winnipeg: pinned tzdb %s agrees with %s (tzdb %s), 1970-2100", Version(), dir, version)
+	t.Logf("America/Winnipeg: pinned tzdb %s has the same UTC offsets as %s (tzdb %s), 1970-2100", Version(), dir, version)
 }
 
 // systemVersion reads "# version 2026e" from the first line of tzdata.zi.
@@ -219,8 +222,9 @@ func systemVersion(dir string) (string, error) {
 }
 
 // firstDifference walks every zone boundary of a and b from from to to and
-// describes the first instant where the UTC offset or abbreviation differ.
-func firstDifference(a, b *time.Location, from, to time.Time) string {
+// describes the first instant where the UTC offset (and, if abbreviations is
+// set, the abbreviation) differ.
+func firstDifference(a, b *time.Location, from, to time.Time, abbreviations bool) string {
 	at := from
 	for steps := 0; at.Before(to); steps++ {
 		if steps > 100000 {
@@ -228,7 +232,7 @@ func firstDifference(a, b *time.Location, from, to time.Time) string {
 		}
 		aName, aOffset := at.In(a).Zone()
 		bName, bOffset := at.In(b).Zone()
-		if aName != bName || aOffset != bOffset {
+		if aOffset != bOffset || (abbreviations && aName != bName) {
 			return fmt.Sprintf("at %s: pinned %s %+d, other %s %+d", at.UTC().Format(time.RFC3339), aName, aOffset, bName, bOffset)
 		}
 		var next time.Time
@@ -266,7 +270,7 @@ func TestFirstDifferenceFindsTheManitobaChange(t *testing.T) {
 	}
 	from := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC)
-	if diff := firstDifference(pinned, pinned, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), to); diff != "" {
+	if diff := firstDifference(pinned, pinned, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), to, true); diff != "" {
 		t.Fatalf("a zone differs from itself: %s", diff)
 	}
 	path := filepath.Join(runtime.GOROOT(), "lib", "time", "zoneinfo.zip")
@@ -295,7 +299,7 @@ func TestFirstDifferenceFindsTheManitobaChange(t *testing.T) {
 		if _, offset := time.Date(2027, 1, 15, 12, 0, 0, 0, time.UTC).In(old).Zone(); offset == -5*60*60 {
 			t.Skipf("the toolchain copy at %s already has permanent UTC-05", path)
 		}
-		if diff := firstDifference(pinned, old, from, to); !strings.Contains(diff, "at 2026-11-01T07:00:00Z") {
+		if diff := firstDifference(pinned, old, from, to, false); !strings.Contains(diff, "at 2026-11-01T07:00:00Z") {
 			t.Fatalf("pinned vs %s: first difference %q; want the 2026-11-01T07:00:00Z fall-back", path, diff)
 		}
 		return
@@ -316,9 +320,11 @@ var systemVNames = map[string]bool{
 // The independent check (Issue #193, acceptance criterion 2): every pinned
 // zone agrees, 1970-2100, with a separate build of the same IANA release,
 // such as the OS package (Debian and Ubuntu compile theirs with glibc's
-// zic). It runs wherever the system database is the pinned version, which
-// includes the CI image (Ubuntu tzdata 2026e). GYST_TZDB_COMPARE_DIR points
-// it at another zoneinfo directory. Before 1970 IANA does not promise that
+// zic). It runs only where the system database is the pinned release; it
+// skips in the CI image while that has Ubuntu tzdata 2026e and the pin is
+// 2026f (TestWinnipegAgreesWithSystemDatabase2026eOrLater still runs
+// there). GYST_TZDB_COMPARE_DIR points it at another zoneinfo directory,
+// such as an extracted Debian tzdata package. Before 1970 IANA does not promise that
 // builds agree (backzone options differ: Ubuntu gives some old links their
 // own pre-1970 history), and newer Debian and Ubuntu move old link names to
 // a tzdata-legacy package, so missing names are skipped.
@@ -366,7 +372,7 @@ func TestPinnedAgreesWithSystemBuildOfSameRelease(t *testing.T) {
 		if name == "UTC" {
 			pinned, _ = time.LoadLocationFromTZData(name, zoneBytes(t, name))
 		}
-		if diff := firstDifference(pinned, other, from, to); diff != "" {
+		if diff := firstDifference(pinned, other, from, to, true); diff != "" {
 			t.Errorf("%s: %s", name, diff)
 		}
 		compared++
