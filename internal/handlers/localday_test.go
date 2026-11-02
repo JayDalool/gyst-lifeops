@@ -33,9 +33,14 @@ var localDayCases = []struct {
 	{"spring forward, last CST", "2026-03-08T07:59:00Z", "2026-03-08"},
 	{"spring forward, first CDT", "2026-03-08T08:00:00Z", "2026-03-08"},
 	{"spring forward day, 23:30", "2026-03-09T04:30:00Z", "2026-03-08"},
-	{"fall back, first 01:30 CDT", "2026-11-01T06:30:00Z", "2026-11-01"},
-	{"fall back, second 01:30 CST", "2026-11-01T07:30:00Z", "2026-11-01"},
-	{"fall back day, 23:30", "2026-11-02T05:30:00Z", "2026-11-01"},
+	{"last fall back, first 01:30 CDT", "2025-11-02T06:30:00Z", "2025-11-02"},
+	{"last fall back, second 01:30 CST", "2025-11-02T07:30:00Z", "2025-11-02"},
+	{"last fall back day, 23:30", "2025-11-03T05:30:00Z", "2025-11-02"},
+	{"permanent UTC-05 day, 01:30", "2026-11-01T06:30:00Z", "2026-11-01"},
+	{"permanent UTC-05 day, 02:30 (no second 01:30)", "2026-11-01T07:30:00Z", "2026-11-01"},
+	{"permanent UTC-05 day, 23:30", "2026-11-02T04:30:00Z", "2026-11-01"},
+	{"permanent UTC-05, next day 00:30", "2026-11-02T05:30:00Z", "2026-11-02"},
+	{"winter 2027, 00:30", "2027-01-16T05:30:00Z", "2027-01-16"},
 }
 
 func pinClock(t *testing.T, h *Handler, instant string) {
@@ -70,7 +75,7 @@ func TestLocalDayTaskCompletionDefault(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			h := testHandler(t)
 			pinClock(t, h, tc.instant)
-			task := models.Task{Title: "Daily stretch", DueDate: "2026-01-01", RepeatType: "daily"}
+			task := models.Task{Title: "Daily stretch", DueDate: "2025-01-01", RepeatType: "daily"}
 			if err := h.Service.Repo.CreateTask(&task); err != nil {
 				t.Fatal(err)
 			}
@@ -78,7 +83,7 @@ func TestLocalDayTaskCompletionDefault(t *testing.T) {
 			if rec.Code != http.StatusSeeOther {
 				t.Fatalf("complete status = %d: %s", rec.Code, rec.Body.String())
 			}
-			completions, err := h.Service.Repo.TaskCompletionsBetween("2026-01-01", "2026-12-31")
+			completions, err := h.Service.Repo.TaskCompletionsBetween("2025-01-01", "2027-12-31")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -110,7 +115,7 @@ func TestLocalDayPrayerCheckInDefault(t *testing.T) {
 					t.Fatalf("toggle %s status = %d: %s", key, rec.Code, rec.Body.String())
 				}
 			}
-			logs, err := h.Service.Repo.TrackerLogsBetween("2026-01-01", "2026-12-31")
+			logs, err := h.Service.Repo.TrackerLogsBetween("2025-01-01", "2027-12-31")
 			if err != nil {
 				t.Fatal(err)
 			}

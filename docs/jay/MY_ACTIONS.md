@@ -1,3 +1,4 @@
+- [ ] #193 · Deploy now: live shows yesterday 00:00–01:00, times 1 h off · https://github.com/JayDalool/gyst-lifeops/issues/193
 - [ ] #183 · After deploy: set export/calendar roadmaps to Public · https://github.com/JayDalool/gyst-lifeops/issues/183
 - [ ] #176 · Count project links lost to archived parents (backup copies) · https://github.com/JayDalool/gyst-lifeops/issues/176#issuecomment-6133715342
 - [ ] #175 · Count duplicate study catch-ups on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/175

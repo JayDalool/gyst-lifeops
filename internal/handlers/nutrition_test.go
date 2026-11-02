@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 )
 
@@ -113,7 +114,7 @@ func TestNutritionWeek(t *testing.T) {
 // whose last sync came before 20:00 local is partial, shown hatched and left
 // out of the average and the within-target count; today is never partial.
 func TestNutritionWeekPartialAndZeroDays(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
+	loc, _ := clock.Load(clock.DefaultTimezone)
 	at := func(day string, hour int) string {
 		d, _ := time.ParseInLocation("2006-01-02", day, loc)
 		return d.Add(time.Duration(hour) * time.Hour).UTC().Format(time.RFC3339Nano)
@@ -168,7 +169,7 @@ func TestNutritionWeekPartialAndZeroDays(t *testing.T) {
 // stays "not logged" (dashed), never a hatched bar. Rounding to zero (0.4
 // kcal, 0.4 g) is a day of recorded zeros (#72 review).
 func TestNutritionWeekNotLoggedNeverPartial(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
+	loc, _ := clock.Load(clock.DefaultTimezone)
 	d, _ := time.ParseInLocation("2006-01-02", "2026-09-08", loc)
 	early := d.Add(14 * time.Hour).UTC().Format(time.RFC3339Nano)
 	history := []models.DailyHealthSnapshot{

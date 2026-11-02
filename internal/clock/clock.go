@@ -10,26 +10,41 @@
 //     Clock.DateOf(). Never take a day straight from a raw time.Now().
 //
 // The application timezone comes from GYST_TIMEZONE and defaults to
-// America/Winnipeg. The zone database is embedded, so the binary does not
-// depend on the container image shipping /usr/share/zoneinfo.
+// America/Winnipeg. America/Winnipeg's rules are pinned in the binary
+// (tzdata/, see its README): Manitoba's permanent UTC-05 from 2026-11-01 is
+// newer than Go's embedded zone database and than older container images, so
+// the default zone depends on neither. Any other zone goes through
+// time.LoadLocation (system zoneinfo first, then Go's embedded copy).
 package clock
 
 import (
+	_ "embed"
 	"fmt"
 	"strings"
 	"time"
-	_ "time/tzdata" // embed the IANA zone database in the binary
+	_ "time/tzdata" // fallback zone database for zones other than the default
 )
 
 // DefaultTimezone is the application timezone when GYST_TIMEZONE is unset.
 const DefaultTimezone = "America/Winnipeg"
 
-var defaultLocation = mustLoad(DefaultTimezone)
+//go:embed tzdata/America_Winnipeg
+var winnipegTZif []byte
 
-func mustLoad(name string) *time.Location {
-	location, err := time.LoadLocation(name)
+//go:embed tzdata/VERSION
+var pinnedVersion string
+
+// PinnedTZDataVersion is the IANA tzdata release the default zone is pinned to.
+func PinnedTZDataVersion() string {
+	return strings.TrimSpace(pinnedVersion)
+}
+
+var defaultLocation = mustLoadPinned()
+
+func mustLoadPinned() *time.Location {
+	location, err := time.LoadLocationFromTZData(DefaultTimezone, winnipegTZif)
 	if err != nil {
-		panic(fmt.Sprintf("clock: load %s: %v", name, err))
+		panic(fmt.Sprintf("clock: load pinned %s: %v", DefaultTimezone, err))
 	}
 	return location
 }
@@ -48,12 +63,13 @@ func System() Clock {
 	return Clock{Now: time.Now, Loc: defaultLocation}
 }
 
-// Load resolves the configured application timezone. An empty name means
-// DefaultTimezone; any other name must be a valid IANA zone. "Local" is
+// Load resolves the configured application timezone. An empty name or
+// DefaultTimezone gives the pinned DefaultTimezone; any other name must be a
+// valid IANA zone. "Local" is
 // rejected because it would make the result depend on the process zone.
 func Load(name string) (*time.Location, error) {
 	name = strings.TrimSpace(name)
-	if name == "" {
+	if name == "" || name == DefaultTimezone {
 		return defaultLocation, nil
 	}
 	if name == "Local" {
@@ -77,7 +93,8 @@ func (c Clock) Location() *time.Location {
 // Today is 00:00 of the current local calendar day, in the application
 // timezone. The value is only ever used for civil-date arithmetic (AddDate,
 // Weekday, Year/Month/Day) and leaves the process as a YYYY-MM-DD string.
-// America/Winnipeg changes DST at 02:00, so local midnight always exists.
+// America/Winnipeg's clock changes (the last on 2026-03-08) were at 02:00, so
+// local midnight always exists.
 func (c Clock) Today() time.Time {
 	local := c.Now().In(c.Location())
 	return time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, c.Location())

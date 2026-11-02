@@ -3,6 +3,8 @@ package services
 import (
 	"testing"
 	"time"
+
+	"lifeops-tracker/internal/clock"
 )
 
 func TestOverdueSince(t *testing.T) {
@@ -13,7 +15,7 @@ func TestOverdueSince(t *testing.T) {
 		}
 		return v
 	}
-	zone, err := time.LoadLocation("America/Winnipeg")
+	zone, err := clock.Load(clock.DefaultTimezone)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,8 +41,12 @@ func TestOverdueSince(t *testing.T) {
 			t.Errorf("%s -> %s = %q, want %q", tc.due, tc.today, got, tc.want)
 		}
 	}
-	// Across the DST changes, where local midnights are 23 or 25 hours apart.
+	// Across the DST changes, where local midnights are 23 or 25 hours apart,
+	// and across 2026-11-01, when Manitoba stayed on UTC-05 (24 hours).
 	for _, tc := range []struct{ due, today, want string }{
+		{"2025-11-01", "2025-11-02", "since yesterday"},
+		{"2025-11-02", "2025-11-03", "since yesterday"},
+		{"2025-11-01", "2025-11-03", "since Saturday"},
 		{"2026-03-07", "2026-03-08", "since yesterday"},
 		{"2026-03-08", "2026-03-09", "since yesterday"},
 		{"2026-03-07", "2026-03-09", "since Saturday"},

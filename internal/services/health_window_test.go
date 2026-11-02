@@ -77,23 +77,27 @@ func TestHealthSyncWindowFollowsLocalMidnight(t *testing.T) {
 }
 
 func TestHealthSyncWindowAcrossDSTAndOtherZone(t *testing.T) {
-	// US DST ends on 2026-11-01; the window must still be seven civil days.
+	// Winnipeg's last fall back was 2025-11-02 and its last spring forward
+	// 2026-03-08; the window must still be seven civil days. Across
+	// 2026-11-01 (no change: permanent UTC-05) it is seven days too.
 	s := testService(t)
-	s.Now = func() time.Time { return time.Date(2026, 11, 3, 18, 0, 0, 0, time.UTC) }
-	if _, err := s.SyncHealth(windowInput("2026-10-27")); err != nil {
-		t.Fatalf("earliest across DST: %v", err)
-	}
 	var window *HealthDateWindowError
-	if _, err := s.SyncHealth(windowInput("2026-10-26")); !errors.As(err, &window) || window.Earliest != "2026-10-27" {
-		t.Fatalf("day before earliest across DST: %v", err)
-	}
-	// Spring forward in Winnipeg: 2027-03-14.
-	s.Now = func() time.Time { return time.Date(2027, 3, 16, 18, 0, 0, 0, time.UTC) }
-	if _, err := s.SyncHealth(windowInput("2027-03-09")); err != nil {
-		t.Fatalf("earliest across spring DST: %v", err)
-	}
-	if _, err := s.SyncHealth(windowInput("2027-03-08")); err == nil {
-		t.Fatal("accepted day before earliest across spring DST")
+	for _, tc := range []struct {
+		now                   time.Time
+		earliest, dayBeforeIt string
+	}{
+		{time.Date(2025, 11, 4, 18, 0, 0, 0, time.UTC), "2025-10-28", "2025-10-27"},
+		{time.Date(2026, 3, 10, 18, 0, 0, 0, time.UTC), "2026-03-03", "2026-03-02"},
+		{time.Date(2026, 11, 3, 18, 0, 0, 0, time.UTC), "2026-10-27", "2026-10-26"},
+	} {
+		now := tc.now
+		s.Now = func() time.Time { return now }
+		if _, err := s.SyncHealth(windowInput(tc.earliest)); err != nil {
+			t.Fatalf("now %s: earliest %s: %v", now.Format(time.RFC3339), tc.earliest, err)
+		}
+		if _, err := s.SyncHealth(windowInput(tc.dayBeforeIt)); !errors.As(err, &window) || window.Earliest != tc.earliest {
+			t.Fatalf("now %s: day before earliest: %v", now.Format(time.RFC3339), err)
+		}
 	}
 	// A different zone moves the window: 2026-10-11T22:00Z is already Oct 12 in Tokyo.
 	loc, err := time.LoadLocation("Asia/Tokyo")

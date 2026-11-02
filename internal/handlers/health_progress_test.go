@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestWeightHistoryRangeAndPlot(t *testing.T) {
-	location, _ := time.LoadLocation("America/Winnipeg")
+	location, _ := clock.Load(clock.DefaultTimezone)
 	now := time.Date(2026, 9, 13, 12, 0, 0, 0, location)
 	entries := []models.HealthWeightEntry{
 		{ID: 4, MeasuredAt: now.Add(time.Hour).Format(time.RFC3339), WeightKg: 999, Source: "manual"},

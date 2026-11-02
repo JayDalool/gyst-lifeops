@@ -38,14 +38,14 @@ func produce(t *testing.T, svc *Service, p AttentionProducer) []AttentionItem {
 
 func TestAttentionOverdueTasks(t *testing.T) {
 	svc, _ := attentionService(t)
-	pinUTC(t, svc, "2026-11-05T18:00:00Z") // Thu 2026-11-05 12:00 CST
+	pinUTC(t, svc, "2026-11-05T18:00:00Z") // Thu 2026-11-05 13:00 (UTC-05)
 	for _, task := range []models.Task{
 		{Title: "Paint fence", DueDate: "2026-11-04"},
 		{Title: "Today task", DueDate: "2026-11-05"},
 		{Title: "Tomorrow task", DueDate: "2026-11-06"},
 		{Title: "Weekly chore", DueDate: "2026-11-01", RepeatType: "weekly"},
-		{Title: "Before DST end", DueDate: "2026-10-31"},
-		{Title: "On DST end", DueDate: "2026-11-01"},
+		{Title: "Before permanent UTC-05", DueDate: "2026-10-31"},
+		{Title: "On permanent UTC-05", DueDate: "2026-11-01"},
 	} {
 		if err := svc.Repo.CreateTask(&task); err != nil {
 			t.Fatal(err)
@@ -72,16 +72,16 @@ func TestAttentionOverdueTasks(t *testing.T) {
 		fence.Context != "Overdue since 2026-11-04" || !strings.HasPrefix(fence.Target, "/tasks/") {
 		t.Fatalf("fence = %#v", fence)
 	}
-	// Local midnight after the due date: CST (UTC-6) after the DST end.
-	if want := time.Date(2026, 11, 5, 6, 0, 0, 0, time.UTC); !fence.FirstSeen.Equal(want) {
+	// Local midnight after the due date: still UTC-05 (Manitoba no longer falls back).
+	if want := time.Date(2026, 11, 5, 5, 0, 0, 0, time.UTC); !fence.FirstSeen.Equal(want) {
 		t.Fatalf("FirstSeen = %v, want %v", fence.FirstSeen, want)
 	}
-	// 2026-10-31 -> 2026-11-01 00:00 CDT (UTC-5); 2026-11-01 -> 2026-11-02 00:00 CST (UTC-6).
-	if want := time.Date(2026, 11, 1, 5, 0, 0, 0, time.UTC); !byTitle["Before DST end"].FirstSeen.Equal(want) {
-		t.Fatalf("before DST = %v", byTitle["Before DST end"].FirstSeen)
+	// 2026-10-31 -> 2026-11-01 00:00 CDT (UTC-5); 2026-11-01 -> 2026-11-02 00:00, also UTC-5.
+	if want := time.Date(2026, 11, 1, 5, 0, 0, 0, time.UTC); !byTitle["Before permanent UTC-05"].FirstSeen.Equal(want) {
+		t.Fatalf("before the change = %v", byTitle["Before permanent UTC-05"].FirstSeen)
 	}
-	if want := time.Date(2026, 11, 2, 6, 0, 0, 0, time.UTC); !byTitle["On DST end"].FirstSeen.Equal(want) {
-		t.Fatalf("on DST = %v", byTitle["On DST end"].FirstSeen)
+	if want := time.Date(2026, 11, 2, 5, 0, 0, 0, time.UTC); !byTitle["On permanent UTC-05"].FirstSeen.Equal(want) {
+		t.Fatalf("on the change day = %v", byTitle["On permanent UTC-05"].FirstSeen)
 	}
 }
 
