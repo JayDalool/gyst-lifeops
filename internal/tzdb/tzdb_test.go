@@ -157,6 +157,49 @@ func TestHostZoneFilesCannotOverridePinnedData(t *testing.T) {
 	}
 }
 
+// compareDir is the zoneinfo directory the comparison tests read:
+// $GYST_TZDB_COMPARE_DIR, else the system one.
+func compareDir() string {
+	if dir := os.Getenv("GYST_TZDB_COMPARE_DIR"); dir != "" {
+		return dir
+	}
+	return "/usr/share/zoneinfo"
+}
+
+// Manitoba's rules are the same in every release from 2026e on, so the
+// pinned America/Winnipeg must agree (1970-2100) with any system database
+// that new, even when the OS package lags the pin (the CI image's Ubuntu
+// tzdata is 2026e). If a later release changes Winnipeg again, a host with
+// that release fails here until the pin is refreshed.
+func TestWinnipegAgreesWithSystemDatabase2026eOrLater(t *testing.T) {
+	dir := compareDir()
+	version, err := systemVersion(dir)
+	if err != nil {
+		t.Skipf("no comparable zone database: %v", err)
+	}
+	if version < "2026e" {
+		t.Skipf("%s is tzdb %s, older than Manitoba's permanent UTC-05 (2026e)", dir, version)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "America", "Winnipeg"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := time.LoadLocationFromTZData("America/Winnipeg", data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pinned, err := Load("America/Winnipeg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	from := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC)
+	if diff := firstDifference(pinned, other, from, to); diff != "" {
+		t.Fatalf("America/Winnipeg, pinned tzdb %s vs %s (tzdb %s): %s", Version(), dir, version, diff)
+	}
+	t.Logf("America/Winnipeg: pinned tzdb %s agrees with %s (tzdb %s), 1970-2100", Version(), dir, version)
+}
+
 // systemVersion reads "# version 2026e" from the first line of tzdata.zi.
 func systemVersion(dir string) (string, error) {
 	file, err := os.Open(filepath.Join(dir, "tzdata.zi"))
@@ -280,10 +323,7 @@ var systemVNames = map[string]bool{
 // own pre-1970 history), and newer Debian and Ubuntu move old link names to
 // a tzdata-legacy package, so missing names are skipped.
 func TestPinnedAgreesWithSystemBuildOfSameRelease(t *testing.T) {
-	dir := os.Getenv("GYST_TZDB_COMPARE_DIR")
-	if dir == "" {
-		dir = "/usr/share/zoneinfo"
-	}
+	dir := compareDir()
 	version, err := systemVersion(dir)
 	if err != nil {
 		t.Skipf("no comparable zone database: %v", err)

@@ -126,7 +126,7 @@ service is.
 ```mermaid
 flowchart LR
     Env[GYST_TIMEZONE] --> Clock[internal/clock]
-    TZDB[internal/tzdb: pinned IANA 2026e] --> Clock
+    TZDB[internal/tzdb: pinned IANA tzdb] --> Clock
     Clock --> Service[services.Service]
     Service --> Days[Tasks, trackers, prayer, Health, reminders, courses]
     Service --> Handlers[Handlers: date defaults and validation]

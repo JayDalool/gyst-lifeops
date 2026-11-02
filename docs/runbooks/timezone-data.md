@@ -8,8 +8,9 @@ any of it against production.
 ## What this is about
 
 Manitoba moved to permanent UTC-05 on 2026-10-31. It did not fall back on
-2026-11-01 and has no clock changes in 2027. IANA tzdb 2026e models this
-(abbreviation `EST`, applied from 2026-11-01 02:00, a temporary detail).
+2026-11-01 and has no clock changes in 2027. IANA tzdb 2026e and later model
+this (abbreviation `EST`, applied from 2026-11-01 02:00, a temporary detail).
+GYST pins 2026f, the latest release (it also has Cuba staying on UTC-04).
 
 Before #193, GYST took zones from Go's `time.LoadLocation`. That reads the
 container's `/usr/share/zoneinfo` first. If the container has none, it falls
@@ -77,11 +78,11 @@ Pass:
 
 - `exit=0` and a line `probe: America/Winnipeg, 14 known UTC offsets
   (history and permanent UTC-05): OK`.
-- `tzdb: 2026e, pinned in the binary (zoneinfo.zip sha256 f2d09714…)`. The
-  hash matches `zoneinfo_zip_sha256` in `internal/tzdb/PROVENANCE` for the
-  deployed commit.
+- `tzdb: 2026f, pinned in the binary (zoneinfo.zip sha256 e134486e…)`. The
+  release and hash match `tzdb_version` and `zoneinfo_zip_sha256` in
+  `internal/tzdb/PROVENANCE` for the deployed commit.
 - `now: … UTC offset -05:00, local day …` shows today's Winnipeg date.
-- The log line reads `Application timezone: America/Winnipeg (tzdb 2026e)`.
+- The log line reads `Application timezone: America/Winnipeg (tzdb 2026f)`.
 - The Today page's Dhuhr matches the values in step 1.
 
 `tzinfo` prints the zone name from `GYST_TIMEZONE` (a zone name, not a
