@@ -4,6 +4,8 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+	"lifeops-tracker/internal/clock"
 )
 
 func TestSavePrayerConfigAlertSettings(t *testing.T) {
@@ -31,7 +33,7 @@ func TestSavePrayerConfigAlertSettings(t *testing.T) {
 
 func winnipegTime(t *testing.T, value string) time.Time {
 	t.Helper()
-	location, err := time.LoadLocation(defaultPrayerTimezone)
+	location, err := clock.Load(defaultPrayerTimezone)
 	if err != nil {
 		t.Fatal(err)
 	}

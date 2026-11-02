@@ -1,3 +1,4 @@
+- [ ] #193 · Training and weight times now say EST; label OK? · https://github.com/JayDalool/gyst-lifeops/pull/194
 - [ ] #184 · iPhone Archive: grouped rows open details · https://github.com/JayDalool/gyst-lifeops/pull/185
 - [ ] #179 · Courses: block count reaches Y of Y after Later · https://github.com/JayDalool/gyst-lifeops/issues/179
 - [ ] #176 · Edit child of archived parent; links stay · https://github.com/JayDalool/gyst-lifeops/issues/176

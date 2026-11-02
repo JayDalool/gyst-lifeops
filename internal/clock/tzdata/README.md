@@ -30,3 +30,6 @@ default zone the same in every build, image and test run.
 tests has a newer tzdata release whose America/Winnipeg differs from the pin.
 Then repeat the steps above with the new release, replace `America_Winnipeg`
 and `VERSION`, and update this file.
+
+Production checks, the data a stale build wrote, and rollback:
+`docs/runbooks/timezone-check.md`.
