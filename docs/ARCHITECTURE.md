@@ -108,8 +108,13 @@ service is.
   rejected with HTTP 400 before anything is written. An empty value becomes
   the local Today where the form defines a default.
 - `app.New` resolves the timezone before opening the database, so an invalid
-  explicit `GYST_TIMEZONE` stops startup without creating or migrating it. The
-  IANA zone database is embedded in the binary (`time/tzdata`).
+  explicit `GYST_TIMEZONE` stops startup without creating or migrating it.
+- The default zone, America/Winnipeg, is pinned in the binary from a verified
+  IANA release (`internal/clock/tzdata/`, with its provenance and refresh
+  steps), so it never depends on the image's `/usr/share/zoneinfo` or on the
+  copy Go embeds: both can predate Manitoba's permanent UTC-05 from
+  2026-11-01. Any other zone uses `time.LoadLocation`, which reads the system
+  zone database first and Go's embedded `time/tzdata` only as a fallback.
 - `internal/clock/guard_test.go` fails the build if code outside
   `internal/clock` and `internal/db` uses `time.Now`, `time.Local`,
   `time.LoadLocation` or the zone name, or derives a day from a `Now()` call
