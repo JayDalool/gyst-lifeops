@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 )
 
@@ -28,7 +29,7 @@ func exercise(name, muscle string, sets ...models.TrainingSet) models.TrainingEx
 }
 
 func TestSummarizeTrainingWeek(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
+	loc, _ := clock.Load("America/Winnipeg")
 	now := time.Date(2026, 10, 4, 23, 45, 0, 0, loc) // Sunday
 	entries := []models.TrainingEntry{
 		// Monday: 3×10 at 100 kg = 3000 kg, warmup and bodyweight sets excluded.
@@ -53,17 +54,23 @@ func TestSummarizeTrainingWeek(t *testing.T) {
 }
 
 func TestWeekSpanningDSTEnd(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
-	// DST ends Sunday 2026-11-01; the week of Oct 26 has a 25-hour day.
-	now := time.Date(2026, 11, 1, 22, 0, 0, 0, loc)
-	week := SummarizeTrainingWeek([]models.TrainingEntry{workout(time.Date(2026, 11, 1, 21, 0, 0, 0, loc), 30)}, now, loc)
-	if !week.Days[6] || week.Today != 6 {
-		t.Fatalf("DST week %+v", week)
+	loc, _ := clock.Load("America/Winnipeg")
+	// DST ended Sunday 2025-11-02, Manitoba's last fall-back, so the week of
+	// Oct 27 has a 25-hour day. Sunday 2026-11-01 had no fall-back
+	// (permanent UTC-05, Issue #193): seven 24-hour days.
+	for _, now := range []time.Time{
+		time.Date(2025, 11, 2, 22, 0, 0, 0, loc),
+		time.Date(2026, 11, 1, 22, 0, 0, 0, loc),
+	} {
+		week := SummarizeTrainingWeek([]models.TrainingEntry{workout(now.Add(-time.Hour), 30)}, now, loc)
+		if !week.Days[6] || week.Today != 6 {
+			t.Fatalf("week ending %s: %+v", now.Format("2006-01-02"), week)
+		}
 	}
 }
 
 func TestWorkoutsPerWeek(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
+	loc, _ := clock.Load("America/Winnipeg")
 	now := time.Date(2026, 10, 1, 12, 0, 0, 0, loc) // Thursday
 	entries := []models.TrainingEntry{
 		workout(time.Date(2026, 9, 15, 9, 0, 0, 0, loc), 30), // two weeks ago

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 )
 
@@ -93,7 +94,7 @@ func TestHealthSummaryHidesUnbuiltControls(t *testing.T) {
 }
 
 func TestHealthProgressHidesUnbuiltTrends(t *testing.T) {
-	location, _ := time.LoadLocation("America/Winnipeg")
+	location, _ := clock.Load("America/Winnipeg")
 	now := time.Date(2026, 9, 13, 12, 0, 0, 0, location)
 	one := []models.HealthWeightEntry{{ID: 1, MeasuredAt: "2026-09-12T08:00:00-05:00", WeightKg: 81.5, Source: "manual"}}
 	many := append(one, models.HealthWeightEntry{ID: 2, MeasuredAt: "2026-09-10T08:00:00-05:00", WeightKg: 82, Source: "apple_shortcuts"})

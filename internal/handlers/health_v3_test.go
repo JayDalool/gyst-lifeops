@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 )
 
 func TestBuildHealthWeight(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
+	loc, _ := clock.Load("America/Winnipeg")
 	now := time.Date(2026, 10, 5, 9, 0, 0, 0, loc)
 	at := func(month time.Month, day int) string {
 		return time.Date(2026, month, day, 7, 0, 0, 0, loc).Format(time.RFC3339)
@@ -44,7 +45,7 @@ func TestBuildHealthWeight(t *testing.T) {
 }
 
 func TestDayLabel(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
+	loc, _ := clock.Load("America/Winnipeg")
 	// The morning after DST ends: a 25-hour day must still be "Yesterday".
 	now := time.Date(2026, 11, 2, 8, 0, 0, 0, loc)
 	for at, want := range map[time.Time]string{

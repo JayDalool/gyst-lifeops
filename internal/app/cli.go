@@ -25,6 +25,10 @@ func Run() {
 		runPasswordHashAndExit()
 		return
 	}
+	if tzinfoRequested(os.Args) {
+		runTzinfoAndExit()
+		return
+	}
 
 	// One JSON line per event on stdout (GYST-VN-015). Setting the default also
 	// routes the remaining log.Printf lines through the same handler, so the

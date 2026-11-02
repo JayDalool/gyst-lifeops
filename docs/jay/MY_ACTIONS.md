@@ -1,3 +1,4 @@
+- [ ] #193 · Before and after deploy: read-only time zone check · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/timezone-data.md
 - [ ] #183 · After deploy: set export/calendar roadmaps to Public · https://github.com/JayDalool/gyst-lifeops/issues/183
 - [ ] #176 · Count project links lost to archived parents (backup copies) · https://github.com/JayDalool/gyst-lifeops/issues/176#issuecomment-6133715342
 - [ ] #175 · Count duplicate study catch-ups on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/175

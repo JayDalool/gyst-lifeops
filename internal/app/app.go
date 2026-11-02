@@ -17,6 +17,7 @@ import (
 	"lifeops-tracker/internal/providers/hevy"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
+	"lifeops-tracker/internal/tzdb"
 )
 
 type Config struct {
@@ -90,7 +91,7 @@ func New(config Config) (*App, error) {
 	// Set before any goroutine reads the clock.
 	service.Loc = location
 	service.BackupStatusPath = filepath.Join(filepath.Dir(config.DBPath), "backups", "last_run.json")
-	log.Printf("Application timezone: %s", location)
+	log.Printf("Application timezone: %s (tzdb %s)", location, tzdb.Version())
 	// Before any goroutine, handler or listener: a changed GYST_PASSWORD_HASH
 	// must end every old session, and a failure here stops startup rather
 	// than serve sessions the new password never approved.

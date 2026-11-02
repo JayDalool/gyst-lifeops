@@ -14,7 +14,9 @@ import (
 
 // GYST-VN-003: every stored calendar day is the application's local day
 // (America/Winnipeg), never the process (UTC) day. Instants are pinned in UTC,
-// the production condition.
+// the production condition. Manitoba's last fall-back was 2025-11-02 and its
+// last spring forward 2026-03-08; from then on it is UTC-05 all year (Issue
+// #193), so there is no fall-back on 2026-11-01.
 var localDayCases = []struct {
 	name    string
 	instant string
@@ -33,10 +35,19 @@ var localDayCases = []struct {
 	{"spring forward, last CST", "2026-03-08T07:59:00Z", "2026-03-08"},
 	{"spring forward, first CDT", "2026-03-08T08:00:00Z", "2026-03-08"},
 	{"spring forward day, 23:30", "2026-03-09T04:30:00Z", "2026-03-08"},
-	{"fall back, first 01:30 CDT", "2026-11-01T06:30:00Z", "2026-11-01"},
-	{"fall back, second 01:30 CST", "2026-11-01T07:30:00Z", "2026-11-01"},
-	{"fall back day, 23:30", "2026-11-02T05:30:00Z", "2026-11-01"},
+	{"2025 fall back, first 01:30 CDT", "2025-11-02T06:30:00Z", "2025-11-02"},
+	{"2025 fall back, second 01:30 CST", "2025-11-02T07:30:00Z", "2025-11-02"},
+	{"2025 fall back day, 23:30 CST", "2025-11-03T05:30:00Z", "2025-11-02"},
+	{"2026-11-01, 01:30 once", "2026-11-01T06:30:00Z", "2026-11-01"},
+	{"2026-11-01, 23:30 UTC-05", "2026-11-02T04:30:00Z", "2026-11-01"},
+	{"2026-11-02, 00:30 UTC-05 (not 23:30 CST)", "2026-11-02T05:30:00Z", "2026-11-02"},
+	{"winter UTC-05, 23:30", "2027-01-16T04:30:00Z", "2027-01-15"},
+	{"winter UTC-05, 00:00", "2027-01-16T05:00:00Z", "2027-01-16"},
+	{"2027-03-14, 23:30 (no spring forward)", "2027-03-15T04:30:00Z", "2027-03-14"},
 }
+
+// The local days above run from 2025 to 2027; the windows below cover them.
+const localDayFirst, localDayLast = "2025-01-01", "2027-12-31"
 
 func pinClock(t *testing.T, h *Handler, instant string) {
 	t.Helper()
@@ -70,7 +81,7 @@ func TestLocalDayTaskCompletionDefault(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			h := testHandler(t)
 			pinClock(t, h, tc.instant)
-			task := models.Task{Title: "Daily stretch", DueDate: "2026-01-01", RepeatType: "daily"}
+			task := models.Task{Title: "Daily stretch", DueDate: localDayFirst, RepeatType: "daily"}
 			if err := h.Service.Repo.CreateTask(&task); err != nil {
 				t.Fatal(err)
 			}
@@ -78,7 +89,7 @@ func TestLocalDayTaskCompletionDefault(t *testing.T) {
 			if rec.Code != http.StatusSeeOther {
 				t.Fatalf("complete status = %d: %s", rec.Code, rec.Body.String())
 			}
-			completions, err := h.Service.Repo.TaskCompletionsBetween("2026-01-01", "2026-12-31")
+			completions, err := h.Service.Repo.TaskCompletionsBetween(localDayFirst, localDayLast)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -110,7 +121,7 @@ func TestLocalDayPrayerCheckInDefault(t *testing.T) {
 					t.Fatalf("toggle %s status = %d: %s", key, rec.Code, rec.Body.String())
 				}
 			}
-			logs, err := h.Service.Repo.TrackerLogsBetween("2026-01-01", "2026-12-31")
+			logs, err := h.Service.Repo.TrackerLogsBetween(localDayFirst, localDayLast)
 			if err != nil {
 				t.Fatal(err)
 			}

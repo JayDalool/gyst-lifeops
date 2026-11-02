@@ -3,6 +3,8 @@ package services
 import (
 	"testing"
 	"time"
+
+	"lifeops-tracker/internal/clock"
 )
 
 func TestOverdueSince(t *testing.T) {
@@ -13,7 +15,7 @@ func TestOverdueSince(t *testing.T) {
 		}
 		return v
 	}
-	zone, err := time.LoadLocation("America/Winnipeg")
+	zone, err := clock.Load("America/Winnipeg")
 	if err != nil {
 		t.Fatal(err)
 	}

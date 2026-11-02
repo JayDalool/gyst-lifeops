@@ -1,0 +1,5 @@
+# The pinned time zone database is checked byte for byte (Issue #193), so a
+# Windows checkout with core.autocrlf=true must not rewrite these files.
+internal/tzdb/zoneinfo.zip binary
+internal/tzdb/PROVENANCE text eol=lf
+scripts/tzdb/update.sh text eol=lf
