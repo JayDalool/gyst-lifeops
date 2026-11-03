@@ -408,8 +408,10 @@
   // Pages about "today" ([data-day-page="YYYY-MM-DD"], e.g. Health Today)
   // reload when the app's day has changed while the PWA sat in the
   // background, so the water bottle and the day's numbers reset at midnight
-  // without a manual refresh (#78). The day is read in the app timezone
-  // (data-day-tz), the same one the server counts days in.
+  // without a manual refresh (#78). The server sends the instant its day ends
+  // (data-day-ends, from GYST's pinned zone data), so the device's own zone
+  // rules, which may be stale, never decide the day (#193). Without it, the
+  // day is read in the app timezone (data-day-tz) by the browser.
   function initDayReload() {
     var page = document.querySelector("[data-day-page]");
     if (!page) return;
@@ -425,6 +427,7 @@
       }
     } catch (_) {}
     var day = page.getAttribute("data-day-page"), tz = page.getAttribute("data-day-tz");
+    var ends = Date.parse(page.getAttribute("data-day-ends") || "");
     var loaded = new Date().toDateString();
     function appDay() {
       if (!day || !tz) return null;
@@ -436,6 +439,7 @@
       } catch (_) { return null; }
     }
     function changed() {
+      if (!isNaN(ends)) return Date.now() >= ends;
       var d = appDay();
       return d ? d !== day : new Date().toDateString() !== loaded;
     }

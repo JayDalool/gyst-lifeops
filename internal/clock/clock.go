@@ -103,6 +103,21 @@ func (c Clock) DateOf(t time.Time) string {
 	return t.In(c.Location()).Format(DateLayout)
 }
 
+// DayEnd is the instant a local calendar day (YYYY-MM-DD) ends: 00:00 of the
+// next day in the application timezone, in UTC. A browser compares it with
+// its own clock, so the device's possibly stale zone rules never decide
+// GYST's day (Issue #193).
+func (c Clock) DayEnd(day string) (time.Time, error) {
+	if _, err := ParseLocalDate(day); err != nil {
+		return time.Time{}, err
+	}
+	start, err := time.ParseInLocation(DateLayout, day, c.Location())
+	if err != nil {
+		return time.Time{}, err
+	}
+	return start.AddDate(0, 0, 1).UTC(), nil
+}
+
 // DateLayout is the canonical stored calendar-day format.
 const DateLayout = "2006-01-02"
 

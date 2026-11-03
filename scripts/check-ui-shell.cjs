@@ -480,4 +480,59 @@ async function launcherRaceChecks() {
   type('app'); key('Enter'); answer('app', true); await flush();
   is('a deferred Enter never opens an external new-tab link', '(nothing)');
 }
-(async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers and launcher passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+// Day reload (#78, #193): Health Today reloads once the server's day has
+// ended (data-day-ends). The device's zone rules are simulated as stale:
+// Winnipeg still UTC-06 after 2026-11-01, as before tzdb 2026e. With
+// data-day-ends they must not matter; without it the browser fallback runs.
+function dayReloadChecks() {
+  const code = fs.readFileSync('web/static/js/app.js', 'utf8');
+  const RealDate = Date;
+  function run(attrs, now) {
+    const clock = {now: RealDate.parse(now)}, docEvents = {}, winEvents = {};
+    let reloads = 0;
+    class FakeDate extends RealDate {
+      constructor(...args) { if (args.length) super(...args); else super(clock.now); }
+      static now() { return clock.now; }
+    }
+    const staleIntl = {DateTimeFormat: function () {
+      return {formatToParts: d => {
+        const s = new RealDate(d.getTime() - 6 * 3600e3).toISOString();
+        return [{type: 'month', value: s.slice(5, 7)}, {type: 'day', value: s.slice(8, 10)}, {type: 'year', value: s.slice(0, 4)}];
+      }};
+    }};
+    const page = {getAttribute: k => (k in attrs ? attrs[k] : null)};
+    const sandbox = {
+      document: {readyState: 'complete', visibilityState: 'visible', querySelector: sel => (sel === '[data-day-page]' ? page : null), querySelectorAll: () => [], addEventListener: (n, f) => { docEvents[n] = f; }},
+      Date: FakeDate, Intl: staleIntl, URL, location: {href: 'https://gyst.test/health', reload: () => { reloads++; }},
+      history: {state: null, replaceState() {}}, navigator: {onLine: true}, setTimeout, clearTimeout,
+      addEventListener: (n, f) => { winEvents[n] = f; },
+    };
+    sandbox.window = sandbox;
+    vm.runInNewContext(code, sandbox);
+    return {
+      resume(at) { if (at) clock.now = RealDate.parse(at); docEvents.visibilitychange(); return reloads; },
+      pageshow() { winEvents.pageshow({persisted: true}); return reloads; },
+    };
+  }
+  const tz = 'America/Winnipeg';
+  // A Nov 1 page left open past midnight (00:30 Nov 2, UTC-05): stale rules
+  // still say Nov 1, but the day has ended, so it reloads.
+  let p = run({'data-day-page': '2026-11-01', 'data-day-tz': tz, 'data-day-ends': '2026-11-02T05:00:00Z'}, '2026-11-02T04:59:59Z');
+  assert.equal(p.resume(), 0, 'reloaded before the day ended');
+  assert.equal(p.resume('2026-11-02T05:30:00Z'), 1, 'yesterday stayed on screen after the day ended');
+  // The fresh Nov 2 page at 00:30: stale rules say Nov 1, but no reload.
+  p = run({'data-day-page': '2026-11-02', 'data-day-tz': tz, 'data-day-ends': '2026-11-03T05:00:00Z'}, '2026-11-02T05:30:00Z');
+  assert.equal(p.resume(), 0, 'stale device rules forced a reload');
+  assert.equal(p.pageshow(), 0, 'stale device rules forced a reload on pageshow');
+  assert.equal(p.resume('2026-11-03T05:00:00Z'), 1, 'no reload at the end of the day');
+  // Without data-day-ends (no server day, render tests) the browser's own
+  // reading of the app timezone still drives the reload.
+  for (const ends of [undefined, '']) {
+    const attrs = {'data-day-page': '2026-11-01', 'data-day-tz': tz};
+    if (ends !== undefined) attrs['data-day-ends'] = ends;
+    p = run(attrs, '2026-11-02T05:30:00Z');
+    assert.equal(p.resume(), 0, 'fallback reloaded while the browser still reads Nov 1');
+    assert.equal(p.resume('2026-11-02T07:00:00Z'), 1, 'fallback did not reload on the browser\'s next day');
+  }
+}
+(async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();dayReloadChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers, launcher and day reload passed');})().catch(error=>{console.error(error);process.exitCode=1;});

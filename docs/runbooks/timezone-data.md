@@ -1,9 +1,11 @@
 # Time zone data runbook (Issue #193)
 
-**Operator: Jay only.** Every command in steps 1–3 is read-only: it opens no
-database, changes nothing and prints no secrets. Step 5 is a development task
-on a dev machine. An agent wrote this and ran the `tzinfo` commands against
-local builds only. Nobody has run any of it against production.
+**Operator: Jay only.** The checks in steps 1 and 2 are read-only: they open
+no database, change nothing and print no secrets. The deploy commands in
+step 2 and the rollback in step 3 change production and run only with Jay's
+approval. Step 5 is a development task on a dev machine. An agent wrote this
+and ran the `tzinfo` commands against local builds only. Nobody has run any
+of it against production.
 
 ## What this is about
 
@@ -50,6 +52,14 @@ docker compose exec -T gyst-lifeops sh -c \
 - Anything older, or no zone files: the running app is one hour behind
   since 2026-11-01.
 
+This assumes `ZONEINFO` is not set in the container (the old binary would
+read that file first). Neither the Dockerfile nor `docker-compose.yml` sets
+it. To confirm:
+
+```bash
+docker compose exec -T gyst-lifeops sh -c 'echo "ZONEINFO=${ZONEINFO:-unset}"'
+```
+
 Cross-check what the app actually shows. Open Today and read the Dhuhr
 time in the prayer row. With the default prayer settings, under permanent
 UTC-05 it is **1:12 PM** on 2026-11-02, **1:13 PM** on 11-15, **1:18 PM** on
@@ -73,7 +83,25 @@ zone in the pinned IANA database. Host-only names such as `posixrules`,
 `GYST_TIMEZONE` to the container, so with it production uses the default,
 `America/Winnipeg`, and is not affected.
 
-## 2. After deploying #193: verify
+## 2. Deploying #193 and verifying it
+
+Only after Jay has merged the PR. Building first and starting second keeps
+the running container untouched if the build's time zone check fails.
+
+```bash
+docker compose exec gyst-lifeops /app/lifeops backup   # before any deploy
+git rev-parse HEAD                                      # record: the commit running now (rollback target)
+git pull --ff-only origin master
+git rev-parse HEAD                                      # record: the merged commit
+docker compose build gyst-lifeops                       # runs `lifeops tzinfo -check`; stops on wrong offsets
+docker compose up -d gyst-lifeops
+```
+
+If `docker compose build` stops at the `tzinfo -check` step, nothing has
+changed: the old container keeps running. Record the output and do not
+deploy.
+
+Then verify:
 
 ```bash
 docker compose exec -T gyst-lifeops /app/lifeops tzinfo -check; echo "exit=$?"
@@ -99,8 +127,15 @@ line says what the image holds; GYST does not use it.
 ## 3. Rollback
 
 #193 has no migration and writes nothing, so rollback is only a redeploy of
-the previous commit, done the same way as any deploy. Rolling back brings the
-stale-data risk back: run step 1 again afterwards.
+the commit recorded in step 2:
+
+```bash
+git checkout <recorded commit>
+docker compose build gyst-lifeops && docker compose up -d gyst-lifeops
+```
+
+Return to `master` (`git checkout master`) once a fix is merged. Rolling back
+brings the stale-data risk back: run step 1 again afterwards.
 
 ## 4. Data written while the app was an hour behind
 
@@ -111,6 +146,15 @@ for a new Issue. Use a backup copy only, never the live database
 (`docs/RULES.md` §3.1).
 
 ## 5. Refreshing the pinned database (a future rule change)
+
+Updating Debian, the base images or Go no longer changes GYST's zone data;
+only this procedure does. Owner: Jay. Watch IANA's
+[tz-announce](https://lists.iana.org/postorius/lists/tz-announce.iana.org/)
+list, or at least once a quarter compare `tzdb_version` in
+`internal/tzdb/PROVENANCE` with the latest release on
+<https://www.iana.org/time-zones>. Refresh when a release changes
+America/Winnipeg or the zone in `GYST_TIMEZONE`; otherwise refreshing is
+optional.
 
 On a Linux or WSL development machine with `curl`, `make`, a C compiler,
 `gpg` and `go`:

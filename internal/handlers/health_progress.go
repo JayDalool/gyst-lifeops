@@ -24,6 +24,12 @@ type healthProgressData struct {
 	Undone                                         bool
 }
 
+// weightTimeLayout shows a reading's local time with its numeric UTC offset,
+// not a zone abbreviation. IANA abbreviations are not authoritative and can
+// mislead: from 2026-11-01 tzdb labels Winnipeg's permanent UTC-05 "EST"
+// (Issue #193). The page names the zone itself.
+const weightTimeLayout = "2006-01-02 15:04:05 UTC-07:00"
+
 // Plot observations at their actual times, without filling unobserved days.
 func buildHealthProgress(entries []models.HealthWeightEntry, period string, now time.Time, location *time.Location) healthProgressData {
 	data := healthProgressData{Page: "health", Range: period, Timezone: location.String()}
@@ -84,7 +90,7 @@ func buildHealthProgress(entries []models.HealthWeightEntry, period string, now 
 		case "apple_shortcuts":
 			source = "Apple Shortcuts"
 		}
-		data.Points = append(data.Points, weightPoint{Date: r.at.In(location).Format("2006-01-02 15:04:05 MST"), Timestamp: r.entry.MeasuredAt, Value: number(r.entry.WeightKg), Source: source, X: fmt.Sprintf("%.2f", x), Y: fmt.Sprintf("%.2f", y)})
+		data.Points = append(data.Points, weightPoint{Date: r.at.In(location).Format(weightTimeLayout), Timestamp: r.entry.MeasuredAt, Value: number(r.entry.WeightKg), Source: source, X: fmt.Sprintf("%.2f", x), Y: fmt.Sprintf("%.2f", y)})
 	}
 	return data
 }

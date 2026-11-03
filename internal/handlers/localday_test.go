@@ -38,11 +38,10 @@ var localDayCases = []struct {
 	{"2025 fall back, first 01:30 CDT", "2025-11-02T06:30:00Z", "2025-11-02"},
 	{"2025 fall back, second 01:30 CST", "2025-11-02T07:30:00Z", "2025-11-02"},
 	{"2025 fall back day, 23:30 CST", "2025-11-03T05:30:00Z", "2025-11-02"},
-	{"2026-11-01, 01:30 once", "2026-11-01T06:30:00Z", "2026-11-01"},
-	{"2026-11-01, 23:30 UTC-05", "2026-11-02T04:30:00Z", "2026-11-01"},
+	// Each case builds a fresh database in five tests (about 1s each under
+	// -race), so only the two instants stale zone data files under the wrong
+	// day are repeated here. internal/clock covers every UTC-05 boundary.
 	{"2026-11-02, 00:30 UTC-05 (not 23:30 CST)", "2026-11-02T05:30:00Z", "2026-11-02"},
-	{"winter UTC-05, 23:30", "2027-01-16T04:30:00Z", "2027-01-15"},
-	{"winter UTC-05, 00:00", "2027-01-16T05:00:00Z", "2027-01-16"},
 	{"2027-03-14, 00:30 UTC-05 (not 23:30 CST on the 13th)", "2027-03-14T05:30:00Z", "2027-03-14"},
 }
 

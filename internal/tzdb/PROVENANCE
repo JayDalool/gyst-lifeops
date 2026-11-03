@@ -7,6 +7,7 @@ tzcode_sha512=eefcea60c37857214e1eba768d1bbd096de2a8f5afc9a776555552922cc174b328
 tzdata=tzdata2026f.tar.gz
 tzdata_sha512=26189803c8b3e903dcc467404e2feefb7d190cb1870249a23577ce31e9dcbf187e4704e0b45c8d1366d1c501bb5b53a2e80f8e2828b2163be15e532f6acab52d
 signing_key=7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34
+license=public domain (tzdb LICENSE)
 build=make CFLAGS=-DSTD_INSPIRED AWK=awk PACKRATDATA=backzone PACKRATLIST=zone.tab posix_only (Go lib/time/update.bash recipe)
 zip=scripts/tzdb/mkzip (stored, lexical order, no timestamps)
 zones=598

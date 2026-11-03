@@ -148,6 +148,35 @@ func TestCustomLocation(t *testing.T) {
 	}
 }
 
+// DayEnd is the next local midnight as a UTC instant: 25-hour and 23-hour
+// days at the last clock changes, then 24-hour days at UTC-05 from
+// 2026-11-01, where stale data would say 06:00Z.
+func TestDayEnd(t *testing.T) {
+	c := Clock{Now: at("2026-11-02T05:30:00Z")}
+	for _, tc := range []struct{ day, want string }{
+		{"2025-11-01", "2025-11-02T05:00:00Z"},
+		{"2025-11-02", "2025-11-03T06:00:00Z"}, // 25 hours: fall back
+		{"2026-03-07", "2026-03-08T06:00:00Z"},
+		{"2026-03-08", "2026-03-09T05:00:00Z"}, // 23 hours: spring forward
+		{"2026-10-31", "2026-11-01T05:00:00Z"},
+		{"2026-11-01", "2026-11-02T05:00:00Z"}, // 24 hours: no fall back
+		{"2026-11-02", "2026-11-03T05:00:00Z"},
+		{"2027-01-15", "2027-01-16T05:00:00Z"},
+		{"2027-03-14", "2027-03-15T05:00:00Z"},
+		{"2027-11-07", "2027-11-08T05:00:00Z"},
+	} {
+		got, err := c.DayEnd(tc.day)
+		if err != nil || got.Format(time.RFC3339) != tc.want {
+			t.Errorf("DayEnd(%s) = %s, %v; want %s", tc.day, got.Format(time.RFC3339), err, tc.want)
+		}
+	}
+	for _, invalid := range []string{"", "2026-2-3", "2026-02-30", "2026-11-02T00:00:00Z"} {
+		if _, err := c.DayEnd(invalid); err == nil {
+			t.Errorf("DayEnd(%q) succeeded; want an error", invalid)
+		}
+	}
+}
+
 func TestParseLocalDate(t *testing.T) {
 	for _, valid := range []string{"2026-01-15", "2024-02-29", "0001-01-01"} {
 		if got, err := ParseLocalDate(valid); err != nil || got != valid {

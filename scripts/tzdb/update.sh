@@ -75,6 +75,11 @@ mkdir "$work/src" "$work/zoneinfo"
 tar -xzf "$work/$code" -C "$work/src"
 tar -xzf "$work/$data" -C "$work/src"
 [ "$(cat "$work/src/version")" = "$VERSION" ] || { echo "tarball version mismatch" >&2; exit 1; }
+# The zip holds only compiled zone data, which tzdb places in the public
+# domain (its few BSD-licensed files are code GYST does not use). Stop if a
+# release ever says otherwise.
+tr '\n' ' ' <"$work/src/LICENSE" | grep -q 'all files in the tz code and data (including this LICENSE file) are in the public domain' ||
+  { echo "tzdb LICENSE no longer says public domain: review it before adopting $VERSION" >&2; exit 1; }
 if ! make -C "$work/src" "${MAKE_ARGS[@]}" TZDIR="$work/zoneinfo" posix_only >"$work/make.log" 2>&1; then
   cat "$work/make.log"
   exit 1
@@ -93,6 +98,7 @@ tzcode_sha512=$TZCODE_SHA512
 tzdata=$data
 tzdata_sha512=$TZDATA_SHA512
 signing_key=$SIGNING_KEY
+license=public domain (tzdb LICENSE)
 build=make ${MAKE_ARGS[*]} posix_only (Go lib/time/update.bash recipe)
 zip=scripts/tzdb/mkzip (stored, lexical order, no timestamps)
 zones=$zones
