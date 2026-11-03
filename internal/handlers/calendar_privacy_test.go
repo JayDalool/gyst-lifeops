@@ -2,11 +2,9 @@ package handlers
 
 import (
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
@@ -15,19 +13,12 @@ import (
 // Every .ics route built on projectTaskEvents leaves out private and
 // local-only projects (target, item, milestone) and keeps public ones.
 func TestCalendarRoutesOmitPrivateAndLocalOnlyProjects(t *testing.T) {
-	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
-	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
-		t.Fatalf("migrate db: %v", err)
-	}
+	database := migratedTestDB(t)
 	// Migration 006 makes the default roadmap private; this test covers
 	// project-level flags, so make that roadmap public first.
 	if _, err := database.Exec(`UPDATE roadmaps SET privacy = 'public'`); err != nil {
 		t.Fatalf("make roadmap public: %v", err)
 	}
-	t.Cleanup(func() { database.Close() })
 	repo := repository.New(database)
 	h := New(services.New(repo), "../../web/templates")
 	h.AllowPublicFeeds = true // so the plain routes are reachable too

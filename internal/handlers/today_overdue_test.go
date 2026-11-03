@@ -33,10 +33,9 @@ func dueOf(t *testing.T, h *Handler, id int64) string {
 // For every local-day case: a task due that day is not overdue, one due the
 // day before is, and Do today stores the case's local day (never UTC's).
 func TestDoTodayUsesAppLocalDay(t *testing.T) {
-	template := localDayTemplate(t)
 	for _, tc := range localDayCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h := localDayHandler(t, template)
+			h := testHandler(t)
 			pinClock(t, h, tc.instant)
 			same := makeOverdue(t, h, "Fictional errand", tc.day)
 			late := makeOverdue(t, h, "Fictional chore", prevDay(t, tc.day))
