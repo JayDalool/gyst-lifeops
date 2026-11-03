@@ -1,0 +1,179 @@
+# Time zone data runbook (Issue #193)
+
+**Operator: Jay only.** The checks in steps 1 and 2 are read-only: they open
+no database, change nothing and print no secrets. The deploy commands in
+step 2 and the rollback in step 3 change production and run only with Jay's
+approval. Step 5 is a development task on a dev machine. An agent wrote this
+and ran the `tzinfo` commands against local builds only. Nobody has run any
+of it against production.
+
+## What this is about
+
+Manitoba moved to permanent UTC-05 on 2026-10-31. It did not fall back on
+2026-11-01 and has no clock changes in 2027. IANA tzdb 2026e and later model
+this (abbreviation `EST`, applied from 2026-11-01 02:00, a temporary detail).
+GYST pins 2026f, the latest release (it also has Cuba staying on UTC-04).
+
+Before #193, GYST took zones from Go's `time.LoadLocation`. That reads the
+container's `/usr/share/zoneinfo` first. If the container has none, it falls
+back to the copy built into Go, which is tzdb 2025b for every Go 1.25 build.
+Any data older than 2026e still falls back to UTC-06 on 2026-11-01. With
+stale data, since 2026-11-01 the app would be **one hour behind**:
+
+- prayer times shown an hour early;
+- reminders an hour late;
+- entries made between 00:00 and 00:59 filed under the previous day;
+- the Health day ending at 01:00.
+
+Stored instants (UTC) are not affected. **Production has not been checked.**
+
+From #193 the binary carries its own pinned database (`internal/tzdb`,
+release and hashes in `internal/tzdb/PROVENANCE`). It never reads the image's
+zone files, `$ZONEINFO` or Go's copy. The Docker build runs
+`lifeops tzinfo -check` and stops if the Winnipeg offsets are wrong.
+
+Run everything from the repo root on the host (`/srv/server/repos/gyst-lifeops`).
+
+## 1. Before deploying #193: is production affected?
+
+These commands look at the image that is running now.
+
+```bash
+# Zone files in the running image. The old binary prefers these.
+docker compose exec -T gyst-lifeops sh -c \
+  'if [ -e /usr/share/zoneinfo/America/Winnipeg ]; then
+     head -n 1 /usr/share/zoneinfo/tzdata.zi 2>/dev/null || echo "zone files present, release unknown"
+   else
+     echo "no zone files: the binary uses the copy built into Go (2025b for Go 1.25)"
+   fi'
+```
+
+- `# version 2026e` or later: the running app has the right offsets.
+- Anything older, or no zone files: the running app is one hour behind
+  since 2026-11-01.
+
+This assumes `ZONEINFO` is not set in the container (the old binary would
+read that file first). Neither the Dockerfile nor `docker-compose.yml` sets
+it. To confirm:
+
+```bash
+docker compose exec -T gyst-lifeops sh -c 'echo "ZONEINFO=${ZONEINFO:-unset}"'
+```
+
+Cross-check what the app actually shows. Open Today and read the Dhuhr
+time in the prayer row. With the default prayer settings, under permanent
+UTC-05 it is **1:12 PM** on 2026-11-02, **1:13 PM** on 11-15, **1:18 PM** on
+12-01 and **1:38 PM** on 2027-01-15. Stale data shows the same prayer one
+hour earlier (12:12 PM, 12:13 PM, …). Changed prayer adjustments shift these
+by their minutes.
+
+Optional, on any machine with an up-to-date OS (`dpkg-query -W tzdata`
+should show 2026e or later):
+
+```bash
+TZ=America/Winnipeg date   # the correct local time, to compare with GYST's
+```
+
+Record only the outcome (the release seen, and whether Dhuhr was right or an
+hour early). Do not record any real data.
+
+One behaviour change to know before deploying: `GYST_TIMEZONE` must now be a
+zone in the pinned IANA database. Host-only names such as `posixrules`,
+`posix/…` or `right/…` stop startup. `docker-compose.yml` does not pass
+`GYST_TIMEZONE` to the container, so with it production uses the default,
+`America/Winnipeg`, and is not affected.
+
+## 2. Deploying #193 and verifying it
+
+Only after Jay has merged the PR. Building first and starting second keeps
+the running container untouched if the build's time zone check fails.
+
+```bash
+docker compose exec gyst-lifeops /app/lifeops backup   # before any deploy
+git rev-parse HEAD                                      # record: the commit running now (rollback target)
+git pull --ff-only origin master
+git rev-parse HEAD                                      # record: the merged commit
+docker compose build gyst-lifeops                       # runs `lifeops tzinfo -check`; stops on wrong offsets
+docker compose up -d gyst-lifeops
+```
+
+If `docker compose build` stops at the `tzinfo -check` step, nothing has
+changed: the old container keeps running. Record the output and do not
+deploy.
+
+Then verify:
+
+```bash
+docker compose exec -T gyst-lifeops /app/lifeops tzinfo -check; echo "exit=$?"
+docker compose logs --tail 50 gyst-lifeops | grep 'Application timezone'
+docker compose images gyst-lifeops   # record the IMAGE ID of what you verified
+```
+
+Pass:
+
+- `exit=0` and a line `probe: America/Winnipeg, 14 known UTC offsets
+  (history and permanent UTC-05): OK`.
+- `tzdb: 2026f, pinned in the binary (zoneinfo.zip sha256 e134486e…)`. The
+  release and hash match `tzdb_version` and `zoneinfo_zip_sha256` in
+  `internal/tzdb/PROVENANCE` for the deployed commit.
+- `now: … UTC offset -05:00, local day …` shows today's Winnipeg date.
+- The log line reads `Application timezone: America/Winnipeg (tzdb 2026f)`.
+- The Today page's Dhuhr matches the values in step 1.
+
+`tzinfo` prints the zone name from `GYST_TIMEZONE` (a zone name, not a
+secret) and nothing else from the environment. A `host /usr/share/zoneinfo:`
+line says what the image holds; GYST does not use it.
+
+## 3. Rollback
+
+#193 has no migration and writes nothing, so rollback is only a redeploy of
+the commit recorded in step 2:
+
+```bash
+git checkout <recorded commit>
+docker compose build gyst-lifeops && docker compose up -d gyst-lifeops
+```
+
+Return to `master` (`git checkout master`) once a fix is merged. Rolling back
+brings the stale-data risk back: run step 1 again afterwards.
+
+## 4. Data written while the app was an hour behind
+
+No rows are rewritten by #193. If step 1 showed stale data, entries made
+between 00:00 and 00:59 local from 2026-11-01 until the deploy may be filed
+under the previous day. Counting or repairing them is a separate decision
+for a new Issue. Use a backup copy only, never the live database
+(`docs/RULES.md` §3.1).
+
+## 5. Refreshing the pinned database (a future rule change)
+
+Updating Debian, the base images or Go no longer changes GYST's zone data;
+only this procedure does. Owner: Jay. Watch IANA's
+[tz-announce](https://lists.iana.org/postorius/lists/tz-announce.iana.org/)
+list, or at least once a quarter compare `tzdb_version` in
+`internal/tzdb/PROVENANCE` with the latest release on
+<https://www.iana.org/time-zones>. Refresh when a release changes
+America/Winnipeg or the zone in `GYST_TIMEZONE`; otherwise refreshing is
+optional.
+
+On a Linux or WSL development machine with `curl`, `make`, a C compiler,
+`gpg` and `go`:
+
+1. In `scripts/tzdb/update.sh`, set `VERSION` and the two `SHA512` values
+   from the IANA tz-announce message for the new release.
+2. Run `scripts/tzdb/update.sh`. It downloads the release, checks the
+   SHA-512 pins and the signature (key `7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34`),
+   builds it with Go's `lib/time/update.bash` recipe and rewrites
+   `internal/tzdb/zoneinfo.zip` and `PROVENANCE`.
+3. Read the release's `NEWS`. Change `clock.DefaultZoneProbes` only if
+   Manitoba's rules changed again.
+4. Run `scripts/tzdb/update.sh --check` (a second clean build must be
+   byte-identical) and the full checks, including `go test -race ./...`.
+   `TestPinnedAgreesWithSystemBuildOfSameRelease` compares every zone with
+   the OS build of the same release, where one is installed.
+5. Open a PR for the Issue. Deploy only after Jay merges it.
+
+A reviewer can rebuild the committed zip with `scripts/tzdb/update.sh
+--check`. It downloads IANA's release, checks the SHA-512 pins and, where
+`gpg` is installed, the release signature, and compares the result byte for
+byte. The script and its pins come from this repository, so review them too.

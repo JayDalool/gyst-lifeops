@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
@@ -113,7 +114,7 @@ func TestTodayNumbersAddUpOnScreen(t *testing.T) {
 }
 
 func TestTodayWorkoutTitleUsesLocalDay(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
+	loc, _ := clock.Load("America/Winnipeg")
 	entries := []models.TrainingEntry{
 		{Kind: "routine", Title: "Push Day"},
 		{Kind: "workout", Title: "Yesterday", StartedAt: time.Date(2026, 10, 4, 22, 0, 0, 0, time.UTC)},

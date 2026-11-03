@@ -2579,6 +2579,19 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 			}
 			return h.Service.Location().String()
 		},
+		// The instant (UTC, RFC 3339) a page's local day ends, from GYST's
+		// pinned zone data. app.js compares it with the device clock instead of
+		// the device's own zone rules, which may be stale (#193).
+		"appDayEnds": func(day string) string {
+			if h.Service == nil {
+				return ""
+			}
+			end, err := h.Service.DayEnd(day)
+			if err != nil {
+				return ""
+			}
+			return end.Format(time.RFC3339)
+		},
 		"appTomorrow": func() string {
 			if h.Service == nil {
 				return ""

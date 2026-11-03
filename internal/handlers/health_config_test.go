@@ -32,6 +32,18 @@ func cfgGet(t *testing.T, h *Handler, path string) string {
 	return w.Body.String()
 }
 
+// Health Today tells app.js the instant its day ends, from GYST's pinned
+// zone data, so the day reload never depends on the device's zone rules
+// (#193). 00:30 on 2026-11-02 in Winnipeg: the day ends at 05:00Z, UTC-05.
+func TestHealthTodaySendsDayEnd(t *testing.T) {
+	h := testHandler(t)
+	h.Service.Clock.Now = func() time.Time { return time.Date(2026, 11, 2, 5, 30, 0, 0, time.UTC) }
+	body := cfgGet(t, h, "/health")
+	if want := `data-day-page="2026-11-02" data-day-tz="America/Winnipeg" data-day-ends="2026-11-03T05:00:00Z"`; !strings.Contains(body, want) {
+		t.Fatalf("Health Today lacks %s", want)
+	}
+}
+
 func TestChecklistLifecycle(t *testing.T) {
 	h := testHandler(t)
 	loc := h.Service.Location()

@@ -108,8 +108,16 @@ service is.
   rejected with HTTP 400 before anything is written. An empty value becomes
   the local Today where the form defines a default.
 - `app.New` resolves the timezone before opening the database, so an invalid
-  explicit `GYST_TIMEZONE` stops startup without creating or migrating it. The
-  IANA zone database is embedded in the binary (`time/tzdata`).
+  explicit `GYST_TIMEZONE` stops startup without creating or migrating it.
+- Zones come only from GYST's pinned IANA database, `internal/tzdb` (Issue
+  #193): a `zoneinfo.zip` built by `scripts/tzdb/update.sh` with Go's own
+  recipe from a signed IANA release, with `PROVENANCE` pinning the release,
+  source hashes and zip SHA-256. The host's `/usr/share/zoneinfo`,
+  `$ZONEINFO` and the Go toolchain's copy are never used, so production, CI
+  and developer machines compute the same local times, and the image needs
+  no zone files. Manitoba is on permanent UTC-05 from 2026-11-01 (tzdb
+  2026e); `clock.DefaultZoneProbes` and `lifeops tzinfo -check` fail on
+  stale data. Refreshing it: [`runbooks/timezone-data.md`](runbooks/timezone-data.md).
 - `internal/clock/guard_test.go` fails the build if code outside
   `internal/clock` and `internal/db` uses `time.Now`, `time.Local`,
   `time.LoadLocation` or the zone name, or derives a day from a `Now()` call
@@ -118,6 +126,7 @@ service is.
 ```mermaid
 flowchart LR
     Env[GYST_TIMEZONE] --> Clock[internal/clock]
+    TZDB[internal/tzdb: pinned IANA tzdb] --> Clock
     Clock --> Service[services.Service]
     Service --> Days[Tasks, trackers, prayer, Health, reminders, courses]
     Service --> Handlers[Handlers: date defaults and validation]

@@ -50,6 +50,17 @@ jobs:
       - name: go build
         run: go build ./...
 
+      # Record which time zone data this commit carries (pinned IANA release,
+      # zip SHA-256, source, signing key, Go version) and fail if Winnipeg's
+      # known UTC offsets are wrong (Issue #193). The verbose tzdb tests show
+      # whether the comparison with this machine's zone database ran or was
+      # skipped. Read-only: no database, no network.
+      - name: time zone data
+        run: |
+          git rev-parse HEAD
+          go run ./cmd/lifeops tzinfo -check
+          go test -count=1 -v -run 'TestProvenance|TestWinnipegAgrees|TestPinnedAgrees' ./internal/tzdb/
+
       - name: go test
         run: go test ./...
 

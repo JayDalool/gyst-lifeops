@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 )
 
 func TestParseManualWeight(t *testing.T) {
-	location, _ := time.LoadLocation("America/Winnipeg")
+	location, _ := clock.Load("America/Winnipeg")
 	now := time.Date(2026, 10, 4, 20, 30, 0, 0, location)
 	for _, tc := range []struct {
 		weight, measured, wantErr string

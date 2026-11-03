@@ -11,6 +11,10 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 COPY --from=builder /app/lifeops /app/lifeops
+# The binary carries its own pinned time zone database (internal/tzdb, Issue
+# #193) and never reads this image's zone files. Stop the build if its
+# America/Winnipeg offsets are wrong (read-only; no database, no network).
+RUN ["/app/lifeops", "tzinfo", "-check"]
 # Outbound provider HTTPS must validate the public certificate chain.
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY web /app/web

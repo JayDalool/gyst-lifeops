@@ -39,8 +39,12 @@ func TestTaskActionDate(t *testing.T) {
 		{"one-time without a due date", "2026-10-10T17:00:00Z", models.Task{RepeatType: "none"}, "2026-10-10"},
 		// Local-day boundaries: these instants are still the evening before in Winnipeg.
 		{"DST start night", "2026-03-09T04:30:00Z", models.Task{DueDate: "2026-03-01", RepeatType: "daily"}, "2026-03-08"},
-		{"DST end night", "2026-11-02T05:30:00Z", models.Task{DueDate: "2026-10-01", RepeatType: "daily"}, "2026-11-01"},
+		{"2025 DST end night", "2025-11-03T05:30:00Z", models.Task{DueDate: "2025-10-01", RepeatType: "daily"}, "2025-11-02"},
 		{"Saturday night before Sunday UTC", "2026-10-11T04:30:00Z", models.Task{DueDate: "2026-09-28", RepeatType: "weekly"}, "2026-10-05"},
+		// Permanent UTC-05 from 2026-11-01 (Issue #193): no fall-back, no 2027 spring forward.
+		{"2026-11-01 night, UTC-05", "2026-11-02T04:30:00Z", models.Task{DueDate: "2026-10-01", RepeatType: "daily"}, "2026-11-01"},
+		{"00:30 on 2026-11-02, not 23:30 CST", "2026-11-02T05:30:00Z", models.Task{DueDate: "2026-10-01", RepeatType: "daily"}, "2026-11-02"},
+		{"00:30 on 2027-03-14, not 23:30 CST", "2027-03-14T05:30:00Z", models.Task{DueDate: "2027-03-01", RepeatType: "daily"}, "2027-03-14"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -95,10 +99,11 @@ func TestLocalDayWeeklyRecurrenceAtSundayNight(t *testing.T) {
 	}
 }
 
-// A 30-day window ending after a DST change still yields 30 distinct,
-// consecutive local days.
+// A 30-day window ending after a clock change (the 2025-11-02 fall-back,
+// the 2026-03-08 spring forward) or after the move to permanent UTC-05
+// (2026-11-01) still yields 30 distinct, consecutive local days.
 func TestLocalDayStatsWindowAcrossDST(t *testing.T) {
-	for _, instant := range []string{"2026-03-20T17:00:00Z", "2026-11-10T17:00:00Z"} {
+	for _, instant := range []string{"2025-11-10T17:00:00Z", "2026-03-20T17:00:00Z", "2026-11-10T17:00:00Z"} {
 		svc := testService(t)
 		pinUTC(t, svc, instant)
 		today := svc.Today()

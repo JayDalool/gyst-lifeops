@@ -10,15 +10,18 @@
 //     Clock.DateOf(). Never take a day straight from a raw time.Now().
 //
 // The application timezone comes from GYST_TIMEZONE and defaults to
-// America/Winnipeg. The zone database is embedded, so the binary does not
-// depend on the container image shipping /usr/share/zoneinfo.
+// America/Winnipeg. Zones come only from GYST's pinned IANA database
+// (internal/tzdb, Issue #193), never from the host's /usr/share/zoneinfo,
+// $ZONEINFO or the Go toolchain's copy, so every machine computes the same
+// local days and the binary needs no zone files in its container image.
 package clock
 
 import (
 	"fmt"
 	"strings"
 	"time"
-	_ "time/tzdata" // embed the IANA zone database in the binary
+
+	"lifeops-tracker/internal/tzdb"
 )
 
 // DefaultTimezone is the application timezone when GYST_TIMEZONE is unset.
@@ -27,7 +30,7 @@ const DefaultTimezone = "America/Winnipeg"
 var defaultLocation = mustLoad(DefaultTimezone)
 
 func mustLoad(name string) *time.Location {
-	location, err := time.LoadLocation(name)
+	location, err := tzdb.Load(name)
 	if err != nil {
 		panic(fmt.Sprintf("clock: load %s: %v", name, err))
 	}
@@ -49,8 +52,9 @@ func System() Clock {
 }
 
 // Load resolves the configured application timezone. An empty name means
-// DefaultTimezone; any other name must be a valid IANA zone. "Local" is
-// rejected because it would make the result depend on the process zone.
+// DefaultTimezone; any other name must be a zone in the pinned IANA database
+// (tzdb.Version()). "Local" is rejected because it would make the result
+// depend on the process zone.
 func Load(name string) (*time.Location, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -59,7 +63,7 @@ func Load(name string) (*time.Location, error) {
 	if name == "Local" {
 		return nil, fmt.Errorf("invalid GYST_TIMEZONE %q: use an IANA zone name such as %s", name, DefaultTimezone)
 	}
-	location, err := time.LoadLocation(name)
+	location, err := tzdb.Load(name)
 	if err != nil {
 		return nil, fmt.Errorf("invalid GYST_TIMEZONE %q: %w", name, err)
 	}
@@ -77,7 +81,8 @@ func (c Clock) Location() *time.Location {
 // Today is 00:00 of the current local calendar day, in the application
 // timezone. The value is only ever used for civil-date arithmetic (AddDate,
 // Weekday, Year/Month/Day) and leaves the process as a YYYY-MM-DD string.
-// America/Winnipeg changes DST at 02:00, so local midnight always exists.
+// America/Winnipeg's clock changes were at 02:00 (the last on 2026-03-08,
+// before permanent UTC-05), so local midnight always exists.
 func (c Clock) Today() time.Time {
 	local := c.Now().In(c.Location())
 	return time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, c.Location())
@@ -96,6 +101,21 @@ func (c Clock) InLocal(t time.Time) time.Time {
 // DateOf is the local calendar day of an instant, as YYYY-MM-DD.
 func (c Clock) DateOf(t time.Time) string {
 	return t.In(c.Location()).Format(DateLayout)
+}
+
+// DayEnd is the instant a local calendar day (YYYY-MM-DD) ends: 00:00 of the
+// next day in the application timezone, in UTC. A browser compares it with
+// its own clock, so the device's possibly stale zone rules never decide
+// GYST's day (Issue #193).
+func (c Clock) DayEnd(day string) (time.Time, error) {
+	if _, err := ParseLocalDate(day); err != nil {
+		return time.Time{}, err
+	}
+	start, err := time.ParseInLocation(DateLayout, day, c.Location())
+	if err != nil {
+		return time.Time{}, err
+	}
+	return start.AddDate(0, 0, 1).UTC(), nil
 }
 
 // DateLayout is the canonical stored calendar-day format.
