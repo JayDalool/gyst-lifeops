@@ -22,7 +22,7 @@ import (
 // So the migrations run once per test binary into a template, and every test
 // gets its own copy of that file: the same schema and seed rows, and still
 // one independent database per test. One difference from migrating per test:
-// the seed rows' random uuid values and migration timestamps are the same in
+// the seed rows' random uuid values and generated timestamps are the same in
 // every copy within one run (still new on every run). No test relies on them
 // differing between tests.
 
@@ -38,8 +38,16 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	if testDBTemplate.dir != "" {
 		// The template is read-only; Windows won't delete it as it is.
-		os.Chmod(filepath.Join(testDBTemplate.dir, "template.db"), 0o600)
-		os.RemoveAll(testDBTemplate.dir)
+		err := os.Chmod(filepath.Join(testDBTemplate.dir, "template.db"), 0o600)
+		if err == nil || os.IsNotExist(err) {
+			err = os.RemoveAll(testDBTemplate.dir)
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "remove the test database template %s: %v\n", testDBTemplate.dir, err)
+			if code == 0 {
+				code = 1
+			}
+		}
 	}
 	os.Exit(code)
 }
@@ -116,8 +124,12 @@ func migratedTestDB(t *testing.T) *sql.DB {
 
 // A copy holds exactly what a fresh migration produces: the same schema
 // objects, the same seed rows and the same settings db.Open applies. Two
-// kinds of value can't repeat between migrations and are compared by form
-// only: timestamps (columns ending in _at) and the random uuid defaults.
+// kinds of value can't repeat between migrations, so they are checked for
+// form instead of equality: timestamps the database generated (columns whose
+// default is the current time) must still look like timestamps, and random
+// uuid defaults must still be 32 lowercase hex digits. Everything else,
+// including timestamps set to fixed values, is compared exactly. The
+// negative cases show the comparison catches a corrupted copy.
 func TestMigratedTestDBMatchesFreshMigration(t *testing.T) {
 	fresh, err := db.Open(filepath.Join(t.TempDir(), "fresh.db"))
 	if err != nil {
@@ -127,11 +139,44 @@ func TestMigratedTestDBMatchesFreshMigration(t *testing.T) {
 	if err := db.Migrate(fresh, testMigrationsDir()); err != nil {
 		t.Fatal(err)
 	}
-	copied := migratedTestDB(t)
 
+	t.Run("copy matches", func(t *testing.T) {
+		if diffs := freshMigrationDifferences(t, fresh, migratedTestDB(t)); len(diffs) > 0 {
+			t.Fatalf("a copy differs from a fresh migration:\n%s", strings.Join(diffs, "\n"))
+		}
+	})
+	for _, tc := range []struct{ name, corrupt, want string }{
+		{"malformed generated timestamp", `UPDATE tracker_items SET created_at = 'garbage' WHERE rowid = (SELECT min(rowid) FROM tracker_items)`, "table tracker_items"},
+		{"missing seed row", `DELETE FROM roadmaps`, "table roadmaps"},
+		{"changed seed value", `UPDATE tracker_items SET title = 'Changed' WHERE key = 'prayer_fajr'`, "table tracker_items"},
+		{"malformed uuid", `UPDATE roadmaps SET uuid = 'not-a-uuid'`, "table roadmaps"},
+		{"extra schema object", `CREATE INDEX zz_extra ON tracker_items(title)`, "schema"},
+	} {
+		t.Run("detects "+tc.name, func(t *testing.T) {
+			copied := migratedTestDB(t)
+			if _, err := copied.Exec(tc.corrupt); err != nil {
+				t.Fatal(err)
+			}
+			diffs := freshMigrationDifferences(t, fresh, copied)
+			found := false
+			for _, d := range diffs {
+				found = found || strings.HasPrefix(d, tc.want)
+			}
+			if !found {
+				t.Fatalf("corruption %q went unnoticed (differences: %q)", tc.corrupt, diffs)
+			}
+		})
+	}
+}
+
+// freshMigrationDifferences compares the schema, every table's rows and the
+// connection settings of two databases; see TestMigratedTestDBMatchesFreshMigration.
+func freshMigrationDifferences(t *testing.T, fresh, copied *sql.DB) []string {
+	t.Helper()
+	var diffs []string
 	const schema = `SELECT type, name, tbl_name, IFNULL(sql, '') FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name`
 	if a, b := queryRows(t, fresh, schema), queryRows(t, copied, schema); !equalRows(a, b) {
-		t.Fatalf("schema differs:\nfresh:  %q\ncopied: %q", a, b)
+		diffs = append(diffs, fmt.Sprintf("schema:\n  fresh:  %q\n  copied: %q", a, b))
 	}
 	var tables []string
 	for _, row := range queryRows(t, fresh, `SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name`) {
@@ -145,7 +190,7 @@ func TestMigratedTestDBMatchesFreshMigration(t *testing.T) {
 		query := fmt.Sprintf(`SELECT * FROM %q`, table)
 		a, b := maskVolatile(t, fresh, table, queryRows(t, fresh, query)), maskVolatile(t, copied, table, queryRows(t, copied, query))
 		if !equalRows(a, b) {
-			t.Errorf("table %s differs:\nfresh:  %q\ncopied: %q", table, a, b)
+			diffs = append(diffs, fmt.Sprintf("table %s:\n  fresh:  %q\n  copied: %q", table, a, b))
 		}
 		seeded += len(a)
 	}
@@ -155,9 +200,10 @@ func TestMigratedTestDBMatchesFreshMigration(t *testing.T) {
 	for _, pragma := range []string{"journal_mode", "foreign_keys", "user_version", "page_size", "auto_vacuum", "encoding"} {
 		q := "PRAGMA " + pragma
 		if a, b := queryRows(t, fresh, q), queryRows(t, copied, q); !equalRows(a, b) {
-			t.Errorf("PRAGMA %s: fresh %q, copied %q", pragma, a, b)
+			diffs = append(diffs, fmt.Sprintf("PRAGMA %s: fresh %q, copied %q", pragma, a, b))
 		}
 	}
+	return diffs
 }
 
 // Copies are independent: a write to one database is invisible to another
@@ -265,11 +311,19 @@ func queryRows(t *testing.T, database *sql.DB, query string) [][]string {
 	return out
 }
 
-var randomHex = regexp.MustCompile(`^[0-9a-f]{32}$`)
+var (
+	randomHex = regexp.MustCompile(`^[0-9a-f]{32}$`)
+	// SQLite's CURRENT_TIMESTAMP / datetime('now') form and strftime ISO forms.
+	generatedTime = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:?\d{2})?$`)
+	// Column defaults that take the current time.
+	nowDefault = regexp.MustCompile(`(?i)current_timestamp|'now'`)
+)
 
-// maskVolatile replaces the values a migration cannot repeat: timestamps in
-// columns ending in _at (kept as present or empty) and the random uuid
-// defaults, lower(hex(randomblob(16))) (kept only if well formed).
+// maskVolatile replaces the values a migration cannot repeat, and only when
+// they have the expected form: timestamps the database generated (the
+// column's default takes the current time) and the random uuid defaults,
+// lower(hex(randomblob(16))). A malformed value is left as it is, so it
+// still differs.
 func maskVolatile(t *testing.T, database *sql.DB, table string, rows [][]string) [][]string {
 	t.Helper()
 	var timeColumns, randomColumns []int
@@ -279,7 +333,7 @@ func maskVolatile(t *testing.T, database *sql.DB, table string, rows [][]string)
 			t.Fatal(err)
 		}
 		switch {
-		case strings.HasSuffix(column[1], "_at"):
+		case nowDefault.MatchString(column[2]):
 			timeColumns = append(timeColumns, cid)
 		case strings.Contains(column[2], "randomblob"):
 			randomColumns = append(randomColumns, cid)
@@ -287,7 +341,7 @@ func maskVolatile(t *testing.T, database *sql.DB, table string, rows [][]string)
 	}
 	for _, row := range rows {
 		for _, i := range timeColumns {
-			if i < len(row) && row[i] != "" && row[i] != "<NULL>" {
+			if i < len(row) && generatedTime.MatchString(row[i]) {
 				row[i] = "<time>"
 			}
 		}
