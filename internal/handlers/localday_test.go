@@ -5,11 +5,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
+	"lifeops-tracker/internal/services"
 )
 
 // GYST-VN-003: every stored calendar day is the application's local day
@@ -38,15 +43,66 @@ var localDayCases = []struct {
 	{"2025 fall back, first 01:30 CDT", "2025-11-02T06:30:00Z", "2025-11-02"},
 	{"2025 fall back, second 01:30 CST", "2025-11-02T07:30:00Z", "2025-11-02"},
 	{"2025 fall back day, 23:30 CST", "2025-11-03T05:30:00Z", "2025-11-02"},
-	// Each case builds a fresh database in five tests (about 1s each under
-	// -race), so only the two instants stale zone data files under the wrong
-	// day are repeated here. internal/clock covers every UTC-05 boundary.
+	{"2026-11-01, 01:30 once", "2026-11-01T06:30:00Z", "2026-11-01"},
+	{"2026-11-01, 23:30 UTC-05", "2026-11-02T04:30:00Z", "2026-11-01"},
 	{"2026-11-02, 00:30 UTC-05 (not 23:30 CST)", "2026-11-02T05:30:00Z", "2026-11-02"},
+	{"winter UTC-05, 23:30", "2027-01-16T04:30:00Z", "2027-01-15"},
+	{"winter UTC-05, 00:00", "2027-01-16T05:00:00Z", "2027-01-16"},
 	{"2027-03-14, 00:30 UTC-05 (not 23:30 CST on the 13th)", "2027-03-14T05:30:00Z", "2027-03-14"},
 }
 
 // The local days above run from 2025 to 2027; the windows below cover them.
 const localDayFirst, localDayLast = "2025-01-01", "2027-12-31"
+
+// localDayTemplate migrates one database for a test's localDayCases to copy.
+// Every case still gets its own database, but copying a migrated file takes
+// about 40ms under -race where migrating takes about 1s, and five tests run
+// every case (Issue #193).
+func localDayTemplate(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "template.db")
+	database, err := db.Open(path)
+	if err != nil {
+		t.Fatalf("open template db: %v", err)
+	}
+	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
+		t.Fatalf("migrate template db: %v", err)
+	}
+	// Fold the WAL into the file and close it, so the file alone is complete.
+	if _, err := database.Exec("PRAGMA wal_checkpoint(TRUNCATE)"); err != nil {
+		t.Fatalf("checkpoint template db: %v", err)
+	}
+	if err := database.Close(); err != nil {
+		t.Fatalf("close template db: %v", err)
+	}
+	return path
+}
+
+// localDayHandler is testHandler on a fresh copy of template. Migrate still
+// runs on the copy: it is a no-op there, and it would apply anything the
+// copy lacked, so the database is fully migrated either way.
+func localDayHandler(t *testing.T, template string) *Handler {
+	t.Helper()
+	data, err := os.ReadFile(template)
+	if err != nil {
+		t.Fatalf("read template db: %v", err)
+	}
+	path := filepath.Join(t.TempDir(), "lifeops.db")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("copy template db: %v", err)
+	}
+	database, err := db.Open(path)
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
+		t.Fatalf("migrate db: %v", err)
+	}
+	t.Cleanup(func() { database.Close() })
+	h := New(services.New(repository.New(database)), "../../web/templates")
+	h.AllowPublicFeeds = true // as testHandler
+	return h
+}
 
 func pinClock(t *testing.T, h *Handler, instant string) {
 	t.Helper()
@@ -76,9 +132,10 @@ func nextDay(t *testing.T, day string) string {
 }
 
 func TestLocalDayTaskCompletionDefault(t *testing.T) {
+	template := localDayTemplate(t)
 	for _, tc := range localDayCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h := testHandler(t)
+			h := localDayHandler(t, template)
 			pinClock(t, h, tc.instant)
 			task := models.Task{Title: "Daily stretch", DueDate: localDayFirst, RepeatType: "daily"}
 			if err := h.Service.Repo.CreateTask(&task); err != nil {
@@ -110,9 +167,10 @@ func TestLocalDayTaskCompletionDefault(t *testing.T) {
 // is also the day of the prayer schedule and of the Daily Mission shown with
 // them.
 func TestLocalDayPrayerCheckInDefault(t *testing.T) {
+	template := localDayTemplate(t)
 	for _, tc := range localDayCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h := testHandler(t)
+			h := localDayHandler(t, template)
 			pinClock(t, h, tc.instant)
 			for _, key := range []string{"prayer_fajr", "prayer_isha"} {
 				rec := postForm(t, h, "/trackers/"+key+"/toggle", url.Values{})
@@ -146,8 +204,9 @@ func TestLocalDayPrayerCheckInDefault(t *testing.T) {
 }
 
 func TestLocalDayHealthDay(t *testing.T) {
+	template := localDayTemplate(t)
 	for _, tc := range localDayCases {
-		h := testHandler(t)
+		h := localDayHandler(t, template)
 		pinClock(t, h, tc.instant)
 		if day, err := h.Service.HealthTodayDate(); err != nil || day != tc.day {
 			t.Errorf("%s: Health day = %s, %v; want %s", tc.name, day, err, tc.day)
@@ -156,9 +215,10 @@ func TestLocalDayHealthDay(t *testing.T) {
 }
 
 func TestLocalDayQuickCaptureDefaultAndChips(t *testing.T) {
+	template := localDayTemplate(t)
 	for _, tc := range localDayCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h := testHandler(t)
+			h := localDayHandler(t, template)
 			pinClock(t, h, tc.instant)
 			rec := postForm(t, h, "/tasks/quick", url.Values{"title": {"Buy stamps"}})
 			if rec.Code != http.StatusSeeOther {
