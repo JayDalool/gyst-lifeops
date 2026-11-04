@@ -390,11 +390,12 @@ func TestMigratedTestDBRejectsIncompleteTemplate(t *testing.T) {
 }
 
 // The template exists on disk only while it is built: its directory is gone
-// once the bytes are read, and also when the build fails. So a test binary
-// killed later without running cleanups (a go test timeout) leaves no
-// template behind; only the build itself, about a second, is exposed. A
-// deletion still blocked after removeTemplateDir's retries fails here, by
-// name, for the shared template too.
+// once the bytes are read, and also when the build fails. When that early
+// deletion succeeds, a test binary killed later without running cleanups (a
+// go test timeout) leaves no template behind; only the build itself, about a
+// second, is exposed. A deletion still blocked after removeTemplateDir's
+// retries fails here, by name, for the shared template too; the file then
+// stays until t.TempDir's cleanup removes it, or longer if the lock lasts.
 func TestTemplateIsDeletedOnceRead(t *testing.T) {
 	t.Run("shared template", func(t *testing.T) {
 		if _, _, err := migratedTemplate(t); err != nil {
