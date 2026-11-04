@@ -36,13 +36,17 @@ import (
 //     per test again.
 //   - The template file exists only while it is built. It is built in the
 //     first caller's t.TempDir() and deleted once its bytes are in memory,
-//     so no run, passing, failing or panicking, leaves it behind.
+//     also when the build fails or panics. A deletion still blocked after
+//     two seconds of retries (a Windows file lock) fails
+//     TestTemplateIsDeletedOnceRead by name, and t.TempDir's cleanup tries
+//     again when the building test ends.
 
 var testDBTemplate struct {
 	once       sync.Once
 	data       []byte
 	sum        [sha256.Size]byte
 	migrations []string // the migration files it holds, sorted
+	left       error    // why its build directory couldn't be deleted, if so
 	err        error
 }
 
@@ -55,66 +59,72 @@ func migratedTemplate(t *testing.T) ([]byte, []string, error) {
 		// Set first, so a build cut short by Fatal or a panic can't leave a
 		// template that looks finished.
 		testDBTemplate.err = errors.New("the template build did not finish")
-		data, migrations, err := templateFrom(t.TempDir(), testMigrationsDir())
-		testDBTemplate.data, testDBTemplate.migrations, testDBTemplate.err = data, migrations, err
+		data, migrations, left, err := templateFrom(t.TempDir(), testMigrationsDir())
+		testDBTemplate.data, testDBTemplate.migrations, testDBTemplate.left, testDBTemplate.err = data, migrations, left, err
 		testDBTemplate.sum = sha256.Sum256(data)
 	})
 	return testDBTemplate.data, testDBTemplate.migrations, testDBTemplate.err
 }
 
-// templateFrom migrates a new database in dir and returns the file's bytes
-// and the migration files it applied, then deletes dir. dir should come from
-// t.TempDir(), whose cleanup retries a deletion that still fails and reports
-// it.
-func templateFrom(dir, migrationsDir string) ([]byte, []string, error) {
-	defer removeTemplateDir(dir)
-	migrations, err := migrationFiles(migrationsDir)
+// templateFrom migrates a new database in dir, returns the file's bytes and
+// the migration files it applied, and deletes dir on every path, a panic
+// included. dir should come from t.TempDir(). left is the error if dir was
+// still there after removeTemplateDir's retries; the bytes are good either
+// way.
+func templateFrom(dir, migrationsDir string) (data []byte, migrations []string, left, err error) {
+	defer func() { left = removeTemplateDir(dir) }()
+	migrations, err = migrationFiles(migrationsDir)
 	if err != nil {
-		return nil, nil, fmt.Errorf("list the migrations: %w", err)
+		return nil, nil, nil, fmt.Errorf("list the migrations: %w", err)
 	}
 	path := filepath.Join(dir, "template.db")
 	database, err := db.Open(path)
 	if err != nil {
-		return nil, nil, fmt.Errorf("open the template db: %w", err)
+		return nil, nil, nil, fmt.Errorf("open the template db: %w", err)
 	}
+	// Runs before the deletion above, on every path: on Windows an open
+	// database blocks deleting its file. Closing twice is harmless.
+	defer database.Close()
 	if err := db.Migrate(database, migrationsDir); err != nil {
-		database.Close()
-		return nil, nil, fmt.Errorf("migrate the template db: %w", err)
+		return nil, nil, nil, fmt.Errorf("migrate the template db: %w", err)
 	}
 	// Fold the WAL into the main file, which alone is read below.
 	var busy, walPages, checkpointed int
 	if err := database.QueryRow("PRAGMA wal_checkpoint(TRUNCATE)").Scan(&busy, &walPages, &checkpointed); err != nil {
-		database.Close()
-		return nil, nil, fmt.Errorf("checkpoint the template db: %w", err)
+		return nil, nil, nil, fmt.Errorf("checkpoint the template db: %w", err)
 	}
 	if busy != 0 {
-		database.Close()
-		return nil, nil, errors.New("checkpoint the template db: SQLite reported busy")
+		return nil, nil, nil, errors.New("checkpoint the template db: SQLite reported busy")
 	}
 	if err := database.Close(); err != nil {
-		return nil, nil, fmt.Errorf("close the template db: %w", err)
+		return nil, nil, nil, fmt.Errorf("close the template db: %w", err)
 	}
 	// Closing the last connection deletes the WAL. A WAL with content left
 	// behind could hold commits the main file lacks (docs/RULES.md §3.1).
 	if info, err := os.Stat(path + "-wal"); err == nil && info.Size() > 0 {
-		return nil, nil, fmt.Errorf("the template db's WAL still holds %d bytes after closing", info.Size())
+		return nil, nil, nil, fmt.Errorf("the template db's WAL still holds %d bytes after closing", info.Size())
 	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, nil, fmt.Errorf("check the template db's WAL: %w", err)
+		return nil, nil, nil, fmt.Errorf("check the template db's WAL: %w", err)
 	}
-	data, err := os.ReadFile(path)
+	data, err = os.ReadFile(path)
 	if err != nil {
-		return nil, nil, fmt.Errorf("read the template db: %w", err)
+		return nil, nil, nil, fmt.Errorf("read the template db: %w", err)
 	}
-	return data, migrations, nil
+	return data, migrations, nil, nil
 }
 
 // removeTemplateDir deletes dir, retrying for up to two seconds as the
 // testing package's TempDir cleanup does: on Windows a virus scanner or the
-// indexer can briefly hold a file that was just written.
-func removeTemplateDir(dir string) {
+// indexer can briefly hold a file that was just written. It returns the last
+// error if dir is still there.
+func removeTemplateDir(dir string) error {
 	deadline := time.Now().Add(2 * time.Second)
-	for wait := time.Millisecond; os.RemoveAll(dir) != nil && time.Now().Before(deadline); wait *= 2 {
-		time.Sleep(wait)
+	for wait := time.Millisecond; ; wait *= 2 {
+		err := os.RemoveAll(dir)
+		if err == nil || !time.Now().Before(deadline) {
+			return err
+		}
+		time.Sleep(min(wait, time.Until(deadline)))
 	}
 }
 
@@ -361,7 +371,7 @@ func TestMigratedTestDBRejectsIncompleteTemplate(t *testing.T) {
 	})
 	t.Run("partly migrated template refused", func(t *testing.T) {
 		newest := migrations[len(migrations)-1]
-		partial, applied, err := templateFrom(t.TempDir(), copyMigrations(t, len(migrations)-1))
+		partial, applied, _, err := templateFrom(t.TempDir(), copyMigrations(t, len(migrations)-1))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -380,24 +390,56 @@ func TestMigratedTestDBRejectsIncompleteTemplate(t *testing.T) {
 }
 
 // The template exists on disk only while it is built: its directory is gone
-// once the bytes are read. So a test binary killed later without running
-// cleanups (a go test timeout) leaves no template behind; only the build
-// itself, about a second, is exposed.
+// once the bytes are read, and also when the build fails. So a test binary
+// killed later without running cleanups (a go test timeout) leaves no
+// template behind; only the build itself, about a second, is exposed. A
+// deletion still blocked after removeTemplateDir's retries fails here, by
+// name, for the shared template too.
 func TestTemplateIsDeletedOnceRead(t *testing.T) {
-	dir := t.TempDir()
-	if _, err := os.Stat(dir); err != nil {
-		t.Fatalf("positive control: the build directory must exist first: %v", err)
-	}
-	// One migration is enough to build a database file.
-	data, _, err := templateFrom(dir, copyMigrations(t, 1))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(data) == 0 {
-		t.Fatal("the template has no bytes")
+	t.Run("shared template", func(t *testing.T) {
+		if _, _, err := migratedTemplate(t); err != nil {
+			t.Fatal(err)
+		}
+		if testDBTemplate.left != nil {
+			t.Fatalf("the shared template's build directory wasn't deleted: %v", testDBTemplate.left)
+		}
+	})
+	t.Run("after a build", func(t *testing.T) {
+		dir := t.TempDir()
+		if _, err := os.Stat(dir); err != nil {
+			t.Fatalf("positive control: the build directory must exist first: %v", err)
+		}
+		// One migration is enough to build a database file.
+		data, _, left, err := templateFrom(dir, copyMigrations(t, 1))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(data) == 0 {
+			t.Fatal("the template has no bytes")
+		}
+		requireDeleted(t, dir, left)
+	})
+	t.Run("after a failed build", func(t *testing.T) {
+		dir := t.TempDir()
+		migrations := copyMigrations(t, 1)
+		if err := os.WriteFile(filepath.Join(migrations, "99999999999999_broken.sql"), []byte("NOT SQL;"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		_, _, left, err := templateFrom(dir, migrations)
+		if err == nil || !strings.Contains(err.Error(), "migrate the template db") {
+			t.Fatalf("a broken migration went unreported: %v", err)
+		}
+		requireDeleted(t, dir, left)
+	})
+}
+
+func requireDeleted(t *testing.T, dir string, left error) {
+	t.Helper()
+	if left != nil {
+		t.Fatalf("the build directory %s wasn't deleted: %v", dir, left)
 	}
 	if _, err := os.Stat(dir); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("the template directory %s is still there after the build (stat: %v)", dir, err)
+		t.Fatalf("the build directory %s is still there (stat: %v)", dir, err)
 	}
 }
 
