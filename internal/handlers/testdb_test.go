@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"lifeops-tracker/internal/db"
 )
@@ -63,11 +64,10 @@ func migratedTemplate(t *testing.T) ([]byte, []string, error) {
 
 // templateFrom migrates a new database in dir and returns the file's bytes
 // and the migration files it applied, then deletes dir. dir should come from
-// t.TempDir(): if the deletion fails (on Windows a virus scanner can briefly
-// hold a file), the testing package's TempDir cleanup retries it when that
-// test ends and reports a failure that persists.
+// t.TempDir(), whose cleanup retries a deletion that still fails and reports
+// it.
 func templateFrom(dir, migrationsDir string) ([]byte, []string, error) {
-	defer os.RemoveAll(dir)
+	defer removeTemplateDir(dir)
 	migrations, err := migrationFiles(migrationsDir)
 	if err != nil {
 		return nil, nil, fmt.Errorf("list the migrations: %w", err)
@@ -106,6 +106,16 @@ func templateFrom(dir, migrationsDir string) ([]byte, []string, error) {
 		return nil, nil, fmt.Errorf("read the template db: %w", err)
 	}
 	return data, migrations, nil
+}
+
+// removeTemplateDir deletes dir, retrying for up to two seconds as the
+// testing package's TempDir cleanup does: on Windows a virus scanner or the
+// indexer can briefly hold a file that was just written.
+func removeTemplateDir(dir string) {
+	deadline := time.Now().Add(2 * time.Second)
+	for wait := time.Millisecond; os.RemoveAll(dir) != nil && time.Now().Before(deadline); wait *= 2 {
+		time.Sleep(wait)
+	}
 }
 
 // migrationFiles lists the migrations the way db.Migrate selects them: the
