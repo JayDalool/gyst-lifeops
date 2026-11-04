@@ -2,28 +2,20 @@ package handlers
 
 import (
 	"net/http/httptest"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 
-	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 )
 
+// testHandler is a Handler on the test's own migrated database (see
+// migratedTestDB).
 func testHandler(t *testing.T) *Handler {
 	t.Helper()
-	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
-	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
-		t.Fatalf("migrate db: %v", err)
-	}
-	t.Cleanup(func() { database.Close() })
-	h := New(services.New(repository.New(database)), "../../web/templates")
+	h := New(services.New(repository.New(migratedTestDB(t))), "../../web/templates")
 	h.AllowPublicFeeds = true // dev-like default; gating is covered explicitly
 	return h
 }
