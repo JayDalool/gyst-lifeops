@@ -17,11 +17,13 @@ func projectFilter(value string) string {
 func projectMatches(project models.ProjectWithProgress, filter string) bool {
 	switch projectFilter(filter) {
 	case "completed":
-		return project.Project.Status == "done" || project.Project.Status == "completed"
+		return models.ProjectStateOf(project.Project.Status) == models.ProjectStateDone
 	case "upcoming":
-		return project.Project.Status == "upcoming" || project.Project.Status == "locked"
+		state := models.ProjectStateOf(project.Project.Status)
+		return state == models.ProjectStatePlanned || state == models.ProjectStateBlocked
 	case "active":
-		return project.Project.Status != "done" && project.Project.Status != "completed" && project.Project.Status != "upcoming" && project.Project.Status != "locked" && project.Project.Status != "archived"
+		state := models.ProjectStateOf(project.Project.Status)
+		return state == models.ProjectStateActive || state == models.ProjectStatePaused
 	}
 	return true
 }

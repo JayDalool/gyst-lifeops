@@ -149,7 +149,7 @@ func buildProjectTree(projects []models.ProjectWithProgress) models.ProjectTree 
 			tree.Children[project.Project.ParentProjectID] = append(tree.Children[project.Project.ParentProjectID], project)
 			continue
 		}
-		if project.Project.Status == "locked" || project.Project.Status == "upcoming" {
+		if state := models.ProjectStateOf(project.Project.Status); state == models.ProjectStatePlanned || state == models.ProjectStateBlocked {
 			tree.Upcoming = append(tree.Upcoming, project)
 			continue
 		}
