@@ -4,6 +4,7 @@
 - [ ] #175 · Count duplicate study catch-ups on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/175
 - [ ] #173 · Count future-dated goal entries on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/173
 - [ ] #170 · Count project parent cycles on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/170
+- [ ] GYST-131 · Set n8n token and workflow list env vars · https://github.com/JayDalool/gyst-lifeops/issues/137
 - [ ] GYST-135 · Delete private items already copied by ics import · https://github.com/JayDalool/gyst-lifeops/issues/141
 - [ ] GYST-062 · Coach on OpenAI: set key, ask one question · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEALTH_COACH.md
 - [ ] GYST-116 · Run Health Shortcut once; confirm sync succeeds · https://github.com/JayDalool/gyst-lifeops/issues/139
