@@ -1,38 +1,27 @@
 {{define "content"}}
-<div class="page-head">
-  <div>
-    <p class="kicker">Signals</p>
-    <h1 class="page-title">Analytics</h1>
-    <p class="page-sub">Completion trends and progress at a glance. All charts are static.</p>
-  </div>
-</div>
-
-<div class="stats">
-  <div><b class="num">{{.Dashboard.TodayCompletion}}%</b> <span>today</span></div>
-  <div><b class="num">{{.Dashboard.CurrentStreak}} days</b> <span>streak</span></div>
-  <div><b class="num">{{.Dashboard.MonthlyCompletionPercent}}%</b> <span>this month</span></div>
-  <div><b class="num">{{len .Dashboard.OverdueTasks}}</b> <span>overdue</span></div>
-</div>
-
-<section class="section-head">
-  <h2 class="section-title">Last 30 days</h2>
-</section>
-<div class="card">
-  <canvas class="chart" data-chart="line" data-max="100" data-labels="{{join .Dashboard.DailyCompletion.Labels "|"}}"
+<div class="gyst-scope gyst-more">
+  <header class="gyst-header"><div><h1 class="gyst-page-title">Analytics</h1></div></header>
+  <ul class="gyst-list" aria-label="Summary">
+    <li><div class="gyst-row"><span class="gyst-row-copy"><span>Today</span></span><span class="gyst-row-meta num">{{.Dashboard.TodayCompletion}}%</span></div></li>
+    <li><div class="gyst-row"><span class="gyst-row-copy"><span>Streak</span></span><span class="gyst-row-meta num">{{.Dashboard.CurrentStreak}} days</span></div></li>
+    <li><div class="gyst-row"><span class="gyst-row-copy"><span>This month</span></span><span class="gyst-row-meta num">{{.Dashboard.MonthlyCompletionPercent}}%</span></div></li>
+    <li><div class="gyst-row"><span class="gyst-row-copy"><span>Overdue</span></span><span class="gyst-row-meta num">{{len .Dashboard.OverdueTasks}}</span></div></li>
+  </ul>
+  <section class="gyst-stack"><h2 class="gyst-section-title">Last 30 days</h2>
+    <div class="gyst-card">
+      <canvas class="chart" data-chart="line" data-max="100" data-labels="{{join .Dashboard.DailyCompletion.Labels "|"}}"
     data-values="{{joinInts .Dashboard.DailyCompletion.Values "|"}}"
     data-empty="Complete tasks to build the trend."></canvas>
-</div>
-
-<div class="cols mt-16">
-  <section class="card">
-    <h2 class="section-title card-title">Project progress</h2>
-    <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Dashboard.ProjectProgress.Labels "|"}}"
+    </div></section>
+  <section class="gyst-stack"><h2 class="gyst-section-title">Project progress</h2>
+    <div class="gyst-card">
+      <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Dashboard.ProjectProgress.Labels "|"}}"
       data-values="{{joinInts .Dashboard.ProjectProgress.Values "|"}}"></canvas>
-  </section>
-  <section class="card">
-    <h2 class="section-title card-title">Yearly goals</h2>
-    <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Dashboard.YearlyGoalProgress.Labels "|"}}"
+    </div></section>
+  <section class="gyst-stack"><h2 class="gyst-section-title">Yearly goals</h2>
+    <div class="gyst-card">
+      <canvas class="chart" data-chart="bar" data-max="100" data-labels="{{join .Dashboard.YearlyGoalProgress.Labels "|"}}"
       data-values="{{joinInts .Dashboard.YearlyGoalProgress.Values "|"}}"></canvas>
-  </section>
+    </div></section>
 </div>
 {{end}}
