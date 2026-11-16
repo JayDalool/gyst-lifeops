@@ -17,6 +17,7 @@ import (
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
+	"math"
 )
 
 // Health Coach (Issue #64). GYST builds a small context and offers the model
@@ -239,15 +240,7 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 					exercises := []map[string]any{}
 					for _, ex := range w.Exercises {
 						item := map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)}
-						// Cardio incline and speed appear only when read from the notes.
-						for _, s := range ex.Sets {
-							if s.InclinePct != nil && item["incline_pct"] == nil {
-								item["incline_pct"] = *s.InclinePct
-							}
-							if s.SpeedKmh != nil && item["speed_kmh"] == nil {
-								item["speed_kmh"] = *s.SpeedKmh
-							}
-						}
+						addCardioFields(item, ex.Sets)
 						exercises = append(exercises, item)
 					}
 					item := map[string]any{"title": w.Title, "date": w.StartedAt.In(loc).Format("2006-01-02"), "exercises": exercises}
@@ -322,6 +315,46 @@ func metricOrNilString(ok bool, v string) any {
 		return nil
 	}
 	return v
+}
+
+// addCardioFields adds per-set cardio data only when some timed set has a parsed
+// incline or speed. The exercise-level values are kept only when every timed set
+// agrees; otherwise they are null so a mixed session is never summarised by its
+// first set.
+func addCardioFields(item map[string]any, sets []models.TrainingSet) {
+	var per []map[string]any
+	var incline, speed []*float64
+	parsed := false
+	for _, s := range sets {
+		if s.Seconds == nil {
+			continue
+		}
+		parsed = parsed || s.InclinePct != nil || s.SpeedKmh != nil
+		set := map[string]any{"duration_min": math.Round(*s.Seconds/60*10) / 10, "incline_pct": nil, "speed_kmh": nil}
+		if s.InclinePct != nil {
+			set["incline_pct"] = *s.InclinePct
+		}
+		if s.SpeedKmh != nil {
+			set["speed_kmh"] = *s.SpeedKmh
+		}
+		per = append(per, set)
+		incline, speed = append(incline, s.InclinePct), append(speed, s.SpeedKmh)
+	}
+	if !parsed {
+		return
+	}
+	item["sets"] = per
+	item["incline_pct"], item["speed_kmh"] = commonValue(incline), commonValue(speed)
+}
+
+// commonValue is the shared value when every entry is present and equal, else nil.
+func commonValue(v []*float64) any {
+	for _, x := range v {
+		if x == nil || *x != *v[0] {
+			return nil
+		}
+	}
+	return *v[0]
 }
 
 func bestSetText(sets []models.TrainingSet) string {

@@ -88,14 +88,18 @@ func ParseCardioNotes(notes string, timed int) []CardioReading {
 		tokInc = append(tokInc, parseDecimal(m[1]))
 		tokSpd = append(tokSpd, toKmh(m[2], m[3]))
 	}
-	for _, m := range inclineKeyRe.FindAllStringSubmatch(s, -1) {
-		keyInc = append(keyInc, parseDecimal(m[1]))
+	for _, m := range inclineKeyRe.FindAllStringSubmatchIndex(s, -1) {
+		// "incline 30 degrees" is not a percent.
+		if rest := strings.TrimSpace(s[m[1]:]); strings.HasPrefix(rest, "deg") || strings.HasPrefix(rest, "°") {
+			continue
+		}
+		keyInc = append(keyInc, parseDecimal(s[m[2]:m[3]]))
+	}
+	for _, m := range speedUnitRe.FindAllStringSubmatch(s, -1) {
+		keySpd = append(keySpd, toKmh(m[1], m[2]))
 	}
 	if len(tokInc) == 0 {
 		// Keyword form: exercise-level, one agreed value or nothing.
-		for _, m := range speedUnitRe.FindAllStringSubmatch(s, -1) {
-			keySpd = append(keySpd, toKmh(m[1], m[2]))
-		}
 		if len(keyInc) > 0 && !allEqual(keyInc) || len(keySpd) > 0 && !allEqual(keySpd) {
 			return out
 		}
@@ -116,10 +120,11 @@ func ParseCardioNotes(notes string, timed int) []CardioReading {
 		if !allEqual(keyInc) || !allEqual(tokInc) || keyInc[0] != tokInc[0] {
 			return out
 		}
-		r := CardioReading{InclinePct: boundedIncline(keyInc[0])}
-		if allEqual(tokSpd) {
-			r.SpeedKmh = boundedSpeed(tokSpd[0])
+		// Speeds from both forms must agree too.
+		if !allEqual(append(keySpd, tokSpd...)) {
+			return out
 		}
+		r := CardioReading{InclinePct: boundedIncline(keyInc[0]), SpeedKmh: boundedSpeed(tokSpd[0])}
 		for i := range out {
 			out[i] = r
 		}

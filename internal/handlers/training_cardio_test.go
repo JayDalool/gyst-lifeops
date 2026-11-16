@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,6 +37,11 @@ func TestCoachRecentWorkoutsIncludeInclineAndSpeedOnlyWhenParsed(t *testing.T) {
 	entries := []models.TrainingEntry{{ID: "a", Kind: "workout", Title: "Cardio", StartedAt: now.AddDate(0, 0, -1), Exercises: []models.TrainingExercise{
 		{Name: "Treadmill", PrimaryMuscle: "cardio", Sets: []models.TrainingSet{{Kind: "normal", Seconds: f(1200), InclinePct: f(8), SpeedKmh: f(5)}}},
 		{Name: "Bike", PrimaryMuscle: "cardio", Sets: []models.TrainingSet{{Kind: "normal", Seconds: f(600)}}},
+		{Name: "Intervals", PrimaryMuscle: "cardio", Sets: []models.TrainingSet{
+			{Kind: "normal", Seconds: f(300), InclinePct: f(6), SpeedKmh: f(4.5)},
+			{Kind: "normal", Seconds: f(300), InclinePct: f(8), SpeedKmh: f(5)},
+			{Kind: "normal", Seconds: f(300), InclinePct: f(10), SpeedKmh: f(5.5)},
+		}},
 	}}}
 	if err := h.Service.Repo.SaveTraining("hevy", entries, now); err != nil {
 		t.Fatal(err)
@@ -44,11 +50,32 @@ func TestCoachRecentWorkoutsIncludeInclineAndSpeedOnlyWhenParsed(t *testing.T) {
 		t.Fatalf("ask: %d", w.Code)
 	}
 	out := fc.toolData["get_recent_workouts"]
-	if !strings.Contains(out, `"incline_pct":8`) || !strings.Contains(out, `"speed_kmh":5`) {
-		t.Fatalf("missing incline or speed: %s", out)
+	var got struct {
+		Workouts []struct {
+			Exercises []map[string]any
+		}
 	}
-	if strings.Count(out, "incline_pct") != 1 || strings.Count(out, "speed_kmh") != 1 {
-		t.Fatalf("absent values were emitted: %s", out)
+	if err := json.Unmarshal([]byte(out), &got); err != nil || len(got.Workouts) != 1 || len(got.Workouts[0].Exercises) != 3 {
+		t.Fatalf("bad output %v: %s", err, out)
+	}
+	tread, bike, intervals := got.Workouts[0].Exercises[0], got.Workouts[0].Exercises[1], got.Workouts[0].Exercises[2]
+	if tread["incline_pct"] != 8.0 || tread["speed_kmh"] != 5.0 || len(tread["sets"].([]any)) != 1 {
+		t.Fatalf("uniform exercise: %v", tread)
+	}
+	if _, ok := bike["incline_pct"]; ok {
+		t.Fatalf("absent values were emitted: %v", bike)
+	}
+	if _, ok := bike["sets"]; ok {
+		t.Fatalf("sets emitted without parsed values: %v", bike)
+	}
+	// Differing sets: per-set values, exercise-level null (never the first set's).
+	if v, ok := intervals["incline_pct"]; !ok || v != nil || intervals["speed_kmh"] != nil {
+		t.Fatalf("exercise-level values for mixed sets: %v", intervals)
+	}
+	sets := intervals["sets"].([]any)
+	last := sets[2].(map[string]any)
+	if len(sets) != 3 || sets[0].(map[string]any)["incline_pct"] != 6.0 || last["incline_pct"] != 10.0 || last["speed_kmh"] != 5.5 || last["duration_min"] != 5.0 {
+		t.Fatalf("per-set values: %v", sets)
 	}
 }
 

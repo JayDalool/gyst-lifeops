@@ -35,6 +35,9 @@ func TestParseCardioNotes(t *testing.T) {
 		{"one token many sets", "8%/5.0", 2, []r{{none, none}, {none, none}}},
 		{"keyword and tokens agree", "incline 8% 8%/5 8%/5", 2, []r{{8, 5}, {8, 5}}},
 		{"keyword and tokens disagree", "incline 8% 6%/5 8%/5", 2, []r{{none, none}, {none, none}}},
+		{"keyword speed and token speed disagree", "incline 8% · 5 km/h, 8%/6", 1, []r{{none, none}}},
+		{"keyword speed and token speed agree", "incline 8% · 5 km/h, 8%/5", 1, []r{{8, 5}}},
+		{"degrees are not percent", "incline 30 degrees, 5 km/h", 1, []r{{none, 5}}},
 		{"keyword values differ", "incline 8% then incline 10%", 1, []r{{none, none}}},
 		{"speeds differ", "5 km/h then 6 km/h", 1, []r{{none, none}}},
 		// Absent, never 0.

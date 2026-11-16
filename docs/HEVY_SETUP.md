@@ -37,7 +37,8 @@ Accepted, case-insensitive:
 - `incline 8 5 kmh` (units `km/h`, `kmh`, `kph`)
 - `incline 10% 3.1 mph` (mph is converted to km/h, rounded to 0.1)
 - `8%/5.0` (percent, slash, speed; km/h when no unit is given)
-- Comma decimals work (`5,5 km/h`).
+- Comma decimals work (`5,5 km/h`). Separate per-set tokens with spaces.
+- Incline is a percent: `incline 30 degrees` is ignored.
 
 Which sets they apply to:
 
