@@ -117,9 +117,9 @@ func coachToday(data HealthData) map[string]any {
 	t := data.Today
 	macros := []map[string]any{}
 	for _, m := range t.Nutrients {
-		macros = append(macros, map[string]any{"name": m.Short(), "eaten_g": metricOrNil(m.Consumed), "target_g": metricOrNil(m.Target), "note": m.Note})
+		macros = append(macros, map[string]any{"name": m.Short(), "eaten_g": metricOrNil(m.Consumed), "target_g": metricOrNil(m.Target), "note": m.Note, "partial": m.Partial})
 	}
-	cal := map[string]any{"eaten": metricOrNil(t.Calories.Consumed), "target": metricOrNil(t.CalorieTarget)}
+	cal := map[string]any{"eaten": metricOrNil(t.Calories.Consumed), "target": metricOrNil(t.CalorieTarget), "partial": t.Calories.Partial}
 	if t.Calories.HasBar {
 		key := "budget_left"
 		if t.CaloriesOver {
@@ -128,19 +128,21 @@ func coachToday(data HealthData) map[string]any {
 		cal[key] = t.BudgetAbs
 	}
 	return map[string]any{
-		"date":                     t.Date,
-		"apple_health_last_sync":   map[bool]string{true: t.LastSynced, false: "none today"}[t.HasLastSynced],
-		"sync_stale":               t.LastSyncedStale,
-		"calories_kcal":            cal,
-		"burned_so_far_kcal":       metricOrNil(t.ObservedBurn),
-		"energy_balance_so_far":    metricOrNil(t.ObservedEnergy),
-		"note_on_balance":          "Observed so far today; the day isn't over, so this is not a final deficit.",
-		"macros":                   macros,
-		"steps":                    map[string]any{"count": metricOrNil(t.Steps), "source": t.StepsSource, "target": metricOrNil(t.StepTarget)},
-		"exercise_minutes":         metricOrNil(t.ExerciseMinutes),
-		"latest_weight_kg":         map[bool]any{true: data.Weight.Latest, false: nil}[data.Weight.Present],
-		"weight_change_since_plan": map[bool]any{true: data.Weight.Change, false: nil}[data.Weight.HasChange],
-		"water":                    coachWater(data.Water),
+		"date":                          t.Date,
+		"apple_health_last_sync":        map[bool]string{true: t.LastSynced, false: "none today"}[t.HasLastSynced],
+		"sync_stale":                    t.LastSyncedStale,
+		"intake_source":                 t.IntakeSource,
+		"apple_health_kcal_not_counted": map[bool]any{true: metricOrNil(t.ReferenceKcal), false: nil}[t.IntakeSource == models.IntakeSourceGYST],
+		"calories_kcal":                 cal,
+		"burned_so_far_kcal":            metricOrNil(t.ObservedBurn),
+		"energy_balance_so_far":         metricOrNil(t.ObservedEnergy),
+		"note_on_balance":               "Observed so far today; the day isn't over, so this is not a final deficit.",
+		"macros":                        macros,
+		"steps":                         map[string]any{"count": metricOrNil(t.Steps), "source": t.StepsSource, "target": metricOrNil(t.StepTarget)},
+		"exercise_minutes":              metricOrNil(t.ExerciseMinutes),
+		"latest_weight_kg":              map[bool]any{true: data.Weight.Latest, false: nil}[data.Weight.Present],
+		"weight_change_since_plan":      map[bool]any{true: data.Weight.Change, false: nil}[data.Weight.HasChange],
+		"water":                         coachWater(data.Water),
 	}
 }
 
@@ -348,6 +350,7 @@ Style: short and practical. Numbers first. One to three relevant numbers, then a
 Rules:
 - Use only the data below and your tools. If data is missing, say so plainly; never invent values, meals or workouts.
 - The day isn't over: call calorie balance "so far", never a final deficit.
+- Food eaten today comes from one source, intake_source (gyst diary, apple_health or none). apple_health_kcal_not_counted is a reference only: never add it to the eaten values. A partial value means some logged food has no value for it, so say it is at least that much.
 - Never claim spot fat reduction. Never turn steps into calories.
 - Respect Jay's food rules in the profile (for example halal, no alcohol) in every food suggestion.
 - Prefer foods from get_food_products when suggesting meals or ways to close a protein gap.

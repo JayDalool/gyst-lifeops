@@ -78,4 +78,6 @@ type HealthTodayResponse struct {
 	Snapshot    *DailyHealthSnapshot `json:"snapshot"`
 	HealthCycle *HealthCycle         `json:"health_cycle"`
 	Observed    ObservedHealthEnergy `json:"observed"`
+	// Intake is the day's one counted intake (Issue #207). Observed uses it.
+	Intake DayIntake `json:"intake"`
 }

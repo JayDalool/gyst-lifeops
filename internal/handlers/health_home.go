@@ -27,7 +27,7 @@ const calorieWatchShare = 0.10
 // the same numbers the ring shows.
 func buildCalorieState(v HealthTodayView, target float64) healthCalorieState {
 	switch {
-	case !v.HasSnapshot:
+	case !v.HasSnapshot && v.IntakeSource != models.IntakeSourceGYST:
 		return healthCalorieState{"idle", "Waiting for sync", "refresh-cw"}
 	case !v.Calories.Consumed.Present:
 		return healthCalorieState{"idle", "No food logged", "info"}

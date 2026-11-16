@@ -238,21 +238,27 @@ func (s *Service) ListHealthWeightEntries() ([]models.HealthWeightEntry, error) 
 	return s.Repo.ListHealthWeightEntries()
 }
 
+// CalculateObservedHealthEnergy computes observed energy from the synced row
+// alone, counting its dietary calories (the Apple Health source).
 func CalculateObservedHealthEnergy(snapshot *models.DailyHealthSnapshot, cycle *models.HealthCycle) models.ObservedHealthEnergy {
+	return CalculateObservedHealthEnergyFor(snapshot, cycle, ResolveDayIntake("", nil, snapshot))
+}
+
+// CalculateObservedHealthEnergyFor takes the eaten kcal from the day's one
+// counted intake (Issue #207); burn still comes from the synced row.
+func CalculateObservedHealthEnergyFor(snapshot *models.DailyHealthSnapshot, cycle *models.HealthCycle, intake models.DayIntake) models.ObservedHealthEnergy {
 	var out models.ObservedHealthEnergy
-	if snapshot == nil {
-		return out
-	}
-	if snapshot.ActiveEnergyKcal != nil && snapshot.RestingEnergyKcal != nil {
+	eaten := intake.Counted.Kcal
+	if snapshot != nil && snapshot.ActiveEnergyKcal != nil && snapshot.RestingEnergyKcal != nil {
 		burn := *snapshot.ActiveEnergyKcal + *snapshot.RestingEnergyKcal
 		out.ObservedTotalBurn = &burn
-		if snapshot.DietaryCalories != nil {
-			balance := *snapshot.DietaryCalories - burn
+		if eaten != nil {
+			balance := *eaten - burn
 			out.ObservedEnergyBalance = &balance
 		}
 	}
-	if cycle != nil && snapshot.DietaryCalories != nil {
-		remaining := cycle.DailyCalorieTarget - *snapshot.DietaryCalories
+	if cycle != nil && eaten != nil {
+		remaining := cycle.DailyCalorieTarget - *eaten
 		out.FoodRemaining = &remaining
 	}
 	return out
@@ -281,6 +287,15 @@ func (s *Service) HealthToday() (models.HealthTodayResponse, error) {
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return out, err
 	}
-	out.Observed = CalculateObservedHealthEnergy(out.Snapshot, out.HealthCycle)
+	totals, err := s.Repo.NutritionDayTotals(date, date)
+	if err != nil {
+		return out, err
+	}
+	var gyst *models.NutritionDayTotals
+	if t, ok := totals[date]; ok {
+		gyst = &t
+	}
+	out.Intake = ResolveDayIntake(date, gyst, out.Snapshot)
+	out.Observed = CalculateObservedHealthEnergyFor(out.Snapshot, out.HealthCycle, out.Intake)
 	return out, nil
 }
