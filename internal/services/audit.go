@@ -33,6 +33,8 @@ const (
 	AuditActionReauthFailed      = "reauth.failed"
 	AuditActionAccessDenied      = "access.denied"
 	AuditActionHealthSyncRefused = "health.sync_refused"
+	AuditActionAIKeySet          = "settings.ai_key.set"
+	AuditActionAIKeyRemove       = "settings.ai_key.remove"
 
 	AuditActorHuman   = "human"
 	AuditActorMachine = "machine"
@@ -63,6 +65,7 @@ var auditActions = map[string]bool{
 	AuditActionSessionRevokeAll: true, AuditActionReauthSucceeded: true,
 	AuditActionReauthFailed: true, AuditActionAccessDenied: true,
 	AuditActionHealthSyncRefused: true,
+	AuditActionAIKeySet:          true, AuditActionAIKeyRemove: true,
 }
 
 var (
