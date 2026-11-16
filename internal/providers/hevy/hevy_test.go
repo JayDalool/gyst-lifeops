@@ -90,7 +90,8 @@ func TestTreadmillNotesBecomeInclineAndSpeed(t *testing.T) {
 		case "/v1/workouts":
 			fmt.Fprint(w, `{"page":1,"page_count":1,"workouts":[{"id":"w1","title":"Cardio day","start_time":"2026-09-23T12:00:00Z","end_time":"2026-09-23T12:30:00Z","exercises":[`+
 				`{"title":"Treadmill","notes":"Incline 8% · 3.1 mph","exercise_template_id":"tm","sets":[{"type":"normal","duration_seconds":1200,"distance_meters":2000},{"type":"normal"}]},`+
-				`{"title":"Treadmill","notes":"felt slow","exercise_template_id":"tm","sets":[{"type":"normal","duration_seconds":600}]}]}]}`)
+				`{"title":"Treadmill","notes":"felt slow","exercise_template_id":"tm","sets":[{"type":"normal","duration_seconds":600}]},`+
+				`{"title":"Treadmill","notes":"6%/4.5 8%/5.0","exercise_template_id":"tm","sets":[{"type":"normal","duration_seconds":300},{"type":"normal","duration_seconds":300}]}]}]}`)
 		}
 	}))
 	defer server.Close()
@@ -110,5 +111,9 @@ func TestTreadmillNotesBecomeInclineAndSpeed(t *testing.T) {
 	}
 	if garbage.InclinePct != nil || garbage.SpeedKmh != nil {
 		t.Fatal("unreadable notes must stay absent")
+	}
+	perSet := ex[2].Sets
+	if *perSet[0].InclinePct != 6 || *perSet[0].SpeedKmh != 4.5 || *perSet[1].InclinePct != 8 || *perSet[1].SpeedKmh != 5 {
+		t.Fatalf("per-set tokens not mapped in order: %+v %+v", perSet[0], perSet[1])
 	}
 }

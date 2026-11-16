@@ -7,9 +7,14 @@ import (
 	"strings"
 )
 
-// Cardio notes convention (documented in docs/HEVY_SETUP.md): free text that
-// carries an incline in percent and a speed in km/h or mph, for example
-// "incline 8% · 5.0 km/h", "incline 10 3.1mph" or "8%/5.0".
+// Cardio notes convention (documented in docs/HEVY_SETUP.md):
+//
+//  1. Keyword form, exercise-level: "incline 8% · 5.0 km/h" applies to every
+//     timed set. A bare percent ("30% effort") is never an incline.
+//  2. Per-set tokens "8%/5.0": when the token count equals the number of timed
+//     sets, the nth token belongs to the nth timed set.
+//  3. Any other mix (disagreeing values, token count not matching) gives no
+//     reading for any set.
 const (
 	maxInclinePct = 40.0
 	minSpeedKmh   = 0.5
@@ -17,57 +22,114 @@ const (
 	kmhPerMph     = 1.609344
 )
 
-const num = `(\d+(?:\.\d+)?)`
+const decimalPattern = `(\d+(?:[.,]\d+)?)`
+const unitPattern = `(km\s*/\s*h|kmh|kph|mph)\b`
 
 var (
-	shortNotesRe = regexp.MustCompile(`(?:^|[^\d.\-])` + num + `\s*%\s*/\s*` + num + `(?:\s*(km\s*/\s*h|kmh|kph|mph)\b)?`)
-	inclineKeyRe = regexp.MustCompile(`incline\s*[:=]?\s*` + num)
-	inclinePctRe = regexp.MustCompile(`(?:^|[^\d.\-])` + num + `\s*%`)
-	speedUnitRe  = regexp.MustCompile(`(?:^|[^\d.\-])` + num + `\s*(km\s*/\s*h|kmh|kph|mph)\b`)
+	tokenRe      = regexp.MustCompile(`(?:^|[^\d.,\-])` + decimalPattern + `\s*%\s*/\s*` + decimalPattern + `(?:\s*` + unitPattern + `)?`)
+	inclineKeyRe = regexp.MustCompile(`incline\s*[:=]?\s*` + decimalPattern)
+	speedUnitRe  = regexp.MustCompile(`(?:^|[^\d.,\-])` + decimalPattern + `\s*` + unitPattern)
 )
 
-func speedKmh(value, unit string) *float64 {
-	v, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return nil
-	}
+// CardioReading is the incline (percent) and speed (km/h) of one timed set.
+// A nil field is unknown, never 0.
+type CardioReading struct {
+	InclinePct, SpeedKmh *float64
+}
+
+func parseDecimal(s string) float64 {
+	v, _ := strconv.ParseFloat(strings.Replace(s, ",", ".", 1), 64)
+	return v
+}
+
+// toKmh converts and rounds to 0.1; unit "" means km/h.
+func toKmh(value, unit string) float64 {
+	v := parseDecimal(value)
 	if strings.HasPrefix(unit, "mph") {
 		v *= kmhPerMph
 	}
-	v = math.Round(v*10) / 10
+	return math.Round(v*10) / 10
+}
+
+func boundedIncline(v float64) *float64 {
+	if v < 0 || v > maxInclinePct {
+		return nil
+	}
+	return &v
+}
+
+func boundedSpeed(v float64) *float64 {
 	if v < minSpeedKmh || v > maxSpeedKmh {
 		return nil
 	}
 	return &v
 }
 
-func inclinePct(value string) *float64 {
-	v, err := strconv.ParseFloat(value, 64)
-	if err != nil || v < 0 || v > maxInclinePct {
-		return nil
+func allEqual(v []float64) bool {
+	for _, x := range v {
+		if x != v[0] {
+			return false
+		}
 	}
-	return &v
+	return true
 }
 
-// ParseCardioNotes reads incline (percent) and speed (km/h) from exercise
-// notes. Either result is nil when it is missing, unreadable or outside
-// 0-40% / 0.5-25 km/h. It never returns 0 for "unknown".
-func ParseCardioNotes(notes string) (incline, speed *float64) {
+// ParseCardioNotes returns one reading per timed set (timed is the number of
+// timed sets in the exercise). Unreadable, ambiguous or out-of-bounds values
+// (incline 0-40%, speed 0.5-25 km/h) stay nil.
+func ParseCardioNotes(notes string, timed int) []CardioReading {
+	out := make([]CardioReading, max(timed, 0))
+	if timed <= 0 {
+		return out
+	}
 	s := strings.ToLower(notes)
-	if m := shortNotesRe.FindStringSubmatch(s); m != nil {
-		unit := m[3]
-		if unit == "" {
-			unit = "kmh"
+	var tokInc, tokSpd, keyInc, keySpd []float64
+	for _, m := range tokenRe.FindAllStringSubmatch(s, -1) {
+		tokInc = append(tokInc, parseDecimal(m[1]))
+		tokSpd = append(tokSpd, toKmh(m[2], m[3]))
+	}
+	for _, m := range inclineKeyRe.FindAllStringSubmatch(s, -1) {
+		keyInc = append(keyInc, parseDecimal(m[1]))
+	}
+	if len(tokInc) == 0 {
+		// Keyword form: exercise-level, one agreed value or nothing.
+		for _, m := range speedUnitRe.FindAllStringSubmatch(s, -1) {
+			keySpd = append(keySpd, toKmh(m[1], m[2]))
 		}
-		return inclinePct(m[1]), speedKmh(m[2], unit)
+		if len(keyInc) > 0 && !allEqual(keyInc) || len(keySpd) > 0 && !allEqual(keySpd) {
+			return out
+		}
+		var r CardioReading
+		if len(keyInc) > 0 {
+			r.InclinePct = boundedIncline(keyInc[0])
+		}
+		if len(keySpd) > 0 {
+			r.SpeedKmh = boundedSpeed(keySpd[0])
+		}
+		for i := range out {
+			out[i] = r
+		}
+		return out
 	}
-	if m := inclineKeyRe.FindStringSubmatch(s); m != nil {
-		incline = inclinePct(m[1])
-	} else if m := inclinePctRe.FindStringSubmatch(s); m != nil {
-		incline = inclinePct(m[1])
+	if len(keyInc) > 0 {
+		// Keyword plus tokens: only valid when they all agree.
+		if !allEqual(keyInc) || !allEqual(tokInc) || keyInc[0] != tokInc[0] {
+			return out
+		}
+		r := CardioReading{InclinePct: boundedIncline(keyInc[0])}
+		if allEqual(tokSpd) {
+			r.SpeedKmh = boundedSpeed(tokSpd[0])
+		}
+		for i := range out {
+			out[i] = r
+		}
+		return out
 	}
-	if m := speedUnitRe.FindStringSubmatch(s); m != nil {
-		speed = speedKmh(m[1], m[2])
+	if len(tokInc) != timed {
+		return out
 	}
-	return incline, speed
+	for i := range out {
+		out[i] = CardioReading{InclinePct: boundedIncline(tokInc[i]), SpeedKmh: boundedSpeed(tokSpd[i])}
+	}
+	return out
 }

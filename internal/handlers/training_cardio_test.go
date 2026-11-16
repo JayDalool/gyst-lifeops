@@ -17,8 +17,9 @@ func TestTrainingViewFormatsTreadmillSets(t *testing.T) {
 		{Kind: "warmup", Seconds: f(90), SpeedKmh: f(4.5)},
 		{Kind: "normal", Seconds: f(1200)},
 		{Kind: "normal", Seconds: f(600), InclinePct: f(0)},
+		{Kind: "normal", Seconds: f(900), DistanceM: f(1500), SpeedKmh: f(6)},
 	}}}})
-	want := []string{"20 min · 8% · 5.0 km/h", "warmup · 1.5 min · 4.5 km/h", "normal · 1200 sec", "10 min · 0%"}
+	want := []string{"20 min · 8% · 5.0 km/h", "1.5 min · 4.5 km/h · warmup", "normal · 1200 sec", "10 min · 0%", "15 min · 6.0 km/h · 1500 m"}
 	for i, w := range want {
 		if got := v.Exercises[0].Sets[i]; got != w {
 			t.Errorf("set %d: %q want %q", i, got, w)

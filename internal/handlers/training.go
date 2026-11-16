@@ -191,6 +191,14 @@ func trainingView(e models.TrainingEntry) trainingEntryView {
 		x := trainingExerciseView{Name: ex.Name, Muscles: services.MuscleName(ex.PrimaryMuscle)}
 		for _, s := range ex.Sets {
 			parts := []string{s.Kind}
+			if s.Seconds != nil && (s.InclinePct != nil || s.SpeedKmh != nil) {
+				// Timed cardio reads time first: "20 min · 8% · 5.0 km/h". A plain
+				// "normal" label adds nothing; other kinds (warmup, dropset) follow.
+				parts = cardioSetParts(s)
+				if s.Kind != "normal" {
+					parts = append(parts, s.Kind)
+				}
+			}
 			if s.Reps != nil {
 				parts = append(parts, fmt.Sprintf("%g reps", *s.Reps))
 			} else if s.MinReps != nil && s.MaxReps != nil {
@@ -203,13 +211,7 @@ func trainingView(e models.TrainingEntry) trainingEntryView {
 				parts = append(parts, fmt.Sprintf("%g m", *s.DistanceM))
 			}
 			if s.Seconds != nil {
-				if s.InclinePct != nil || s.SpeedKmh != nil {
-					// Treadmill style: minutes, then whatever incline and speed were read.
-					if s.Kind == "normal" && len(parts) == 1 {
-						parts = parts[:0] // plain timed set: "20 min · 8% · 5.0 km/h"
-					}
-					parts = append(parts, cardioSetParts(s)...)
-				} else {
+				if s.InclinePct == nil && s.SpeedKmh == nil {
 					parts = append(parts, fmt.Sprintf("%g sec", *s.Seconds))
 				}
 			}

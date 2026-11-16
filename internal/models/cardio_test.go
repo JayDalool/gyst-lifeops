@@ -2,53 +2,74 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 )
 
 func TestParseCardioNotes(t *testing.T) {
-	f := func(v float64) *float64 { return &v }
+	type r = [2]float64 // incline, speed; -1 means absent
+	const none = -1
 	for _, tc := range []struct {
-		name, notes    string
-		incline, speed *float64
+		name, notes string
+		timed       int
+		want        []r
 	}{
-		{"dot separated", "incline 8% · 5.0 km/h", f(8), f(5)},
-		{"bare numbers", "incline 8 5 kmh", f(8), f(5)},
-		{"mph converted", "incline 10% 3.1 mph", f(10), f(5)},
-		{"mph no space", "incline 10 3.1mph", f(10), f(5)},
-		{"per set short", "8%/5.0", f(8), f(5)},
-		{"per set short mph", "6% / 3 mph", f(6), f(4.8)},
-		{"upper case", "INCLINE 7.5% · 6 KM/H", f(7.5), f(6)},
-		{"colon", "Incline: 12, Speed 4.5 kph", f(12), f(4.5)},
-		{"zero incline is real", "incline 0% · 6 km/h", f(0), f(6)},
-		{"incline only", "incline 5%", f(5), nil},
-		{"speed only", "walked 5.5 km/h", nil, f(5.5)},
-		{"percent without keyword", "10% and 4 km/h", f(10), f(4)},
-		{"empty", "", nil, nil},
-		{"garbage", "felt great, legs tired", nil, nil},
-		{"incline above 40", "incline 45% · 5 km/h", nil, f(5)},
-		{"speed above 25", "incline 5% · 30 km/h", f(5), nil},
-		{"speed below 0.5", "incline 5% · 0.2 km/h", f(5), nil},
-		{"negative percent ignored", "-5% 5 km/h", nil, f(5)},
-		{"distance is not speed", "incline 8%, 3 km", f(8), nil},
-		{"bad short form", "90%/5", nil, f(5)},
+		// Keyword form: exercise-level, every timed set.
+		{"dot separated", "incline 8% · 5.0 km/h", 1, []r{{8, 5}}},
+		{"bare numbers", "incline 8 5 kmh", 1, []r{{8, 5}}},
+		{"mph converted", "incline 10% 3.1 mph", 1, []r{{10, 5}}},
+		{"mph no space", "incline 10 3.1mph", 1, []r{{10, 5}}},
+		{"upper case", "INCLINE 7.5% · 6 KM/H", 1, []r{{7.5, 6}}},
+		{"colon and kph", "Incline: 12, Speed 4.5 kph", 1, []r{{12, 4.5}}},
+		{"applies to all timed sets", "incline 8% · 5 km/h", 3, []r{{8, 5}, {8, 5}, {8, 5}}},
+		{"zero incline is real", "incline 0% · 6 km/h", 1, []r{{0, 6}}},
+		{"incline only", "incline 5%", 1, []r{{5, none}}},
+		{"speed only", "walked 5.5 km/h", 1, []r{{none, 5.5}}},
+		{"comma decimal", "incline 7,5% · 5,5 km/h", 1, []r{{7.5, 5.5}}},
+		{"same keyword value repeated", "incline 8% ... incline 8%", 1, []r{{8, none}}},
+		// Per-set tokens.
+		{"single token", "8%/5.0", 1, []r{{8, 5}}},
+		{"token mph", "6% / 3 mph", 1, []r{{6, 4.8}}},
+		{"tokens map to timed sets", "6%/4.5 8%/5.0 10%/5.5", 3, []r{{6, 4.5}, {8, 5}, {10, 5.5}}},
+		{"token count differs", "6%/4.5 8%/5.0", 3, []r{{none, none}, {none, none}, {none, none}}},
+		{"one token many sets", "8%/5.0", 2, []r{{none, none}, {none, none}}},
+		{"keyword and tokens agree", "incline 8% 8%/5 8%/5", 2, []r{{8, 5}, {8, 5}}},
+		{"keyword and tokens disagree", "incline 8% 6%/5 8%/5", 2, []r{{none, none}, {none, none}}},
+		{"keyword values differ", "incline 8% then incline 10%", 1, []r{{none, none}}},
+		{"speeds differ", "5 km/h then 6 km/h", 1, []r{{none, none}}},
+		// Absent, never 0.
+		{"bare percent is not incline", "felt 20% harder", 1, []r{{none, none}}},
+		{"effort percent", "30% effort, 5 km/h", 1, []r{{none, 5}}},
+		{"empty", "", 1, []r{{none, none}}},
+		{"garbage", "felt great, legs tired", 1, []r{{none, none}}},
+		{"no timed sets", "incline 8% · 5 km/h", 0, []r{}},
+		// Bounds.
+		{"incline above 40", "incline 45% · 5 km/h", 1, []r{{none, 5}}},
+		{"incline 40 allowed", "incline 40% · 5 km/h", 1, []r{{40, 5}}},
+		{"speed above 25", "incline 5% · 30 km/h", 1, []r{{5, none}}},
+		{"speed below 0.5", "incline 5% · 0.2 km/h", 1, []r{{5, none}}},
+		{"negative incline ignored", "incline -2 5 km/h", 1, []r{{none, 5}}},
+		{"distance is not speed", "incline 8%, 3 km", 1, []r{{8, none}}},
+		{"token incline out of bounds", "90%/5", 1, []r{{none, 5}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			incline, speed := ParseCardioNotes(tc.notes)
-			eq := func(got, want *float64) bool {
-				return (got == nil) == (want == nil) && (got == nil || *got == *want)
+			got := ParseCardioNotes(tc.notes, tc.timed)
+			if len(got) != len(tc.want) {
+				t.Fatalf("%d readings, want %d", len(got), len(tc.want))
 			}
-			if !eq(incline, tc.incline) || !eq(speed, tc.speed) {
-				t.Fatalf("%q: got %v %v", tc.notes, deref(incline), deref(speed))
+			show := func(p *float64) float64 {
+				if p == nil {
+					return none
+				}
+				return *p
+			}
+			for i, w := range tc.want {
+				if g := (r{show(got[i].InclinePct), show(got[i].SpeedKmh)}); g != w {
+					t.Errorf("set %d of %q: got %v want %v", i, tc.notes, g, w)
+				}
 			}
 		})
 	}
-}
-
-func deref(p *float64) any {
-	if p == nil {
-		return nil
-	}
-	return *p
 }
 
 // Snapshots cached before incline and speed existed must still decode, and
@@ -64,6 +85,6 @@ func TestTrainingSetDecodesOldSnapshot(t *testing.T) {
 	out, _ := json.Marshal(s)
 	var back TrainingSet
 	if err := json.Unmarshal(out, &back); err != nil || back.InclinePct != nil {
-		t.Fatalf("%s %v", out, err)
+		t.Fatal(fmt.Sprintf("%s %v", out, err))
 	}
 }
