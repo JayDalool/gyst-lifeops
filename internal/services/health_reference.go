@@ -25,6 +25,9 @@ type HealthReferenceForm struct {
 var healthReferenceKinds = map[string]bool{"dietitian": true, "device": true, "ai": true, "other": true}
 
 // ParseHealthReference validates the form. Blank numbers stay unknown (nil).
+// Limits are sized so the worst-case percent-encoded form (every character
+// four bytes, 12 bytes each once encoded: 200 source + 400 notes) stays under
+// the 8 KB body cap in postGuard, so a long note gets this message, not a bare 400.
 func ParseHealthReference(f HealthReferenceForm) (models.HealthReferenceTarget, error) {
 	t := models.HealthReferenceTarget{SourceLabel: strings.TrimSpace(f.SourceLabel), SourceKind: f.SourceKind, IssuedOn: strings.TrimSpace(f.IssuedOn), Notes: strings.TrimSpace(f.Notes)}
 	switch {
@@ -34,8 +37,8 @@ func ParseHealthReference(f HealthReferenceForm) (models.HealthReferenceTarget, 
 		return t, healthInvalid("The source can be at most 200 characters")
 	case !healthReferenceKinds[t.SourceKind]:
 		return t, healthInvalid("Choose a source type")
-	case utf8.RuneCountInString(t.Notes) > 1000:
-		return t, healthInvalid("Notes can be at most 1000 characters")
+	case utf8.RuneCountInString(t.Notes) > 400:
+		return t, healthInvalid("Notes can be at most 400 characters")
 	}
 	if t.IssuedOn != "" {
 		if err := ValidateHealthDate(t.IssuedOn); err != nil {

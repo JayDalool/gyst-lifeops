@@ -88,6 +88,19 @@ func TestHealthReferenceTargetsHandlers(t *testing.T) {
 	if w := cfgPost(h, path, url.Values{}, ""); w.Code != 404 {
 		t.Fatalf("second archive: %d", w.Code)
 	}
+
+	// A too-long note of four-byte characters still fits the body cap, so the
+	// user sees the message rather than a bare 400.
+	long := refPostForm()
+	long.Set("source_label", strings.Repeat("😀", 200))
+	long.Set("notes", strings.Repeat("😀", 401))
+	if w := cfgPost(h, "/health/plan/reference", long, ""); w.Code != 400 || !strings.Contains(w.Body.String(), "at most 400 characters") {
+		t.Fatalf("long note: %d", w.Code)
+	}
+	long.Set("notes", strings.Repeat("😀", 400))
+	if w := cfgPost(h, "/health/plan/reference", long, ""); w.Code != 303 {
+		t.Fatalf("max-size note rejected: %d", w.Code)
+	}
 }
 
 func refSnap(date string, kcal, protein, fiber *float64, synced string) models.DailyHealthSnapshot {
@@ -105,7 +118,7 @@ func TestCycleComparisonUsesCompleteDaysOnly(t *testing.T) {
 		refSnap("2026-11-05", nil, nil, nil, "2026-11-05T21:00:00Z"),          // no dietary observation
 		refSnap("2026-11-10", f(3000), f(200), f(40), "2026-11-10T09:00:00Z"), // today: never complete
 	}
-	got := buildCycleComparison(c, days, "2026-11-10", time.UTC)
+	got := buildCycleComparison(c, days, nil, "2026-11-10", time.UTC)
 	if got.DaysUsed != 2 || got.DaysText != "2 complete days counted" {
 		t.Fatalf("days: %+v", got)
 	}
@@ -115,9 +128,54 @@ func TestCycleComparisonUsesCompleteDaysOnly(t *testing.T) {
 	if got.TargetKcal != "2,000 kcal" || got.TargetProtein != "150 g" || got.TargetFiber != "30 g" {
 		t.Fatalf("targets: %+v", got)
 	}
-	empty := buildCycleComparison(c, nil, "2026-11-10", time.UTC)
+	empty := buildCycleComparison(c, nil, nil, "2026-11-10", time.UTC)
 	if empty.DaysUsed != 0 || empty.AvgKcal != "—" || empty.AvgProtein != "—" || empty.AvgFiber != "—" || empty.DaysText != "No complete days counted" {
 		t.Fatalf("empty cycle must show dashes, not zeros: %+v", empty)
+	}
+	if empty.WeightStart != "—" || empty.WeightEnd != "—" {
+		t.Fatalf("no readings must show dashes: %+v", empty)
+	}
+}
+
+func TestCycleComparisonUnsetTargetsShowDash(t *testing.T) {
+	c := models.HealthCycle{ID: 1, Title: "New", StartDate: "2026-11-01", EndDate: "2026-11-30"} // all targets 0 = not set
+	got := buildCycleComparison(c, nil, nil, "2026-11-10", time.UTC)
+	if got.TargetKcal != "—" || got.TargetProtein != "—" || got.TargetFiber != "—" {
+		t.Fatalf("a target of 0 must render as a dash: %+v", got)
+	}
+}
+
+func refWeights(t *testing.T, readings map[string]float64, now time.Time) map[string]*localWeightDay {
+	t.Helper()
+	var entries []models.HealthWeightEntry
+	for date, kg := range readings {
+		entries = append(entries, models.HealthWeightEntry{MeasuredAt: date + "T12:00:00Z", WeightKg: kg, Source: "scale"})
+	}
+	return groupWeightDays(entries, now, time.UTC)
+}
+
+func TestCycleComparisonWeightWindows(t *testing.T) {
+	c := models.HealthCycle{ID: 1, Title: "Autumn", StartDate: "2026-11-01", EndDate: "2026-11-30"}
+	now := time.Date(2026, 11, 10, 18, 0, 0, 0, time.UTC)
+	// Start window (Nov 1-7) has 4 days. End window (Nov 4-10, today while the
+	// cycle runs) has only Nov 4 and Nov 9: too few, so a dash.
+	w := refWeights(t, map[string]float64{"2026-11-01": 80, "2026-11-02": 80.4, "2026-11-03": 80, "2026-11-04": 80.4, "2026-11-09": 79}, now)
+	got := buildCycleComparison(c, nil, w, "2026-11-10", time.UTC)
+	if got.WeightStart != "80.2 kg · 4 days" || got.WeightEnd != "—" {
+		t.Fatalf("weights: %+v", got)
+	}
+	// Add readings so the end window qualifies (Nov 4, 8, 9, 10).
+	w = refWeights(t, map[string]float64{"2026-11-01": 80, "2026-11-02": 80.4, "2026-11-03": 80, "2026-11-04": 80.4, "2026-11-08": 79, "2026-11-09": 79, "2026-11-10": 79.2}, now)
+	got = buildCycleComparison(c, nil, w, "2026-11-10", time.UTC)
+	if got.WeightEnd != "79.4 kg · 4 days" {
+		t.Fatalf("end window: %+v", got)
+	}
+	// A finished cycle ends on its own last day, not today.
+	done := models.HealthCycle{ID: 2, Title: "Done", StartDate: "2026-10-01", EndDate: "2026-10-31"}
+	w = refWeights(t, map[string]float64{"2026-10-01": 85, "2026-10-02": 85, "2026-10-03": 85, "2026-10-04": 85, "2026-10-28": 83, "2026-10-29": 83, "2026-10-30": 83, "2026-10-31": 83}, now)
+	got = buildCycleComparison(done, nil, w, "2026-11-10", time.UTC)
+	if got.WeightStart != "85 kg · 4 days" || got.WeightEnd != "83 kg · 4 days" {
+		t.Fatalf("finished cycle: %+v", got)
 	}
 }
 

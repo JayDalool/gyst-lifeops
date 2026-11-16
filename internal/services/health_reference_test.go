@@ -33,7 +33,7 @@ func TestParseHealthReference(t *testing.T) {
 		"not a number":  func(f *HealthReferenceForm) { f.Fat = "lots" },
 		"too big":       func(f *HealthReferenceForm) { f.Fiber = "10001" },
 		"bad cycle":     func(f *HealthReferenceForm) { f.CycleID = "abc" },
-		"long notes":    func(f *HealthReferenceForm) { f.Notes = strings.Repeat("n", 1001) },
+		"long notes":    func(f *HealthReferenceForm) { f.Notes = strings.Repeat("n", 401) },
 		"infinity text": func(f *HealthReferenceForm) { f.Kcal = "Inf" },
 	} {
 		f := refForm()

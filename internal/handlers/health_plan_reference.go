@@ -60,6 +60,11 @@ func (h *Handler) fillPlanExtras(data *healthPlanData) error {
 	if err != nil {
 		return err
 	}
+	entries, err := h.Service.ListHealthWeightEntries()
+	if err != nil {
+		return err
+	}
+	weights := groupWeightDays(entries, h.Service.Now(), h.Service.Location())
 	for _, c := range data.Cycles {
 		to := c.EndDate
 		if today < to {
@@ -71,7 +76,7 @@ func (h *Handler) fillPlanExtras(data *healthPlanData) error {
 				return err
 			}
 		}
-		data.Compare = append(data.Compare, buildCycleComparison(c, days, today, h.Service.Location()))
+		data.Compare = append(data.Compare, buildCycleComparison(c, days, weights, today, h.Service.Location()))
 	}
 	return nil
 }

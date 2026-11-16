@@ -125,7 +125,7 @@
         <label class="gyst-field"><span>Fat (g)</span><input class="gyst-input" type="text" inputmode="decimal" name="fat_g" maxlength="9" autocomplete="off" value="{{.RefForm.Fat}}"></label>
         <label class="gyst-field"><span>Fiber (g)</span><input class="gyst-input" type="text" inputmode="decimal" name="fiber_g" maxlength="9" autocomplete="off" value="{{.RefForm.Fiber}}"></label>
         </div>
-        <label class="gyst-field"><span>Notes (optional)</span><textarea class="gyst-input" name="notes" rows="2" maxlength="1000">{{.RefForm.Notes}}</textarea></label>
+        <label class="gyst-field"><span>Notes (optional)</span><textarea class="gyst-input" name="notes" rows="2" maxlength="400">{{.RefForm.Notes}}</textarea></label>
         <button class="gyst-button" type="submit">Add reference target</button>
       </form>
     </section>
@@ -140,10 +140,11 @@
         <thead><tr><th scope="col"></th><th scope="col">Calories</th><th scope="col">Protein</th><th scope="col">Fiber</th></tr></thead>
         <tbody><tr><th scope="row">Target</th><td>{{.TargetKcal}}</td><td>{{.TargetProtein}}</td><td>{{.TargetFiber}}</td></tr>
         <tr><th scope="row">Average</th><td>{{.AvgKcal}}</td><td>{{.AvgProtein}}</td><td>{{.AvgFiber}}</td></tr></tbody></table>
+      <p class="meta">7-day weight average at start: {{.WeightStart}} · at end: {{.WeightEnd}}</p>
     </li>
     {{else}}<li><p class="meta">No cycles to compare yet.</p></li>{{end}}
     </ul>
-    <p class="meta">Weight averages are not shown yet.</p>
+    <p class="meta">Weight uses the 7-day average (at least 4 days with readings), starting on the cycle's first day and ending on its last day, or today while it runs.</p>
   </section>
 </div>
 {{end}}

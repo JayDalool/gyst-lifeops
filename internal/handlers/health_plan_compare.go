@@ -12,13 +12,17 @@ import (
 // days inside it actually averaged. "Complete" reuses the nutrition week's
 // rules (#69): a day needs a dietary observation, must not be recorded zeros
 // (weekNothingLogged), must not be partial (weekPartial), and today is never
-// complete. 7-day weight averages are not shown: no helper exists yet.
+// complete. Weight uses the shared 7-day average (weight_average.go): the
+// window starting on the cycle's first day and the window ending on its last
+// day (today while the cycle is still running). A window with fewer than
+// minWeightAverageDays days of readings shows "—".
 
 type cycleComparison struct {
 	ID                                     int64
 	Title, Range                           string
 	TargetKcal, TargetProtein, TargetFiber string
 	AvgKcal, AvgProtein, AvgFiber          string
+	WeightStart, WeightEnd                 string
 	DaysUsed                               int
 	DaysText                               string
 }
@@ -46,9 +50,38 @@ func (m runningMean) text(unit string, whole bool) string {
 	return niceNumber(math.Round(avg*10)/10) + unit
 }
 
-func buildCycleComparison(c models.HealthCycle, days []models.DailyHealthSnapshot, today string, loc *time.Location) cycleComparison {
+// targetText shows a cycle target; 0 means not set, so it is "—" (as on Today).
+func targetText(v float64, unit string, whole bool) string {
+	if v <= 0 {
+		return missingValue
+	}
+	if whole {
+		return formatThousands(v) + unit
+	}
+	return niceNumber(v) + unit
+}
+
+func weightWindowText(w weightWindow) string {
+	if !w.ok {
+		return missingValue
+	}
+	return fmt.Sprintf("%s kg · %d %s", trimKg(w.avg), w.days, pluralDays(w.days))
+}
+
+func buildCycleComparison(c models.HealthCycle, days []models.DailyHealthSnapshot, weights map[string]*localWeightDay, today string, loc *time.Location) cycleComparison {
 	v := cycleComparison{ID: c.ID, Title: c.Title, Range: c.StartDate + " – " + c.EndDate,
-		TargetKcal: formatThousands(c.DailyCalorieTarget) + " kcal", TargetProtein: niceNumber(c.ProteinTargetG) + " g", TargetFiber: niceNumber(c.FiberTargetG) + " g"}
+		TargetKcal: targetText(c.DailyCalorieTarget, " kcal", true), TargetProtein: targetText(c.ProteinTargetG, " g", false), TargetFiber: targetText(c.FiberTargetG, " g", false),
+		WeightStart: missingValue, WeightEnd: missingValue}
+	if start, err := time.ParseInLocation("2006-01-02", c.StartDate, loc); err == nil {
+		v.WeightStart = weightWindowText(windowEndingOn(weights, start.AddDate(0, 0, weightWindowDays-1)))
+		endDate := c.EndDate
+		if today < endDate {
+			endDate = today
+		}
+		if end, err := time.ParseInLocation("2006-01-02", endDate, loc); err == nil && endDate >= c.StartDate {
+			v.WeightEnd = weightWindowText(windowEndingOn(weights, end))
+		}
+	}
 	var kcal, protein, fiber runningMean
 	for _, s := range days {
 		if s.Date == today || s.DietaryCalories == nil || weekNothingLogged(s) || weekPartial(s, loc) {
