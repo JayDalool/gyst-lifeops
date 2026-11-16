@@ -79,3 +79,36 @@ func TestFailuresDoNotLeakKeyOrFollowRedirect(t *testing.T) {
 		t.Fatal("followed redirect with API key")
 	}
 }
+
+func TestTreadmillNotesBecomeInclineAndSpeed(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/exercise_templates":
+			fmt.Fprint(w, `{"page":1,"page_count":1,"exercise_templates":[{"id":"tm","primary_muscle_group":"cardio"}]}`)
+		case "/v1/routines":
+			fmt.Fprint(w, `{"page":1,"page_count":0,"routines":[]}`)
+		case "/v1/workouts":
+			fmt.Fprint(w, `{"page":1,"page_count":1,"workouts":[{"id":"w1","title":"Cardio day","start_time":"2026-09-23T12:00:00Z","end_time":"2026-09-23T12:30:00Z","exercises":[`+
+				`{"title":"Treadmill","notes":"Incline 8% · 3.1 mph","exercise_template_id":"tm","sets":[{"type":"normal","duration_seconds":1200,"distance_meters":2000},{"type":"normal"}]},`+
+				`{"title":"Treadmill","notes":"felt slow","exercise_template_id":"tm","sets":[{"type":"normal","duration_seconds":600}]}]}]}`)
+		}
+	}))
+	defer server.Close()
+	c := New("test-only-key")
+	c.base = server.URL
+	entries, err := c.Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ex := entries[0].Exercises
+	timed, untimed, garbage := ex[0].Sets[0], ex[0].Sets[1], ex[1].Sets[0]
+	if timed.InclinePct == nil || *timed.InclinePct != 8 || timed.SpeedKmh == nil || *timed.SpeedKmh != 5 || *timed.Seconds != 1200 {
+		t.Fatalf("%+v", timed)
+	}
+	if untimed.InclinePct != nil || untimed.SpeedKmh != nil {
+		t.Fatal("set without a duration got incline or speed")
+	}
+	if garbage.InclinePct != nil || garbage.SpeedKmh != nil {
+		t.Fatal("unreadable notes must stay absent")
+	}
+}

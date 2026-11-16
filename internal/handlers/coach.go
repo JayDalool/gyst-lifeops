@@ -227,7 +227,17 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 					}
 					exercises := []map[string]any{}
 					for _, ex := range w.Exercises {
-						exercises = append(exercises, map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)})
+						item := map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)}
+						// Cardio incline and speed appear only when read from the notes.
+						for _, s := range ex.Sets {
+							if s.InclinePct != nil && item["incline_pct"] == nil {
+								item["incline_pct"] = *s.InclinePct
+							}
+							if s.SpeedKmh != nil && item["speed_kmh"] == nil {
+								item["speed_kmh"] = *s.SpeedKmh
+							}
+						}
+						exercises = append(exercises, item)
 					}
 					item := map[string]any{"title": w.Title, "date": w.StartedAt.In(loc).Format("2006-01-02"), "exercises": exercises}
 					if !w.EndedAt.IsZero() {

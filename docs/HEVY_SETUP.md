@@ -24,4 +24,22 @@ one pass through the chosen routines, not weekly training frequency. Workout
 views count sessions starting in the selected rolling period. Unmapped exercises
 remain unclassified; no guessed muscle assignments or calorie calculations.
 
+## Treadmill incline and speed (exercise notes)
+
+Hevy's API has no incline or speed field. For a treadmill (or any timed cardio)
+exercise, write them in that exercise's **notes** in Hevy. GYST reads them
+(read-only) and shows `20 min · 8% · 5.0 km/h` on the workout page, a cardio
+trend on Progress (last 8 weeks), and gives them to the Coach.
+
+Accepted, case-insensitive:
+
+- `incline 8% · 5.0 km/h`
+- `incline 8 5 kmh` (units `km/h`, `kmh`, `kph`)
+- `incline 10% 3.1 mph` (mph is converted to km/h, rounded to 0.1)
+- `8%/5.0` (percent, slash, speed; km/h when no unit is given)
+
+The notes apply to every timed set of that exercise. Incline must be 0-40% and
+speed 0.5-25 km/h; anything else, or notes GYST cannot read, leaves the value
+absent (never shown as 0). Duration always comes from Hevy's own set duration.
+
 Reference: [official Hevy API documentation](https://api.hevyapp.com/docs/).

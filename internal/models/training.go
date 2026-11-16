@@ -6,6 +6,9 @@ import "time"
 type TrainingSet struct {
 	Kind                                                       string
 	LoadKG, Reps, MinReps, MaxReps, DistanceM, Seconds, Effort *float64
+	// Cardio incline (percent) and speed (km/h); nil when unknown, never 0.
+	InclinePct *float64 `json:",omitempty"`
+	SpeedKmh   *float64 `json:",omitempty"`
 }
 type TrainingExercise struct {
 	Name, PrimaryMuscle string
