@@ -22,6 +22,9 @@ type healthProgressData struct {
 	Error, WeightValue, MeasuredValue, MaxMeasured string
 	Logged                                         *loggedWeight
 	Undone                                         bool
+	// Average is the 7-day rolling average ending today, from all readings
+	// (not limited to the chosen range).
+	Average weightAvgView
 }
 
 // weightTimeLayout shows a reading's local time with its numeric UTC offset,
@@ -32,7 +35,7 @@ const weightTimeLayout = "2006-01-02 15:04:05 UTC-07:00"
 
 // Plot observations at their actual times, without filling unobserved days.
 func buildHealthProgress(entries []models.HealthWeightEntry, period string, now time.Time, location *time.Location) healthProgressData {
-	data := healthProgressData{Page: "health", Range: period, Timezone: location.String()}
+	data := healthProgressData{Page: "health", Range: period, Timezone: location.String(), Average: buildWeightAverage(entries, now, location)}
 	type reading struct {
 		entry models.HealthWeightEntry
 		at    time.Time

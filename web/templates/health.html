@@ -126,7 +126,10 @@
       <div class="hv3-tile-h"><h2 id="weight-title" class="hv3-k">{{template "gyst.icon" "weight"}}Weight</h2><a href="/health/progress" aria-label="Weight history">{{template "gyst.icon" "chevron-right"}}</a></div>
       {{if .Weight.Present}}
       <p class="hv3-tile-v">{{.Weight.Latest}}<small> kg</small></p>
-      <p class="hv3-s">{{if .Weight.HasChange}}{{.Weight.Change}} since {{.Weight.Since}}{{else if .Weight.NoneSincePlan}}No reading since plan start{{else if eq .Weight.Readings 1}}First reading{{else}}{{.Weight.LatestAt}}{{end}}</p>
+      <p class="hv3-s">{{if .Weight.HasChange}}{{if .Weight.ChangeIsAverage}}7-day average {{end}}{{.Weight.Change}} since {{.Weight.Since}}{{else if .Weight.NoneSincePlan}}No reading since plan start{{else if eq .Weight.Readings 1}}First reading{{else}}{{.Weight.LatestAt}}{{end}}</p>
+      <p class="hv3-s">{{.Weight.Average.Line}}</p>
+      {{if .Weight.Average.HasPrev}}<p class="hv3-s">{{.Weight.Average.ChangeLine}}</p>{{end}}
+      {{if .Weight.Average.Note}}<p class="hv3-s">{{.Weight.Average.Note}}</p>{{end}}
       {{if .Weight.Points}}<svg class="hv3-spark" viewBox="0 0 100 32" preserveAspectRatio="none" role="img" aria-label="{{.Weight.SparkDescription}}"><polyline points="{{.Weight.Points}}"/></svg>{{end}}
       {{else}}
       <p class="hv3-tile-v"><span class="hv3-absent">—</span></p><p class="hv3-s">No readings yet</p>

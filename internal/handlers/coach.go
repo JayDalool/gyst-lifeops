@@ -176,7 +176,7 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 					"carbs_g": c.CarbsTargetG, "fat_g": c.FatTargetG, "fiber_g": c.FiberTargetG, "target_daily_deficit_kcal": c.TargetDeficitKcal,
 					"strength_sessions_per_week": c.StrengthSessionsPerWeek, "cardio_sessions_per_week": c.CardioSessionsPerWeek, "step_target": c.StepTarget}, nil
 			})},
-		{Name: "get_weight_trend", Description: "Weight readings from the last 90 days (date, kg), latest reading and change since the plan started.",
+		{Name: "get_weight_trend", Description: "Weight readings from the last 90 days (date, kg), latest reading, the 7-day average (null when fewer than 4 days have readings) and change since the plan started.",
 			Run: none(func() (any, error) {
 				entries, err := h.Service.ListHealthWeightEntries()
 				if err != nil {
@@ -193,7 +193,18 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 				if len(readings) > 30 {
 					readings = readings[:30]
 				}
-				return map[string]any{"latest_kg": metricOrNilString(data.Weight.Present, data.Weight.Latest), "change_since": data.Weight.Since, "change": data.Weight.Change, "readings_newest_first": readings}, nil
+				avg := data.Weight.Average
+				out := map[string]any{"latest_kg": metricOrNilString(data.Weight.Present, data.Weight.Latest), "change_since": data.Weight.Since, "change": data.Weight.Change,
+					"change_is_between_7_day_averages": data.Weight.ChangeIsAverage, "readings_newest_first": readings,
+					"seven_day_average_kg": metricOrNilString(avg.Present, avg.Avg), "seven_day_average_days_used": nil, "seven_day_average_note": avg.Line,
+					"previous_seven_day_average_kg": metricOrNilString(avg.HasPrev, avg.Prev), "change_vs_previous_seven_days": metricOrNilString(avg.HasPrev, avg.Change)}
+				if avg.Present {
+					out["seven_day_average_days_used"] = avg.Days
+					if avg.MixedScales {
+						out["readings_note"] = avg.Note
+					}
+				}
+				return out, nil
 			})},
 		{Name: "get_training_summary", Description: "This week's workouts against the plan target, volume, training time, workouts per week for 8 weeks, and muscle-group shares over 30 days.",
 			Run: none(func() (any, error) {
