@@ -67,3 +67,26 @@ not configured", the Coach tab is hidden and the rest of Health is unchanged.
 - Cost: each question is one to six API calls on the configured provider's
   model at effort `low`.
 - General guidance only, not medical advice.
+
+## Food photo analysis (service only, Issue #217)
+
+`POST /health/nutrition/photo/analyze` (multipart field `photo`, session plus
+same-origin) identifies foods in a meal photo. There is no page yet (#211 adds
+the review screen) and nothing is written to the diary.
+
+- Provider: OpenAI only for now (the provider offers an optional
+  `FoodPhotoAnalyzer` capability; Anthropic can add one later). Model:
+  `gpt-6.1-sol`, or `HEALTH_AI_VISION_MODEL` when set. The variable must also be
+  passed through `docker-compose.yml` to reach the container.
+- The upload is held in memory only: no temp file, no disk. The type is sniffed
+  from the bytes (JPEG, PNG, WebP; HEIC gets a "set camera to Most Compatible"
+  message), dimensions are checked before decoding (at most 40 MP), the image
+  is re-encoded as JPEG at 1024 px or less, which drops EXIF, GPS and anything
+  appended to the file. Orientation is applied to the pixels first.
+- Sent to OpenAI as `input_image` (base64 data URL) with strict structured
+  output and `store: false`. GYST keeps nothing after the response.
+- The model identifies only. Calories and macros are never requested, and any
+  nutrient field it returns is discarded. Items are validated (roles, 0-3000 g,
+  confidence 0-1, at most 15 items, string lengths); invalid items are dropped.
+- Rate limit: one at a time, 3 s apart, 40 an hour (separate from the Coach).
+- Failures log a fixed category only, never the image, prompt or output.
