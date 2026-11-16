@@ -177,11 +177,11 @@ func TestNormalizeRejects(t *testing.T) {
 		{"html", []byte("<html><script>alert(1)</script></html>"), ErrUnsupported},
 		{"pdf", []byte("%PDF-1.7 ..."), ErrUnsupported},
 		{"gif", []byte("GIF89a......"), ErrUnsupported},
-		{"heic", heic, ErrHEIC},
+		{"heic", heic, ErrUnsupported},
+		{"webp", append([]byte("RIFF\x20\x00\x00\x00WEBPVP8 \x14\x00\x00\x00"), bytes.Repeat([]byte{0xFF}, 40)...), ErrUnsupported},
 		{"truncated jpeg", jpg[:len(jpg)/3], ErrCorrupt},
 		{"jpeg magic only", []byte{0xFF, 0xD8, 0xFF, 0xE0, 0, 0}, ErrCorrupt},
 		{"decompression bomb", bomb, ErrDimensions},
-		{"garbage webp", append([]byte("RIFF\x20\x00\x00\x00WEBPVP8 \x14\x00\x00\x00"), bytes.Repeat([]byte{0xFF}, 40)...), ErrDimensions},
 		{"too large", make([]byte, MaxUpload+1), ErrTooLarge},
 	}
 	for _, c := range cases {

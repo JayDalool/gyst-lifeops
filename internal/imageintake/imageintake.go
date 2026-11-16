@@ -25,7 +25,6 @@ import (
 	"net/http"
 
 	xdraw "golang.org/x/image/draw"
-	_ "golang.org/x/image/webp" // registers the WebP decoder for image.DecodeConfig/Decode
 )
 
 const (
@@ -49,8 +48,7 @@ var (
 	ErrNotMultipart = errors.New("Send the photo as a file upload")
 	ErrNoFile       = errors.New("Choose a photo first")
 	ErrTooLarge     = errors.New("That photo is too large. The limit is 8 MB")
-	ErrUnsupported  = errors.New("That file isn't a photo GYST can read. Use a JPEG, PNG or WebP image")
-	ErrHEIC         = errors.New("GYST can't read HEIC photos yet. On iPhone, set Settings > Camera > Formats to Most Compatible, then take the photo again")
+	ErrUnsupported  = errors.New("That photo type isn't supported. Use JPEG or PNG (iPhone: Settings > Camera > Formats > Most Compatible)")
 	ErrCorrupt      = errors.New("That photo couldn't be read. Try another one")
 	ErrDimensions   = errors.New("That photo's dimensions are too large. Try a smaller photo")
 )
@@ -61,8 +59,8 @@ type Kind string
 const (
 	KindJPEG    Kind = "jpeg"
 	KindPNG     Kind = "png"
-	KindWebP    Kind = "webp"
-	KindHEIC    Kind = "heic"
+	KindHEIC    Kind = "heic" // recognised only to be refused
+	KindWebP    Kind = "webp" // recognised only to be refused (decoder has unfixed advisories on Go 1.25)
 	KindUnknown Kind = ""
 )
 
@@ -129,9 +127,8 @@ func readErr(err error) error {
 // Normalize validates raw image bytes and returns a metadata-free JPEG no
 // larger than MaxEdge on its long edge.
 func Normalize(raw []byte) (out []byte, err error) {
-	// The WebP decoder has known panics on hostile input (govulncheck:
-	// GO-2026-5061, fixed in x/image v0.43, which needs Go 1.26). A panic
-	// becomes an ordinary "unreadable" error instead of a crashed request.
+	// Belt and braces: a decoder panic on hostile input becomes an ordinary
+	// "unreadable" error instead of a crashed request.
 	defer func() {
 		if recover() != nil {
 			out, err = nil, ErrCorrupt
@@ -145,9 +142,7 @@ func Normalize(raw []byte) (out []byte, err error) {
 	}
 	kind := Sniff(raw)
 	switch kind {
-	case KindHEIC:
-		return nil, ErrHEIC
-	case KindUnknown:
+	case KindHEIC, KindWebP, KindUnknown:
 		return nil, ErrUnsupported
 	}
 	// Dimensions come from the header, before any pixel buffer exists.

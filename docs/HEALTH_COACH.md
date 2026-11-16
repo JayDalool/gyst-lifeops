@@ -79,8 +79,8 @@ the review screen) and nothing is written to the diary.
   `gpt-6.1-sol`, or `HEALTH_AI_VISION_MODEL` when set. The variable must also be
   passed through `docker-compose.yml` to reach the container.
 - The upload is held in memory only: no temp file, no disk. The type is sniffed
-  from the bytes (JPEG, PNG, WebP; HEIC gets a "set camera to Most Compatible"
-  message), dimensions are checked before decoding (at most 40 MP), the image
+  from the bytes (JPEG and PNG only; HEIC and WebP get a fixed "use JPEG or PNG,
+  set the iPhone camera to Most Compatible" message), dimensions are checked before decoding (at most 40 MP), the image
   is re-encoded as JPEG at 1024 px or less, which drops EXIF, GPS and anything
   appended to the file. Orientation is applied to the pixels first.
 - Sent to OpenAI as `input_image` (base64 data URL) with strict structured

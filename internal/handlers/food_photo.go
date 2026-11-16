@@ -50,7 +50,7 @@ func (h *Handler) healthFoodPhotoAnalyze(w http.ResponseWriter, r *http.Request)
 		switch {
 		case errors.Is(err, imageintake.ErrTooLarge):
 			status = http.StatusRequestEntityTooLarge
-		case errors.Is(err, imageintake.ErrUnsupported), errors.Is(err, imageintake.ErrHEIC):
+		case errors.Is(err, imageintake.ErrUnsupported):
 			status = http.StatusUnsupportedMediaType
 		}
 		// imageintake errors are fixed, user-safe sentences.

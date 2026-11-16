@@ -196,7 +196,8 @@ func TestPhotoAnalyzeRejectsBadUploads(t *testing.T) {
 		status int
 		text   string
 	}{
-		{"wrong type", "photo", []byte("<html>not an image</html>"), 415, "JPEG, PNG or WebP"},
+		{"wrong type", "photo", []byte("<html>not an image</html>"), 415, "JPEG or PNG"},
+		{"webp", "photo", []byte("RIFF\x20\x00\x00\x00WEBPVP8 \x14\x00\x00\x00"), 415, "Most Compatible"},
 		{"heic", "photo", heic, 415, "Most Compatible"},
 		{"oversized", "photo", append([]byte{0xFF, 0xD8, 0xFF}, make([]byte, 8<<20)...), 413, "8 MB"},
 		{"wrong field", "file", testJPEG(t), 400, "Choose a photo"},
