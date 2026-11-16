@@ -134,3 +134,32 @@ no weight-entry UI or API in this milestone. Weight source can be `manual` or
 
 Tests use temporary databases only. Deployment and migration of the personal
 production database are separate from this milestone's commit/push workflow.
+
+## Food diary (Issue #207)
+
+Migration `20261116120000_nutrition_diary.sql` adds three generic tables.
+`nutrition_foods` holds immutable, versioned catalogue rows: only `archived_at`
+may change, and `superseded_at` is set once when a new version is inserted.
+Values are per 100 g (`per_100g`) or per serving (`per_serving`); My foods
+(`health_foods`) are mirrored as provider `user`, id `health_food:<id>`, per
+serving with no gram weight, and get a new version only when the food changed.
+`nutrition_meals` carry `local_date`, `meal_slot`, `created_via` and a unique
+32-hex `idempotency_key`. `nutrition_meal_items` snapshot the name, unit
+(`g` or `serving`), amount and nutrients at log time, so later catalogue edits
+never change history. A removed item keeps its row with `archived_at` set.
+
+**One counted intake source per day** (`services.ResolveDayIntake`, the only
+place the rule lives): a day with at least one live item counts the GYST total
+(`gyst`); otherwise any synced dietary value counts as `apple_health`;
+otherwise the day has no intake (`none`, nil values). The sources are never
+added. On a GYST day the synced total is `DayIntake.Reference`, shown as "not
+counted". A nutrient that some live item lacks is summed over the others and
+flagged in `DayIntake.Missing` (partial). Today, the Health home, the Nutrition
+week and the Coach all read `DayIntake`; `HealthToday().Observed` takes eaten
+kcal from `Intake.Counted`. `POST /api/health/sync` and its COALESCE upsert are
+unchanged.
+
+Writes (`services/nutrition_diary.go`) are transactional, act on today's items
+only, and write an audit row after commit (see ARCHITECTURE.md, Audit events).
+Restoring a removed item works within 10 minutes. Rollback: deploy the older
+binary and leave the tables; it counts Apple Health for every day.
