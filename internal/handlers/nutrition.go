@@ -68,6 +68,7 @@ type nutritionData struct {
 	GapLeft  string
 	GapFoods []gapFood
 	HasFoods bool
+	Diary    nutritionDiary
 }
 
 type gapFood struct {
@@ -224,6 +225,12 @@ func (h *Handler) nutrition(w http.ResponseWriter, r *http.Request) {
 		methodNotAllowed(w)
 		return
 	}
+	h.renderNutrition(w, r, http.StatusOK, "")
+}
+
+// renderNutrition draws the page. A non-empty problem is shown as an error
+// banner with the given status (a failed diary write re-renders with 400).
+func (h *Handler) renderNutrition(w http.ResponseWriter, r *http.Request, status int, problem string) {
 	today, err := h.Service.HealthToday()
 	if err != nil {
 		serverError(w, err)
@@ -248,5 +255,12 @@ func (h *Handler) nutrition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	buildProteinGap(&data, foods)
+	if searchErr := h.fillDiary(r, &data); searchErr != "" && problem == "" {
+		problem, status = searchErr, http.StatusBadRequest
+	}
+	data.Diary.Error = problem
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
 	h.render(w, "nutrition.html", data)
 }

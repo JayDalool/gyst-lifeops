@@ -57,6 +57,8 @@ type HealthMacroView struct {
 	// Partial: a GYST diary day where some logged item has no value for this
 	// nutrient, so Consumed is a lower bound (Issue #207).
 	Partial bool
+	// Gaps is how many logged items have no value for this nutrient.
+	Gaps int
 }
 
 // HealthTodayView is everything the Day view renders.
@@ -263,6 +265,8 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 	}
 	view.Macros[1].Partial, view.Macros[2].Partial = gaps.ProteinG > 0, gaps.CarbsG > 0
 	view.Macros[3].Partial, view.Macros[4].Partial = gaps.FatG > 0, gaps.FiberG > 0
+	view.Macros[0].Gaps, view.Macros[1].Gaps, view.Macros[2].Gaps = gaps.Kcal, gaps.ProteinG, gaps.CarbsG
+	view.Macros[3].Gaps, view.Macros[4].Gaps = gaps.FatG, gaps.FiberG
 
 	view.CalorieTarget = metricFromTarget(cycle.DailyCalorieTarget, "kcal")
 	view.FoodRemaining = metricFromFloat(today.Observed.FoodRemaining, "kcal")
