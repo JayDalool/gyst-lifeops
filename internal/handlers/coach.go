@@ -166,13 +166,21 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 	return []healthcoach.Tool{
 		{Name: "get_health_today", Description: "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight.",
 			Run: none(func() (any, error) { return coachToday(data), nil })},
-		{Name: "get_health_plan", Description: "The current health plan: dates and daily targets (calories, macros, steps, strength and cardio sessions per week).",
+		{Name: "get_health_plan", Description: "The current health plan: dates and daily targets (calories, macros, steps, strength and cardio sessions per week), plus reference_targets: outside recommendations (for example a dietitian) labelled with their source, all not_active. Never present a reference target as the active plan.",
 			Run: none(func() (any, error) {
 				c, err := h.Service.GetHealthCycleForDate(data.Today.Date)
-				if err != nil {
-					return map[string]any{"plan": nil}, nil
+				var cycleID *int64
+				if err == nil {
+					cycleID = &c.ID
 				}
-				return map[string]any{"title": c.Title, "goal": c.PrimaryGoal, "start": c.StartDate, "end": c.EndDate, "calories": c.DailyCalorieTarget, "protein_g": c.ProteinTargetG,
+				refs, rerr := h.coachReferenceTargets(cycleID)
+				if rerr != nil {
+					return nil, rerr
+				}
+				if err != nil {
+					return map[string]any{"plan": nil, "reference_targets": refs}, nil
+				}
+				return map[string]any{"reference_targets": refs, "title": c.Title, "goal": c.PrimaryGoal, "start": c.StartDate, "end": c.EndDate, "calories": c.DailyCalorieTarget, "protein_g": c.ProteinTargetG,
 					"carbs_g": c.CarbsTargetG, "fat_g": c.FatTargetG, "fiber_g": c.FiberTargetG, "target_daily_deficit_kcal": c.TargetDeficitKcal,
 					"strength_sessions_per_week": c.StrengthSessionsPerWeek, "cardio_sessions_per_week": c.CardioSessionsPerWeek, "step_target": c.StepTarget}, nil
 			})},

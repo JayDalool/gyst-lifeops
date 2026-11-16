@@ -79,3 +79,22 @@ type HealthTodayResponse struct {
 	HealthCycle *HealthCycle         `json:"health_cycle"`
 	Observed    ObservedHealthEnergy `json:"observed"`
 }
+
+// HealthReferenceTarget is an outside recommendation (for example a dietitian's)
+// kept beside the plan. It is never an active target. Nil values mean "not
+// given", never zero (#205).
+type HealthReferenceTarget struct {
+	ID          int64
+	CycleID     *int64
+	SourceLabel string
+	SourceKind  string // dietitian | device | ai | other
+	IssuedOn    string // YYYY-MM-DD, empty when unknown
+	Kcal        *float64
+	ProteinG    *float64
+	CarbsG      *float64
+	FatG        *float64
+	FiberG      *float64
+	Notes       string
+	CreatedAt   string
+	ArchivedAt  string // empty while active
+}
