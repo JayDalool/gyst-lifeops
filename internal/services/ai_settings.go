@@ -124,7 +124,13 @@ func (s *Service) ensureDataKey() ([]byte, error) {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return s.loadDataKey() // lost a race with another process
+			// Lost a race with another process, or something (such as a
+			// dangling symlink) already sits at the path.
+			key, lerr := s.loadDataKey()
+			if lerr != nil {
+				return nil, ErrAIKeyFile
+			}
+			return key, nil
 		}
 		return nil, ErrAIKeyFile
 	}

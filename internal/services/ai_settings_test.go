@@ -2,6 +2,9 @@ package services
 
 import (
 	"bytes"
+	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -38,5 +41,17 @@ func TestAIKeyEncryptionRoundTripAndBinding(t *testing.T) {
 	ct2, nonce2, _ := encryptAIKey(dataKey, AIProviderOpenAI, fakeServiceKey)
 	if bytes.Equal(nonce, nonce2) || bytes.Equal(ct, ct2) {
 		t.Error("nonce or ciphertext repeated")
+	}
+}
+
+func TestEnsureDataKeyDanglingSymlinkIsKeyFileError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ai_settings.key")
+	if err := os.Symlink(filepath.Join(dir, "missing-target"), path); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	s := &Service{AIKeyPath: path}
+	if _, err := s.ensureDataKey(); !errors.Is(err, ErrAIKeyFile) {
+		t.Fatalf("dangling symlink: got %v, want ErrAIKeyFile", err)
 	}
 }
