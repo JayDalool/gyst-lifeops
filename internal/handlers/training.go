@@ -40,6 +40,13 @@ type trainingData struct {
 	PerWeekTotal int
 	Latest       *trainingEntryView
 	Earlier      []trainingEntryView // the rest of the 30 most recent sessions
+	// Cardio minutes for the last 8 weeks, oldest first; empty without cardio.
+	CardioBars []trainingWeekBar
+	CardioRows []cardioWeekView // weeks with cardio, newest first
+}
+
+type cardioWeekView struct {
+	Label, Minutes, Detail string
 }
 
 type trainingWeekBar struct {
@@ -128,6 +135,53 @@ func trainingTrendViews(trends []services.ExerciseTrend, limit int) []trainingTr
 	return out
 }
 
+func cardioSetParts(s models.TrainingSet) []string {
+	parts := []string{formatMinutes(*s.Seconds / 60)}
+	if s.InclinePct != nil {
+		parts = append(parts, fmt.Sprintf("%g%%", *s.InclinePct))
+	}
+	if s.SpeedKmh != nil {
+		parts = append(parts, fmt.Sprintf("%.1f km/h", *s.SpeedKmh))
+	}
+	return parts
+}
+
+func formatMinutes(m float64) string {
+	return strconv.FormatFloat(math.Round(m*10)/10, 'f', -1, 64) + " min"
+}
+
+// cardioTrendViews turns weekly cardio into bars and detail rows. Both are nil
+// when no week has cardio, so the page shows nothing rather than a flat chart.
+func cardioTrendViews(weeks []services.CardioWeek) ([]trainingWeekBar, []cardioWeekView) {
+	most := 0
+	for _, w := range weeks {
+		most = max(most, w.Minutes)
+	}
+	if most == 0 {
+		return nil, nil
+	}
+	bars, rows := []trainingWeekBar{}, []cardioWeekView{}
+	for i, w := range weeks {
+		bars = append(bars, trainingWeekBar{Count: w.Minutes, Height: max(4, w.Minutes*100/most)})
+		if w.Sessions == 0 {
+			continue
+		}
+		detail := []string{fmt.Sprintf("%d session%s", w.Sessions, map[bool]string{true: "", false: "s"}[w.Sessions == 1])}
+		if w.InclinePct != nil {
+			detail = append(detail, fmt.Sprintf("avg %.1f%%", *w.InclinePct))
+		}
+		if w.SpeedKmh != nil {
+			detail = append(detail, fmt.Sprintf("avg %.1f km/h", *w.SpeedKmh))
+		}
+		label := "Week of " + w.Start.Format("Jan 2")
+		if i == len(weeks)-1 {
+			label = "This week"
+		}
+		rows = append([]cardioWeekView{{Label: label, Minutes: fmt.Sprintf("%d min", w.Minutes), Detail: strings.Join(detail, " · ")}}, rows...)
+	}
+	return bars, rows
+}
+
 func trainingView(e models.TrainingEntry) trainingEntryView {
 	v := trainingEntryView{ID: e.ID, Title: e.Title}
 	if !e.StartedAt.IsZero() {
@@ -137,6 +191,14 @@ func trainingView(e models.TrainingEntry) trainingEntryView {
 		x := trainingExerciseView{Name: ex.Name, Muscles: services.MuscleName(ex.PrimaryMuscle)}
 		for _, s := range ex.Sets {
 			parts := []string{s.Kind}
+			if s.Seconds != nil && (s.InclinePct != nil || s.SpeedKmh != nil) {
+				// Timed cardio reads time first: "20 min · 8% · 5.0 km/h". A plain
+				// "normal" label adds nothing; other kinds (warmup, dropset) follow.
+				parts = cardioSetParts(s)
+				if s.Kind != "normal" {
+					parts = append(parts, s.Kind)
+				}
+			}
 			if s.Reps != nil {
 				parts = append(parts, fmt.Sprintf("%g reps", *s.Reps))
 			} else if s.MinReps != nil && s.MaxReps != nil {
@@ -149,7 +211,9 @@ func trainingView(e models.TrainingEntry) trainingEntryView {
 				parts = append(parts, fmt.Sprintf("%g m", *s.DistanceM))
 			}
 			if s.Seconds != nil {
-				parts = append(parts, fmt.Sprintf("%g sec", *s.Seconds))
+				if s.InclinePct == nil && s.SpeedKmh == nil {
+					parts = append(parts, fmt.Sprintf("%g sec", *s.Seconds))
+				}
 			}
 			if s.Effort != nil {
 				parts = append(parts, fmt.Sprintf("RPE %g", *s.Effort))
@@ -265,6 +329,7 @@ func (h *Handler) training(w http.ResponseWriter, r *http.Request) {
 		}
 		data.PerWeek = append(data.PerWeek, bar)
 	}
+	data.CardioBars, data.CardioRows = cardioTrendViews(services.CardioPerWeek(cache.Entries, now, location, 8))
 	if len(data.Workouts) > 0 {
 		data.Latest = &data.Workouts[0]
 		data.Earlier = data.Workouts[1:]
