@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/config"
@@ -30,11 +31,17 @@ type App struct {
 	Handler http.Handler
 	cancel  context.CancelFunc
 	service *services.Service
+	// background counts the goroutines New started; Close waits for them so
+	// none is still using the database when it is closed.
+	background *sync.WaitGroup
 }
 
 func (a *App) Close() error {
 	if a.cancel != nil {
 		a.cancel()
+	}
+	if a.background != nil {
+		a.background.Wait()
 	}
 	return a.DB.Close()
 }
@@ -91,15 +98,23 @@ func New(cfg Config) (*App, error) {
 	}
 	pushContext, cancelPush := context.WithCancel(context.Background())
 	// pushContext is cancelled by Close and drives every background loop.
-	go service.RunPushScheduler(pushContext)
+	var background sync.WaitGroup
+	spawn := func(run func(context.Context)) {
+		background.Add(1)
+		go func() {
+			defer background.Done()
+			run(pushContext)
+		}()
+	}
+	spawn(service.RunPushScheduler)
 	// Synchronous, before the loop: it cannot race Close.
 	service.SweepSessionsAtStart()
-	go service.RunSessionSweeper(pushContext)
+	spawn(service.RunSessionSweeper)
 	service.PruneAuditAtStart(pushContext)
-	go service.RunAuditPruneLoop(pushContext)
+	spawn(service.RunAuditPruneLoop)
 	if cfg.HevyAPIKey != "" {
 		service.Training = &services.TrainingSync{Provider: hevy.New(cfg.HevyAPIKey)}
-		go service.RunTrainingSync(pushContext)
+		spawn(service.RunTrainingSync)
 	}
 	webHandler := handlers.New(service, cfg.TemplateDir)
 	webHandler.AllowPublicFeeds = cfg.AllowPublicFeeds
@@ -155,7 +170,7 @@ func New(cfg Config) (*App, error) {
 	// favicon are matched above and so stay reachable while signed out.
 	mux.Handle("/", handlers.RequestLog(logger, webHandler.Authenticated()))
 
-	return &App{DB: database, Handler: handlers.SecurityHeaders(mux), cancel: cancelPush, service: service}, nil
+	return &App{DB: database, Handler: handlers.SecurityHeaders(mux), cancel: cancelPush, service: service, background: &background}, nil
 }
 
 // HealthAIConfig is the Health Coach part of Config.
