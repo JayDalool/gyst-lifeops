@@ -59,6 +59,8 @@ type Handler struct {
 	coachLimit   coachLimiter
 	// photoLimit guards photo analysis separately from the Coach (#217).
 	photoLimit coachLimiter
+	// camera holds the one-time nonces of photo reviews (#211).
+	camera     cameraStore
 	coachMu    sync.Mutex
 	coachCfg   services.AIConfig
 	coachBuilt healthcoach.Provider
@@ -388,6 +390,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.training(w, r)
 		} else if len(segments) == 4 && segments[1] == "nutrition" && segments[2] == "photo" && segments[3] == "analyze" {
 			h.healthFoodPhotoAnalyze(w, r)
+		} else if len(segments) == 4 && segments[1] == "nutrition" && segments[2] == "photo" && segments[3] == "confirm" {
+			h.healthFoodPhotoConfirm(w, r)
 		} else if len(segments) == 2 && segments[1] == "nutrition" {
 			h.nutrition(w, r)
 		} else if len(segments) >= 3 && len(segments) <= 5 && segments[1] == "nutrition" && segments[2] == "items" {
