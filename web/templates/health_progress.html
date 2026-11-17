@@ -16,6 +16,9 @@
  <section class="card">
   <h2>Weight history</h2>
   <nav class="health-links" aria-label="Weight history range"><a href="?range=30" {{if eq .Range "30"}}aria-current="page"{{end}}>30 days</a><a href="?range=90" {{if eq .Range "90"}}aria-current="page"{{end}}>90 days</a><a href="?range=all" {{if eq .Range "all"}}aria-current="page"{{end}}>All time</a></nav>
+  <p class="meta"><strong>{{.Average.Line}}</strong></p>
+  {{if .Average.HasPrev}}<p class="meta">{{.Average.ChangeLine}}</p>{{end}}
+  {{if .Average.Note}}<p class="meta">{{.Average.Note}}</p>{{end}}
   <p class="meta">{{if ne .Range "all"}}Includes today and the preceding {{if eq .Range "30"}}29{{else}}89{{end}} calendar days. {{end}}Dates use {{.Timezone}}.</p>
   {{if .Points}}
   <p class="weight-latest"><strong>{{.Latest}} kg</strong><span>Latest reading in this range · {{.LastDate}}</span></p>

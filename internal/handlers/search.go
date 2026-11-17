@@ -102,7 +102,7 @@ func (h *Handler) searchFixed(r *http.Request) ([]services.SearchSource, error) 
 	}
 	add(services.SearchGroupHealth, "Foods", "/health/foods", "Health")
 	add(services.SearchGroupHealth, "More health", "/health/more", "Health")
-	if h.Coach != nil {
+	if h.coach() != nil {
 		add(services.SearchGroupHealth, "Health coach", "/health/coach", "Health")
 	}
 	add(services.SearchGroupPages, "Menu", "/more", "Page")
