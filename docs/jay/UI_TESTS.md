@@ -1,4 +1,6 @@
 - [ ] #216 · Nutrition: add dinner, edit, remove, Undo · https://gyst.zaylolabs.com/health/nutrition
+- [ ] #206 · Workout: treadmill shows minutes, incline, speed · https://gyst.zaylolabs.com/health/training
+- [ ] #203 · Weight 7-day average on Today and Progress · https://gyst.zaylolabs.com/health/progress
 - [ ] #184 · iPhone Archive: grouped rows open details · https://github.com/JayDalool/gyst-lifeops/pull/185
 - [ ] #179 · Courses: block count reaches Y of Y after Later · https://github.com/JayDalool/gyst-lifeops/issues/179
 - [ ] #176 · Edit child of archived parent; links stay · https://github.com/JayDalool/gyst-lifeops/issues/176

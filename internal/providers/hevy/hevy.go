@@ -32,6 +32,7 @@ type entry struct {
 	End       string `json:"end_time"`
 	Exercises []struct {
 		Title    string
+		Notes    string
 		Template string `json:"exercise_template_id"`
 		Sets     []struct {
 			Type     string
@@ -131,11 +132,22 @@ func (c *Client) Fetch(ctx context.Context) ([]models.TrainingEntry, error) {
 				for _, x := range v.Exercises {
 					t := catalog[x.Template]
 					ex := models.TrainingExercise{Name: x.Title, PrimaryMuscle: t.Primary, SecondaryMuscles: t.Secondary}
+					timed := 0
+					for _, s := range x.Sets {
+						if s.Duration != nil {
+							timed++
+						}
+					}
+					readings, next := models.ParseCardioNotes(x.Notes, timed), 0
 					for _, s := range x.Sets {
 						set := models.TrainingSet{Kind: s.Type, LoadKG: s.Weight, Reps: s.Reps, DistanceM: s.Distance, Seconds: s.Duration, Effort: s.RPE}
 						if s.Range != nil {
 							set.MinReps = s.Range.Start
 							set.MaxReps = s.Range.End
+						}
+						if s.Duration != nil {
+							set.InclinePct, set.SpeedKmh = readings[next].InclinePct, readings[next].SpeedKmh
+							next++
 						}
 						ex.Sets = append(ex.Sets, set)
 					}

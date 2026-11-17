@@ -17,6 +17,7 @@ import (
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
+	"math"
 )
 
 // Health Coach (Issue #64). GYST builds a small context and offers the model
@@ -178,7 +179,7 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 					"carbs_g": c.CarbsTargetG, "fat_g": c.FatTargetG, "fiber_g": c.FiberTargetG, "target_daily_deficit_kcal": c.TargetDeficitKcal,
 					"strength_sessions_per_week": c.StrengthSessionsPerWeek, "cardio_sessions_per_week": c.CardioSessionsPerWeek, "step_target": c.StepTarget}, nil
 			})},
-		{Name: "get_weight_trend", Description: "Weight readings from the last 90 days (date, kg), latest reading and change since the plan started.",
+		{Name: "get_weight_trend", Description: "Weight readings from the last 90 days (date, kg), latest reading, the 7-day average (null when fewer than 4 days have readings) and change since the plan started.",
 			Run: none(func() (any, error) {
 				entries, err := h.Service.ListHealthWeightEntries()
 				if err != nil {
@@ -195,7 +196,18 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 				if len(readings) > 30 {
 					readings = readings[:30]
 				}
-				return map[string]any{"latest_kg": metricOrNilString(data.Weight.Present, data.Weight.Latest), "change_since": data.Weight.Since, "change": data.Weight.Change, "readings_newest_first": readings}, nil
+				avg := data.Weight.Average
+				out := map[string]any{"latest_kg": metricOrNilString(data.Weight.Present, data.Weight.Latest), "change_since": data.Weight.Since, "change": data.Weight.Change,
+					"change_is_between_7_day_averages": data.Weight.ChangeIsAverage, "readings_newest_first": readings,
+					"seven_day_average_kg": metricOrNilString(avg.Present, avg.Avg), "seven_day_average_days_used": nil, "seven_day_average_note": avg.Line,
+					"previous_seven_day_average_kg": metricOrNilString(avg.HasPrev, avg.Prev), "change_vs_previous_seven_days": metricOrNilString(avg.HasPrev, avg.Change)}
+				if avg.Present {
+					out["seven_day_average_days_used"] = avg.Days
+					if avg.MixedScales {
+						out["readings_note"] = avg.Note
+					}
+				}
+				return out, nil
 			})},
 		{Name: "get_training_summary", Description: "This week's workouts against the plan target, volume, training time, workouts per week for 8 weeks, and muscle-group shares over 30 days.",
 			Run: none(func() (any, error) {
@@ -229,7 +241,9 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 					}
 					exercises := []map[string]any{}
 					for _, ex := range w.Exercises {
-						exercises = append(exercises, map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)})
+						item := map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)}
+						addCardioFields(item, ex.Sets)
+						exercises = append(exercises, item)
 					}
 					item := map[string]any{"title": w.Title, "date": w.StartedAt.In(loc).Format("2006-01-02"), "exercises": exercises}
 					if !w.EndedAt.IsZero() {
@@ -303,6 +317,46 @@ func metricOrNilString(ok bool, v string) any {
 		return nil
 	}
 	return v
+}
+
+// addCardioFields adds per-set cardio data only when some timed set has a parsed
+// incline or speed. The exercise-level values are kept only when every timed set
+// agrees; otherwise they are null so a mixed session is never summarised by its
+// first set.
+func addCardioFields(item map[string]any, sets []models.TrainingSet) {
+	var per []map[string]any
+	var incline, speed []*float64
+	parsed := false
+	for _, s := range sets {
+		if s.Seconds == nil {
+			continue
+		}
+		parsed = parsed || s.InclinePct != nil || s.SpeedKmh != nil
+		set := map[string]any{"duration_min": math.Round(*s.Seconds/60*10) / 10, "incline_pct": nil, "speed_kmh": nil}
+		if s.InclinePct != nil {
+			set["incline_pct"] = *s.InclinePct
+		}
+		if s.SpeedKmh != nil {
+			set["speed_kmh"] = *s.SpeedKmh
+		}
+		per = append(per, set)
+		incline, speed = append(incline, s.InclinePct), append(speed, s.SpeedKmh)
+	}
+	if !parsed {
+		return
+	}
+	item["sets"] = per
+	item["incline_pct"], item["speed_kmh"] = commonValue(incline), commonValue(speed)
+}
+
+// commonValue is the shared value when every entry is present and equal, else nil.
+func commonValue(v []*float64) any {
+	for _, x := range v {
+		if x == nil || *x != *v[0] {
+			return nil
+		}
+	}
+	return *v[0]
 }
 
 func bestSetText(sets []models.TrainingSet) string {
