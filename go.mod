@@ -6,6 +6,7 @@ require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/anthropics/anthropic-sdk-go v1.78.0
 	golang.org/x/crypto v0.40.0
+	golang.org/x/image v0.38.0
 	modernc.org/sqlite v1.52.0
 )
 

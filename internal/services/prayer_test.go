@@ -4,6 +4,8 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+	"lifeops-tracker/internal/clock"
 )
 
 func TestSavePrayerConfigAlertSettings(t *testing.T) {
@@ -31,7 +33,7 @@ func TestSavePrayerConfigAlertSettings(t *testing.T) {
 
 func winnipegTime(t *testing.T, value string) time.Time {
 	t.Helper()
-	location, err := time.LoadLocation(defaultPrayerTimezone)
+	location, err := clock.Load(defaultPrayerTimezone)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,6 +62,10 @@ func TestPrayerDefaultsAndKnownWinnipegDates(t *testing.T) {
 		{"summer solstice", "2026-06-21 12:00", []string{"02:41", "13:30", "17:50", "21:41", "00:20"}},
 		{"spring equinox", "2026-03-20 12:00", []string{"06:01", "13:36", "16:55", "19:41", "21:11"}},
 		{"DST boundary", "2026-03-08 12:00", []string{"06:28", "13:39", "16:43", "19:22", "20:50"}},
+		// The same solar instants a year apart: CST in 2025, permanent UTC-05
+		// in 2026 (Issue #193). Stale zone data shows 2026 an hour early.
+		{"winter solstice 2025, CST", "2025-12-21 12:00", []string{"06:44", "12:27", "14:13", "16:29", "18:09"}},
+		{"winter solstice 2026, UTC-05", "2026-12-21 12:00", []string{"07:44", "13:27", "15:13", "17:29", "19:09"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
