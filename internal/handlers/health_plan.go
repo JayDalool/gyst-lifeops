@@ -38,6 +38,12 @@ type healthPlanData struct {
 	Cycles []models.HealthCycle
 	Error  string
 	Saved  bool
+	// Reference targets and cycle comparison (#205).
+	References []refTargetView
+	Compare    []cycleComparison
+	RefForm    services.HealthReferenceForm
+	RefError   string
+	RefNotice  string
 }
 
 func healthPlanValues(c models.HealthCycle) healthPlanForm {
@@ -217,6 +223,16 @@ func (h *Handler) healthPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Cycles = cycles
+	switch r.URL.Query().Get("ref") {
+	case "added":
+		data.RefNotice = "Reference target saved. It is not an active target."
+	case "archived":
+		data.RefNotice = "Reference target archived."
+	}
+	if err := h.fillPlanExtras(&data); err != nil {
+		serverError(w, err)
+		return
+	}
 	if strings.TrimSpace(data.Error) != "" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)

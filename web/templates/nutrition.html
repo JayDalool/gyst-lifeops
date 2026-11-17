@@ -1,6 +1,6 @@
 {{define "content"}}
-{{/* Health v3 · Nutrition (#55). Daily totals from MyFitnessPal via Apple
-     Health; absent values read "—", never 0. No meals: the data has none. */}}
+{{/* Health v3 · Nutrition (#55, #216). Food diary (GYST) or the Apple Health
+     daily total, one source per day; absent values read "—", never 0. */}}
 <div class="gyst-scope hv3">
 <header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow">{{niceDate .Today.Date}}</p><h1>Nutrition</h1></div></header>
 
@@ -17,9 +17,11 @@
     <div class="hv3-card-h"><h2 id="kcal-title" class="hv3-k">{{template "gyst.icon" "flame"}}Calories</h2>{{if .HasBar}}<span class="hv3-chip{{if $.Today.CaloriesOver}} warn{{end}}">{{$.Today.BudgetAbs}} kcal {{if $.Today.CaloriesOver}}over{{else}}left{{end}}</span>{{end}}</div>
     <p class="hv3-kcal-v">{{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}<small>{{if .Target.Present}} / {{.Target.Value}} kcal{{else}} kcal{{end}}</small></p>
     {{if .Target.Present}}<div class="hv3-bar lg{{if not .HasBar}} empty{{else if eq .State "warn"}} warn{{end}}" role="img" aria-label="{{.ProgressAria}}"><i style="width:{{if .HasBar}}{{if gt .Percent 100}}100{{else}}{{.Percent}}{{end}}{{else}}0{{end}}%"></i></div>{{end}}
-    <p class="hv3-s">{{if .Consumed.Present}}Eaten today, from MyFitnessPal{{else}}No food logged yet today{{end}}</p>
+    <p class="hv3-s">{{if .Consumed.Present}}Eaten today, {{$.Today.IntakeNote}}{{if .Gaps}} · {{.PartialNote}}{{end}}{{else if eq $.Today.IntakeSource "gyst"}}kcal unknown for today's items{{else}}No food logged yet today{{end}}</p>
     {{end}}
   </section>
+
+  {{template "nutrition.diary" .}}
 
   <section class="hv3-section hv3-span" aria-labelledby="macro-title">
     <h2 id="macro-title" class="hv3-sr">Macros</h2>
@@ -29,7 +31,7 @@
         <span class="hv3-label">{{.Short}}</span>
         <p class="hv3-v">{{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}<small>{{if .Target.Present}} / {{.Target.Value}} g{{else}} g{{end}}</small></p>
         {{if .Target.Present}}<div class="hv3-bar{{if not .HasBar}} empty{{else if .State}} {{.State}}{{end}}" role="img" aria-label="{{.ProgressAria}}"><i style="width:{{if .HasBar}}{{if gt .Percent 100}}100{{else}}{{.Percent}}{{end}}{{else}}0{{end}}%"></i></div>{{end}}
-        <span class="hv3-note{{if eq .State "warn"}} warn{{end}}">{{if .Note}}{{.Note}}{{else if not .Consumed.Present}}Not received{{else}}No target{{end}}</span>
+        <span class="hv3-note{{if eq .State "warn"}} warn{{end}}">{{if .Note}}{{.Note}}{{else if and (not .Consumed.Present) (eq $.Today.IntakeSource "gyst")}}No value on today's items{{else if not .Consumed.Present}}Not received{{else}}No target{{end}}{{if and .Gaps .Consumed.Present}} · {{.PartialNote}}{{end}}</span>
       </div>
       {{end}}
     </div>
@@ -64,6 +66,67 @@
     <a class="hv3-btn small" href="https://www.myfitnesspal.com/" target="_blank" rel="noopener noreferrer">Open {{template "gyst.icon" "external-link"}}<span class="hv3-sr">MyFitnessPal (opens in a new tab)</span></a>
   </section>
 </div>
-<p class="hv3-foot">Daily totals only. Log meals in MyFitnessPal; GYST reads the totals and doesn't log food.</p>
+<p class="hv3-foot">Daily totals only from Apple Health. A day counts your GYST diary when it has food, otherwise the Apple Health total; they are never added together.</p>
 </div>
+{{end}}
+
+{{define "nutrition.diary"}}
+{{with .Diary}}
+  <section class="hv3-card hv3-span" id="diary" aria-labelledby="diary-title">
+    <div class="hv3-card-h"><h2 id="diary-title" class="hv3-k">{{template "gyst.icon" "utensils"}}Today's food</h2>{{if .Count}}<span class="hv3-chip">{{.Count}} {{if eq .Count 1}}item{{else}}items{{end}}</span>{{end}}</div>
+    {{if .Error}}<p class="hv3-banner warn" role="alert" id="diary-error">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}</span></p>{{end}}
+    {{if .Added}}<p class="hv3-banner" role="status">{{template "gyst.icon" "check"}}<span>Added.</span></p>{{end}}
+    {{if .Already}}<p class="hv3-banner" role="status">{{template "gyst.icon" "info"}}<span>Already added.</span></p>{{end}}
+    {{if .Updated}}<p class="hv3-banner" role="status">{{template "gyst.icon" "check"}}<span>Amount updated.</span></p>{{end}}
+    {{if .Restored}}<p class="hv3-banner" role="status">{{template "gyst.icon" "check"}}<span>Restored.</span></p>{{end}}
+    {{if .Removed}}<div class="hv3-banner" role="status">{{template "gyst.icon" "info"}}<span>Removed.</span><form method="post" action="/health/nutrition/items/{{.Removed}}/restore"><button class="hv3-btn small secondary" type="submit">Undo</button></form></div>{{end}}
+    {{range .Groups}}
+    <h3 class="hv3-label">{{.Label}}</h3>
+    <ul class="hv3-group">
+      {{range .Items}}
+      <li>
+        <div class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{.Amount}} · {{if .Kcal}}{{.Kcal}} kcal{{else}}kcal unknown{{end}}</span></span>
+          <form method="post" action="/health/nutrition/items/{{.ID}}/archive"><button class="hv3-btn small secondary" type="submit">Remove<span class="hv3-sr"> {{.Name}}</span></button></form></div>
+        <details class="hv3-disclose"><summary>Edit amount<span class="hv3-sr"> of {{.Name}}</span></summary>
+          <form class="hv3-form" method="post" action="/health/nutrition/items/{{.ID}}">
+            <label class="hv3-field"><span>Amount ({{.UnitName}})</span><input name="amount" inputmode="decimal" autocomplete="off" required value="{{.AmountIn}}"></label>
+            <button class="hv3-btn small" type="submit">Save</button>
+          </form></details>
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <p class="hv3-s">Nothing logged in GYST today. Search below to add food.</p>
+    {{end}}
+  </section>
+
+  <section class="hv3-card hv3-span" id="add-food" aria-labelledby="add-title">
+    <h2 id="add-title" class="hv3-k">{{template "gyst.icon" "search"}}Add food</h2>
+    <form class="hv3-form" method="get" action="/health/nutrition#add-food" role="search">
+      <label class="hv3-field wide"><span>Search your foods</span><input type="search" name="q" maxlength="80" autocomplete="off" value="{{.Query}}"></label>
+      <button class="hv3-btn" type="submit">Search</button>
+    </form>
+    {{if .Searched}}
+      {{if .Results}}
+      <ul class="hv3-group">
+        {{range .Results}}
+        <li>
+          <form class="hv3-form" method="post" action="/health/nutrition/items">
+            <input type="hidden" name="food_ref" value="{{.Ref}}"><input type="hidden" name="key" value="{{.Key}}"><input type="hidden" name="q" value="{{$.Diary.Query}}">
+            <span class="hv3-row-copy hv3-field wide"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{.Detail}}</span></span>
+            <label class="hv3-field"><span>Amount ({{.UnitName}})</span><input name="amount" inputmode="decimal" autocomplete="off" required value="{{.Default}}"></label>
+            <label class="hv3-field"><span>Meal</span><select name="slot">{{range $.Diary.Slots}}<option value="{{.Slot}}"{{if eq .Slot $.Diary.Preslot}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+            <button class="hv3-btn" type="submit">Add<span class="hv3-sr"> {{.Name}}</span></button>
+          </form>
+        </li>
+        {{end}}
+      </ul>
+      {{else}}
+      <p class="hv3-s">No food matches "{{.Query}}". Foods you add under <a href="/health/foods">My foods</a> show up here.</p>
+      {{end}}
+    {{else if not .Query}}
+    <p class="hv3-s">Search by name. Foods come from <a href="/health/foods">My foods</a>; add one there first if it isn't listed.</p>
+    {{end}}
+  </section>
+{{end}}
 {{end}}

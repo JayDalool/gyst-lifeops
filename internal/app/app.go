@@ -17,6 +17,7 @@ import (
 	"lifeops-tracker/internal/providers/hevy"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
+	"lifeops-tracker/internal/tzdb"
 )
 
 type Config struct {
@@ -96,7 +97,7 @@ func New(config Config) (*App, error) {
 	// Set before any goroutine reads the clock.
 	service.Loc = location
 	service.BackupStatusPath = filepath.Join(filepath.Dir(config.DBPath), "backups", "last_run.json")
-	log.Printf("Application timezone: %s", location)
+	log.Printf("Application timezone: %s (tzdb %s)", location, tzdb.Version())
 	// Before any goroutine, handler or listener: a changed GYST_PASSWORD_HASH
 	// must end every old session, and a failure here stops startup rather
 	// than serve sessions the new password never approved.
@@ -132,6 +133,10 @@ func New(config Config) (*App, error) {
 	webHandler.Auth = services.AuthConfig{PasswordHash: config.PasswordHash}
 	webHandler.AuthDisabled = config.AuthDisabled
 	webHandler.Coach = healthCoachProvider(config.HealthAI)
+	// The environment wins over Settings (GYST-169): when it names a provider
+	// or holds a provider key, saved settings are ignored and the form is off.
+	webHandler.AIEnvManaged = config.HealthAI.EnvManaged()
+	service.AIKeyPath = filepath.Join(filepath.Dir(config.DBPath), "ai_settings.key")
 	logger := config.Logger
 	if logger == nil {
 		logger = slog.Default()
@@ -186,6 +191,15 @@ type HealthAIConfig struct {
 	AnthropicKey string
 	OpenAIKey    string
 	Model        string
+	// VisionModel is the photo-analysis model (HEALTH_AI_VISION_MODEL); empty
+	// keeps the provider default.
+	VisionModel string
+}
+
+// EnvManaged reports whether the server environment configures the AI
+// provider at all. Then Settings → AI provider is read-only.
+func (c HealthAIConfig) EnvManaged() bool {
+	return strings.TrimSpace(c.Provider) != "" || c.AnthropicKey != "" || c.OpenAIKey != ""
 }
 
 // healthCoachProvider returns nil (Coach disabled) unless a supported provider
@@ -201,7 +215,7 @@ func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
 	case "openai":
 		if c.OpenAIKey != "" {
 			log.Printf("Health Coach: provider openai enabled")
-			return healthcoach.NewOpenAI(c.OpenAIKey, c.Model)
+			return healthcoach.NewOpenAI(c.OpenAIKey, c.Model).WithVisionModel(c.VisionModel)
 		}
 		log.Printf("Health Coach: disabled (OPENAI_API_KEY not set)")
 	case "":

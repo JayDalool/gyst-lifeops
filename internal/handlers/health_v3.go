@@ -46,6 +46,10 @@ type healthWeightView struct {
 	Points           string
 	Readings         int
 	SparkDescription string
+	// Average is the shared 7-day rolling average (GYST-154). ChangeIsAverage:
+	// Change compares two 7-day averages, not two single readings.
+	Average         weightAvgView
+	ChangeIsAverage bool
 }
 
 func buildHealthWeight(entries []models.HealthWeightEntry, cycleStart string, now time.Time, loc *time.Location) healthWeightView {
@@ -65,7 +69,7 @@ func buildHealthWeight(entries []models.HealthWeightEntry, cycleStart string, no
 	}
 	sort.SliceStable(readings, func(i, j int) bool { return readings[i].at.Before(readings[j].at) })
 	latest := readings[len(readings)-1]
-	v := healthWeightView{Present: true, Latest: trimKg(latest.kg), LatestAt: dayLabel(latest.at, now, loc), Readings: len(readings)}
+	v := healthWeightView{Average: buildWeightAverage(entries, now, loc), Present: true, Latest: trimKg(latest.kg), LatestAt: dayLabel(latest.at, now, loc), Readings: len(readings)}
 
 	// Baseline: first reading on or after the plan start, else the first
 	// reading of the last 90 days.
@@ -96,6 +100,13 @@ func buildHealthWeight(entries []models.HealthWeightEntry, cycleStart string, no
 			label = baseline.at.In(loc).Format("Jan 2")
 		}
 		v.Since = label
+	}
+	// Prefer 7-day averages over single readings when both windows qualify.
+	if start, err := time.ParseInLocation("2006-01-02", cycleStart, loc); err == nil {
+		if diff, ok := planStartAverageChange(entries, start, now, loc); ok {
+			v.HasChange, v.NoneSincePlan, v.ChangeIsAverage = true, false, true
+			v.Down, v.Change, v.Since = diff <= 0, signedKg(diff), start.Format("Jan 2")
+		}
 	}
 	if len(spark) >= 2 {
 		v.Points = sparkPoints(spark)
