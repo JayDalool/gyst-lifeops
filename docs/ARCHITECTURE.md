@@ -545,3 +545,16 @@ browser POST rejection. It does not require or expose the API token.
 Observed energy is deterministic arithmetic on received metrics. No projections,
 step-to-calorie calculations, or extra workout calories are introduced. Health
 Summary remains the M1 preview. See [the contract](HEALTH_CORE.md) for details.
+
+## AI provider settings (GYST-169, Issue #218)
+
+`ai_settings` (one row) holds the provider, the chat and photo model names, and
+the API key as AES-256-GCM ciphertext and nonce. The provider is the AAD, so a
+ciphertext can't be moved to another provider. The 32-byte data key lives in
+`ai_settings.key` beside the SQLite file (0600, created O_EXCL on first save),
+not in the database, so backups carry ciphertext only. `Handler.coach()`
+resolves the Coach provider on each request: the environment (`Handler.Coach`,
+`AIEnvManaged`) wins, otherwise `Service.AIEffective()` decrypts the saved key.
+Save and remove go through `POST /settings/ai` with the password re-entered,
+the same-origin guard, a 16 KB body cap and the sign-in throttle. Details and
+the restore steps are in `docs/HEALTH_COACH.md`.
