@@ -132,8 +132,8 @@ func diaryAmountText(it models.DiaryItem) (shown, plain string) {
 }
 
 // fillDiary loads today's diary and, for ?q=, the search results. It returns
-// a message when the page cannot show them. It only reads, except that the
-// service mirrors matching My foods into the catalogue (#207).
+// a message when the page cannot show them. It only reads: My foods come
+// from health_foods and reach the catalogue only when one is logged.
 func (h *Handler) fillDiary(r *http.Request, data *nutritionData) string {
 	d := &data.Diary
 	d.Slots = diarySlotOrder
@@ -206,8 +206,21 @@ func diaryActor(r *http.Request) services.DiaryActor {
 	return services.DiaryActor{Ref: services.SessionActorRef(sessionToken(r)), Ingress: ingress, RequestID: requestIDFrom(r.Context())}
 }
 
+const amountHelp = "Amount must be a number. Use a dot or one comma for decimals, and no thousands separators."
+
+// parseAmount reads a typed amount. A single comma with no dot and one or two
+// digits after it is a decimal comma ("1,5"); any other comma ("1,000",
+// "1,2,3") is refused rather than guessed, so 1,000 never becomes 1.
 func parseAmount(raw string) (float64, bool) {
-	v, err := strconv.ParseFloat(strings.ReplaceAll(strings.TrimSpace(raw), ",", "."), 64)
+	s := strings.TrimSpace(raw)
+	if strings.Contains(s, ",") {
+		before, after, _ := strings.Cut(s, ",")
+		if strings.Contains(s, ".") || strings.Count(s, ",") != 1 || before == "" || len(after) == 0 || len(after) > 2 {
+			return 0, false
+		}
+		s = before + "." + after
+	}
+	v, err := strconv.ParseFloat(s, 64)
 	return v, err == nil
 }
 
@@ -236,7 +249,7 @@ func (h *Handler) nutritionItems(w http.ResponseWriter, r *http.Request, rest []
 	case len(rest) == 1:
 		amount, ok := parseAmount(r.PostFormValue("amount"))
 		if !ok {
-			err = &services.HealthValidationError{Message: "Amount must be a number."}
+			err = &services.HealthValidationError{Message: amountHelp}
 			break
 		}
 		err = h.Service.UpdateDiaryItemAmount(r.Context(), diaryActor(r), id, amount)
@@ -263,7 +276,7 @@ func (h *Handler) nutritionItems(w http.ResponseWriter, r *http.Request, rest []
 func (h *Handler) diaryAdd(r *http.Request) (string, error) {
 	amount, ok := parseAmount(r.PostFormValue("amount"))
 	if !ok {
-		return "", &services.HealthValidationError{Message: "Amount must be a number."}
+		return "", &services.HealthValidationError{Message: amountHelp}
 	}
 	kind, rawID, _ := strings.Cut(r.PostFormValue("food_ref"), ":")
 	id, _ := strconv.ParseInt(rawID, 10, 64)

@@ -141,7 +141,7 @@ Migration `20261116120000_nutrition_diary.sql` adds three generic tables.
 `nutrition_foods` holds immutable, versioned catalogue rows: only `archived_at`
 may change, and `superseded_at` is set once when a new version is inserted.
 Values are per 100 g (`per_100g`) or per serving (`per_serving`); My foods
-(`health_foods`) are mirrored as provider `user`, id `health_food:<id>`, per
+(`health_foods`) are mirrored, when one is logged, as provider `user`, id `health_food:<id>`, per
 serving with no gram weight, and get a new version only when the food changed.
 `nutrition_meals` carry `local_date`, `meal_slot`, `created_via` and a unique
 32-hex `idempotency_key`. `nutrition_meal_items` snapshot the name, unit

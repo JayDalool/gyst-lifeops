@@ -30,7 +30,7 @@
           {{else if .Today.Calories.Consumed.Present}}
             <strong class="hv3-big">{{.Today.Calories.Consumed.Value}}</strong><span>kcal eaten</span>
           {{else}}
-            <strong class="hv3-big hv3-absent">—</strong><span>No food logged yet</span>
+            <strong class="hv3-big hv3-absent">—</strong><span>{{if eq .Today.IntakeSource "gyst"}}kcal unknown for today's items{{else}}No food logged yet{{end}}</span>
           {{end}}
         </div>
       </div>

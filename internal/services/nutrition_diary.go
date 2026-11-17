@@ -222,6 +222,10 @@ func (s *Service) AddDiaryItem(ctx context.Context, actor DiaryActor, in models.
 		if err != nil {
 			return DiaryResult{}, err
 		}
+		if food.Provider == "user" && strings.HasPrefix(food.ProviderID, "health_food:") {
+			// My foods are logged only by their live row (HealthFoodID), never by a stale mirror.
+			return DiaryResult{}, healthInvalid("food not found; search again")
+		}
 		if food.SupersededAt != "" || food.ArchivedAt != "" {
 			return DiaryResult{}, healthInvalid("that food changed; search again")
 		}
