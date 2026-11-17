@@ -310,19 +310,14 @@ func (r *Repository) SetProjectStatus(id int64, status string) error {
 		return err
 	}
 	if status == "done" {
-		if _, err := tx.Exec(`INSERT OR IGNORE INTO achievements
-			(title, description, stars_bonus, trigger_type, source_project_id)
-			VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), ?, 'project_done', ?)`, id, xp.ProjectCompletionBonus, id); err != nil {
+		if err := awardQuestComplete(tx, id); err != nil {
+			return err
+		}
+		if err := autoUnlockDependents(tx, id, "upcoming"); err != nil {
 			return err
 		}
 	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	if status == "done" {
-		return r.AutoUnlockDependents(id, "upcoming")
-	}
-	return nil
+	return tx.Commit()
 }
 
 func (r *Repository) MoveProject(id, parentID int64, kind string) error {
@@ -473,12 +468,31 @@ func (r *Repository) CountUnlockableDependents(projectID int64) (int, error) {
 	return count, err
 }
 
+// execer is satisfied by *sql.DB and *sql.Tx so multi-write helpers can run
+// inside the caller's transaction (GYST-VN-038).
+type execer interface {
+	Exec(query string, args ...any) (sql.Result, error)
+	QueryRow(query string, args ...any) *sql.Row
+}
+
 func (r *Repository) AutoUnlockDependents(doneProjectID int64, targetStatus string) error {
+	return autoUnlockDependents(r.db, doneProjectID, targetStatus)
+}
+
+// awardQuestComplete writes the one-time "Quest complete" bonus row.
+func awardQuestComplete(ex execer, projectID int64) error {
+	_, err := ex.Exec(`INSERT OR IGNORE INTO achievements
+		(title, description, stars_bonus, trigger_type, source_project_id)
+		VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), ?, 'project_done', ?)`, projectID, xp.ProjectCompletionBonus, projectID)
+	return err
+}
+
+func autoUnlockDependents(ex execer, doneProjectID int64, targetStatus string) error {
 	targetStatus = cleanProjectStatus(targetStatus)
 	if targetStatus == "done" || targetStatus == "archived" {
 		targetStatus = "upcoming"
 	}
-	_, err := r.db.Exec(`UPDATE projects SET
+	_, err := ex.Exec(`UPDATE projects SET
 		status = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
@@ -548,7 +562,12 @@ func (r *Repository) CreateProjectItem(item *models.ProjectItem) error {
 		}
 	}
 
-	res, err := r.db.Exec(`INSERT INTO project_items
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec(`INSERT INTO project_items
 		(project_id, title, description, status, priority, due_date, sort_order,
 		 stars_reward, proof_required, proof_type, proof_url, proof_path)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -572,7 +591,10 @@ func (r *Repository) CreateProjectItem(item *models.ProjectItem) error {
 	if err != nil {
 		return err
 	}
-	return r.reconcileProjectStatus(item.ProjectID)
+	if err := reconcileProjectStatus(tx, item.ProjectID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *Repository) SetProjectItemStatus(projectID, itemID int64, status string) error {
@@ -637,10 +659,10 @@ func (r *Repository) SetProjectItemStatus(projectID, itemID int64, status string
 			return err
 		}
 	}
-	if err := tx.Commit(); err != nil {
+	if err := reconcileProjectStatus(tx, projectID); err != nil {
 		return err
 	}
-	return r.reconcileProjectStatus(projectID)
+	return tx.Commit()
 }
 
 // UndoProjectItemCompletion reverses a mission completion made from the
@@ -648,7 +670,12 @@ func (r *Repository) SetProjectItemStatus(projectID, itemID int64, status string
 // once a project is done (or locked/upcoming) other rows depend on it, so the
 // undo is refused and reported as false. Stars are cleared with the status.
 func (r *Repository) UndoProjectItemCompletion(projectID, itemID int64) (bool, error) {
-	res, err := r.db.Exec(`UPDATE project_items SET status = 'pending', completed_at = NULL,
+	tx, err := r.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec(`UPDATE project_items SET status = 'pending', completed_at = NULL,
 		stars_awarded = 0, updated_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1
 		WHERE id = ? AND project_id = ? AND status = 'completed'
 		AND EXISTS (SELECT 1 FROM projects WHERE id = ? AND status = 'active')`, itemID, projectID, projectID)
@@ -659,7 +686,13 @@ func (r *Repository) UndoProjectItemCompletion(projectID, itemID int64) (bool, e
 	if err != nil || n == 0 {
 		return false, err
 	}
-	return true, r.reconcileProjectStatus(projectID)
+	if err := reconcileProjectStatus(tx, projectID); err != nil {
+		return false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (r *Repository) UpdateProjectItemProof(projectID, itemID int64, proofType, proofURL, proofPath string) error {
@@ -677,16 +710,24 @@ func (r *Repository) UpdateProjectItemProof(projectID, itemID int64, proofType, 
 }
 
 func (r *Repository) DeleteProjectItem(projectID, itemID int64) error {
-	if _, err := r.db.Exec(`DELETE FROM project_items WHERE id = ? AND project_id = ?`, itemID, projectID); err != nil {
+	tx, err := r.db.Begin()
+	if err != nil {
 		return err
 	}
-	return r.reconcileProjectStatus(projectID)
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM project_items WHERE id = ? AND project_id = ?`, itemID, projectID); err != nil {
+		return err
+	}
+	if err := reconcileProjectStatus(tx, projectID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
-func (r *Repository) reconcileProjectStatus(projectID int64) error {
+func reconcileProjectStatus(ex execer, projectID int64) error {
 	var total, completed int
 	var status string
-	if err := r.db.QueryRow(`SELECT
+	if err := ex.QueryRow(`SELECT
 		(SELECT COUNT(*) FROM project_items WHERE project_id = ?),
 		(SELECT COUNT(*) FROM project_items WHERE project_id = ? AND status = 'completed'),
 		(SELECT status FROM projects WHERE id = ?)`,
@@ -705,7 +746,7 @@ func (r *Repository) reconcileProjectStatus(projectID int64) error {
 		return nil
 	}
 
-	_, err := r.db.Exec(`UPDATE projects SET
+	_, err := ex.Exec(`UPDATE projects SET
 		status = ?,
 		updated_at = CURRENT_TIMESTAMP,
 		sync_version = sync_version + 1
@@ -714,12 +755,10 @@ func (r *Repository) reconcileProjectStatus(projectID int64) error {
 		return err
 	}
 	if nextStatus == "done" {
-		if _, err := r.db.Exec(`INSERT OR IGNORE INTO achievements
-			(title, description, stars_bonus, trigger_type, source_project_id)
-			VALUES ('Quest complete', (SELECT name FROM projects WHERE id = ?), ?, 'project_done', ?)`, projectID, xp.ProjectCompletionBonus, projectID); err != nil {
+		if err := awardQuestComplete(ex, projectID); err != nil {
 			return err
 		}
-		return r.AutoUnlockDependents(projectID, "upcoming")
+		return autoUnlockDependents(ex, projectID, "upcoming")
 	}
 	return nil
 }

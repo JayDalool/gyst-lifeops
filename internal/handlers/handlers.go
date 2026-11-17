@@ -986,7 +986,7 @@ func (h *Handler) setTaskStatus(w http.ResponseWriter, r *http.Request, id int64
 	if status == "completed" {
 		before, haveBefore = h.statsSnapshot()
 	}
-	if err := h.Service.Repo.SetTaskOccurrenceStatus(id, date, status); err != nil {
+	if err := h.Service.SetTaskOccurrenceStatus(id, date, status); err != nil {
 		if refuseCompletion(w, r, err, fmt.Sprintf("/today#task-%d", id)) {
 			return
 		}
@@ -1577,7 +1577,7 @@ func (h *Handler) projectStatus(w http.ResponseWriter, r *http.Request, id int64
 		willUnlock, _ = h.Service.Repo.CountUnlockableDependents(id)
 	}
 	statsBefore, haveStats := h.statsSnapshot()
-	if err := h.Service.Repo.SetProjectStatus(id, status); err != nil {
+	if err := h.Service.SetProjectStatus(id, status); err != nil {
 		serverError(w, err)
 		return
 	}
@@ -1646,7 +1646,7 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 			return
 		}
 	case "complete":
-		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
+		if err := h.Service.CompleteMission(projectID, itemID); err != nil {
 			if refuseCompletion(w, r, err, fmt.Sprintf("/projects/%d", projectID)) {
 				return
 			}
@@ -1654,7 +1654,7 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 			return
 		}
 	case "reopen":
-		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "pending"); err != nil {
+		if err := h.Service.ReopenMission(projectID, itemID); err != nil {
 			serverError(w, err)
 			return
 		}
@@ -2401,7 +2401,7 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 	}
 	switch action {
 	case "complete":
-		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "completed"); err != nil {
+		if err := h.Service.CompleteMission(projectID, itemID); err != nil {
 			if refuseCompletion(w, r, err, fmt.Sprintf("/projects/%d", projectID)) {
 				return
 			}
@@ -2409,7 +2409,7 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 			return
 		}
 	case "reopen":
-		if err := h.Service.Repo.SetProjectItemStatus(projectID, itemID, "pending"); err != nil {
+		if err := h.Service.ReopenMission(projectID, itemID); err != nil {
 			serverError(w, err)
 			return
 		}
