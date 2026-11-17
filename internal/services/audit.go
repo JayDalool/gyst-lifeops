@@ -36,6 +36,12 @@ const (
 	AuditActionAIKeySet          = "settings.ai_key.set"
 	AuditActionAIKeyRemove       = "settings.ai_key.remove"
 
+	// Food diary (Issue #207). Detail is a fixed word, never a food name,
+	// quantity or nutrient value.
+	AuditActionNutritionMealCreate  = "nutrition.meal.create"
+	AuditActionNutritionMealUpdate  = "nutrition.meal.update"
+	AuditActionNutritionMealArchive = "nutrition.meal.archive"
+
 	AuditActorHuman   = "human"
 	AuditActorMachine = "machine"
 	AuditActorSystem  = "system"
@@ -64,8 +70,9 @@ var auditActions = map[string]bool{
 	AuditActionLoginFailed: true, AuditActionLoginSucceeded: true, AuditActionLogout: true,
 	AuditActionSessionRevokeAll: true, AuditActionReauthSucceeded: true,
 	AuditActionReauthFailed: true, AuditActionAccessDenied: true,
-	AuditActionHealthSyncRefused: true,
-	AuditActionAIKeySet:          true, AuditActionAIKeyRemove: true,
+	AuditActionHealthSyncRefused:   true,
+	AuditActionNutritionMealCreate: true, AuditActionNutritionMealUpdate: true, AuditActionNutritionMealArchive: true,
+	AuditActionAIKeySet: true, AuditActionAIKeyRemove: true,
 }
 
 var (

@@ -406,7 +406,12 @@ detail 200, request_id 32). There are no foreign keys.
 The only writer is `Service.RecordAudit` (`internal/services/audit.go`). It
 rejects anything outside the Go action allowlist (`login.failed`,
 `login.succeeded`, `logout`, `session.revoked_all`, `reauth.succeeded`,
-`reauth.failed`, `access.denied`) with `ErrAuditInvalid` and writes nothing.
+`reauth.failed`, `access.denied`, `health.sync_refused`, `nutrition.meal.create`,
+`nutrition.meal.update`, `nutrition.meal.archive`) with `ErrAuditInvalid` and
+writes nothing. The three `nutrition.meal.*` rows (Issue #207) are written after
+the change commits, with a fixed `detail` word ("item added", "amount changed",
+"item removed", "item restored") and target `meal:<id>`: never a food name, an
+amount or a nutrient value. A repeated idempotency key writes no row.
 `actor_ref` and `target_ref` allow only `[A-Za-z0-9:._/#@+-]`; `request_id`
 only `[a-f0-9]`. `agent.*`, `github.*` and `server.*` actions are owned by
 Command Center and are not added here; `automation.*` is not added yet. A new

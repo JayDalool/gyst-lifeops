@@ -17,6 +17,7 @@ import (
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
+	"math"
 )
 
 // Health Coach (Issue #64). GYST builds a small context and offers the model
@@ -117,9 +118,9 @@ func coachToday(data HealthData) map[string]any {
 	t := data.Today
 	macros := []map[string]any{}
 	for _, m := range t.Nutrients {
-		macros = append(macros, map[string]any{"name": m.Short(), "eaten_g": metricOrNil(m.Consumed), "target_g": metricOrNil(m.Target), "note": m.Note})
+		macros = append(macros, map[string]any{"name": m.Short(), "eaten_g": metricOrNil(m.Consumed), "target_g": metricOrNil(m.Target), "note": m.Note, "partial": m.Partial})
 	}
-	cal := map[string]any{"eaten": metricOrNil(t.Calories.Consumed), "target": metricOrNil(t.CalorieTarget)}
+	cal := map[string]any{"eaten": metricOrNil(t.Calories.Consumed), "target": metricOrNil(t.CalorieTarget), "partial": t.Calories.Partial}
 	if t.Calories.HasBar {
 		key := "budget_left"
 		if t.CaloriesOver {
@@ -128,19 +129,21 @@ func coachToday(data HealthData) map[string]any {
 		cal[key] = t.BudgetAbs
 	}
 	return map[string]any{
-		"date":                     t.Date,
-		"apple_health_last_sync":   map[bool]string{true: t.LastSynced, false: "none today"}[t.HasLastSynced],
-		"sync_stale":               t.LastSyncedStale,
-		"calories_kcal":            cal,
-		"burned_so_far_kcal":       metricOrNil(t.ObservedBurn),
-		"energy_balance_so_far":    metricOrNil(t.ObservedEnergy),
-		"note_on_balance":          "Observed so far today; the day isn't over, so this is not a final deficit.",
-		"macros":                   macros,
-		"steps":                    map[string]any{"count": metricOrNil(t.Steps), "source": t.StepsSource, "target": metricOrNil(t.StepTarget)},
-		"exercise_minutes":         metricOrNil(t.ExerciseMinutes),
-		"latest_weight_kg":         map[bool]any{true: data.Weight.Latest, false: nil}[data.Weight.Present],
-		"weight_change_since_plan": map[bool]any{true: data.Weight.Change, false: nil}[data.Weight.HasChange],
-		"water":                    coachWater(data.Water),
+		"date":                          t.Date,
+		"apple_health_last_sync":        map[bool]string{true: t.LastSynced, false: "none today"}[t.HasLastSynced],
+		"sync_stale":                    t.LastSyncedStale,
+		"intake_source":                 t.IntakeSource,
+		"apple_health_kcal_not_counted": map[bool]any{true: metricOrNil(t.ReferenceKcal), false: nil}[t.IntakeSource == models.IntakeSourceGYST],
+		"calories_kcal":                 cal,
+		"burned_so_far_kcal":            metricOrNil(t.ObservedBurn),
+		"energy_balance_so_far":         metricOrNil(t.ObservedEnergy),
+		"note_on_balance":               "Observed so far today; the day isn't over, so this is not a final deficit.",
+		"macros":                        macros,
+		"steps":                         map[string]any{"count": metricOrNil(t.Steps), "source": t.StepsSource, "target": metricOrNil(t.StepTarget)},
+		"exercise_minutes":              metricOrNil(t.ExerciseMinutes),
+		"latest_weight_kg":              map[bool]any{true: data.Weight.Latest, false: nil}[data.Weight.Present],
+		"weight_change_since_plan":      map[bool]any{true: data.Weight.Change, false: nil}[data.Weight.HasChange],
+		"water":                         coachWater(data.Water),
 	}
 }
 
@@ -238,7 +241,9 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 					}
 					exercises := []map[string]any{}
 					for _, ex := range w.Exercises {
-						exercises = append(exercises, map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)})
+						item := map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)}
+						addCardioFields(item, ex.Sets)
+						exercises = append(exercises, item)
 					}
 					item := map[string]any{"title": w.Title, "date": w.StartedAt.In(loc).Format("2006-01-02"), "exercises": exercises}
 					if !w.EndedAt.IsZero() {
@@ -314,6 +319,46 @@ func metricOrNilString(ok bool, v string) any {
 	return v
 }
 
+// addCardioFields adds per-set cardio data only when some timed set has a parsed
+// incline or speed. The exercise-level values are kept only when every timed set
+// agrees; otherwise they are null so a mixed session is never summarised by its
+// first set.
+func addCardioFields(item map[string]any, sets []models.TrainingSet) {
+	var per []map[string]any
+	var incline, speed []*float64
+	parsed := false
+	for _, s := range sets {
+		if s.Seconds == nil {
+			continue
+		}
+		parsed = parsed || s.InclinePct != nil || s.SpeedKmh != nil
+		set := map[string]any{"duration_min": math.Round(*s.Seconds/60*10) / 10, "incline_pct": nil, "speed_kmh": nil}
+		if s.InclinePct != nil {
+			set["incline_pct"] = *s.InclinePct
+		}
+		if s.SpeedKmh != nil {
+			set["speed_kmh"] = *s.SpeedKmh
+		}
+		per = append(per, set)
+		incline, speed = append(incline, s.InclinePct), append(speed, s.SpeedKmh)
+	}
+	if !parsed {
+		return
+	}
+	item["sets"] = per
+	item["incline_pct"], item["speed_kmh"] = commonValue(incline), commonValue(speed)
+}
+
+// commonValue is the shared value when every entry is present and equal, else nil.
+func commonValue(v []*float64) any {
+	for _, x := range v {
+		if x == nil || *x != *v[0] {
+			return nil
+		}
+	}
+	return *v[0]
+}
+
 func bestSetText(sets []models.TrainingSet) string {
 	best, text := -1.0, ""
 	for _, s := range sets {
@@ -348,6 +393,7 @@ Style: short and practical. Numbers first. One to three relevant numbers, then a
 Rules:
 - Use only the data below and your tools. If data is missing, say so plainly; never invent values, meals or workouts.
 - The day isn't over: call calorie balance "so far", never a final deficit.
+- Food eaten today comes from one source, intake_source (gyst diary, apple_health or none). apple_health_kcal_not_counted is a reference only: never add it to the eaten values. A partial value means some logged food has no value for it, so say it is at least that much.
 - Never claim spot fat reduction. Never turn steps into calories.
 - Respect Jay's food rules in the profile (for example halal, no alcohol) in every food suggestion.
 - Prefer foods from get_food_products when suggesting meals or ways to close a protein gap.

@@ -470,3 +470,19 @@ func (*envCoach) Name() string { return "fake" }
 func (*envCoach) Respond(context.Context, healthcoach.Request) (healthcoach.Response, error) {
 	return healthcoach.Response{}, nil
 }
+
+// A key saved only in Settings must also enable photo analysis (#217/#218):
+// the photo handler resolves its provider through h.coach(), and the
+// settings-built OpenAI provider implements FoodPhotoAnalyzer.
+func TestAISettingsKeyEnablesPhotoAnalysis(t *testing.T) {
+	f := newAIFixture(t)
+	if rec := f.post(t, aiForm_("save", testPassword, fakeAIKey)); rec.Code != http.StatusSeeOther {
+		t.Fatalf("save = %d", rec.Code)
+	}
+	if f.h.Coach != nil {
+		t.Fatal("fixture unexpectedly has an environment-configured Coach")
+	}
+	if _, ok := f.h.coach().(healthcoach.FoodPhotoAnalyzer); !ok {
+		t.Fatal("the Settings-built provider cannot analyse photos")
+	}
+}

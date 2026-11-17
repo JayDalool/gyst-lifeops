@@ -55,7 +55,7 @@ func TestFreshDatabaseAppliesEveryMigration(t *testing.T) {
 	if externalLinksTable != 1 {
 		t.Fatal("external_links table was not created")
 	}
-	for _, obj := range []struct{ kind, name string }{{"table", "audit_events"}, {"index", "idx_audit_events_at"}, {"table", "ai_settings"}} {
+	for _, obj := range []struct{ kind, name string }{{"table", "audit_events"}, {"index", "idx_audit_events_at"}, {"table", "nutrition_foods"}, {"table", "nutrition_meals"}, {"table", "nutrition_meal_items"}, {"index", "idx_nutrition_foods_current"}, {"trigger", "nutrition_foods_immutable"}, {"table", "ai_settings"}} {
 		var n int
 		if err := database.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type=? AND name=?`, obj.kind, obj.name).Scan(&n); err != nil {
 			t.Fatal(err)

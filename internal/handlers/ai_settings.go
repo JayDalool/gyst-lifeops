@@ -69,7 +69,7 @@ func (h *Handler) coach() healthcoach.Provider {
 	case services.AIProviderAnthropic:
 		built = healthcoach.NewAnthropic(cfg.Key, cfg.ChatModel)
 	case services.AIProviderOpenAI:
-		built = healthcoach.NewOpenAI(cfg.Key, cfg.ChatModel)
+		built = healthcoach.NewOpenAI(cfg.Key, cfg.ChatModel).WithVisionModel(cfg.PhotoModel)
 	default:
 		return nil
 	}

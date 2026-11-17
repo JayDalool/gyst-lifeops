@@ -185,6 +185,9 @@ type HealthAIConfig struct {
 	AnthropicKey string
 	OpenAIKey    string
 	Model        string
+	// VisionModel is the photo-analysis model (HEALTH_AI_VISION_MODEL); empty
+	// keeps the provider default.
+	VisionModel string
 }
 
 // EnvManaged reports whether the server environment configures the AI
@@ -206,7 +209,7 @@ func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
 	case "openai":
 		if c.OpenAIKey != "" {
 			log.Printf("Health Coach: provider openai enabled")
-			return healthcoach.NewOpenAI(c.OpenAIKey, c.Model)
+			return healthcoach.NewOpenAI(c.OpenAIKey, c.Model).WithVisionModel(c.VisionModel)
 		}
 		log.Printf("Health Coach: disabled (OPENAI_API_KEY not set)")
 	case "":

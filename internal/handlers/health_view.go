@@ -54,6 +54,9 @@ type HealthMacroView struct {
 	// Over is decided from the numbers at displayed precision, so 2000.3 of
 	// 2000 is not "over" (#54 review).
 	Over bool
+	// Partial: a GYST diary day where some logged item has no value for this
+	// nutrient, so Consumed is a lower bound (Issue #207).
+	Partial bool
 }
 
 // HealthTodayView is everything the Day view renders.
@@ -102,6 +105,13 @@ type HealthTodayView struct {
 	ActiveEnergy    HealthMetricView
 	RestingEnergy   HealthMetricView
 	ExerciseMinutes HealthMetricView
+
+	// IntakeSource is the day's one counted food source: "gyst" (diary),
+	// "apple_health" or "none" (Issue #207). The two are never added.
+	IntakeSource string
+	// ReferenceKcal is the synced Apple Health food total of a GYST day:
+	// shown for comparison, never counted.
+	ReferenceKcal HealthMetricView
 
 	// CalState is the calorie card's status (#70).
 	CalState healthCalorieState
@@ -228,14 +238,31 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 		view.CycleTitle = cycle.Title
 	}
 
-	view.Calories = buildMacro("Calories", snapshot.DietaryCalories, cycle.DailyCalorieTarget, "kcal")
+	// Food comes from the day's one counted intake source (Issue #207). A
+	// response built without one (Intake.Source empty) resolves to the synced
+	// row, exactly as before the food diary existed.
+	intake := today.Intake
+	if intake.Source == "" {
+		intake = services.ResolveDayIntake(today.Date, nil, today.Snapshot)
+	}
+	eaten, gaps := intake.Counted, intake.Missing
+	view.IntakeSource = intake.Source
+	view.ReferenceKcal = absentMetric("kcal")
+	if intake.Source == models.IntakeSourceGYST && intake.Reference != nil {
+		view.ReferenceKcal = metricFromFloat(intake.Reference.Kcal, "kcal")
+	}
+
+	view.Calories = buildMacro("Calories", eaten.Kcal, cycle.DailyCalorieTarget, "kcal")
+	view.Calories.Partial = gaps.Kcal > 0
 	view.Macros = []HealthMacroView{
 		view.Calories,
-		buildMacro("Protein", snapshot.ProteinG, cycle.ProteinTargetG, "g"),
-		buildMacro("Carbohydrates", snapshot.CarbsG, cycle.CarbsTargetG, "g"),
-		buildMacro("Fat", snapshot.FatG, cycle.FatTargetG, "g"),
-		buildMacro("Fiber", snapshot.FiberG, cycle.FiberTargetG, "g"),
+		buildMacro("Protein", eaten.ProteinG, cycle.ProteinTargetG, "g"),
+		buildMacro("Carbohydrates", eaten.CarbsG, cycle.CarbsTargetG, "g"),
+		buildMacro("Fat", eaten.FatG, cycle.FatTargetG, "g"),
+		buildMacro("Fiber", eaten.FiberG, cycle.FiberTargetG, "g"),
 	}
+	view.Macros[1].Partial, view.Macros[2].Partial = gaps.ProteinG > 0, gaps.CarbsG > 0
+	view.Macros[3].Partial, view.Macros[4].Partial = gaps.FatG > 0, gaps.FiberG > 0
 
 	view.CalorieTarget = metricFromTarget(cycle.DailyCalorieTarget, "kcal")
 	view.FoodRemaining = metricFromFloat(today.Observed.FoodRemaining, "kcal")
@@ -311,8 +338,8 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 	if snapshot.ActiveEnergyKcal != nil && snapshot.RestingEnergyKcal != nil {
 		burn := math.Round(*snapshot.RestingEnergyKcal) + math.Round(*snapshot.ActiveEnergyKcal)
 		view.ObservedBurn = HealthMetricView{Value: formatThousands(burn), Unit: "kcal", Present: true}
-		if snapshot.DietaryCalories != nil {
-			balance := math.Round(*snapshot.DietaryCalories) - burn
+		if eaten.Kcal != nil {
+			balance := math.Round(*eaten.Kcal) - burn
 			view.ObservedEnergy = HealthMetricView{Value: formatThousands(balance), Unit: "kcal", Present: true}
 			if balance > 0 { // a surplus reads "+400", so the sign is never guessed
 				view.ObservedEnergy.Value = "+" + view.ObservedEnergy.Value
@@ -320,7 +347,7 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 		}
 	}
 	if view.Calories.HasBar {
-		view.caloriesLeft = math.Round(cycle.DailyCalorieTarget) - math.Round(*snapshot.DietaryCalories)
+		view.caloriesLeft = math.Round(cycle.DailyCalorieTarget) - math.Round(*eaten.Kcal)
 	}
 	view.CalState = buildCalorieState(view, cycle.DailyCalorieTarget)
 

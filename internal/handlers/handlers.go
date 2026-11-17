@@ -57,9 +57,11 @@ type Handler struct {
 	// ignored (GYST-169).
 	AIEnvManaged bool
 	coachLimit   coachLimiter
-	coachMu      sync.Mutex
-	coachCfg     services.AIConfig
-	coachBuilt   healthcoach.Provider
+	// photoLimit guards photo analysis separately from the Coach (#217).
+	photoLimit coachLimiter
+	coachMu    sync.Mutex
+	coachCfg   services.AIConfig
+	coachBuilt healthcoach.Provider
 	// appRegistry loads the Apps registry (GYST-101). Nil means the embedded
 	// registry; tests inject fixtures.
 	appRegistry func() ([]services.App, error)
@@ -384,6 +386,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.trainingSync(w, r)
 		} else if len(segments) == 2 && segments[1] == "training" {
 			h.training(w, r)
+		} else if len(segments) == 4 && segments[1] == "nutrition" && segments[2] == "photo" && segments[3] == "analyze" {
+			h.healthFoodPhotoAnalyze(w, r)
 		} else if len(segments) == 2 && segments[1] == "nutrition" {
 			h.nutrition(w, r)
 		} else if len(segments) == 2 && segments[1] == "plan" {
