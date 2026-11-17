@@ -112,7 +112,7 @@
         {{range .Results}}
         <li>
           <form class="hv3-form" method="post" action="/health/nutrition/items">
-            <input type="hidden" name="food_id" value="{{.FoodID}}"><input type="hidden" name="key" value="{{.Key}}"><input type="hidden" name="q" value="{{$.Diary.Query}}">
+            <input type="hidden" name="food_ref" value="{{.Ref}}"><input type="hidden" name="key" value="{{.Key}}"><input type="hidden" name="q" value="{{$.Diary.Query}}">
             <span class="hv3-row-copy hv3-field wide"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{.Detail}}</span></span>
             <label class="hv3-field"><span>Amount ({{.UnitName}})</span><input name="amount" inputmode="decimal" autocomplete="off" required value="{{.Default}}"></label>
             <label class="hv3-field"><span>Meal</span><select name="slot">{{range $.Diary.Slots}}<option value="{{.Slot}}"{{if eq .Slot $.Diary.Preslot}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>

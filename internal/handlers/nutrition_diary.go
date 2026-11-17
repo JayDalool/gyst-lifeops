@@ -41,7 +41,7 @@ type diaryGroupView struct {
 }
 
 type diaryResultView struct {
-	FoodID   int64
+	Ref      string // "nf:<id>" or "hf:<id>"
 	Name     string
 	Detail   string // basis and calories
 	Key      string // idempotency key of this rendered form
@@ -183,7 +183,7 @@ func (h *Handler) fillDiary(r *http.Request, data *nutritionData) string {
 	}
 	d.Searched = true
 	for _, f := range foods {
-		_, name, def := foodUnit(f)
+		_, name, def := foodUnit(f.NutritionFood)
 		detail := "per 100 g"
 		if f.Basis == "per_serving" {
 			detail = "per serving"
@@ -196,7 +196,7 @@ func (h *Handler) fillDiary(r *http.Request, data *nutritionData) string {
 		} else {
 			detail += " · kcal unknown"
 		}
-		d.Results = append(d.Results, diaryResultView{FoodID: f.ID, Name: f.Name, Detail: detail, Key: newDiaryKey(), UnitName: name, Default: def})
+		d.Results = append(d.Results, diaryResultView{Ref: f.Ref, Name: f.Name, Detail: detail, Key: newDiaryKey(), UnitName: name, Default: def})
 	}
 	return ""
 }
@@ -265,15 +265,23 @@ func (h *Handler) diaryAdd(r *http.Request) (string, error) {
 	if !ok {
 		return "", &services.HealthValidationError{Message: "Amount must be a number."}
 	}
-	foodID, _ := strconv.ParseInt(r.PostFormValue("food_id"), 10, 64)
-	food, err := h.Service.Repo.GetNutritionFood(foodID)
-	if err != nil {
+	kind, rawID, _ := strings.Cut(r.PostFormValue("food_ref"), ":")
+	id, _ := strconv.ParseInt(rawID, 10, 64)
+	in := models.NewDiaryItem{IdempotencyKey: r.PostFormValue("key"), MealSlot: r.PostFormValue("slot"), Amount: amount}
+	switch kind {
+	case "hf": // a My foods row is always per serving
+		in.HealthFoodID, in.Unit = id, "serving"
+	case "nf":
+		food, err := h.Service.Repo.GetNutritionFood(id)
+		if err != nil {
+			return "", &services.HealthValidationError{Message: "Food not found. Search again."}
+		}
+		in.FoodID = id
+		in.Unit, _, _ = foodUnit(food)
+	default:
 		return "", &services.HealthValidationError{Message: "Food not found. Search again."}
 	}
-	unit, _, _ := foodUnit(food)
-	res, err := h.Service.AddDiaryItem(r.Context(), diaryActor(r), models.NewDiaryItem{
-		IdempotencyKey: r.PostFormValue("key"), MealSlot: r.PostFormValue("slot"), FoodID: foodID, Unit: unit, Amount: amount,
-	})
+	res, err := h.Service.AddDiaryItem(r.Context(), diaryActor(r), in)
 	if err != nil {
 		return "", err
 	}

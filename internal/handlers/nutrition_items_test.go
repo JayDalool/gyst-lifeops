@@ -39,7 +39,7 @@ func itemsDo(h *Handler, method, path string, form url.Values, hdr map[string]st
 }
 
 var (
-	reFoodID = regexp.MustCompile(`name="food_id" value="(\d+)"><input type="hidden" name="key" value="([0-9a-f]{32})"`)
+	reFoodID = regexp.MustCompile(`name="food_ref" value="([a-z]+:\d+)"><input type="hidden" name="key" value="([0-9a-f]{32})"`)
 	reItemID = regexp.MustCompile(`/health/nutrition/items/(\d+)/archive`)
 )
 
@@ -72,7 +72,7 @@ func TestNutritionDiaryAddEditRemoveUndo(t *testing.T) {
 	if foodID == "" || !strings.Contains(page, "Test bean chili") || !strings.Contains(page, "Amount (servings)") {
 		t.Fatalf("search did not list the food: %s", page)
 	}
-	form := url.Values{"food_id": {foodID}, "key": {key}, "amount": {"1.5"}, "slot": {"dinner"}, "q": {"chili"}}
+	form := url.Values{"food_ref": {foodID}, "key": {key}, "amount": {"1.5"}, "slot": {"dinner"}, "q": {"chili"}}
 	rec := itemsDo(h, "POST", "/health/nutrition/items", form, nil)
 	if rec.Code != http.StatusSeeOther || !strings.HasPrefix(rec.Header().Get("Location"), "/health/nutrition?added=1") {
 		t.Fatalf("add: %d %q", rec.Code, rec.Header().Get("Location"))
@@ -119,11 +119,11 @@ func TestNutritionDiaryValidationRerenders400(t *testing.T) {
 	itemsAddFood(t, h, "Test lentil soup", nil)
 	_, foodID, key := itemsSearch(t, h, "lentil")
 	for name, form := range map[string]url.Values{
-		"zero amount": {"food_id": {foodID}, "key": {key}, "amount": {"0"}, "slot": {"lunch"}, "q": {"lentil"}},
-		"text amount": {"food_id": {foodID}, "key": {key}, "amount": {"lots"}, "slot": {"lunch"}},
-		"bad slot":    {"food_id": {foodID}, "key": {key}, "amount": {"1"}, "slot": {"brunch"}},
-		"bad key":     {"food_id": {foodID}, "key": {"short"}, "amount": {"1"}, "slot": {"lunch"}},
-		"no food":     {"food_id": {"99999"}, "key": {key}, "amount": {"1"}, "slot": {"lunch"}},
+		"zero amount": {"food_ref": {foodID}, "key": {key}, "amount": {"0"}, "slot": {"lunch"}, "q": {"lentil"}},
+		"text amount": {"food_ref": {foodID}, "key": {key}, "amount": {"lots"}, "slot": {"lunch"}},
+		"bad slot":    {"food_ref": {foodID}, "key": {key}, "amount": {"1"}, "slot": {"brunch"}},
+		"bad key":     {"food_ref": {foodID}, "key": {"short"}, "amount": {"1"}, "slot": {"lunch"}},
+		"no food":     {"food_ref": {"nf:99999"}, "key": {key}, "amount": {"1"}, "slot": {"lunch"}},
 	} {
 		rec := itemsDo(h, "POST", "/health/nutrition/items", form, nil)
 		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), `role="alert"`) {
@@ -134,7 +134,7 @@ func TestNutritionDiaryValidationRerenders400(t *testing.T) {
 		t.Fatal("a refused add wrote an item")
 	}
 	// A food with no kcal logs fine and reads "kcal unknown", never 0.
-	rec := itemsDo(h, "POST", "/health/nutrition/items", url.Values{"food_id": {foodID}, "key": {key}, "amount": {"1"}, "slot": {"lunch"}}, nil)
+	rec := itemsDo(h, "POST", "/health/nutrition/items", url.Values{"food_ref": {foodID}, "key": {key}, "amount": {"1"}, "slot": {"lunch"}}, nil)
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("add: %d", rec.Code)
 	}
@@ -144,7 +144,7 @@ func TestNutritionDiaryValidationRerenders400(t *testing.T) {
 	}
 	itemsAddFood(t, h, "Test lentil stew", viewFloat(300))
 	_, stewID, stewKey := itemsSearch(t, h, "lentil stew")
-	itemsDo(h, "POST", "/health/nutrition/items", url.Values{"food_id": {stewID}, "key": {stewKey}, "amount": {"1"}, "slot": {"dinner"}}, nil)
+	itemsDo(h, "POST", "/health/nutrition/items", url.Values{"food_ref": {stewID}, "key": {stewKey}, "amount": {"1"}, "slot": {"dinner"}}, nil)
 	if page = itemsDo(h, "GET", "/health/nutrition", nil, nil).Body.String(); !strings.Contains(page, "partial · 1 item without a value") {
 		t.Fatalf("partial total not labelled: %s", page)
 	}
@@ -154,7 +154,7 @@ func TestNutritionItemRoutesGuards(t *testing.T) {
 	h := testHandler(t)
 	itemsAddFood(t, h, "Test rice bowl", viewFloat(200))
 	_, foodID, key := itemsSearch(t, h, "rice")
-	good := url.Values{"food_id": {foodID}, "key": {key}, "amount": {"1"}, "slot": {"lunch"}}
+	good := url.Values{"food_ref": {foodID}, "key": {key}, "amount": {"1"}, "slot": {"lunch"}}
 	if rec := itemsDo(h, "POST", "/health/nutrition/items", good, nil); rec.Code != http.StatusSeeOther {
 		t.Fatal(rec.Code)
 	}
@@ -231,7 +231,7 @@ func TestNutritionGystDayShowsReferenceNotCounted(t *testing.T) {
 	h, _ := diaryHandlerWithSyncedDay(t)
 	itemsAddFood(t, h, "Test pasta plate", viewFloat(500))
 	_, foodID, key := itemsSearch(t, h, "pasta")
-	if rec := itemsDo(h, "POST", "/health/nutrition/items", url.Values{"food_id": {foodID}, "key": {key}, "amount": {"1"}, "slot": {"dinner"}}, nil); rec.Code != http.StatusSeeOther {
+	if rec := itemsDo(h, "POST", "/health/nutrition/items", url.Values{"food_ref": {foodID}, "key": {key}, "amount": {"1"}, "slot": {"dinner"}}, nil); rec.Code != http.StatusSeeOther {
 		t.Fatal(rec.Code)
 	}
 	page := itemsDo(h, "GET", "/health/nutrition", nil, nil).Body.String()

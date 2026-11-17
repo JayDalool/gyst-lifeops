@@ -104,6 +104,7 @@ type NewDiaryItem struct {
 	MealSlot           string
 	CreatedVia         string
 	FoodID             int64 // the catalogue row to log (a specific version)
+	HealthFoodID       int64 // a My foods row to log instead; mirrored into the catalogue by the write itself
 	Unit               string
 	Amount             float64
 	QuantityProvenance string
