@@ -18,7 +18,7 @@ func TestHealthMigrationPreservesExistingData(t *testing.T) {
 	}
 	// Migrations that extend the Health tables can only run once 018 exists,
 	// so they join 018 in the second pass (#60).
-	health := map[string]bool{"018_health_core.sql": true, "20261007010000_health_water.sql": true, "20261116120000_nutrition_diary.sql": true}
+	health := map[string]bool{"018_health_core.sql": true, "20261007010000_health_water.sql": true, "20261116100000_health_reference_targets.sql": true, "20261116120000_nutrition_diary.sql": true}
 	for _, entry := range entries {
 		if !health[entry.Name()] {
 			copyMigration(t, "../../migrations", dir, entry.Name())
@@ -99,7 +99,7 @@ func TestHealthMigrationPreservesExistingData(t *testing.T) {
 	if after := capture(); !reflect.DeepEqual(before, after) {
 		t.Fatal("existing data or schema changed during Health migration")
 	}
-	for _, table := range []string{"health_cycles", "daily_health_snapshots", "health_weight_entries", "health_sync_states", "health_water_log", "nutrition_foods", "nutrition_meals", "nutrition_meal_items"} {
+	for _, table := range []string{"health_cycles", "daily_health_snapshots", "health_weight_entries", "health_sync_states", "health_water_log", "health_reference_targets", "nutrition_foods", "nutrition_meals", "nutrition_meal_items"} {
 		var count int
 		if err := database.QueryRow(`SELECT COUNT(*) FROM ` + table).Scan(&count); err != nil || count != 0 {
 			t.Fatalf("table %s missing or seeded: %d %v", table, count, err)
