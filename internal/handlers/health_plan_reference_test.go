@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/services"
 )
 
 func refPostForm() url.Values {
@@ -107,17 +108,51 @@ func refSnap(date string, kcal, protein, fiber *float64, synced string) models.D
 	return models.DailyHealthSnapshot{Date: date, HealthMetrics: models.HealthMetrics{DietaryCalories: kcal, ProteinG: protein, FiberG: fiber}, LastSyncedAt: synced}
 }
 
+// refIntake resolves synced snapshots as Apple Health days (no diary items).
+func refIntake(snaps ...models.DailyHealthSnapshot) []models.DayIntake {
+	out := []models.DayIntake{}
+	for i := range snaps {
+		out = append(out, services.ResolveDayIntake(snaps[i].Date, nil, &snaps[i]))
+	}
+	return out
+}
+
+// A GYST diary day counts the GYST total and never adds the synced Apple
+// Health row for the same date; an Apple Health day still follows the
+// partial / nothing-logged rules; a GYST day with a missing kcal is partial.
+func TestCycleComparisonCountsOneSourcePerDay(t *testing.T) {
+	c := models.HealthCycle{ID: 1, Title: "Autumn", StartDate: "2026-11-01", EndDate: "2026-11-30"}
+	f := viewFloat
+	gyst := func(date string, kcal, protein *float64, kcalGaps int) models.NutritionDayTotals {
+		return models.NutritionDayTotals{Date: date, Items: 2, Sum: models.Nutrients{Kcal: kcal, ProteinG: protein}, Gaps: models.NutrientGaps{Kcal: kcalGaps}}
+	}
+	apple1 := refSnap("2026-11-01", f(5000), f(300), nil, "2026-11-01T21:00:00Z") // synced row on a GYST day: reference only
+	apple2 := refSnap("2026-11-02", f(2000), f(100), f(20), "2026-11-02T21:00:00Z")
+	apple3 := refSnap("2026-11-03", f(900), f(40), nil, "2026-11-03T10:00:00Z") // partial Apple Health day
+	g1, g4 := gyst("2026-11-01", f(1800), f(110), 0), gyst("2026-11-04", f(700), f(30), 1)
+	days := []models.DayIntake{
+		services.ResolveDayIntake("2026-11-01", &g1, &apple1),
+		services.ResolveDayIntake("2026-11-02", nil, &apple2),
+		services.ResolveDayIntake("2026-11-03", nil, &apple3),
+		services.ResolveDayIntake("2026-11-04", &g4, nil), // GYST day with a missing kcal: partial
+	}
+	got := buildCycleComparison(c, days, nil, "2026-11-10", time.UTC)
+	if got.DaysUsed != 2 || got.AvgKcal != "1,900 kcal" || got.AvgProtein != "105 g" || got.AvgFiber != "20 g" {
+		t.Fatalf("one source per day: %+v", got)
+	}
+}
+
 func TestCycleComparisonUsesCompleteDaysOnly(t *testing.T) {
 	c := models.HealthCycle{ID: 1, Title: "Autumn", StartDate: "2026-11-01", EndDate: "2026-11-30", DailyCalorieTarget: 2000, ProteinTargetG: 150, FiberTargetG: 30}
 	f := viewFloat
-	days := []models.DailyHealthSnapshot{
+	days := refIntake(
 		refSnap("2026-11-01", f(2000), f(100), f(20), "2026-11-01T21:00:00Z"), // complete
 		refSnap("2026-11-02", f(2200), f(120), nil, "2026-11-02T22:00:00Z"),   // complete, no fibre
 		refSnap("2026-11-03", f(900), f(40), f(5), "2026-11-03T10:00:00Z"),    // partial: synced before 20:00
 		refSnap("2026-11-04", f(0), nil, nil, "2026-11-04T21:00:00Z"),         // recorded zeros: nothing logged
 		refSnap("2026-11-05", nil, nil, nil, "2026-11-05T21:00:00Z"),          // no dietary observation
 		refSnap("2026-11-10", f(3000), f(200), f(40), "2026-11-10T09:00:00Z"), // today: never complete
-	}
+	)
 	got := buildCycleComparison(c, days, nil, "2026-11-10", time.UTC)
 	if got.DaysUsed != 2 || got.DaysText != "2 complete days counted" {
 		t.Fatalf("days: %+v", got)

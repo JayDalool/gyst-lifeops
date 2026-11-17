@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/services"
 )
 
 // Nutrition v3 (#55): today's intake against the plan, a seven-day calorie
-// view, and where the numbers come from. GYST doesn't log food; MyFitnessPal
-// does, and Apple Health carries daily totals here. Totals only: no meals.
+// view, and where the numbers come from. Each day counts one source (Issue
+// #207): the GYST food diary on a day with diary items, otherwise the Apple
+// Health daily total. They are never added together.
 type nutritionDay struct {
 	Letter, Name, Value string
 	Present, Over       bool
@@ -120,25 +122,44 @@ func buildProteinGap(data *nutritionData, foods []models.HealthFood) {
 	}
 }
 
-// buildNutritionWeek lays out the six days before today plus today, from
-// stored daily totals. A day without a dietary observation is "not logged",
-// never zero; so is a day of recorded zeros (#69). Past days whose last sync
-// came before 20:00 are "partial" and left out of the average and the
-// within-target count, since their totals are probably incomplete.
+// buildNutritionWeek lays out the week from stored Apple Health snapshots
+// alone, as if no food diary existed.
 func buildNutritionWeek(data *nutritionData, history []models.DailyHealthSnapshot, today string, target float64, loc *time.Location) {
+	days := make([]models.DayIntake, 0, len(history))
+	for i := range history {
+		days = append(days, services.ResolveDayIntake(history[i].Date, nil, &history[i]))
+	}
+	buildNutritionWeekDays(data, days, today, target, loc)
+}
+
+// buildNutritionWeekDays lays out the six days before today plus today, from
+// each day's one counted intake. A day without a dietary observation is "not
+// logged", never zero. The Apple Health rules apply only to Apple Health
+// days: a day of recorded zeros is "nothing logged" (#69), and a past day
+// whose last sync came before 20:00 is "partial" and left out of the average
+// and the within-target count. A GYST diary day is partial when a logged item
+// has no calories; it is never judged by the sync time.
+func buildNutritionWeekDays(data *nutritionData, days []models.DayIntake, today string, target float64, loc *time.Location) {
 	day, err := time.Parse("2006-01-02", today)
 	if err != nil {
 		return
 	}
 	byDate := map[string]*float64{}
 	partial := map[string]bool{}
-	for _, s := range history {
-		if weekNothingLogged(s) {
-			continue
+	for _, in := range days {
+		switch in.Source {
+		case models.IntakeSourceGYST:
+			byDate[in.Date] = in.Counted.Kcal
+			partial[in.Date] = in.Counted.Kcal != nil && in.Missing.Kcal > 0
+		case models.IntakeSourceAppleHealth:
+			s := in.Snapshot
+			if s == nil || weekNothingLogged(*s) {
+				continue
+			}
+			byDate[in.Date] = in.Counted.Kcal
+			// Only a day with food can be partial; a day without stays "not logged".
+			partial[in.Date] = in.Counted.Kcal != nil && in.Date != today && weekPartial(*s, loc)
 		}
-		byDate[s.Date] = s.DietaryCalories
-		// Only a day with food can be partial; a day without stays "not logged".
-		partial[s.Date] = s.DietaryCalories != nil && s.Date != today && weekPartial(s, loc)
 	}
 	values := make([]*float64, 7)
 	top := target
@@ -210,7 +231,7 @@ func (h *Handler) nutrition(w http.ResponseWriter, r *http.Request) {
 	}
 	data := buildNutritionData(buildHealthTodayView(today, h.Service.Now()))
 	if day, err := time.Parse("2006-01-02", today.Date); err == nil {
-		history, err := h.Service.Repo.ListDailyHealthSnapshots(day.AddDate(0, 0, -6).Format("2006-01-02"), today.Date)
+		history, err := h.Service.DayIntakeRange(day.AddDate(0, 0, -6).Format("2006-01-02"), today.Date)
 		if err != nil {
 			serverError(w, err)
 			return
@@ -219,7 +240,7 @@ func (h *Handler) nutrition(w http.ResponseWriter, r *http.Request) {
 		if today.HealthCycle != nil {
 			target = today.HealthCycle.DailyCalorieTarget
 		}
-		buildNutritionWeek(&data, history, today.Date, target, h.Service.Location())
+		buildNutritionWeekDays(&data, history, today.Date, target, h.Service.Location())
 	}
 	foods, err := h.Service.Repo.ListHealthFoods(false)
 	if err != nil {

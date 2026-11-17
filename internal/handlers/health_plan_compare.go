@@ -68,7 +68,24 @@ func weightWindowText(w weightWindow) string {
 	return fmt.Sprintf("%s kg · %d %s", trimKg(w.avg), w.days, pluralDays(w.days))
 }
 
-func buildCycleComparison(c models.HealthCycle, days []models.DailyHealthSnapshot, weights map[string]*localWeightDay, today string, loc *time.Location) cycleComparison {
+// dayComplete applies the complete-day rules to a counted day. The counted
+// source is the day's one source (GYST diary or Apple Health, never summed).
+// An Apple Health day uses the nutrition week's rules (#69): it needs dietary
+// calories, must not be recorded zeros, and must not be partial. A GYST day
+// is complete when its calories are known for every live item; a day with a
+// missing calorie value is partial.
+func dayComplete(d models.DayIntake, loc *time.Location) bool {
+	switch d.Source {
+	case models.IntakeSourceGYST:
+		return d.Counted.Kcal != nil && d.Missing.Kcal == 0
+	case models.IntakeSourceAppleHealth:
+		s := d.Snapshot
+		return s != nil && s.DietaryCalories != nil && !weekNothingLogged(*s) && !weekPartial(*s, loc)
+	}
+	return false
+}
+
+func buildCycleComparison(c models.HealthCycle, days []models.DayIntake, weights map[string]*localWeightDay, today string, loc *time.Location) cycleComparison {
 	v := cycleComparison{ID: c.ID, Title: c.Title, Range: c.StartDate + " – " + c.EndDate,
 		TargetKcal: targetText(c.DailyCalorieTarget, " kcal", true), TargetProtein: targetText(c.ProteinTargetG, " g", false), TargetFiber: targetText(c.FiberTargetG, " g", false),
 		WeightStart: missingValue, WeightEnd: missingValue}
@@ -83,14 +100,19 @@ func buildCycleComparison(c models.HealthCycle, days []models.DailyHealthSnapsho
 		}
 	}
 	var kcal, protein, fiber runningMean
-	for _, s := range days {
-		if s.Date == today || s.DietaryCalories == nil || weekNothingLogged(s) || weekPartial(s, loc) {
+	for _, d := range days {
+		if d.Date == today || !dayComplete(d, loc) {
 			continue
 		}
 		v.DaysUsed++
-		kcal.add(s.DietaryCalories)
-		protein.add(s.ProteinG)
-		fiber.add(s.FiberG)
+		kcal.add(d.Counted.Kcal)
+		// A sum with a gap (an item without that nutrient) is partial: skip it.
+		if d.Missing.ProteinG == 0 {
+			protein.add(d.Counted.ProteinG)
+		}
+		if d.Missing.FiberG == 0 {
+			fiber.add(d.Counted.FiberG)
+		}
 	}
 	// Protein and fibre average only the complete days that recorded them.
 	v.AvgKcal, v.AvgProtein, v.AvgFiber = kcal.text(" kcal", true), protein.text(" g", false), fiber.text(" g", false)

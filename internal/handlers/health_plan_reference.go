@@ -70,15 +70,38 @@ func (h *Handler) fillPlanExtras(data *healthPlanData) error {
 		if today < to {
 			to = today
 		}
-		var days []models.DailyHealthSnapshot
-		if c.StartDate <= to {
-			if days, err = h.Service.Repo.ListDailyHealthSnapshots(c.StartDate, to); err != nil {
-				return err
-			}
+		days, err := h.dayIntakeSpan(c.StartDate, to)
+		if err != nil {
+			return err
 		}
 		data.Compare = append(data.Compare, buildCycleComparison(c, days, weights, today, h.Service.Location()))
 	}
 	return nil
+}
+
+// dayIntakeSpan resolves each day's one counted source (GYST diary or Apple
+// Health) over a date span, both ends included. DayIntakeRange caps a call at
+// 400 days, so a long cycle is read in chunks.
+func (h *Handler) dayIntakeSpan(start, end string) ([]models.DayIntake, error) {
+	var out []models.DayIntake
+	for start <= end {
+		first, err := time.Parse("2006-01-02", start)
+		if err != nil {
+			return nil, err
+		}
+		last := first.AddDate(0, 0, 399).Format("2006-01-02")
+		if last > end {
+			last = end
+		}
+		days, err := h.Service.DayIntakeRange(start, last)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, days...)
+		lastDay, _ := time.Parse("2006-01-02", last)
+		start = lastDay.AddDate(0, 0, 1).Format("2006-01-02")
+	}
+	return out, nil
 }
 
 // planFormForNow is the form the Plan page shows when no cycle is picked.
