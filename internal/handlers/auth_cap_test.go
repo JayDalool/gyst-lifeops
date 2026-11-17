@@ -3,14 +3,12 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
-	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 )
@@ -84,14 +82,7 @@ func TestCookieRenewalNeverPassesTheCapAndCappedSessionIsRefused(t *testing.T) {
 }
 
 func TestCorruptCreatedAtIsTreatedAsUnauthenticated(t *testing.T) {
-	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
-	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
-		t.Fatalf("migrate db: %v", err)
-	}
-	t.Cleanup(func() { database.Close() })
+	database := migratedTestDB(t)
 	h := New(services.New(repository.New(database)), "../../web/templates")
 	hash, _ := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.MinCost)
 	h.Auth = services.AuthConfig{PasswordHash: string(hash)}

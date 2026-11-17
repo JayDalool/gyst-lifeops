@@ -97,14 +97,17 @@ Today, Workout and More from PR #54; Nutrition v3 from PR #58 (see Real Gaps bel
 ## Architecture: Data Sources (Not Local Logging)
 
 ### Foods & Nutrition
-**Logging:**  MyFitnessPal (not GYST)
-- GYST reads daily aggregate calories + macros from Apple Health (MyFitnessPal is the source)
-- GYST does not and will not replace MyFitnessPal as the food logger
+**Logging:** GYST is the food diary (Jay's decision, 2026-11-16, Issue #207). This reverses the earlier "GYST will not replace MyFitnessPal" rule.
+- Meals and food items are stored in GYST (`nutrition_foods`, `nutrition_meals`, `nutrition_meal_items`). The diary UI is Issue #216; until a meal exists, nothing changes.
+- **One counted intake source per day.** A day with at least one live (not removed) diary item counts the GYST total. The Apple Health / MyFitnessPal total for that day is a reference, "not counted". A day without diary items counts the Apple Health total as before. The two are never summed. If every item of a day is removed, the day falls back to Apple Health.
+- MyFitnessPal stays a recipe and reference source, and daily totals still arrive through Apple Health.
+- A diary day where a logged item has no value for a nutrient shows that total as partial (a lower bound), never as a silent 0.
+- Create, edit, remove and restore act on today's entries only; editing past days waits for the confirmation policy of Issue #212.
 
 **Lightweight support (implemented):**
 - **My Foods & Products** (PR #61): a lightweight list of foods Jay usually has (name, serving, kcal, macros, notes, active), managed in More; the Coach reads it through its `get_food_products` tool when enabled (`internal/handlers/coach.go`)
 - **Portion suggestions** (PR #63): "Close the protein gap" on Nutrition picks from My Foods, with no AI. Coach-based meal suggestions come with the Coach.
-- **Not:** Full food database, recipe import, or competitive food logging. Only food logging stays in MyFitnessPal.
+- **Not yet:** a full food database import (GYST-159), recipes (GYST-160), barcode (GYST-161) or AI estimates (GYST-162/163). My foods appear in the diary catalogue as provider `user` foods and are read through, not migrated.
 
 ### Hevy Logging / Workout Entry in GYST
 **By design:** Hevy is read-only  
@@ -159,7 +162,7 @@ Still open:
 
 | Source | Tool | GYST Role |
 |--------|------|-----------|
-| **Nutrition** | MyFitnessPal | Read via Apple Health → daily total, macros |
+| **Nutrition** | GYST food diary; MyFitnessPal via Apple Health as reference | GYST total on a day with diary items, otherwise Apple Health daily total (never both) |
 | **Activity** | Apple Health (from Apple Watch + iPhone) | Read → steps Watch/Phone, exercise minutes |
 | **Energy** | Apple Health (from Apple Watch) | Read → resting + active energy |
 | **Workouts** | Hevy Pro | Read → routines, exercises, sets, muscle mapping |

@@ -90,8 +90,61 @@
       {{else}}<li><p class="meta">No health cycles configured yet. Save your first cycle using the form.</p></li>{{end}}
       </ul>
     </section>
+    <section class="card" id="reference-targets" aria-labelledby="ref-title"><h2 id="ref-title">Reference targets (not active)</h2>
+      <p class="meta">Numbers from outside, such as a dietitian. They are kept for comparison and never change your active targets.</p>
+      {{if .RefNotice}}<p class="health-plan-success" role="status">{{.RefNotice}}</p>{{end}}
+      <ul class="health-ref-list">
+      {{range .References}}<li class="health-ref">
+        <strong>{{.Label}}</strong><span class="meta">{{.Kind}}{{if .Issued}} · issued {{.Issued}}{{end}} · {{.Cycle}}</span>
+        <dl class="health-ref-values"><div><dt>Calories</dt><dd>{{.Kcal}}</dd></div><div><dt>Protein</dt><dd>{{.Protein}}</dd></div><div><dt>Carbs</dt><dd>{{.Carbs}}</dd></div><div><dt>Fat</dt><dd>{{.Fat}}</dd></div><div><dt>Fiber</dt><dd>{{.Fiber}}</dd></div></dl>
+        {{if .Note}}<p class="meta">{{.Note}}</p>{{end}}
+        <form method="post" action="/health/plan/reference/{{.ID}}/archive"><button class="btn" type="submit" aria-label="Archive reference target from {{.Label}}">Archive</button></form>
+      </li>
+      {{else}}<li><p class="meta">No reference targets yet.</p></li>{{end}}
+      </ul>
+      <form class="gyst-stack health-ref-form" method="post" action="/health/plan/reference" {{if .RefError}}aria-describedby="ref-error"{{end}}>
+        <h3>Add a reference target</h3>
+        {{if .RefError}}<p class="health-plan-error" role="alert" id="ref-error">{{.RefError}}</p>{{end}}
+        <label class="gyst-field"><span>Source</span><input class="gyst-input" type="text" name="source_label" required maxlength="200" placeholder="Example dietitian" value="{{.RefForm.SourceLabel}}"></label>
+        <label class="gyst-field"><span>Source type</span><select class="gyst-input" name="source_kind" required>
+          <option value="dietitian" {{if eq .RefForm.SourceKind "dietitian"}}selected{{end}}>Dietitian</option>
+          <option value="device" {{if eq .RefForm.SourceKind "device"}}selected{{end}}>Device</option>
+          <option value="ai" {{if eq .RefForm.SourceKind "ai"}}selected{{end}}>AI</option>
+          <option value="other" {{if eq .RefForm.SourceKind "other"}}selected{{end}}>Other</option>
+        </select></label>
+        <label class="gyst-field"><span>Issued on (optional)</span><input class="gyst-input" type="date" name="issued_on" value="{{.RefForm.IssuedOn}}"></label>
+        <label class="gyst-field"><span>Cycle (optional)</span><select class="gyst-input" name="cycle_id">
+          <option value="">Not tied to a cycle</option>
+          {{range .Cycles}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) $.RefForm.CycleID}}selected{{end}}>{{.Title}}</option>{{end}}
+        </select></label>
+        <p class="meta">Leave a number blank if the source did not give one.</p>
+        <div class="health-plan-fields">
+        <label class="gyst-field"><span>Calories (kcal)</span><input class="gyst-input" type="text" inputmode="decimal" name="kcal" maxlength="9" autocomplete="off" value="{{.RefForm.Kcal}}"></label>
+        <label class="gyst-field"><span>Protein (g)</span><input class="gyst-input" type="text" inputmode="decimal" name="protein_g" maxlength="9" autocomplete="off" value="{{.RefForm.Protein}}"></label>
+        <label class="gyst-field"><span>Carbs (g)</span><input class="gyst-input" type="text" inputmode="decimal" name="carbs_g" maxlength="9" autocomplete="off" value="{{.RefForm.Carbs}}"></label>
+        <label class="gyst-field"><span>Fat (g)</span><input class="gyst-input" type="text" inputmode="decimal" name="fat_g" maxlength="9" autocomplete="off" value="{{.RefForm.Fat}}"></label>
+        <label class="gyst-field"><span>Fiber (g)</span><input class="gyst-input" type="text" inputmode="decimal" name="fiber_g" maxlength="9" autocomplete="off" value="{{.RefForm.Fiber}}"></label>
+        </div>
+        <label class="gyst-field"><span>Notes (optional)</span><textarea class="gyst-input" name="notes" rows="2" maxlength="400">{{.RefForm.Notes}}</textarea></label>
+        <button class="gyst-button" type="submit">Add reference target</button>
+      </form>
+    </section>
     <section class="card"><h2>Plan &amp; observations</h2><p class="meta">Targets describe what you intend to do. <a href="/health">Today's Health summary</a> shows the observations received so far. Historical plan adherence is not available yet.</p></section>
   </aside>
   </div>
+  <section class="card health-compare" aria-labelledby="compare-title"><h2 id="compare-title">Cycle comparison</h2>
+    <p class="meta">Each cycle's targets next to the averages from its complete days. Today, partial days and days with nothing logged are not counted. "—" means no data.</p>
+    <ul class="health-compare-list">
+    {{range .Compare}}<li class="health-ref"><strong>{{.Title}}</strong><span class="meta">{{.Range}} · {{.DaysText}}</span>
+      <table class="health-compare-table" aria-label="{{.Title}}: target and average">
+        <thead><tr><th scope="col"></th><th scope="col">Calories</th><th scope="col">Protein</th><th scope="col">Fiber</th></tr></thead>
+        <tbody><tr><th scope="row">Target</th><td>{{.TargetKcal}}</td><td>{{.TargetProtein}}</td><td>{{.TargetFiber}}</td></tr>
+        <tr><th scope="row">Average</th><td>{{.AvgKcal}}</td><td>{{.AvgProtein}}</td><td>{{.AvgFiber}}</td></tr></tbody></table>
+      <p class="meta">7-day weight average at start: {{.WeightStart}} · at end: {{.WeightEnd}}</p>
+    </li>
+    {{else}}<li><p class="meta">No cycles to compare yet.</p></li>{{end}}
+    </ul>
+    <p class="meta">Weight uses the 7-day average (at least 4 days with readings), starting on the cycle's first day and ending on its last day, or today while it runs.</p>
+  </section>
 </div>
 {{end}}

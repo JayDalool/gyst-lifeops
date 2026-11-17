@@ -26,10 +26,12 @@ const maxOpenAIBody = 2 << 20
 // OpenAI calls the Responses API over plain net/http. The key lives only in
 // this struct and the Authorization header; the adapter never logs.
 type OpenAI struct {
-	key     string
-	model   string
-	baseURL string
-	client  *http.Client
+	key   string
+	model string
+	// visionModel is used for photo analysis (see openai_vision.go).
+	visionModel string
+	baseURL     string
+	client      *http.Client
 }
 
 // NewOpenAI builds the adapter against the pinned OpenAI base URL.
