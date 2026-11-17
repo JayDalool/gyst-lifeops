@@ -20,10 +20,15 @@ func buildTodayHealthSnapshot(view HealthTodayView, err error) TodayHealthSnapsh
 		return out
 	}
 	out.Status = UIStatus{State: "normal", Message: "Snapshot synced " + view.LastSynced}
+	gystDay := view.IntakeSource == models.IntakeSourceGYST
 	switch {
-	case !view.HasSnapshot:
+	case !view.HasSnapshot && !gystDay:
 		out.Status = UIStatus{State: "empty", Message: "No Health data synced for this day yet."}
 		return out
+	case !view.HasSnapshot:
+		// A food diary day counts GYST food, so food remaining is real even
+		// before Apple Health has synced; steps are simply not there yet.
+		out.Status = UIStatus{State: "partial", Message: "Food from your GYST diary · no Health snapshot synced yet"}
 	case view.LastSyncedStale:
 		out.Status = UIStatus{State: "stale", Message: "Snapshot synced " + view.LastSynced}
 	case !view.HasLastSynced:
@@ -43,7 +48,7 @@ func buildTodayHealthSnapshot(view HealthTodayView, err error) TodayHealthSnapsh
 		status := out.Status
 		if !item.metric.Present {
 			status = UIStatus{State: "empty", Message: "Not available yet"}
-			if out.Status.Kind() == "normal" {
+			if out.Status.Kind() == "normal" && view.HasSnapshot {
 				out.Status = UIStatus{State: "partial", Message: "Some values missing · snapshot synced " + view.LastSynced}
 			}
 		}

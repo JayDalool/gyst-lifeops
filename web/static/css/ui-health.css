@@ -113,6 +113,19 @@
 :root .health-plan-actions .gyst-button { white-space: normal; }
 :root .health-plan-error { border-left: 4px solid var(--gyst-danger-text); }
 :root .health-plan-success { border-left: 4px solid var(--gyst-positive-text); }
+/* Reference targets and cycle comparison (#205). */
+:root .health-plan-ui p.health-plan-error, :root .health-plan-ui p.health-plan-success { padding: 8px 12px; margin: 12px 0; }
+:root .health-ref-list, :root .health-compare-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 12px; }
+:root .health-ref { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--gyst-border); border-radius: 12px; min-width: 0; overflow-wrap: anywhere; }
+:root .health-ref-values { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; margin: 0; }
+:root .health-ref-values dt { font-size: .875rem; color: var(--gyst-text-secondary); }
+:root .health-ref-values dd { margin: 0; font-weight: 600; }
+:root .health-ref form .btn { min-height: 44px; }
+:root .health-ref-form { margin-top: 20px; }
+:root .health-compare { margin-top: 24px; }
+:root .health-compare-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+:root .health-compare-table th, :root .health-compare-table td { padding: 8px 6px; text-align: left; border-bottom: 1px solid var(--gyst-border); }
+:root .health-compare-table thead th { color: var(--gyst-text-secondary); font-weight: 600; }
 :root .health-cycle-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 12px; }
 :root .health-cycle-list a { display: grid; gap: 6px; padding: 12px; min-height: 44px; border: 1px solid var(--gyst-border); border-radius: 12px; text-decoration: none; color: var(--gyst-text); }
 :root .health-cycle-list a[aria-current] { border-color: var(--gyst-blue); background: var(--gyst-blue-soft); }
