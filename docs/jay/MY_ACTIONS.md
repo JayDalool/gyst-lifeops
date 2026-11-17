@@ -1,4 +1,4 @@
-- [ ] GYST-138 · Read-only count of goals with bad or future dates (backup copy) · https://github.com/JayDalool/gyst-lifeops/pulls?q=GYST-138
+- [ ] GYST-138 · Count goals with bad or future dates on backup · https://github.com/JayDalool/gyst-lifeops/pull/230
 - [ ] #206 · Add "incline 8% · 5.0 km/h" to Hevy treadmill notes · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEVY_SETUP.md
 - [ ] #193 · Before and after deploy: read-only time zone check · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/timezone-data.md
 - [ ] #183 · After deploy: set export/calendar roadmaps to Public · https://github.com/JayDalool/gyst-lifeops/issues/183
