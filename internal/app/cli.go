@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"lifeops-tracker/internal/config"
 )
@@ -30,6 +31,10 @@ func Run() {
 	}
 	if passwordHashRequested(os.Args) {
 		runPasswordHashAndExit()
+		return
+	}
+	if tzinfoRequested(os.Args) {
+		runTzinfoAndExit()
 		return
 	}
 
@@ -68,7 +73,19 @@ func Run() {
 	defer lifeOps.Close()
 
 	log.Printf("LifeOps Tracker running at http://localhost%s", cfg.Addr)
-	if err := http.ListenAndServe(cfg.Addr, lifeOps.Handler); err != nil {
+	// Timeouts bound slow or stalled clients. Photo upload (up to 8 MB over a
+	// mobile link) plus one vision call (75 s) is the longest request, so the
+	// read and write budgets are sized for it; headers must arrive quickly.
+	server := &http.Server{
+		Addr:              cfg.Addr,
+		Handler:           lifeOps.Handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       2 * time.Minute,
+		WriteTimeout:      4 * time.Minute,
+		IdleTimeout:       2 * time.Minute,
+		MaxHeaderBytes:    64 << 10,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

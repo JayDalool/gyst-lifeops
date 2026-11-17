@@ -6,11 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
@@ -18,14 +16,7 @@ import (
 
 func cycleHandler(t *testing.T) (*Handler, *sql.DB) {
 	t.Helper()
-	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
-	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
-		t.Fatalf("migrate db: %v", err)
-	}
-	t.Cleanup(func() { database.Close() })
+	database := migratedTestDB(t)
 	h := New(services.New(repository.New(database)), "../../web/templates")
 	h.AllowPublicFeeds = true
 	return h, database

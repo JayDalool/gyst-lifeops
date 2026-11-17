@@ -18,6 +18,7 @@ import (
 	"lifeops-tracker/internal/providers/hevy"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
+	"lifeops-tracker/internal/tzdb"
 )
 
 // Config is the single configuration struct, built by config.Load. The alias
@@ -70,7 +71,7 @@ func New(cfg Config) (*App, error) {
 	service.Push = cfg.Push
 	service.ProviderCreds = cfg.Providers
 	service.BackupStatusPath = filepath.Join(filepath.Dir(cfg.DBPath), "backups", "last_run.json")
-	log.Printf("Application timezone: %s", location)
+	log.Printf("Application timezone: %s (tzdb %s)", location, tzdb.Version())
 	// Before any goroutine, handler or listener: a changed GYST_PASSWORD_HASH
 	// must end every old session, and a failure here stops startup rather
 	// than serve sessions the new password never approved.
@@ -106,6 +107,10 @@ func New(cfg Config) (*App, error) {
 	webHandler.Auth = services.AuthConfig{PasswordHash: cfg.PasswordHash}
 	webHandler.AuthDisabled = cfg.AuthDisabled
 	webHandler.Coach = healthCoachProvider(cfg.HealthAI)
+	// The environment wins over Settings (GYST-169): when it names a provider
+	// or holds a provider key, saved settings are ignored and the form is off.
+	webHandler.AIEnvManaged = cfg.HealthAI.EnvManaged()
+	service.AIKeyPath = filepath.Join(filepath.Dir(cfg.DBPath), "ai_settings.key")
 	logger := cfg.Logger
 	if logger == nil {
 		logger = slog.Default()
@@ -169,7 +174,7 @@ func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
 	case "openai":
 		if c.OpenAIKey != "" {
 			log.Printf("Health Coach: provider openai enabled")
-			return healthcoach.NewOpenAI(c.OpenAIKey, c.Model)
+			return healthcoach.NewOpenAI(c.OpenAIKey, c.Model).WithVisionModel(c.VisionModel)
 		}
 		log.Printf("Health Coach: disabled (OPENAI_API_KEY not set)")
 	case "":

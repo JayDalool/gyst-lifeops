@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"errors"
-	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -183,14 +181,7 @@ func TestStandaloneRemindersKeepsSourcelessTaskRows(t *testing.T) {
 }
 
 func TestTodayHandlerHidesTaskRemindersKeepsStandalone(t *testing.T) {
-	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { database.Close() })
-	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
-		t.Fatal(err)
-	}
+	database := migratedTestDB(t)
 	h := New(services.New(repository.New(database)), "../../web/templates")
 	today := h.Service.TodayString()
 	task := models.Task{Title: "Fictional timed task", Category: "personal", Priority: "medium", Status: "pending", DueDate: today, RepeatType: "none", ReminderTime: "09:00"}

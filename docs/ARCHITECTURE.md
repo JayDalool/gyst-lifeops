@@ -117,8 +117,16 @@ service is.
   rejected with HTTP 400 before anything is written. An empty value becomes
   the local Today where the form defines a default.
 - `app.New` resolves the timezone before opening the database, so an invalid
-  explicit `GYST_TIMEZONE` stops startup without creating or migrating it. The
-  IANA zone database is embedded in the binary (`time/tzdata`).
+  explicit `GYST_TIMEZONE` stops startup without creating or migrating it.
+- Zones come only from GYST's pinned IANA database, `internal/tzdb` (Issue
+  #193): a `zoneinfo.zip` built by `scripts/tzdb/update.sh` with Go's own
+  recipe from a signed IANA release, with `PROVENANCE` pinning the release,
+  source hashes and zip SHA-256. The host's `/usr/share/zoneinfo`,
+  `$ZONEINFO` and the Go toolchain's copy are never used, so production, CI
+  and developer machines compute the same local times, and the image needs
+  no zone files. Manitoba is on permanent UTC-05 from 2026-11-01 (tzdb
+  2026e); `clock.DefaultZoneProbes` and `lifeops tzinfo -check` fail on
+  stale data. Refreshing it: [`runbooks/timezone-data.md`](runbooks/timezone-data.md).
 - `internal/clock/guard_test.go` fails the build if code outside
   `internal/clock` and `internal/db` uses `time.Now`, `time.Local`,
   `time.LoadLocation` or the zone name, or derives a day from a `Now()` call
@@ -127,6 +135,7 @@ service is.
 ```mermaid
 flowchart LR
     Env[GYST_TIMEZONE] --> Clock[internal/clock]
+    TZDB[internal/tzdb: pinned IANA tzdb] --> Clock
     Clock --> Service[services.Service]
     Service --> Days[Tasks, trackers, prayer, Health, reminders, courses]
     Service --> Handlers[Handlers: date defaults and validation]
@@ -406,7 +415,12 @@ detail 200, request_id 32). There are no foreign keys.
 The only writer is `Service.RecordAudit` (`internal/services/audit.go`). It
 rejects anything outside the Go action allowlist (`login.failed`,
 `login.succeeded`, `logout`, `session.revoked_all`, `reauth.succeeded`,
-`reauth.failed`, `access.denied`) with `ErrAuditInvalid` and writes nothing.
+`reauth.failed`, `access.denied`, `health.sync_refused`, `nutrition.meal.create`,
+`nutrition.meal.update`, `nutrition.meal.archive`) with `ErrAuditInvalid` and
+writes nothing. The three `nutrition.meal.*` rows (Issue #207) are written after
+the change commits, with a fixed `detail` word ("item added", "amount changed",
+"item removed", "item restored") and target `meal:<id>`: never a food name, an
+amount or a nutrient value. A repeated idempotency key writes no row.
 `actor_ref` and `target_ref` allow only `[A-Za-z0-9:._/#@+-]`; `request_id`
 only `[a-f0-9]`. `agent.*`, `github.*` and `server.*` actions are owned by
 Command Center and are not added here; `automation.*` is not added yet. A new
@@ -540,3 +554,16 @@ browser POST rejection. It does not require or expose the API token.
 Observed energy is deterministic arithmetic on received metrics. No projections,
 step-to-calorie calculations, or extra workout calories are introduced. Health
 Summary remains the M1 preview. See [the contract](HEALTH_CORE.md) for details.
+
+## AI provider settings (GYST-169, Issue #218)
+
+`ai_settings` (one row) holds the provider, the chat and photo model names, and
+the API key as AES-256-GCM ciphertext and nonce. The provider is the AAD, so a
+ciphertext can't be moved to another provider. The 32-byte data key lives in
+`ai_settings.key` beside the SQLite file (0600, created O_EXCL on first save),
+not in the database, so backups carry ciphertext only. `Handler.coach()`
+resolves the Coach provider on each request: the environment (`Handler.Coach`,
+`AIEnvManaged`) wins, otherwise `Service.AIEffective()` decrypts the saved key.
+Save and remove go through `POST /settings/ai` with the password re-entered,
+the same-origin guard, a 16 KB body cap and the sign-in throttle. Details and
+the restore steps are in `docs/HEALTH_COACH.md`.

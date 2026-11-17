@@ -33,6 +33,15 @@ type HealthAI struct {
 	AnthropicKey string
 	OpenAIKey    string
 	Model        string
+	// VisionModel is the photo-analysis model (HEALTH_AI_VISION_MODEL); empty
+	// keeps the provider default.
+	VisionModel string
+}
+
+// EnvManaged reports whether the server environment configures the AI
+// provider at all. Then Settings -> AI provider is read-only.
+func (h HealthAI) EnvManaged() bool {
+	return strings.TrimSpace(h.Provider) != "" || h.AnthropicKey != "" || h.OpenAIKey != ""
 }
 
 // Push is the VAPID trio for web push. All three set, or all three empty.
@@ -184,6 +193,7 @@ func Load(args []string, getenv func(string) string, readFile func(string) ([]by
 		AnthropicKey: l.secret("ANTHROPIC_API_KEY"),
 		OpenAIKey:    l.secret("OPENAI_API_KEY"),
 		Model:        getenv("HEALTH_AI_MODEL"),
+		VisionModel:  getenv("HEALTH_AI_VISION_MODEL"),
 	}
 	c.HealthSyncToken = l.secret("GYST_HEALTH_SYNC_TOKEN")
 	c.PasswordHash = l.secret("GYST_PASSWORD_HASH")
