@@ -2537,15 +2537,6 @@ func (h *Handler) appClock() clock.Clock {
 }
 
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {
-	playerXP := models.PlayerStats{CurrentLevel: 1}
-	if h.Service != nil && h.Service.Repo != nil {
-		var err error
-		playerXP, err = h.Service.Repo.PlayerStats()
-		if err != nil {
-			serverError(w, err)
-			return
-		}
-	}
 	files := []string{
 		filepath.Join(h.TemplateDir, "layout.html"),
 		filepath.Join(h.TemplateDir, "rocket_route.html"),
@@ -2560,7 +2551,6 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
 		"primarySection": primarySection,
 		"projectCard":    projectCard,
-		"xpStats":        func() models.PlayerStats { return playerXP },
 		"join":           strings.Join,
 		"joinInts":       joinInts,
 		"niceDate":       niceDate,
@@ -2621,10 +2611,8 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 			}
 			return h.Service.Now().In(h.Service.Location()).Format("15:04")
 		},
-		"nodeState":   nodeState,
-		"levelPct":    levelPct,
-		"toNextLevel": toNextLevel,
-		"blockLabel":  services.BlockTypeLabel,
+		"nodeState":  nodeState,
+		"blockLabel": services.BlockTypeLabel,
 		"routeDone": func(nodes []models.RouteNode) int {
 			done := 0
 			for _, node := range nodes {
@@ -2902,23 +2890,6 @@ func nodeState(status string, progress int) string {
 		}
 		return "pending"
 	}
-}
-
-// levelPct returns how far into the current level the player is (0-99),
-// where every 100 stars is one level. Used for the captain XP bar width.
-func levelPct(stars int) int {
-	if stars < 0 {
-		return 0
-	}
-	return stars % 100
-}
-
-// toNextLevel returns stars remaining until the next level threshold.
-func toNextLevel(stars int) int {
-	if stars < 0 {
-		return 100
-	}
-	return 100 - (stars % 100)
 }
 
 // greetingFor is the Today page greeting for a local hour.

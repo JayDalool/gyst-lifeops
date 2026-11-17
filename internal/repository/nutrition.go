@@ -86,12 +86,6 @@ func (r *Repository) GetNutritionFood(id int64) (models.NutritionFood, error) {
 	return scanNutritionFood(r.db.QueryRow(`SELECT `+nutritionFoodColumns+` FROM nutrition_foods WHERE id = ?`, id))
 }
 
-// GetCurrentNutritionFood returns the current (not superseded) version.
-func (r *Repository) GetCurrentNutritionFood(provider, providerID string) (models.NutritionFood, error) {
-	return scanNutritionFood(r.db.QueryRow(`SELECT `+nutritionFoodColumns+` FROM nutrition_foods
- WHERE provider = ? AND provider_id = ? AND superseded_at IS NULL`, provider, providerID))
-}
-
 // escapeLike escapes the LIKE wildcards and the escape character itself.
 func escapeLike(s string) string {
 	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
