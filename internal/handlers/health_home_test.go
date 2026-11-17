@@ -1,12 +1,11 @@
 package handlers
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"lifeops-tracker/internal/db"
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
@@ -113,7 +112,7 @@ func TestTodayNumbersAddUpOnScreen(t *testing.T) {
 }
 
 func TestTodayWorkoutTitleUsesLocalDay(t *testing.T) {
-	loc, _ := time.LoadLocation("America/Winnipeg")
+	loc, _ := clock.Load("America/Winnipeg")
 	entries := []models.TrainingEntry{
 		{Kind: "routine", Title: "Push Day"},
 		{Kind: "workout", Title: "Yesterday", StartedAt: time.Date(2026, 10, 4, 22, 0, 0, 0, time.UTC)},
@@ -193,14 +192,7 @@ func TestTodayPageRedesign(t *testing.T) {
 // An unreadable Hevy cache must not take down Today, More or Coach: the
 // page renders without a nudge (#71 review).
 func TestTodaySurvivesBadTrainingCache(t *testing.T) {
-	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { database.Close() })
+	database := migratedTestDB(t)
 	h := New(services.New(repository.New(database)), "../../web/templates")
 	loc := h.Service.Location()
 	day := time.Date(2026, 10, 7, 15, 0, 0, 0, loc)
