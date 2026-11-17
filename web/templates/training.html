@@ -100,6 +100,14 @@
     <div class="hv3-weekbars" role="img" aria-label="Workouts per week, oldest first:{{range .PerWeek}} {{.Count}}{{end}}">{{range .PerWeek}}<span class="{{if not .Count}}zero{{end}}" style="height:{{.Height}}%"></span>{{end}}</div>
     <div class="hv3-axis"><span>{{(index .PerWeek 0).Label}}</span><span>This week</span></div>
   </section>
+  {{if .CardioBars}}<section class="hv3-card" aria-labelledby="cardio-title">
+    <div class="hv3-card-h"><h2 id="cardio-title" class="hv3-k">Cardio minutes per week</h2><span class="hv3-s">Last 8 weeks</span></div>
+    <div class="hv3-weekbars" role="img" aria-label="Cardio minutes per week, oldest first:{{range .CardioBars}} {{.Count}}{{end}}">{{range .CardioBars}}<span class="{{if not .Count}}zero{{end}}" style="height:{{.Height}}%"></span>{{end}}</div>
+    <div class="hv3-axis"><span>7 wk ago</span><span>This week</span></div>
+    <ul class="hv3-plist">{{range .CardioRows}}<li><span class="hv3-row-copy"><span class="hv3-strong">{{.Label}} · {{.Minutes}}</span><span class="hv3-s">{{.Detail}}</span></span></li>{{end}}</ul>
+    <p class="hv3-s hv3-note-line">Incline and speed come from your exercise notes and show only when read.</p>
+  </section>
+  {{end}}
   <section class="hv3-card" aria-labelledby="ex-title">
     <h2 id="ex-title" class="hv3-k">Exercise progress · {{.PeriodLabel}}</h2>
     {{if .AllProgress}}<ul class="hv3-plist">{{range .AllProgress}}<li><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">Best {{.BestSet}} · {{.Sessions}} sessions</span></span><svg class="hv3-spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"><polyline points="{{.Points}}"/></svg><b class="{{if not .Up}}flat{{end}}">{{.Change}}</b></li>{{end}}</ul>
