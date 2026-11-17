@@ -30,14 +30,15 @@
           {{else if .Today.Calories.Consumed.Present}}
             <strong class="hv3-big">{{.Today.Calories.Consumed.Value}}</strong><span>kcal eaten</span>
           {{else}}
-            <strong class="hv3-big hv3-absent">—</strong><span>No food logged yet</span>
+            <strong class="hv3-big hv3-absent">—</strong><span>{{if eq .Today.IntakeSource "gyst"}}kcal unknown for today's items{{else}}No food logged yet{{end}}</span>
           {{end}}
         </div>
       </div>
       <dl class="hv3-cal-stats">
         <div class="eaten"><span class="hv3-cal-ico" aria-hidden="true">{{template "gyst.icon" "utensils"}}</span><dt>Eaten</dt>
           <dd>{{if .Today.Calories.Consumed.Present}}{{.Today.Calories.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
-          <p>{{if .Today.CalorieTarget.Present}}of {{.Today.CalorieTarget.Value}} target{{else}}No target set{{end}}</p></div>
+          <p>{{if .Today.CalorieTarget.Present}}of {{.Today.CalorieTarget.Value}} target{{else}}No target set{{end}}</p>
+          {{if and .Today.Calories.Consumed.Present .Today.IntakeNote}}<p>{{.Today.IntakeNote}}{{if .Today.Calories.Gaps}} · {{.Today.Calories.PartialNote}}{{end}}</p>{{end}}</div>
         <div class="burn"><span class="hv3-cal-ico" aria-hidden="true">{{template "gyst.icon" "flame"}}</span><dt>Burned so far</dt>
           <dd>{{if .Today.ObservedBurn.Present}}{{.Today.ObservedBurn.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
           <p>{{if and .Today.RestingEnergy.Present .Today.ActiveEnergy.Present}}{{.Today.RestingEnergy.Value}} resting + {{.Today.ActiveEnergy.Value}} active{{else if .Today.ActiveEnergy.Present}}{{.Today.ActiveEnergy.Value}} active · resting not received{{else}}Not received{{end}}</p></div>

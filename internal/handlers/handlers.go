@@ -390,6 +390,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.healthFoodPhotoAnalyze(w, r)
 		} else if len(segments) == 2 && segments[1] == "nutrition" {
 			h.nutrition(w, r)
+		} else if len(segments) >= 3 && len(segments) <= 5 && segments[1] == "nutrition" && segments[2] == "items" {
+			h.nutritionItems(w, r, segments[3:])
 		} else if len(segments) == 2 && segments[1] == "plan" {
 			h.healthPlan(w, r)
 		} else if len(segments) == 3 && segments[1] == "plan" && segments[2] == "reference" {

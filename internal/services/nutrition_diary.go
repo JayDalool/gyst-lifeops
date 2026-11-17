@@ -65,22 +65,31 @@ type DiaryResult struct {
 	Created bool // false when an idempotent repeat found the meal already there
 }
 
-// mirrorHealthFood makes a My foods row (health_foods, per serving) a
-// catalogue food with provider "user" and id "health_food:<id>". A new version
-// is written only when the food's content changed.
-func (s *Service) mirrorHealthFood(ctx context.Context, f models.HealthFood) (models.NutritionFood, error) {
-	return s.Repo.UpsertNutritionFoodVersion(ctx, models.NutritionFood{
+// healthFoodAsCatalogue is a My foods row (health_foods, per serving) in the
+// catalogue's form: provider "user", id "health_food:<id>". Nothing is written;
+// AddDiaryItem mirrors it inside its own transaction.
+func healthFoodAsCatalogue(f models.HealthFood) models.NutritionFood {
+	return models.NutritionFood{
 		Provider: "user", ProviderID: "health_food:" + strconv.FormatInt(f.ID, 10),
 		Name: f.Name, NormalizedName: NormalizeFoodName(f.Name),
 		Basis: "per_serving", ServingLabel: f.Serving,
 		Nutrients:      models.Nutrients{Kcal: f.Kcal, ProteinG: f.ProteinG, CarbsG: f.CarbsG, FatG: f.FatG, FiberG: f.FiberG},
 		DataProvenance: "user",
-	}, clock.FormatInstant(s.Now()))
+	}
 }
 
-// SearchFoods finds catalogue foods by name. Matching My foods are mirrored
-// into the catalogue first so they are always found at their current version.
-func (s *Service) SearchFoods(ctx context.Context, query string) ([]models.NutritionFood, error) {
+// FoodChoice is one search result. Ref is what a form posts back: "nf:<id>" for
+// a catalogue row, "hf:<id>" for a My foods row.
+type FoodChoice struct {
+	Ref string
+	models.NutritionFood
+}
+
+// SearchFoods finds foods by name. It only reads: active My foods are read
+// from health_foods at their current values, and catalogue rows come from
+// nutrition_foods (current versions, not archived). A catalogue row that
+// mirrors a My food is skipped, since the My foods row is the live source.
+func (s *Service) SearchFoods(ctx context.Context, query string) ([]FoodChoice, error) {
 	q := NormalizeFoodName(query)
 	if q == "" || utf8.RuneCountInString(q) > diarySearchMaxChars {
 		return nil, healthInvalid("search text must be 1 to 80 characters")
@@ -89,14 +98,39 @@ func (s *Service) SearchFoods(ctx context.Context, query string) ([]models.Nutri
 	if err != nil {
 		return nil, err
 	}
+	out := []FoodChoice{}
 	for _, f := range mine {
 		if f.Active && strings.Contains(NormalizeFoodName(f.Name), q) {
-			if _, err := s.mirrorHealthFood(ctx, f); err != nil {
-				return nil, err
-			}
+			out = append(out, FoodChoice{Ref: "hf:" + strconv.FormatInt(f.ID, 10), NutritionFood: healthFoodAsCatalogue(f)})
 		}
 	}
-	return s.Repo.SearchNutritionFoods(q, diarySearchLimit)
+	found, err := s.Repo.SearchNutritionFoods(q, diarySearchLimit)
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range found {
+		if f.Provider == "user" && strings.HasPrefix(f.ProviderID, "health_food:") {
+			continue
+		}
+		out = append(out, FoodChoice{Ref: "nf:" + strconv.FormatInt(f.ID, 10), NutritionFood: f})
+	}
+	if len(out) > diarySearchLimit {
+		out = out[:diarySearchLimit]
+	}
+	return out, nil
+}
+
+// checkScaled refuses a scaled entry that the database limits would reject,
+// with a message instead of a constraint error.
+func checkScaled(n models.Nutrients, grams *float64) error {
+	tooBig := func(v *float64, max float64) bool {
+		return v != nil && (math.IsNaN(*v) || math.IsInf(*v, 0) || *v < 0 || *v > max)
+	}
+	if tooBig(grams, 100000) || tooBig(n.Kcal, 100000) || tooBig(n.ProteinG, 10000) || tooBig(n.CarbsG, 10000) ||
+		tooBig(n.FatG, 10000) || tooBig(n.FiberG, 10000) {
+		return healthInvalid("that amount is too large for this food; check the amount")
+	}
+	return nil
 }
 
 func (a DiaryActor) event(action, target, detail, outcome string) repository.AuditEvent {
@@ -140,36 +174,75 @@ func (s *Service) AddDiaryItem(ctx context.Context, actor DiaryActor, in models.
 	if !validDiaryAmount(in.Amount) {
 		return DiaryResult{}, healthInvalid("amount must be more than 0 and at most 100,000")
 	}
-	food, err := s.Repo.GetNutritionFood(in.FoodID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return DiaryResult{}, healthInvalid("food not found; search again")
-	}
-	if err != nil {
-		return DiaryResult{}, err
-	}
-	if food.SupersededAt != "" || food.ArchivedAt != "" {
-		return DiaryResult{}, healthInvalid("that food changed; search again")
-	}
-	nutrients, grams, err := ScaleNutrients(food, in.Unit, in.Amount)
-	if err != nil {
-		return DiaryResult{}, healthInvalid("this food cannot be logged in " + map[string]string{"g": "grams", "serving": "servings"}[in.Unit] + "; it has no serving weight")
-	}
 	now := s.Now()
-	foodID, version := food.ID, food.Version
-	mealID, itemIDs, created, err := s.Repo.CreateMealWithItems(ctx, repository.DiaryMealInsert{
+	meal := repository.DiaryMealInsert{
 		LocalDate: s.DateOf(now), MealSlot: in.MealSlot, CreatedVia: in.CreatedVia,
 		IdempotencyKey: in.IdempotencyKey, CreatedAt: clock.FormatInstant(now),
-	}, []repository.DiaryItemInsert{{
-		FoodID: &foodID, FoodVersion: &version, Name: food.Name, Unit: in.Unit, Amount: in.Amount, Grams: grams,
-		QuantityProvenance: in.QuantityProvenance, NutritionProv: food.DataProvenance, Nutrients: nutrients,
-	}})
-	if err != nil {
-		return DiaryResult{}, err
 	}
-	res := DiaryResult{MealID: mealID, Created: created}
-	if len(itemIDs) > 0 {
-		res.ItemID = itemIDs[0]
+	unitWord := map[string]string{"g": "grams", "serving": "servings"}[in.Unit]
+	itemFor := func(food models.NutritionFood) (repository.DiaryItemInsert, error) {
+		nutrients, grams, err := ScaleNutrients(food, in.Unit, in.Amount)
+		if err != nil {
+			return repository.DiaryItemInsert{}, healthInvalid("this food cannot be logged in " + unitWord + "; it has no serving weight")
+		}
+		if err := checkScaled(nutrients, grams); err != nil {
+			return repository.DiaryItemInsert{}, err
+		}
+		foodID, version := food.ID, food.Version
+		return repository.DiaryItemInsert{
+			FoodID: &foodID, FoodVersion: &version, Name: food.Name, Unit: in.Unit, Amount: in.Amount, Grams: grams,
+			QuantityProvenance: in.QuantityProvenance, NutritionProv: food.DataProvenance, Nutrients: nutrients,
+		}, nil
 	}
+	var mealID, itemID int64
+	var created bool
+	if in.HealthFoodID > 0 {
+		hf, err := s.Repo.GetHealthFood(in.HealthFoodID)
+		if errors.Is(err, sql.ErrNoRows) || (err == nil && !hf.Active) {
+			return DiaryResult{}, healthInvalid("food not found; search again")
+		}
+		if err != nil {
+			return DiaryResult{}, err
+		}
+		mirror := healthFoodAsCatalogue(hf)
+		if _, err := itemFor(mirror); err != nil { // same checks, before any write
+			return DiaryResult{}, err
+		}
+		// The mirror row is written in the same transaction as the meal, and
+		// only when the meal is new (a repeated key writes nothing).
+		mealID, itemID, created, err = s.Repo.CreateMealWithMirroredFood(ctx, meal, mirror, clock.FormatInstant(now), itemFor)
+		if err != nil {
+			return DiaryResult{}, err
+		}
+	} else {
+		food, err := s.Repo.GetNutritionFood(in.FoodID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return DiaryResult{}, healthInvalid("food not found; search again")
+		}
+		if err != nil {
+			return DiaryResult{}, err
+		}
+		if food.Provider == "user" && strings.HasPrefix(food.ProviderID, "health_food:") {
+			// My foods are logged only by their live row (HealthFoodID), never by a stale mirror.
+			return DiaryResult{}, healthInvalid("food not found; search again")
+		}
+		if food.SupersededAt != "" || food.ArchivedAt != "" {
+			return DiaryResult{}, healthInvalid("that food changed; search again")
+		}
+		item, err := itemFor(food)
+		if err != nil {
+			return DiaryResult{}, err
+		}
+		var itemIDs []int64
+		mealID, itemIDs, created, err = s.Repo.CreateMealWithItems(ctx, meal, []repository.DiaryItemInsert{item})
+		if err != nil {
+			return DiaryResult{}, err
+		}
+		if len(itemIDs) > 0 {
+			itemID = itemIDs[0]
+		}
+	}
+	res := DiaryResult{MealID: mealID, ItemID: itemID, Created: created}
 	if created {
 		s.auditDiary(ctx, actor, AuditActionNutritionMealCreate, "meal:"+strconv.FormatInt(mealID, 10), "item added")
 	}
@@ -221,6 +294,9 @@ func (s *Service) UpdateDiaryItemAmount(ctx context.Context, actor DiaryActor, i
 	nutrients, grams, err := ScaleNutrients(food, it.Unit, amount)
 	if err != nil {
 		return healthInvalid("this food cannot be rescaled in " + it.Unit)
+	}
+	if err := checkScaled(nutrients, grams); err != nil {
+		return err
 	}
 	if err := s.Repo.UpdateDiaryItemAmount(id, amount, grams, nutrients); err != nil {
 		if errors.Is(err, repository.ErrDiaryItemState) {

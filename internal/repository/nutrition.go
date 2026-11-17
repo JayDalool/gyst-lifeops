@@ -146,39 +146,42 @@ func sameNutritionFood(a, b models.NutritionFood) bool {
 // Version and the timestamps are ignored.
 func (r *Repository) UpsertNutritionFoodVersion(ctx context.Context, f models.NutritionFood, at string) (models.NutritionFood, error) {
 	var out models.NutritionFood
-	err := r.immediateTx(ctx, func(conn *sql.Conn) error {
-		cur, err := scanNutritionFood(conn.QueryRowContext(ctx, `SELECT `+nutritionFoodColumns+` FROM nutrition_foods
- WHERE provider = ? AND provider_id = ? AND superseded_at IS NULL`, f.Provider, f.ProviderID))
-		version := int64(1)
-		switch {
-		case err == nil:
-			if sameNutritionFood(cur, f) {
-				out = cur
-				return nil
-			}
-			version = cur.Version + 1
-			if _, err := conn.ExecContext(ctx, `UPDATE nutrition_foods SET superseded_at = ? WHERE id = ? AND superseded_at IS NULL`, at, cur.ID); err != nil {
-				return err
-			}
-		case errors.Is(err, sql.ErrNoRows):
-		default:
-			return err
-		}
-		res, err := conn.ExecContext(ctx, `INSERT INTO nutrition_foods (provider, provider_id, version, name, brand, normalized_name, basis, serving_label, serving_grams,
- kcal, protein_g, carbs_g, fat_g, fiber_g, data_provenance, dataset_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			f.Provider, f.ProviderID, version, f.Name, f.Brand, f.NormalizedName, f.Basis, f.ServingLabel, f.ServingGrams,
-			f.Kcal, f.ProteinG, f.CarbsG, f.FatG, f.FiberG, f.DataProvenance, f.DatasetVersion, at)
-		if err != nil {
-			return err
-		}
-		id, err := res.LastInsertId()
-		if err != nil {
-			return err
-		}
-		out, err = scanNutritionFood(conn.QueryRowContext(ctx, `SELECT `+nutritionFoodColumns+` FROM nutrition_foods WHERE id = ?`, id))
+	err := r.immediateTx(ctx, func(conn *sql.Conn) (err error) {
+		out, err = upsertNutritionFoodTx(ctx, conn, f, at)
 		return err
 	})
 	return out, err
+}
+
+func upsertNutritionFoodTx(ctx context.Context, conn *sql.Conn, f models.NutritionFood, at string) (models.NutritionFood, error) {
+	cur, err := scanNutritionFood(conn.QueryRowContext(ctx, `SELECT `+nutritionFoodColumns+` FROM nutrition_foods
+ WHERE provider = ? AND provider_id = ? AND superseded_at IS NULL`, f.Provider, f.ProviderID))
+	version := int64(1)
+	switch {
+	case err == nil:
+		if sameNutritionFood(cur, f) {
+			return cur, nil
+		}
+		version = cur.Version + 1
+		if _, err := conn.ExecContext(ctx, `UPDATE nutrition_foods SET superseded_at = ? WHERE id = ? AND superseded_at IS NULL`, at, cur.ID); err != nil {
+			return cur, err
+		}
+	case errors.Is(err, sql.ErrNoRows):
+	default:
+		return cur, err
+	}
+	res, err := conn.ExecContext(ctx, `INSERT INTO nutrition_foods (provider, provider_id, version, name, brand, normalized_name, basis, serving_label, serving_grams,
+ kcal, protein_g, carbs_g, fat_g, fiber_g, data_provenance, dataset_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		f.Provider, f.ProviderID, version, f.Name, f.Brand, f.NormalizedName, f.Basis, f.ServingLabel, f.ServingGrams,
+		f.Kcal, f.ProteinG, f.CarbsG, f.FatG, f.FiberG, f.DataProvenance, f.DatasetVersion, at)
+	if err != nil {
+		return cur, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return cur, err
+	}
+	return scanNutritionFood(conn.QueryRowContext(ctx, `SELECT `+nutritionFoodColumns+` FROM nutrition_foods WHERE id = ?`, id))
 }
 
 // DiaryItemInsert is one snapshotted item for CreateMealWithItems.
@@ -226,6 +229,54 @@ func (r *Repository) CreateMealWithItems(ctx context.Context, m DiaryMealInsert,
 		return collectItemIDs(ctx, conn, mealID, &itemIDs)
 	})
 	return mealID, itemIDs, created, err
+}
+
+// CreateMealWithMirroredFood is CreateMealWithItems for a My food: in the same
+// transaction, and only when the meal is new, it makes mirror the current
+// catalogue version (a new version only when the content changed) and inserts
+// the one item that build returns for that row. A repeated idempotency key
+// writes nothing. An error from build rolls everything back.
+func (r *Repository) CreateMealWithMirroredFood(ctx context.Context, m DiaryMealInsert, mirror models.NutritionFood, at string,
+	build func(models.NutritionFood) (DiaryItemInsert, error)) (mealID, itemID int64, created bool, err error) {
+	err = r.immediateTx(ctx, func(conn *sql.Conn) error {
+		e := conn.QueryRowContext(ctx, `INSERT INTO nutrition_meals (local_date, meal_slot, created_via, idempotency_key, created_at)
+ VALUES (?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO NOTHING RETURNING id`,
+			m.LocalDate, m.MealSlot, m.CreatedVia, m.IdempotencyKey, m.CreatedAt).Scan(&mealID)
+		if errors.Is(e, sql.ErrNoRows) {
+			if e := conn.QueryRowContext(ctx, `SELECT id FROM nutrition_meals WHERE idempotency_key = ?`, m.IdempotencyKey).Scan(&mealID); e != nil {
+				return e
+			}
+			var ids []int64
+			if e := collectItemIDs(ctx, conn, mealID, &ids); e != nil {
+				return e
+			}
+			if len(ids) > 0 {
+				itemID = ids[0]
+			}
+			return nil
+		} else if e != nil {
+			return e
+		}
+		created = true
+		food, e := upsertNutritionFoodTx(ctx, conn, mirror, at)
+		if e != nil {
+			return e
+		}
+		it, e := build(food)
+		if e != nil {
+			return e
+		}
+		res, e := conn.ExecContext(ctx, `INSERT INTO nutrition_meal_items (meal_id, food_id, food_version, name, unit, amount, grams,
+ quantity_provenance, nutrition_provenance, kcal, protein_g, carbs_g, fat_g, fiber_g, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			mealID, it.FoodID, it.FoodVersion, it.Name, it.Unit, it.Amount, it.Grams, it.QuantityProvenance, it.NutritionProv,
+			it.Nutrients.Kcal, it.Nutrients.ProteinG, it.Nutrients.CarbsG, it.Nutrients.FatG, it.Nutrients.FiberG, m.CreatedAt)
+		if e != nil {
+			return e
+		}
+		itemID, e = res.LastInsertId()
+		return e
+	})
+	return mealID, itemID, created, err
 }
 
 func collectItemIDs(ctx context.Context, conn *sql.Conn, mealID int64, out *[]int64) error {

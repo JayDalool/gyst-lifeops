@@ -397,35 +397,108 @@ func TestSearchFoodsEscapesWildcardsAndMirrorsMyFoods(t *testing.T) {
 		t.Fatalf("long search: %v", err)
 	}
 
-	// My foods are mirrored as provider "user", per serving, one version until they change.
+	// My foods are found by reading health_foods; a search writes nothing.
 	mine := models.HealthFood{Name: "Test shake", Serving: "1 bottle", Kcal: fp(180), ProteinG: fp(30), Active: true}
 	if err := s.Repo.CreateHealthFood(&mine); err != nil {
 		t.Fatal(err)
 	}
-	first, err := s.SearchFoods(ctx, "shake")
-	if err != nil || len(first) != 1 || first[0].Provider != "user" || first[0].Basis != "per_serving" || first[0].ProviderID != fmt.Sprintf("health_food:%d", mine.ID) {
-		t.Fatalf("mirror: %+v %v", first, err)
+	mirrored := func() []models.NutritionFood {
+		rows, err := s.Repo.SearchNutritionFoods("shake", 50)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rows
 	}
-	again, _ := s.SearchFoods(ctx, "shake")
-	if again[0].ID != first[0].ID {
-		t.Fatal("an unchanged food must not get a new version")
+	first, err := s.SearchFoods(ctx, "shake")
+	if err != nil || len(first) != 1 || first[0].Provider != "user" || first[0].Basis != "per_serving" ||
+		first[0].ProviderID != fmt.Sprintf("health_food:%d", mine.ID) || first[0].Ref != fmt.Sprintf("hf:%d", mine.ID) {
+		t.Fatalf("my food result: %+v %v", first, err)
+	}
+	if _, err := s.SearchFoods(ctx, "shake"); err != nil || len(mirrored()) != 0 {
+		t.Fatalf("a search must not mirror: %d catalogue rows", len(mirrored()))
+	}
+	// Adding mirrors it inside the write: one version until the food changes.
+	add := func(key string) DiaryResult {
+		res, err := s.AddDiaryItem(ctx, DiaryActor{}, models.NewDiaryItem{IdempotencyKey: key, MealSlot: "snack", HealthFoodID: mine.ID, Unit: "serving", Amount: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res
+	}
+	k1 := newKey()
+	res := add(k1)
+	if rows := mirrored(); len(rows) != 1 || rows[0].Version != 1 {
+		t.Fatalf("after add: %+v", rows)
+	}
+	add(k1) // same key: nothing more is written
+	add(newKey())
+	if rows := mirrored(); len(rows) != 1 || rows[0].Version != 1 {
+		t.Fatalf("an unchanged food must not get a new version: %+v", rows)
 	}
 	mine.Kcal = fp(200)
 	if err := s.Repo.UpdateHealthFood(mine); err != nil {
 		t.Fatal(err)
 	}
-	changed, _ := s.SearchFoods(ctx, "shake")
-	if len(changed) != 1 || changed[0].Version != 2 || *changed[0].Kcal != 200 {
-		t.Fatalf("changed food: %+v", changed)
+	if rows := mirrored(); len(rows) != 1 || rows[0].Version != 1 {
+		t.Fatal("editing My foods alone must not write the catalogue")
 	}
-	// A per-serving food logs in servings.
-	res, err := s.AddDiaryItem(ctx, DiaryActor{}, models.NewDiaryItem{IdempotencyKey: newKey(), MealSlot: "snack", FoodID: changed[0].ID, Unit: "serving", Amount: 1})
-	if err != nil {
+	if changed, _ := s.SearchFoods(ctx, "shake"); len(changed) != 1 || *changed[0].Kcal != 200 {
+		t.Fatalf("search must show the current My food values: %+v", changed)
+	}
+	res2 := add(newKey())
+	if rows := mirrored(); len(rows) != 1 || rows[0].Version != 2 || *rows[0].Kcal != 200 {
+		t.Fatalf("changed food: %+v", rows)
+	}
+	old, _ := s.Repo.GetDiaryItem(res.ItemID)
+	it, _ := s.Repo.GetDiaryItem(res2.ItemID)
+	if it.Grams != nil || *it.Kcal != 200 || *old.Kcal != 180 {
+		t.Fatalf("snapshots: old %+v new %+v", old, it)
+	}
+	// An inactive My food is not offered and cannot be logged.
+	mine.Active = false
+	if err := s.Repo.UpdateHealthFood(mine); err != nil {
 		t.Fatal(err)
 	}
+	if got, _ := s.SearchFoods(ctx, "shake"); len(got) != 0 {
+		t.Fatalf("inactive food offered: %+v", got)
+	}
+	var inv2 *HealthValidationError
+	if _, err := s.AddDiaryItem(ctx, DiaryActor{}, models.NewDiaryItem{IdempotencyKey: newKey(), MealSlot: "snack", HealthFoodID: mine.ID, Unit: "serving", Amount: 1}); !errors.As(err, &inv2) {
+		t.Fatalf("inactive food logged: %v", err)
+	}
+}
+
+func TestDiaryOversizedScaledValuesAreValidationErrors(t *testing.T) {
+	s, _ := diaryService(t)
+	ctx := context.Background()
+	oats := catalogueFood(t, s, "oats-big", "Test big oats", fp(380), fp(13), nil)
+	var inv *HealthValidationError
+	// 99,999 g of a 380 kcal/100 g food is 379,996 kcal: over the 100,000 kcal limit.
+	_, err := s.AddDiaryItem(ctx, DiaryActor{}, models.NewDiaryItem{IdempotencyKey: newKey(), MealSlot: "lunch", FoodID: oats.ID, Unit: "g", Amount: 99999})
+	if !errors.As(err, &inv) || !strings.Contains(inv.Error(), "too large") {
+		t.Fatalf("huge add: %v", err)
+	}
+	if items, _ := s.Repo.ListDiaryItems(s.TodayString()); len(items) != 0 {
+		t.Fatal("a refused add wrote an item")
+	}
+	res := addOats(t, s, oats, 100)
+	if err := s.UpdateDiaryItemAmount(ctx, DiaryActor{}, res.ItemID, 99999); !errors.As(err, &inv) || !strings.Contains(inv.Error(), "too large") {
+		t.Fatalf("huge edit: %v", err)
+	}
 	it, _ := s.Repo.GetDiaryItem(res.ItemID)
-	if it.Grams != nil || *it.Kcal != 200 {
-		t.Fatalf("serving item: %+v", it)
+	if it.Amount != 100 {
+		t.Fatalf("a refused edit changed the item: %+v", it)
+	}
+	// My foods: a per-serving food with big values hits the same check.
+	mine := models.HealthFood{Name: "Test feast", Serving: "1 plate", Kcal: fp(9000), Active: true}
+	if err := s.Repo.CreateHealthFood(&mine); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.AddDiaryItem(ctx, DiaryActor{}, models.NewDiaryItem{IdempotencyKey: newKey(), MealSlot: "dinner", HealthFoodID: mine.ID, Unit: "serving", Amount: 20}); !errors.As(err, &inv) {
+		t.Fatalf("huge My food add: %v", err)
+	}
+	if rows, _ := s.Repo.SearchNutritionFoods("feast", 5); len(rows) != 0 {
+		t.Fatal("a refused My food add mirrored the food")
 	}
 }
 
