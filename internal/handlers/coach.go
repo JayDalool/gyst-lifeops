@@ -430,12 +430,13 @@ var coachPrompts = []string{
 }
 
 func (h *Handler) renderCoach(w http.ResponseWriter, status int, question, errText string) {
+	coachProvider := h.coach()
 	base, ok := h.healthBase(w)
 	if !ok {
 		return
 	}
 	base.HealthTab = "coach"
-	data := healthCoachData{HealthData: base, Configured: h.Coach != nil, Question: question, Error: errText, Prompts: coachPrompts}
+	data := healthCoachData{HealthData: base, Configured: coachProvider != nil, Question: question, Error: errText, Prompts: coachPrompts}
 	msgs, err := h.Service.Repo.ListCoachMessages(coachShownTurns)
 	if err != nil {
 		serverError(w, err)
@@ -466,8 +467,9 @@ func (h *Handler) healthCoach(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	question := strings.TrimSpace(r.PostFormValue("q"))
+	provider := h.coach() // resolved once per request
 	switch {
-	case h.Coach == nil:
+	case provider == nil:
 		h.renderCoach(w, http.StatusServiceUnavailable, question, healthcoach.ErrNotConfigured.Error())
 		return
 	case question == "":
@@ -502,7 +504,7 @@ func (h *Handler) healthCoach(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
-	reply, err := h.Coach.Respond(ctx, req)
+	reply, err := provider.Respond(ctx, req)
 	if err != nil {
 		// Only fixed messages are shown; nothing about the request is logged.
 		status, msg := http.StatusBadGateway, healthcoach.ErrUnavailable.Error()

@@ -46,6 +46,38 @@ so OpenAI keeps no application state for the conversation.
 Without both values for the chosen provider the Coach page says "AI provider
 not configured", the Coach tab is hidden and the rest of Health is unchanged.
 
+## Enable it from Settings (Issue #218)
+
+Settings → **AI provider** sets the provider (OpenAI or Anthropic), the chat
+model, the photo model (kept for the food camera) and the API key. No server
+shell or restart is needed: the Coach turns on when a key is saved and off
+when it is removed.
+
+- **Write-only key.** The key is never shown again. The page says "Key saved
+  on <date>" or "Not set". Saving or removing it asks for your GYST password
+  again, and failed attempts share the sign-in throttle.
+- **The environment wins.** If `HEALTH_AI_PROVIDER` or a provider key is set on
+  the server, Settings says "Configured by the server environment" and the
+  form is off; saved settings are ignored. Unset them to manage the key here.
+- **Encrypted at rest.** The key is stored in the `ai_settings` table as
+  AES-256-GCM ciphertext with a random 12-byte nonce (new on every save). The
+  32-byte data key is a random file, `ai_settings.key`, in the same folder as
+  the database (`data/` in Docker), created with mode 0600 on the first save.
+  It is never logged. A key file that is missing, not 32 bytes, or readable by
+  group or other is treated as "no key", and a save fails with a fixed message.
+- **Tampering.** A ciphertext that fails authentication (or a missing key file)
+  counts as not configured: the Coach stays off and Settings says the saved
+  key can't be read and to enter it again.
+- **Audit.** `settings.ai_key.set` and `settings.ai_key.remove`, with no
+  detail. A wrong password is `reauth.failed`.
+- **Backups and restore.** `lifeops backup` (VACUUM INTO) copies the database
+  only, so a backup holds the ciphertext and never the data key. After a
+  restore, either put the original `ai_settings.key` back beside the database
+  (keep it somewhere private, with the same care as the database) or enter the
+  API key again in Settings. Without the key file the saved key is unreadable,
+  and the next save creates a new key file. Do not copy `ai_settings.key` into
+  `data/backups/` or any shared place.
+
 ## Privacy and limits
 
 - Calls happen only on the server. The key never appears in HTML, JS,

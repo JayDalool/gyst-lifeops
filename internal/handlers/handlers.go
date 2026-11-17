@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"lifeops-tracker/internal/authlimit"
@@ -49,10 +50,18 @@ type Handler struct {
 	Logger *slog.Logger
 	// Coach answers Health questions (Issue #64). Nil means no AI provider is
 	// configured: the Coach page shows that state and the rest of Health works.
-	Coach      healthcoach.Provider
-	coachLimit coachLimiter
+	Coach healthcoach.Provider
+	// AIEnvManaged is true when the server environment configures the AI
+	// provider (HEALTH_AI_PROVIDER or a provider key). The environment then
+	// takes precedence: the Settings form is disabled and saved settings are
+	// ignored (GYST-169).
+	AIEnvManaged bool
+	coachLimit   coachLimiter
 	// photoLimit guards photo analysis separately from the Coach (#217).
 	photoLimit coachLimiter
+	coachMu    sync.Mutex
+	coachCfg   services.AIConfig
+	coachBuilt healthcoach.Provider
 	// appRegistry loads the Apps registry (GYST-101). Nil means the embedded
 	// registry; tests inject fixtures.
 	appRegistry func() ([]services.App, error)
@@ -295,6 +304,7 @@ type SettingsData struct {
 	CalendarToken string
 	BaseURL       string
 	Prayer        models.PrayerConfig
+	AI            aiSettingsData
 }
 
 type RoadmapFormData struct {
@@ -2054,6 +2064,12 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 		http.Redirect(w, r, "/settings#prayer", http.StatusSeeOther)
 		return
 	}
+	// POST /settings/ai: save or remove the AI provider settings and key
+	// (GYST-169). Needs the password again.
+	if len(segments) == 2 && segments[1] == "ai" {
+		h.aiSettingsPost(w, r)
+		return
+	}
 	// POST /settings/sessions/revoke-all: sign out every device, this one
 	// included. Behind the session guard (not auth-exempt) and the
 	// same-origin guard; GET is 405.
@@ -2088,17 +2104,7 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 		methodNotAllowed(w)
 		return
 	}
-	token, err := h.Service.CalendarToken()
-	if err != nil {
-		serverError(w, err)
-		return
-	}
-	prayer, err := h.Service.PrayerConfig()
-	if err != nil {
-		serverError(w, err)
-		return
-	}
-	h.render(w, "settings.html", SettingsData{Page: "settings", CalendarToken: token, BaseURL: requestBaseURL(r), Prayer: prayer})
+	h.renderSettings(w, r, http.StatusOK, aiForm{Notice: aiNotice(r.URL.Query().Get("ai"))})
 }
 
 // roadmaps handles the multiple-roadmaps entity: create, edit, set-as-dashboard.
@@ -2555,7 +2561,7 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 		"niceDateTime":   niceDateTime,
 		"niceNumber":     niceNumber,
 		"healthTab":      healthTab,
-		"coachEnabled":   func() bool { return h.Coach != nil },
+		"coachEnabled":   func() bool { return h.coach() != nil },
 		// deref reads an optional number; templates guard with {{if}} first.
 		"deref": func(v *float64) float64 {
 			if v == nil {
