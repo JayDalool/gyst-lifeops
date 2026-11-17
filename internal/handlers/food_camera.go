@@ -2,10 +2,14 @@ package handlers
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,6 +53,12 @@ type cameraStore struct {
 	m  map[string]*cameraNonce
 }
 
+// sessionKey is what the store keeps in place of the raw session token.
+func sessionKey(session string) string {
+	sum := sha256.Sum256([]byte("camera-nonce:" + session))
+	return hex.EncodeToString(sum[:])
+}
+
 func (c *cameraStore) issue(session string, est []*float64, now time.Time) string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
@@ -74,7 +84,7 @@ func (c *cameraStore) issue(session string, est []*float64, now time.Time) strin
 		}
 		delete(c.m, oldest)
 	}
-	c.m[nonce] = &cameraNonce{session: session, expires: now.Add(cameraNonceTTL), est: est}
+	c.m[nonce] = &cameraNonce{session: sessionKey(session), expires: now.Add(cameraNonceTTL), est: est}
 	return nonce
 }
 
@@ -83,7 +93,8 @@ type claimResult int
 const (
 	claimOK claimResult = iota
 	claimInvalid
-	claimAlready
+	claimInflight // the first confirm is still saving
+	claimAlready  // already saved
 )
 
 // claim marks a fresh nonce in flight. A nonce that is unknown, expired or
@@ -93,10 +104,13 @@ func (c *cameraStore) claim(nonce, session string, now time.Time) (*cameraNonce,
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	n := c.m[nonce]
-	if n == nil || now.After(n.expires) || n.session != session {
+	if n == nil || now.After(n.expires) || n.session != sessionKey(session) {
 		return nil, claimInvalid
 	}
-	if n.state != nonceFresh {
+	switch n.state {
+	case nonceInflight:
+		return n, claimInflight
+	case nonceUsed:
 		return n, claimAlready
 	}
 	n.state = nonceInflight
@@ -118,6 +132,7 @@ func (c *cameraStore) finish(nonce string, saved bool) {
 // photoMatch is a candidate from GYST's own foods, per 100 g, to prefill the
 // review. Values come from the database or label, never from the model.
 type photoMatch struct {
+	Ref    string           `json:"food_ref"` // "nf:<id>"
 	Name   string           `json:"name"`
 	Source string           `json:"source"` // "My foods" or "database"
 	Per100 models.Nutrients `json:"per_100g"`
@@ -127,6 +142,9 @@ type photoReviewItem struct {
 	healthcoach.FoodPhotoItem
 	Idx   int         `json:"idx"`
 	Match *photoMatch `json:"match"`
+	// AskGrams: low confidence or likely hidden. The review leaves grams
+	// blank so Jay must type a value; the estimate is still kept server-side.
+	AskGrams bool `json:"ask_grams"`
 }
 
 type photoReview struct {
@@ -144,10 +162,23 @@ func (h *Handler) buildPhotoReview(r *http.Request, res healthcoach.FoodPhotoRes
 	est := make([]*float64, len(res.Items))
 	for i, it := range res.Items {
 		est[i] = it.EstGrams
-		out.Items = append(out.Items, photoReviewItem{FoodPhotoItem: it, Idx: i, Match: h.matchFood(r, it.Name)})
+		out.Items = append(out.Items, photoReviewItem{FoodPhotoItem: it, Idx: i, Match: h.matchFood(r, it.Name), AskGrams: it.Confidence < 0.5 || !it.Visible})
 	}
 	out.Nonce = h.camera.issue(sessionToken(r), est, h.Service.Now())
 	return out
+}
+
+// per100Of is a catalogue food's nutrients per 100 g, when that can be known.
+func per100Of(f models.NutritionFood) (models.Nutrients, bool) {
+	per := f.Nutrients
+	switch {
+	case f.Basis == "per_100g":
+	case f.Basis == "per_serving" && f.ServingGrams != nil && *f.ServingGrams > 0:
+		per = scalePer(f.Nutrients, 100 / *f.ServingGrams)
+	default:
+		return per, false
+	}
+	return per, per.Any()
 }
 
 func (h *Handler) matchFood(r *http.Request, name string) *photoMatch {
@@ -156,22 +187,14 @@ func (h *Handler) matchFood(r *http.Request, name string) *photoMatch {
 		return nil
 	}
 	for _, f := range foods {
-		per := f.Nutrients
-		switch {
-		case f.Basis == "per_100g":
-		case f.Basis == "per_serving" && f.ServingGrams != nil && *f.ServingGrams > 0:
-			per = scalePer(f.Nutrients, 100 / *f.ServingGrams)
-		default:
+		if !strings.HasPrefix(f.Ref, "nf:") { // only rows a diary item can point at
 			continue
 		}
-		if !per.Any() {
+		per, ok := per100Of(f.NutritionFood)
+		if !ok {
 			continue
 		}
-		src := "database"
-		if f.Provider == "user" {
-			src = "My foods"
-		}
-		return &photoMatch{Name: f.Name, Source: src, Per100: per}
+		return &photoMatch{Ref: f.Ref, Name: f.Name, Source: "database", Per100: per}
 	}
 	return nil
 }
@@ -188,14 +211,15 @@ func scalePer(n models.Nutrients, k float64) models.Nutrients {
 }
 
 type cameraConfirmItem struct {
-	Idx   *int     `json:"idx"`
-	Name  string   `json:"name"`
-	Grams float64  `json:"grams"`
-	Kcal  *float64 `json:"kcal"`
-	P     *float64 `json:"protein_g"`
-	C     *float64 `json:"carbs_g"`
-	F     *float64 `json:"fat_g"`
-	Fib   *float64 `json:"fiber_g"`
+	Idx     *int     `json:"idx"`
+	FoodRef string   `json:"food_ref"` // set only while the values are the untouched prefill
+	Name    string   `json:"name"`
+	Grams   float64  `json:"grams"`
+	Kcal    *float64 `json:"kcal"`
+	P       *float64 `json:"protein_g"`
+	C       *float64 `json:"carbs_g"`
+	F       *float64 `json:"fat_g"`
+	Fib     *float64 `json:"fiber_g"`
 }
 
 type cameraConfirm struct {
@@ -227,6 +251,9 @@ func (h *Handler) healthFoodPhotoConfirm(w http.ResponseWriter, r *http.Request)
 	case claimInvalid:
 		writeJSONError(w, http.StatusGone, "This review expired. Take the photo again.")
 		return
+	case claimInflight:
+		writeJSONError(w, http.StatusConflict, "Still saving\u2026")
+		return
 	case claimAlready:
 		writeCameraDone(w, true)
 		return
@@ -238,12 +265,21 @@ func (h *Handler) healthFoodPhotoConfirm(w http.ResponseWriter, r *http.Request)
 		in.Slot = slotForHour(h.Service.Now().In(h.Service.Location()).Hour())
 	}
 	meal := services.CameraMeal{IdempotencyKey: in.Nonce, MealSlot: in.Slot}
+	seen := map[int]bool{}
 	for _, it := range in.Items {
+		if it.Idx != nil {
+			if seen[*it.Idx] {
+				writeJSONError(w, http.StatusBadRequest, "Check the review: the same photo item appears twice.")
+				return
+			}
+			seen[*it.Idx] = true
+		}
 		ci := services.CameraItem{Name: it.Name, Grams: it.Grams,
 			Nutrients: models.Nutrients{Kcal: it.Kcal, ProteinG: it.P, CarbsG: it.C, FatG: it.F, FiberG: it.Fib}}
 		if it.Idx != nil && *it.Idx >= 0 && *it.Idx < len(n.est) {
 			ci.AIEstGrams = n.est[*it.Idx]
 		}
+		h.linkPrefill(&ci, it.FoodRef)
 		meal.Items = append(meal.Items, ci)
 	}
 	out, err := h.Service.AddCameraMeal(r.Context(), diaryActor(r), meal)
@@ -268,4 +304,39 @@ func writeCameraDone(w http.ResponseWriter, already bool) {
 		redirect = diaryPage + "?dup=1#diary"
 	}
 	_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "already": already, "redirect": redirect})
+}
+
+// linkPrefill points the item at the catalogue food it was prefilled from,
+// but only when the values still equal that food's data for these grams (to
+// the 0.1 shown in the review). Anything else stays Jay's own ("user", no
+// food), so an edited value is never attributed to the database.
+func (h *Handler) linkPrefill(ci *services.CameraItem, ref string) {
+	kind, raw, _ := strings.Cut(ref, ":")
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if kind != "nf" || err != nil || id <= 0 {
+		return
+	}
+	f, err := h.Service.Repo.GetNutritionFood(id)
+	if err != nil || f.SupersededAt != "" || f.ArchivedAt != "" ||
+		(f.Provider == "user" && strings.HasPrefix(f.ProviderID, "health_food:")) {
+		return
+	}
+	per, ok := per100Of(f)
+	if !ok {
+		return
+	}
+	scaled := scalePer(per, ci.Grams/100)
+	same := func(got, want *float64) bool {
+		if got == nil || want == nil {
+			return got == nil && want == nil
+		}
+		return math.Abs(*got-*want) <= 0.051
+	}
+	n := ci.Nutrients
+	if !same(n.Kcal, scaled.Kcal) || !same(n.ProteinG, scaled.ProteinG) || !same(n.CarbsG, scaled.CarbsG) ||
+		!same(n.FatG, scaled.FatG) || !same(n.FiberG, scaled.FiberG) {
+		return
+	}
+	foodID, ver := f.ID, f.Version
+	ci.FoodID, ci.FoodVersion, ci.NutritionProv = &foodID, &ver, f.DataProvenance
 }

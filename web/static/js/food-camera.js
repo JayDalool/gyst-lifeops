@@ -156,7 +156,7 @@
     var nut = {};
     FIELDS.forEach(function (f) { var x = field(f[1], f[0], 'num'); nut[f[0]] = x.input; grid.appendChild(x.label); });
     name.input.value = it ? it.name : '';
-    grams.input.value = num(est);
+    grams.input.value = it && it.ask_grams ? '' : num(est);
     var touched = {};
 
     function fillFromMatch() {
@@ -175,7 +175,7 @@
       }
       var g = parseFloat((grams.input.value || '').replace(',', '.'));
       if (!(g > 0)) tags.appendChild(tag('Enter grams', true));
-      else if (est != null && g === est) tags.appendChild(tag('AI estimate'));
+      else if (est != null && g === Math.round(est * 10) / 10) tags.appendChild(tag('AI estimate'));
       else tags.appendChild(tag('You confirmed grams'));
       if (match && !Object.keys(touched).length) tags.appendChild(tag('Nutrition from ' + match.source + ': ' + match.name));
       else if (FIELDS.some(function (f) { return nut[f[0]].value !== ''; })) tags.appendChild(tag('Nutrition: yours'));
@@ -190,7 +190,7 @@
     rm.addEventListener('click', function () { li.remove(); });
     li.appendChild(tags); li.appendChild(grid); li.appendChild(rm);
     li._read = function () {
-      var out = {idx: li._idx, name: name.input.value.trim(), grams: parseNum(grams.input.value)};
+      var out = {idx: li._idx, food_ref: match && !Object.keys(touched).length ? match.food_ref : '', name: name.input.value.trim(), grams: parseNum(grams.input.value)};
       FIELDS.forEach(function (f) { out[f[0]] = nut[f[0]].value.trim() === '' ? null : parseNum(nut[f[0]].value); });
       return out;
     };
@@ -243,6 +243,7 @@
       body: JSON.stringify({nonce: nonce, slot: slot.value, items: rows})
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (data) {
+        if (res.status === 409) { setStatus('Still saving\u2026 wait a moment, then press Save meal again if the page does not move on.'); return; }
         if (res.ok && data.redirect) { window.location.href = data.redirect; return; }
         setError(data.error || 'Could not save the meal. Nothing was saved. Try again.');
       });

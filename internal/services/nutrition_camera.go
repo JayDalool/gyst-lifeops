@@ -27,6 +27,10 @@ type CameraItem struct {
 	Grams      float64
 	AIEstGrams *float64
 	Nutrients  models.Nutrients
+	// FoodID/FoodVersion/NutritionProv are set only when the values are the
+	// untouched data of that catalogue row; otherwise the item is Jay's own.
+	FoodID, FoodVersion *int64
+	NutritionProv       string
 }
 
 // CameraMeal is the input of AddCameraMeal.
@@ -67,10 +71,15 @@ func (s *Service) AddCameraMeal(ctx context.Context, actor DiaryActor, in Camera
 			Name: name, Unit: "g", Amount: grams, Grams: &grams,
 			QuantityProvenance: "user_confirmed", NutritionProv: "user", Nutrients: it.Nutrients,
 		}
+		if it.FoodID != nil && it.FoodVersion != nil && it.NutritionProv != "" {
+			row.FoodID, row.FoodVersion, row.NutritionProv = it.FoodID, it.FoodVersion, it.NutritionProv
+		}
 		if e := it.AIEstGrams; e != nil && !math.IsNaN(*e) && *e >= 0 && *e <= diaryMaxAmount {
 			est := *e
 			row.AIEstGrams = &est
-			if est == grams {
+			// The review shows the estimate to 0.1 g; accepting that number
+			// counts as accepting the estimate.
+			if round1(est) == round1(grams) {
 				row.QuantityProvenance = "ai_estimate"
 			}
 		}
@@ -94,3 +103,5 @@ func (s *Service) AddCameraMeal(ctx context.Context, actor DiaryActor, in Camera
 	}
 	return res, nil
 }
+
+func round1(v float64) float64 { return math.Round(v*10) / 10 }
