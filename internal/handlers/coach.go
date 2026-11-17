@@ -17,6 +17,7 @@ import (
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
+	"math"
 )
 
 // Health Coach (Issue #64). GYST builds a small context and offers the model
@@ -117,9 +118,9 @@ func coachToday(data HealthData) map[string]any {
 	t := data.Today
 	macros := []map[string]any{}
 	for _, m := range t.Nutrients {
-		macros = append(macros, map[string]any{"name": m.Short(), "eaten_g": metricOrNil(m.Consumed), "target_g": metricOrNil(m.Target), "note": m.Note})
+		macros = append(macros, map[string]any{"name": m.Short(), "eaten_g": metricOrNil(m.Consumed), "target_g": metricOrNil(m.Target), "note": m.Note, "partial": m.Partial})
 	}
-	cal := map[string]any{"eaten": metricOrNil(t.Calories.Consumed), "target": metricOrNil(t.CalorieTarget)}
+	cal := map[string]any{"eaten": metricOrNil(t.Calories.Consumed), "target": metricOrNil(t.CalorieTarget), "partial": t.Calories.Partial}
 	if t.Calories.HasBar {
 		key := "budget_left"
 		if t.CaloriesOver {
@@ -128,19 +129,21 @@ func coachToday(data HealthData) map[string]any {
 		cal[key] = t.BudgetAbs
 	}
 	return map[string]any{
-		"date":                     t.Date,
-		"apple_health_last_sync":   map[bool]string{true: t.LastSynced, false: "none today"}[t.HasLastSynced],
-		"sync_stale":               t.LastSyncedStale,
-		"calories_kcal":            cal,
-		"burned_so_far_kcal":       metricOrNil(t.ObservedBurn),
-		"energy_balance_so_far":    metricOrNil(t.ObservedEnergy),
-		"note_on_balance":          "Observed so far today; the day isn't over, so this is not a final deficit.",
-		"macros":                   macros,
-		"steps":                    map[string]any{"count": metricOrNil(t.Steps), "source": t.StepsSource, "target": metricOrNil(t.StepTarget)},
-		"exercise_minutes":         metricOrNil(t.ExerciseMinutes),
-		"latest_weight_kg":         map[bool]any{true: data.Weight.Latest, false: nil}[data.Weight.Present],
-		"weight_change_since_plan": map[bool]any{true: data.Weight.Change, false: nil}[data.Weight.HasChange],
-		"water":                    coachWater(data.Water),
+		"date":                          t.Date,
+		"apple_health_last_sync":        map[bool]string{true: t.LastSynced, false: "none today"}[t.HasLastSynced],
+		"sync_stale":                    t.LastSyncedStale,
+		"intake_source":                 t.IntakeSource,
+		"apple_health_kcal_not_counted": map[bool]any{true: metricOrNil(t.ReferenceKcal), false: nil}[t.IntakeSource == models.IntakeSourceGYST],
+		"calories_kcal":                 cal,
+		"burned_so_far_kcal":            metricOrNil(t.ObservedBurn),
+		"energy_balance_so_far":         metricOrNil(t.ObservedEnergy),
+		"note_on_balance":               "Observed so far today; the day isn't over, so this is not a final deficit.",
+		"macros":                        macros,
+		"steps":                         map[string]any{"count": metricOrNil(t.Steps), "source": t.StepsSource, "target": metricOrNil(t.StepTarget)},
+		"exercise_minutes":              metricOrNil(t.ExerciseMinutes),
+		"latest_weight_kg":              map[bool]any{true: data.Weight.Latest, false: nil}[data.Weight.Present],
+		"weight_change_since_plan":      map[bool]any{true: data.Weight.Change, false: nil}[data.Weight.HasChange],
+		"water":                         coachWater(data.Water),
 	}
 }
 
@@ -166,17 +169,25 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 	return []healthcoach.Tool{
 		{Name: "get_health_today", Description: "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight.",
 			Run: none(func() (any, error) { return coachToday(data), nil })},
-		{Name: "get_health_plan", Description: "The current health plan: dates and daily targets (calories, macros, steps, strength and cardio sessions per week).",
+		{Name: "get_health_plan", Description: "The current health plan: dates and daily targets (calories, macros, steps, strength and cardio sessions per week), plus reference_targets: outside recommendations (for example a dietitian) labelled with their source, all not_active. Never present a reference target as the active plan.",
 			Run: none(func() (any, error) {
 				c, err := h.Service.GetHealthCycleForDate(data.Today.Date)
-				if err != nil {
-					return map[string]any{"plan": nil}, nil
+				var cycleID *int64
+				if err == nil {
+					cycleID = &c.ID
 				}
-				return map[string]any{"title": c.Title, "goal": c.PrimaryGoal, "start": c.StartDate, "end": c.EndDate, "calories": c.DailyCalorieTarget, "protein_g": c.ProteinTargetG,
+				refs, rerr := h.coachReferenceTargets(cycleID)
+				if rerr != nil {
+					return nil, rerr
+				}
+				if err != nil {
+					return map[string]any{"plan": nil, "reference_targets": refs}, nil
+				}
+				return map[string]any{"reference_targets": refs, "title": c.Title, "goal": c.PrimaryGoal, "start": c.StartDate, "end": c.EndDate, "calories": c.DailyCalorieTarget, "protein_g": c.ProteinTargetG,
 					"carbs_g": c.CarbsTargetG, "fat_g": c.FatTargetG, "fiber_g": c.FiberTargetG, "target_daily_deficit_kcal": c.TargetDeficitKcal,
 					"strength_sessions_per_week": c.StrengthSessionsPerWeek, "cardio_sessions_per_week": c.CardioSessionsPerWeek, "step_target": c.StepTarget}, nil
 			})},
-		{Name: "get_weight_trend", Description: "Weight readings from the last 90 days (date, kg), latest reading and change since the plan started.",
+		{Name: "get_weight_trend", Description: "Weight readings from the last 90 days (date, kg), latest reading, the 7-day average (null when fewer than 4 days have readings) and change since the plan started.",
 			Run: none(func() (any, error) {
 				entries, err := h.Service.ListHealthWeightEntries()
 				if err != nil {
@@ -193,7 +204,18 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 				if len(readings) > 30 {
 					readings = readings[:30]
 				}
-				return map[string]any{"latest_kg": metricOrNilString(data.Weight.Present, data.Weight.Latest), "change_since": data.Weight.Since, "change": data.Weight.Change, "readings_newest_first": readings}, nil
+				avg := data.Weight.Average
+				out := map[string]any{"latest_kg": metricOrNilString(data.Weight.Present, data.Weight.Latest), "change_since": data.Weight.Since, "change": data.Weight.Change,
+					"change_is_between_7_day_averages": data.Weight.ChangeIsAverage, "readings_newest_first": readings,
+					"seven_day_average_kg": metricOrNilString(avg.Present, avg.Avg), "seven_day_average_days_used": nil, "seven_day_average_note": avg.Line,
+					"previous_seven_day_average_kg": metricOrNilString(avg.HasPrev, avg.Prev), "change_vs_previous_seven_days": metricOrNilString(avg.HasPrev, avg.Change)}
+				if avg.Present {
+					out["seven_day_average_days_used"] = avg.Days
+					if avg.MixedScales {
+						out["readings_note"] = avg.Note
+					}
+				}
+				return out, nil
 			})},
 		{Name: "get_training_summary", Description: "This week's workouts against the plan target, volume, training time, workouts per week for 8 weeks, and muscle-group shares over 30 days.",
 			Run: none(func() (any, error) {
@@ -227,7 +249,9 @@ func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool
 					}
 					exercises := []map[string]any{}
 					for _, ex := range w.Exercises {
-						exercises = append(exercises, map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)})
+						item := map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)}
+						addCardioFields(item, ex.Sets)
+						exercises = append(exercises, item)
 					}
 					item := map[string]any{"title": w.Title, "date": w.StartedAt.In(loc).Format("2006-01-02"), "exercises": exercises}
 					if !w.EndedAt.IsZero() {
@@ -303,6 +327,46 @@ func metricOrNilString(ok bool, v string) any {
 	return v
 }
 
+// addCardioFields adds per-set cardio data only when some timed set has a parsed
+// incline or speed. The exercise-level values are kept only when every timed set
+// agrees; otherwise they are null so a mixed session is never summarised by its
+// first set.
+func addCardioFields(item map[string]any, sets []models.TrainingSet) {
+	var per []map[string]any
+	var incline, speed []*float64
+	parsed := false
+	for _, s := range sets {
+		if s.Seconds == nil {
+			continue
+		}
+		parsed = parsed || s.InclinePct != nil || s.SpeedKmh != nil
+		set := map[string]any{"duration_min": math.Round(*s.Seconds/60*10) / 10, "incline_pct": nil, "speed_kmh": nil}
+		if s.InclinePct != nil {
+			set["incline_pct"] = *s.InclinePct
+		}
+		if s.SpeedKmh != nil {
+			set["speed_kmh"] = *s.SpeedKmh
+		}
+		per = append(per, set)
+		incline, speed = append(incline, s.InclinePct), append(speed, s.SpeedKmh)
+	}
+	if !parsed {
+		return
+	}
+	item["sets"] = per
+	item["incline_pct"], item["speed_kmh"] = commonValue(incline), commonValue(speed)
+}
+
+// commonValue is the shared value when every entry is present and equal, else nil.
+func commonValue(v []*float64) any {
+	for _, x := range v {
+		if x == nil || *x != *v[0] {
+			return nil
+		}
+	}
+	return *v[0]
+}
+
 func bestSetText(sets []models.TrainingSet) string {
 	best, text := -1.0, ""
 	for _, s := range sets {
@@ -337,6 +401,7 @@ Style: short and practical. Numbers first. One to three relevant numbers, then a
 Rules:
 - Use only the data below and your tools. If data is missing, say so plainly; never invent values, meals or workouts.
 - The day isn't over: call calorie balance "so far", never a final deficit.
+- Food eaten today comes from one source, intake_source (gyst diary, apple_health or none). apple_health_kcal_not_counted is a reference only: never add it to the eaten values. A partial value means some logged food has no value for it, so say it is at least that much.
 - Never claim spot fat reduction. Never turn steps into calories.
 - Respect Jay's food rules in the profile (for example halal, no alcohol) in every food suggestion.
 - Prefer foods from get_food_products when suggesting meals or ways to close a protein gap.
@@ -373,12 +438,13 @@ var coachPrompts = []string{
 }
 
 func (h *Handler) renderCoach(w http.ResponseWriter, status int, question, errText string) {
+	coachProvider := h.coach()
 	base, ok := h.healthBase(w)
 	if !ok {
 		return
 	}
 	base.HealthTab = "coach"
-	data := healthCoachData{HealthData: base, Configured: h.Coach != nil, Question: question, Error: errText, Prompts: coachPrompts}
+	data := healthCoachData{HealthData: base, Configured: coachProvider != nil, Question: question, Error: errText, Prompts: coachPrompts}
 	msgs, err := h.Service.Repo.ListCoachMessages(coachShownTurns)
 	if err != nil {
 		serverError(w, err)
@@ -409,8 +475,9 @@ func (h *Handler) healthCoach(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	question := strings.TrimSpace(r.PostFormValue("q"))
+	provider := h.coach() // resolved once per request
 	switch {
-	case h.Coach == nil:
+	case provider == nil:
 		h.renderCoach(w, http.StatusServiceUnavailable, question, healthcoach.ErrNotConfigured.Error())
 		return
 	case question == "":
@@ -445,7 +512,7 @@ func (h *Handler) healthCoach(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
-	reply, err := h.Coach.Respond(ctx, req)
+	reply, err := provider.Respond(ctx, req)
 	if err != nil {
 		// Only fixed messages are shown; nothing about the request is logged.
 		status, msg := http.StatusBadGateway, healthcoach.ErrUnavailable.Error()

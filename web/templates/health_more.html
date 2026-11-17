@@ -27,11 +27,11 @@
   <section class="hv3-section" aria-labelledby="sources-title">
     <div class="hv3-section-h"><h2 id="sources-title">Data sources</h2></div>
     <ul class="hv3-group">
-      <li class="hv3-row"><span class="hv3-app mfp" aria-hidden="true">MFP</span><span class="hv3-row-copy"><span class="hv3-strong">MyFitnessPal</span><span class="hv3-s">Food logging, shared through Apple Health</span></span></li>
+      <li class="hv3-row"><span class="hv3-app mfp" aria-hidden="true">MFP</span><span class="hv3-row-copy"><span class="hv3-strong">MyFitnessPal</span><span class="hv3-s">Food totals via Apple Health, used on days you log no food in GYST</span></span></li>
       <li class="hv3-row"><span class="hv3-app ah" aria-hidden="true">AH</span><span class="hv3-row-copy"><span class="hv3-strong">Apple Health</span><span class="hv3-s">Food totals, steps, exercise, energy</span></span><span class="hv3-state"><span class="hv3-dot{{if .Today.HasLastSynced}}{{if .Today.LastSyncedStale}} warn{{else}} ok{{end}}{{end}}" aria-hidden="true"></span>{{if .Today.HasLastSynced}}{{.Today.LastSynced}}{{else}}Nothing today{{end}}</span></li>
       <li class="hv3-row"><span class="hv3-app hv" aria-hidden="true">HV</span><span class="hv3-row-copy"><span class="hv3-strong">Hevy</span><span class="hv3-s">Routines and workouts</span></span><span class="hv3-state"><span class="hv3-dot{{if .HevySynced}} ok{{end}}" aria-hidden="true"></span>{{if .HevySynced}}{{.HevySynced}}{{else if .HevyConnected}}Awaiting sync{{else}}Not connected{{end}}</span></li>
     </ul>
-    <p class="hv3-foot">Log food in MyFitnessPal and workouts in Hevy. GYST reads them and doesn't log anything twice.</p>
+    <p class="hv3-foot">Log food in GYST (Nutrition) or MyFitnessPal, and workouts in Hevy. A day counts one food source, never both added together.</p>
   </section>
   <section class="hv3-section" aria-labelledby="goals-title">
     <div class="hv3-section-h"><h2 id="goals-title">Health goals</h2><a href="/goals/new">New goal</a></div>
