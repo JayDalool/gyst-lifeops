@@ -1775,6 +1775,18 @@ func (h *Handler) newGoal(w http.ResponseWriter, r *http.Request) {
 			serverError(w, err)
 			return
 		}
+		if !validDueDate(goal.StartDate) {
+			invalidDate(w, "start_date")
+			return
+		}
+		if !validDueDate(goal.EndDate) {
+			invalidDate(w, "end_date")
+			return
+		}
+		if goal.StartDate != "" && goal.EndDate != "" && goal.EndDate < goal.StartDate {
+			http.Error(w, "end_date must not be before start_date", http.StatusBadRequest)
+			return
+		}
 		if err := h.Service.Repo.CreateGoal(&goal, h.Service.TodayString()); err != nil {
 			serverError(w, err)
 			return
