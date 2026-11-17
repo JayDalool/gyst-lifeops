@@ -30,12 +30,12 @@ status:done / close           Jay
 
 1. **Read.** Read the whole Issue and every document it references. Check its dependencies are closed (or explicitly waived by Jay in the Issue).
 2. **Specify.** If acceptance criteria are missing, ambiguous or wrong, comment on the Issue with a proposal and stop. The Issue goes to `status:needs-spec`. Don't guess.
-3. **Confirm eligibility.** Agents start only Issues that Jay has made startable. That means `status:ready` for interactive sessions Jay asked you to run, or `agent:ready` for automated dispatch (later). Never start `risk:not-agent-eligible` work. For human-operational Issues, agents only prepare what the Issue asks for (runbooks, scripts, queries).
+3. **Confirm eligibility.** Agents start only Issues that Jay has made startable. That means `status:ready` for interactive sessions Jay asked you to run, or `agent:ready` for automated dispatch (later). Never start `risk:not-agent-eligible` work. The Command Center flow (`AGENTS.md`) uses the same rule: Build starts only on a `status:ready` Issue. For human-operational Issues, agents only prepare what the Issue asks for (runbooks, scripts, queries).
 4. **Branch.** From `master`: `task/<issue-number>-<short-slug>`. One Issue, one branch. PRs target `master`.
 5. **Implement.** Smallest change that meets the criteria. Follow `docs/RULES.md` and the design/security documents the Issue names. Backend correctness changes don't ride inside visual PRs. No drive-by refactors.
 6. **Test.** Run the required checks and record the actual output. Never weaken a test, constraint or API to pass (`docs/RULES.md` §2.2). A deliberate specification change to a test is stated as such in the PR.
 7. **Verify in the browser** (UI work). Phone (390×844) and desktop (1280×800), light and dark, keyboard, console and network clean. Real iPhone/PWA when the Issue requires it; otherwise write "not verified on device". Galaxy work also runs the `17A` §L checklist.
-8. **Self-review.** Go through the diff against each acceptance criterion. Look for scope creep, secrets, debug output and stray files (`git status`).
+8. **Self-review.** Go through the diff against each acceptance criterion. In the Command Center flow the user check and code review are separate seats; the developer still self-reviews first. Look for scope creep, secrets, debug output and stray files (`git status`).
 9. **Open the PR.** Use the PR template. Body contains `Refs #<issue>`. Set the Issue to `status:review`. Add `needs:security-review` for PRIVILEGED work.
 10. **Independent review.** A different agent reviews per `REVIEW_WORKFLOW.md`. Fix BLOCKING findings on the same branch (new commits, no force-push).
 11. **Human verification and merge.** Jay merges. For operational steps (deploy, host changes), Jay performs them as the Issue describes.
