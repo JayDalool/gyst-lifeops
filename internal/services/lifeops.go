@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"lifeops-tracker/internal/clock"
@@ -24,6 +25,10 @@ type Service struct {
 	// BackupStatusPath is the backup status file (data/backups/last_run.json).
 	// Empty means unconfigured: the backup producer reports nothing.
 	BackupStatusPath string
+	// AIKeyPath is the 0600 file holding the AES-256 data key that encrypts
+	// the saved AI API key (GYST-169). Empty means saving a key is refused.
+	AIKeyPath string
+	aiMu      sync.Mutex
 
 	// calendarAfterReads is a test seam run after the calendar's project data
 	// reads and before the privacy lookup. Nil in production.
