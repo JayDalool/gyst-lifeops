@@ -77,23 +77,32 @@ func TestHealthSyncWindowFollowsLocalMidnight(t *testing.T) {
 }
 
 func TestHealthSyncWindowAcrossDSTAndOtherZone(t *testing.T) {
-	// US DST ends on 2026-11-01; the window must still be seven civil days.
+	// Winnipeg's last fall-back was 2025-11-02; the window must still be
+	// seven civil days.
 	s := testService(t)
-	s.Now = func() time.Time { return time.Date(2026, 11, 3, 18, 0, 0, 0, time.UTC) }
-	if _, err := s.SyncHealth(windowInput("2026-10-27")); err != nil {
+	s.Now = func() time.Time { return time.Date(2025, 11, 4, 18, 0, 0, 0, time.UTC) }
+	if _, err := s.SyncHealth(windowInput("2025-10-28")); err != nil {
 		t.Fatalf("earliest across DST: %v", err)
 	}
 	var window *HealthDateWindowError
-	if _, err := s.SyncHealth(windowInput("2026-10-26")); !errors.As(err, &window) || window.Earliest != "2026-10-27" {
+	if _, err := s.SyncHealth(windowInput("2025-10-27")); !errors.As(err, &window) || window.Earliest != "2025-10-28" {
 		t.Fatalf("day before earliest across DST: %v", err)
 	}
-	// Spring forward in Winnipeg: 2027-03-14.
-	s.Now = func() time.Time { return time.Date(2027, 3, 16, 18, 0, 0, 0, time.UTC) }
-	if _, err := s.SyncHealth(windowInput("2027-03-09")); err != nil {
+	// Winnipeg's last spring forward: 2026-03-08.
+	s.Now = func() time.Time { return time.Date(2026, 3, 10, 18, 0, 0, 0, time.UTC) }
+	if _, err := s.SyncHealth(windowInput("2026-03-03")); err != nil {
 		t.Fatalf("earliest across spring DST: %v", err)
 	}
-	if _, err := s.SyncHealth(windowInput("2027-03-08")); err == nil {
+	if _, err := s.SyncHealth(windowInput("2026-03-02")); err == nil {
 		t.Fatal("accepted day before earliest across spring DST")
+	}
+	// Permanent UTC-05 from 2026-11-01 (Issue #193): no fall-back that day.
+	s.Now = func() time.Time { return time.Date(2026, 11, 3, 18, 0, 0, 0, time.UTC) }
+	if _, err := s.SyncHealth(windowInput("2026-10-27")); err != nil {
+		t.Fatalf("earliest across 2026-11-01: %v", err)
+	}
+	if _, err := s.SyncHealth(windowInput("2026-10-26")); !errors.As(err, &window) || window.Earliest != "2026-10-27" {
+		t.Fatalf("day before earliest across 2026-11-01: %v", err)
 	}
 	// A different zone moves the window: 2026-10-11T22:00Z is already Oct 12 in Tokyo.
 	loc, err := time.LoadLocation("Asia/Tokyo")

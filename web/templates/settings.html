@@ -2,7 +2,7 @@
 <div class="page-head">
   <div>
     <h1 class="page-title">Settings</h1>
-    <p class="page-sub">Prayer times, calendar feed, appearance, motion, and security.</p>
+    <p class="page-sub">Prayer times, calendar feed, appearance, motion, security, and the AI provider.</p>
   </div>
 </div>
 
@@ -149,6 +149,33 @@
       <button class="gyst-button gyst-button--secondary" type="submit">Sign out everywhere</button>
     </form>
   </div>
+</section>
+
+<section class="card mt-16 settings-card" id="ai">
+  <h2 class="section-title">AI provider</h2>
+  <p class="meta measure mt-8">Turns on the Health Coach. The API key is write-only: it is stored encrypted and never shown again. Changing it needs your password.</p>
+  {{with .AI.Notice}}<p class="meta mt-8" role="status">{{.}}</p>{{end}}
+  {{with .AI.Error}}<p class="warn-note mt-8" role="alert">{{.}}</p>{{end}}
+  {{if .AI.EnvManaged}}
+    <p class="warn-note mt-8">Configured by the server environment. Remove HEALTH_AI_PROVIDER and the provider key from the server to manage the provider here.</p>
+  {{end}}
+  <form class="form-stack mt-16" method="post" action="/settings/ai" autocomplete="off">
+  <label class="field"><span>Provider</span><select {{if .AI.EnvManaged}}disabled{{end}} name="provider">
+    <option value="openai" {{if eq .AI.Provider "openai"}}selected{{end}}>OpenAI</option>
+    <option value="anthropic" {{if eq .AI.Provider "anthropic"}}selected{{end}}>Anthropic</option>
+  </select></label>
+  <div class="form-row">
+    <label class="field"><span>Chat model</span><input {{if .AI.EnvManaged}}disabled{{end}} name="chat_model" maxlength="64" pattern="[A-Za-z0-9._\-]*" value="{{.AI.ChatModel}}" placeholder="Provider default" autocapitalize="off" spellcheck="false"></label>
+    <label class="field"><span>Photo model</span><input {{if .AI.EnvManaged}}disabled{{end}} name="photo_model" maxlength="64" pattern="[A-Za-z0-9._\-]*" value="{{.AI.PhotoModel}}" placeholder="Provider default" autocapitalize="off" spellcheck="false"></label>
+  </div>
+  <label class="field"><span>API key</span><input {{if .AI.EnvManaged}}disabled{{end}} name="api_key" type="password" maxlength="300" autocomplete="new-password" autocapitalize="off" spellcheck="false" placeholder="Leave empty to keep the saved key">
+    <small>{{if .AI.KeySaved}}Key saved on {{.AI.KeySavedOn}}.{{else if .AI.KeyUnreadable}}A saved key can't be read. Enter it again.{{else}}Not set.{{end}}</small></label>
+  <label class="field"><span>Your GYST password</span><input {{if .AI.EnvManaged}}disabled{{end}} name="password" type="password" autocomplete="current-password" required><small>Required to save or remove the key.</small></label>
+  <div class="form-row">
+    <button {{if .AI.EnvManaged}}disabled{{end}} class="btn" type="submit" name="action" value="save">Save AI settings</button>
+    {{if or .AI.KeySaved .AI.KeyUnreadable}}<button {{if .AI.EnvManaged}}disabled{{end}} class="btn danger" type="submit" name="action" value="remove" formnovalidate>Remove key</button>{{end}}
+  </div>
+  </form>
 </section>
 
 <section class="card mt-16 settings-card">

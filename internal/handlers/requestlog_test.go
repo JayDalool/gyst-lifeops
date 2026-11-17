@@ -9,14 +9,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
 
-	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
@@ -35,14 +33,7 @@ type logRig struct {
 
 func newLogRig(t *testing.T) *logRig {
 	t.Helper()
-	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
-	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
-		t.Fatalf("migrate db: %v", err)
-	}
-	t.Cleanup(func() { database.Close() })
+	database := migratedTestDB(t)
 	h := New(services.New(repository.New(database)), "../../web/templates")
 	hash, err := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.MinCost)
 	if err != nil {
