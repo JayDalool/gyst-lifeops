@@ -1,3 +1,4 @@
+- [ ] #205 · Plan: reference targets and cycle comparison · https://gyst.zaylolabs.com/health/plan
 - [ ] #218 · Settings: save OpenAI key, Coach turns on · https://gyst.zaylolabs.com/settings
 - [ ] #206 · Workout: treadmill shows minutes, incline, speed · https://gyst.zaylolabs.com/health/training
 - [ ] #203 · Weight 7-day average on Today and Progress · https://gyst.zaylolabs.com/health/progress

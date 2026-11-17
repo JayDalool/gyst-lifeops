@@ -392,6 +392,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.nutrition(w, r)
 		} else if len(segments) == 2 && segments[1] == "plan" {
 			h.healthPlan(w, r)
+		} else if len(segments) == 3 && segments[1] == "plan" && segments[2] == "reference" {
+			h.healthReferenceAdd(w, r)
+		} else if len(segments) == 5 && segments[1] == "plan" && segments[2] == "reference" && segments[4] == "archive" {
+			h.healthReferenceArchive(w, r, segments[3])
 		} else if len(segments) == 2 && segments[1] == "more" {
 			h.healthMore(w, r)
 		} else if len(segments) == 2 && segments[1] == "checklist" {
