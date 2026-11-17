@@ -30,8 +30,10 @@ func (h *Handler) healthFoodPhotoAnalyze(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	var analyzer healthcoach.FoodPhotoAnalyzer
-	if h.Coach != nil {
-		analyzer, _ = h.Coach.(healthcoach.FoodPhotoAnalyzer)
+	// h.coach() covers both the server environment and a key saved in
+	// Settings (GYST-169).
+	if p := h.coach(); p != nil {
+		analyzer, _ = p.(healthcoach.FoodPhotoAnalyzer)
 	}
 	if analyzer == nil {
 		writeJSONError(w, http.StatusServiceUnavailable, "Photo analysis isn't set up yet")

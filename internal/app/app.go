@@ -127,6 +127,10 @@ func New(config Config) (*App, error) {
 	webHandler.Auth = services.AuthConfig{PasswordHash: config.PasswordHash}
 	webHandler.AuthDisabled = config.AuthDisabled
 	webHandler.Coach = healthCoachProvider(config.HealthAI)
+	// The environment wins over Settings (GYST-169): when it names a provider
+	// or holds a provider key, saved settings are ignored and the form is off.
+	webHandler.AIEnvManaged = config.HealthAI.EnvManaged()
+	service.AIKeyPath = filepath.Join(filepath.Dir(config.DBPath), "ai_settings.key")
 	logger := config.Logger
 	if logger == nil {
 		logger = slog.Default()
@@ -184,6 +188,12 @@ type HealthAIConfig struct {
 	// VisionModel is the photo-analysis model (HEALTH_AI_VISION_MODEL); empty
 	// keeps the provider default.
 	VisionModel string
+}
+
+// EnvManaged reports whether the server environment configures the AI
+// provider at all. Then Settings → AI provider is read-only.
+func (c HealthAIConfig) EnvManaged() bool {
+	return strings.TrimSpace(c.Provider) != "" || c.AnthropicKey != "" || c.OpenAIKey != ""
 }
 
 // healthCoachProvider returns nil (Coach disabled) unless a supported provider

@@ -33,6 +33,8 @@ const (
 	AuditActionReauthFailed      = "reauth.failed"
 	AuditActionAccessDenied      = "access.denied"
 	AuditActionHealthSyncRefused = "health.sync_refused"
+	AuditActionAIKeySet          = "settings.ai_key.set"
+	AuditActionAIKeyRemove       = "settings.ai_key.remove"
 
 	// Food diary (Issue #207). Detail is a fixed word, never a food name,
 	// quantity or nutrient value.
@@ -70,6 +72,7 @@ var auditActions = map[string]bool{
 	AuditActionReauthFailed: true, AuditActionAccessDenied: true,
 	AuditActionHealthSyncRefused:   true,
 	AuditActionNutritionMealCreate: true, AuditActionNutritionMealUpdate: true, AuditActionNutritionMealArchive: true,
+	AuditActionAIKeySet: true, AuditActionAIKeyRemove: true,
 }
 
 var (
