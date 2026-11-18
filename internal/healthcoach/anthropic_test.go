@@ -165,4 +165,10 @@ func TestAnthropicBaseURLIsPinned(t *testing.T) {
 	if !strings.HasPrefix(capture.url, "https://api.anthropic.com/") {
 		t.Fatalf("request went to %q", capture.url)
 	}
+	// The camera goes to the same pinned host (#243).
+	capture.url = ""
+	_, _ = a.AnalyzeFoodPhoto(context.Background(), []byte("\xff\xd8\xff-fake"))
+	if !strings.HasPrefix(capture.url, "https://api.anthropic.com/") {
+		t.Fatalf("photo request went to %q", capture.url)
+	}
 }

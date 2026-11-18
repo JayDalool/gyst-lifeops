@@ -6,6 +6,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -35,6 +36,13 @@ func main() {
 	}
 	http.HandleFunc("/v1/messages", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(io.LimitReader(r.Body, 4<<20))
+		// Only the model name is printed, so a browser check can see which
+		// model the app asked for. The image and prompt are never logged.
+		var req struct {
+			Model string `json:"model"`
+		}
+		_ = json.Unmarshal(body, &req)
+		log.Printf("request: model=%q", req.Model)
 		w.Header().Set("Content-Type", "application/json")
 		switch *mode {
 		case "credit":

@@ -43,6 +43,10 @@ func (a *Anthropic) WithPhotoModel(model string) *Anthropic {
 	return a
 }
 
+// PhotoModel reports the model used for meal photos, so wiring tests can prove
+// the saved or environment photo model reaches the adapter.
+func (a *Anthropic) PhotoModel() string { return a.photoModelName() }
+
 func (a *Anthropic) photoModelName() string {
 	if a.photoModel != "" {
 		return a.photoModel
@@ -62,6 +66,17 @@ func newAnthropic(apiKey, model string, extra ...option.RequestOption) *Anthropi
 		model = DefaultAnthropicModel
 	}
 	opts := append([]option.RequestOption{
+		// The library's own environment reads (ANTHROPIC_AUTH_TOKEN, profile
+		// files, ANTHROPIC_CUSTOM_HEADERS) must not add a token or headers to
+		// requests that carry meal photos (#245 security review). The key is
+		// always the explicit one below.
+		option.WithoutEnvironmentDefaults(),
+		// A redirect would replay the photo and the x-api-key header to another
+		// host, which pinning the first URL does not prevent (docs/RULES.md
+		// §1.6). The 3xx comes back as an ordinary error instead.
+		option.WithHTTPClient(&http.Client{
+			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+		}),
 		// Pinned so an environment variable (ANTHROPIC_BASE_URL) can't redirect
 		// health data and the key elsewhere. Tests override it explicitly.
 		option.WithBaseURL(anthropicBaseURL),
@@ -160,6 +175,11 @@ func (a *Anthropic) Respond(ctx context.Context, req Request) (Response, error) 
 //     limits": the monthly spend limit Jay set in the Console.
 //   - 429 with error.details.error_code enforced_spend_limit_reached: the tier
 //     spend cap. An ordinary 429 is a rate limit and stays retryable.
+//   - 400 invalid_request_error "Your credit balance is too low to access the
+//     Anthropic API...": the prepaid balance is used up. Matched on status,
+//     error type and message prefix together so no other 400 is relabelled.
+//     The wording comes from the code and security reviewers of #245, quoting
+//     Anthropic's API guidance; it is not on the errors page read 2026-11-18.
 //
 // Sources: platform.claude.com/docs/en/api/errors and api/rate-limits,
 // read 2026-11-18. Prepaid-balance exhaustion has no separate documented shape.
@@ -179,34 +199,57 @@ func creditFailure(status int, body []byte) error {
 		return ErrCreditExhausted
 	case status == http.StatusTooManyRequests && env.Error.Details.ErrorCode == "enforced_spend_limit_reached":
 		return ErrSpendLimit
-	case status == http.StatusBadRequest && strings.HasPrefix(env.Error.Message, "You have reached your specified"):
+	case status == http.StatusBadRequest && env.Error.Type == "invalid_request_error" &&
+		strings.HasPrefix(env.Error.Message, "You have reached your specified"):
 		return ErrSpendLimit
+	case status == http.StatusBadRequest && env.Error.Type == "invalid_request_error" &&
+		strings.HasPrefix(env.Error.Message, "Your credit balance is too low"):
+		return ErrCreditExhausted
 	}
 	return nil
 }
 
+// maxErrorProbe bounds how much of an error body is read to classify it;
+// real error bodies are a few hundred bytes. The body is always handed on whole.
+const maxErrorProbe = 1 << 20
+
+type failingReader struct{ err error }
+
+func (f failingReader) Read([]byte) (int, error) { return 0, f.err }
+
+type readCloser struct {
+	io.Reader
+	io.Closer
+}
+
 // noRetryOnCredit stops the SDK retrying a response that more waiting cannot
-// fix. The SDK retries any 429 and obeys x-should-retry first, so the header
-// is set before it decides. A 429 body is read in full and restored for the
-// SDK, and the original is closed so the connection is not leaked.
+// fix. The SDK obeys x-should-retry before it looks at the status, so the
+// header is set here, ahead of that decision, for every recognised 400, 402
+// and 429. The body is restored for the SDK exactly as the server sent it: the
+// bytes read, then the rest of the original, which is still the one closed. A
+// read that fails part-way keeps failing, so the SDK sees the error, not a
+// partial body.
 func noRetryOnCredit(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
 	res, err := next(req)
 	if err != nil || res == nil {
 		return res, err
 	}
 	switch res.StatusCode {
-	case http.StatusPaymentRequired:
+	case http.StatusBadRequest, http.StatusPaymentRequired, http.StatusTooManyRequests:
+	default:
+		return res, nil
+	}
+	if res.Body == nil {
+		return res, nil
+	}
+	b, readErr := io.ReadAll(io.LimitReader(res.Body, maxErrorProbe))
+	var rest io.Reader = res.Body
+	if readErr != nil {
+		rest = failingReader{readErr}
+	}
+	res.Body = readCloser{Reader: io.MultiReader(bytes.NewReader(b), rest), Closer: res.Body}
+	if readErr == nil && (res.StatusCode == http.StatusPaymentRequired || creditFailure(res.StatusCode, b) != nil) {
 		res.Header.Set("x-should-retry", "false")
-	case http.StatusTooManyRequests:
-		if res.Body == nil {
-			return res, nil
-		}
-		b, readErr := io.ReadAll(res.Body)
-		_ = res.Body.Close()
-		res.Body = io.NopCloser(bytes.NewReader(b))
-		if readErr == nil && creditFailure(res.StatusCode, b) != nil {
-			res.Header.Set("x-should-retry", "false")
-		}
 	}
 	return res, nil
 }

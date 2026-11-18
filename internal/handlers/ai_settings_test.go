@@ -429,6 +429,11 @@ func TestAISettingsValidation(t *testing.T) {
 	if _, ok := f.h.coach().(healthcoach.FoodPhotoAnalyzer); !ok {
 		t.Error("the Anthropic provider chosen in Settings is not a FoodPhotoAnalyzer")
 	}
+	// ...and the photo model saved in Settings (aiForm_ sends "gpt-test-vision")
+	// reaches the adapter instead of being dropped.
+	if a, ok := f.h.coach().(*healthcoach.Anthropic); !ok || a.PhotoModel() != "gpt-test-vision" {
+		t.Errorf("saved photo model not passed to the Anthropic adapter: %v", f.h.coach())
+	}
 }
 
 func TestAISettingsMethodAndBodyCap(t *testing.T) {

@@ -4,6 +4,7 @@ package healthcoach
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 )
@@ -34,4 +35,7 @@ func init() {
 		panic(err.Error())
 	}
 	anthropicBaseURL = u
+	// Fixed line, loopback URL only: a tagged build must never be mistaken
+	// for a production one.
+	log.Printf("browsercheck build: Anthropic base URL overridden to %s", u)
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -276,6 +277,20 @@ func TestPhotoAnalyzeFailureLogHasNoContent(t *testing.T) {
 	out := buf.String()
 	if !strings.Contains(out, "photo.analyze.failed") || strings.Contains(out, "SECRET-MEAL-DATA") {
 		t.Fatalf("log: %s", out)
+	}
+}
+
+// A wrapped credit error logs the fixed category only, never the wrapped text.
+func TestPhotoAnalyzeCreditFailureLogHasNoContent(t *testing.T) {
+	for _, base := range []error{healthcoach.ErrCreditExhausted, healthcoach.ErrSpendLimit} {
+		var buf bytes.Buffer
+		h := visionHandler(t, &fakeVision{err: fmt.Errorf("%w: vendor said SECRET-MEAL-DATA", base)})
+		h.Logger = slog.New(slog.NewJSONHandler(&buf, nil))
+		doPhoto(h, photoReq(t, "photo", testJPEG(t), nil))
+		out := buf.String()
+		if !strings.Contains(out, "photo.analyze.failed") || strings.Contains(out, "SECRET-MEAL-DATA") {
+			t.Fatalf("log: %s", out)
+		}
 	}
 }
 

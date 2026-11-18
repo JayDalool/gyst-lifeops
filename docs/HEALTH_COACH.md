@@ -130,8 +130,9 @@ the review screen) and nothing is written to the diary.
   the Anthropic Console, or switch provider in Settings."; the 400 "You have
   reached your specified API usage limits" and the 429 `enforced_spend_limit_reached`
   give "The monthly AI spend limit is reached. Raise it in the Anthropic Console,
-  or switch provider in Settings." Prepaid-balance exhaustion has no separate
-  documented response; if it differs it shows the generic message.
+  or switch provider in Settings." The 400 "Your credit balance is too low to
+  access the Anthropic API" (prepaid balance used up) also gives the credit
+  sentence; it is matched on status, error type and message prefix together.
 - Browser checks: `go build -tags browsercheck` adds `GYST_BROWSERCHECK_ANTHROPIC_URL`
   (only `http://127.0.0.1:<port>/`, otherwise the program refuses to start) and
   `cmd/fakeanthropic`, a loopback fake (`-mode=ok|credit|spend`). The Dockerfile,
