@@ -188,6 +188,16 @@ Calendar output is an HTTP boundary over the existing project, course, and task
 data. Detailed behavior and security decisions are documented in
 `google-calendar-plan.md` and `calendar-course-integration.md`.
 
+Calendar input from connected Google and Microsoft accounts is planned, not
+built. The chosen calendars will be synced into a second SQLite file,
+`data/sync.db`, which is not backed up. GYST writes event changes to the
+provider first and then re-syncs, so the provider stays the source of truth.
+The Secretary reads the synced copy and never holds a provider token. OAuth
+client IDs and secrets come from the environment file; each account's refresh
+token is encrypted in the main database, never kept in an environment
+variable. Decisions: [19A](audit/vnext/19A_CONNECTED_DATA_DECISIONS.md);
+design: [ADR 0002](adr/0002-secretary-reads-synced-store.md).
+
 ## Prayer calculation
 
 Prayer times are calculated locally in `internal/services/prayer.go` using solar
@@ -202,8 +212,8 @@ calculated in UTC, which preserves the correct offset on DST transition days.
 
 Docker Compose runs the Go app on the private Compose network and Caddy on
 HTTPS port 3443. Caddy terminates TLS and reverse-proxies to the private Compose
-service. VAPID private keys and provider tokens enter through environment
-variables and are never written to `app_settings` or committed.
+service. VAPID private keys and link-provider tokens (GitHub, Jira, Slack) enter
+through environment variables and are never written to `app_settings` or committed.
 
 The app container has a Docker healthcheck (GYST-VN-016): every 30 s it runs
 `/app/lifeops healthcheck`, which GETs `http://127.0.0.1:8080/healthz` with a
