@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -71,6 +72,9 @@ type Config struct {
 	LoadSeed      bool
 	// GeneratePasswordHash is the legacy -passwordhash flag.
 	GeneratePasswordHash bool
+	// Args holds positional arguments left after the flags. The server
+	// ignores them as it always did; `lifeops config` rejects them.
+	Args []string
 
 	HevyAPIKey string
 	// HealthAI selects the Health Coach provider (Issue #64).
@@ -181,6 +185,7 @@ func Load(args []string, getenv func(string) string, readFile func(string) ([]by
 	if err := fs.Parse(args); err != nil {
 		return Config{}, err
 	}
+	c.Args = fs.Args()
 
 	// ParseBool treats an unset or invalid value as false.
 	c.AllowPublicFeeds, _ = strconv.ParseBool(getenv("ALLOW_PUBLIC_CALENDAR_FEEDS"))
@@ -295,6 +300,26 @@ func (c Config) Summary() []string {
 		"GITHUB_TOKEN: " + state(c.Providers.GitHubToken != ""),
 		"JIRA (email, token): " + state(c.Providers.JiraEmail != "" && c.Providers.JiraToken != ""),
 		"JIRA_BASE_URL: " + state(c.Providers.JiraBaseURL != ""),
+		"JIRA sync: " + c.jiraSyncState(),
 		"SLACK_BOT_TOKEN: " + state(c.Providers.SlackToken != ""),
 	}
+}
+
+// jiraSyncState names the Jira outcome. Credentials without a usable https
+// base URL leave sync off; that is reported, never a start-up failure.
+func (c Config) jiraSyncState() string {
+	p := c.Providers
+	switch {
+	case p.JiraEmail == "" && p.JiraToken == "":
+		return "off (not configured)"
+	case !validJiraBaseURL(p.JiraBaseURL):
+		return "INCOMPLETE, sync off (JIRA_BASE_URL is missing or not a valid https URL)"
+	default:
+		return "on"
+	}
+}
+
+func validJiraBaseURL(raw string) bool {
+	u, err := url.Parse(raw)
+	return err == nil && u.Scheme == "https" && u.Host != "" && u.User == nil
 }

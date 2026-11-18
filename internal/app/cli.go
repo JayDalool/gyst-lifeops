@@ -44,6 +44,13 @@ func Run() {
 	// and passwordhash keep their plain output.
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
+	// The legacy -passwordhash flag needs no server settings, so it runs
+	// before config.Load reads any variable or secret file.
+	if passwordHashFlagRequested(os.Args[1:]) {
+		runPasswordHashAndExit()
+		return
+	}
+
 	getenv, readFile := config.OS()
 	cfg, err := config.Load(os.Args[1:], getenv, readFile)
 	if err != nil {
@@ -54,12 +61,6 @@ func Run() {
 		}
 		// Named errors only: they never contain a secret value.
 		log.Fatalf("configuration error: %v", err)
-	}
-
-	// Check -passwordhash flag after parsing
-	if cfg.GeneratePasswordHash {
-		runPasswordHashAndExit()
-		return
 	}
 
 	for _, line := range cfg.Summary() {

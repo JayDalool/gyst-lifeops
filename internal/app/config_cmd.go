@@ -28,6 +28,11 @@ func RunConfig(args []string, getenv func(string) string, readFile func(string) 
 	if err != nil {
 		return err
 	}
+	if len(cfg.Args) > 0 {
+		// flag parsing stops at the first positional argument, so anything
+		// after it was never checked; a mistyped preflight must not say OK.
+		return errors.New("unexpected arguments after the flags; lifeops config takes flags only (for example -db path)")
+	}
 	fmt.Fprintln(out, strings.Join(cfg.Summary(), "\n"))
 	fmt.Fprintln(out, "config: OK")
 	return nil

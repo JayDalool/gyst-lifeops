@@ -34,7 +34,10 @@ flowchart LR
 Runtime paths are configured with command-line flags such as `-addr`, `-db`,
 `-migrations`, `-templates`, and `-static`; `PORT` and `DB_PATH` supply the
 defaults for `-addr` and `-db`. Any secret may come from `NAME_FILE` instead of
-`NAME`. A half-set VAPID trio or Jira email/token pair, a bad `PORT` or an
+`NAME` when the binary runs directly; `docker-compose.yml` does not forward
+`NAME_FILE` variables or mount secret files yet, so under Compose use `NAME`.
+A test keeps `docker-compose.yml`, `.env.example` and the variables
+`config.Load` reads in step. A half-set VAPID trio or Jira email/token pair, a bad `PORT` or an
 invalid `GYST_TIMEZONE` stops startup with a named error;
 `lifeops config` runs the same checks without opening the database. Every
 variable is listed in `.env.example`. Public calendar feeds are disabled
