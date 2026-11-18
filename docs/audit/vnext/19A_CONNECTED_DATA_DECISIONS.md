@@ -34,7 +34,9 @@ column.
 | **Decision or recommendation** | For Decided, the decision in plain words. For To confirm and Open, the recommendation, starting "Recommended:". A Decided entry that still has one part waiting says so after "Still to confirm:"; that part is not decided. |
 | **Alternative** | For To confirm and Open, the main other option. For Decided, the option it replaced or rejected, or "—". "(inferred)" marks an alternative the plans don't name. |
 | **Decider, date** | "Jay, 2026-11-18" for Decided and Dropped; "Jay (pending)" for To confirm and Open, with the date of the recommendation. |
-| **Source** | What the entry rests on. "Answer *n*" is the owner's numbered answer to the 36 open questions of 2026-11-18. "Earlier" and "later" are his messages before and after those answers on the same day. "Answer 29" accepted the remaining engineering recommendations as a group. Plan sections are listed in [Sources](#11-sources). |
+| **Source** | What the entry rests on. "Answer *n*" is the owner's numbered answer to the 36 open questions of 2026-11-18. "Earlier" and "later" are his messages before and after those answers on the same day. Plan sections are listed in [Sources](#11-sources). |
+
+**Answer 29.** Answer 29 was one yes to a group of twenty items that the lead described to the owner as engineering details (sync timings, minimum permissions, storage tables, token handling). The lead who asked the question listed the twenty as M2, M11, M12, M13, M17, C2, C3, C4, C12, C13, C15, N6, S2, S8, S9, S12, S17, D4, D5 and D10. D4 and D5 were later dropped, which leaves eighteen Decided entries that rest on answer 29 (C2 and C3 also rest on answer 8). Three of them shape what the owner sees rather than how GYST works inside: C13, C15 and S9. They stay Decided, are marked "accepted in the answer-29 group", and are shown to him for a second look.
 
 ## 2. Summary
 
@@ -45,18 +47,20 @@ column.
 | [5. Calendar](#5-calendar) | 16 | 3 | 0 | 0 | 19 |
 | [6. Notifications](#6-notifications) | 8 | 0 | 0 | 0 | 8 |
 | [7. Secretary and AI](#7-secretary-and-ai) | 29 | 4 | 1 | 4 | 38 |
-| [8. Mail](#8-mail) | 15 | 3 | 0 | 0 | 18 |
+| [8. Mail](#8-mail) | 14 | 4 | 0 | 0 | 18 |
 | [9. Food](#9-food) | 8 | 2 | 0 | 0 | 10 |
-| **All** | **86** | **12** | **1** | **4** | **103** |
+| **All** | **85** | **13** | **1** | **4** | **103** |
 
 **Waiting for Jay** (none of these is decided):
 
-- To confirm: C17, C20, C21, M21, M23, M24, D9, S15, S20, S21, F6, R1.
+- To confirm: C17, C20, C21, M9, M21, M23, M24, D9, S15, S20, S21, F6, R1.
 - Open: S26.
-- Parts of Decided entries: the M22 send limits, the S23 bulk-delete rule,
-  the meaning of "all history" in M7 (= M24), Local-only items in D2 and S24
-  (= S15), and F4's rule change (= R1). S28 has a design still to do, and
-  S19 and D3 wait on the VX-1 phone test.
+- Parts of Decided entries: the undo and hold durations in C19, S10 and
+  S23, the M22 send limits, the S23 bulk-delete rule, the meaning of "all
+  history" in M7 (= M24), Local-only items in D2 and S24 (= S15), how the
+  day's context reaches the AI in P1 (= F6), and F4's rule change (= R1).
+  S28 has a design still to do, and S19 and D3 wait on the VX-1 phone test.
+- A second look: C13, C15 and S9, accepted in the answer-29 group.
 
 ---
 
@@ -103,15 +107,15 @@ column.
 | C7 | Tentative events | Decided | Count as busy. | Count as free | Jay, 2026-11-18 | Answer 9; calendar plan §13 |
 | C8 | Timed GYST tasks and free time | Decided | A timed task blocks 30 minutes from its time (an editable house rule; 0 turns it off). | Never block | Jay, 2026-11-18 | Answer 9; calendar plan §13 |
 | C9 | Prayer times and free time | Decided | Each prayer blocks 15 minutes (editable; 0 turns it off). | Don't block | Jay, 2026-11-18 | Answer 9; calendar plan §13 |
-| C10 | Where events appear | Decided | Inside Today's existing Now and Later rows with no layout change, on a new Agenda screen, and in an Overview band built with makeover chunk 6A. See [§12](#12-calendar-ui-record). | Agenda only | Jay, 2026-11-18 | Answer 2; calendar plan §8 |
+| C10 | Where events appear | Decided | Inside Today's existing Now and Later rows with no layout change, on a new Agenda screen, and in an Overview band built with makeover chunk 6A. See [§12](#12-calendar-ui-record). | Agenda only | Jay, 2026-11-18 | Answer 2 (Today rows); calendar plan §8 (Agenda, Overview band) |
 | C11 | Creating events | Decided | In the first calendar release, not later. | A later, separate decision | Jay, 2026-11-18 | Answer 8; calendar plan §16 |
 | C12 | GYST's own calendar feed | Decided | Provider events are never re-exported into GYST's `.ics` feeds. A calendar that is GYST's own feed is detected and left off. | Re-export everything | Jay, 2026-11-18 | Answer 29; calendar plan §3, §9 |
-| C13 | Time zone shown | Decided | Always GYST's application time zone. | Also show the event's own zone | Jay, 2026-11-18 | Answer 29; calendar plan §13 |
+| C13 | Time zone shown | Decided | Always GYST's application time zone. Accepted in the answer-29 group; shown to the owner for a second look. | Also show the event's own zone | Jay, 2026-11-18 | Answer 29; calendar plan §13 |
 | C14 | Employer calendars | Decided | None of the connected calendars belongs to an employer. Generic rule kept: an employer-owned calendar would need that employer's agreement before it is connected or its data is sent to the AI. | — | Jay, 2026-11-18 | Earlier; calendar plan §2, §13 |
-| C15 | House rules in v1 | Decided | Six kinds: day frame, home-by time, weekly block, travel buffer, prayer length and task length, with a default day frame when none is set. | Free-text rules read by the AI | Jay, 2026-11-18 | Answer 29; calendar plan §7 |
+| C15 | House rules in v1 | Decided | Six kinds: day frame, home-by time, weekly block, travel buffer, prayer length and task length, with a default day frame when none is set. Accepted in the answer-29 group; shown to the owner for a second look. | Free-text rules read by the AI | Jay, 2026-11-18 | Answer 29; calendar plan §7 |
 | C16 | Build priority | Decided | Calendar first: the calendar Issues come before the Secretary on the web, and mail after that. | Mail first | Jay, 2026-11-18 | Earlier; build order |
 | C17 | When to ask for calendar write access | To confirm | Recommended: at the first sign-in, so one consent covers reading and writing. | A later "allow GYST to edit your calendar" consent step | Jay (pending); recommended 2026-11-18 | Calendar plan §16.1 |
-| C19 | Secretary changes to events | Decided | Every event change the Secretary proposes is a card the owner confirms. Undo for 10 minutes. A delete is held 2 minutes before it is sent to the provider. | — | Jay, 2026-11-18 | Answers 21, 35; calendar plan §16.3, §16.4 |
+| C19 | Secretary changes to events | Decided | Every event change the Secretary proposes is a card the owner confirms, with Undo, and a delete is held briefly before it is sent to the provider. Still to confirm, the durations: Undo for 10 minutes, a 2-minute hold. | — | Jay, 2026-11-18 | Answers 21, 35; calendar plan §16.3, §16.4 |
 | C20 | Repeating events and guests | To confirm | Recommended: an edit applies to "this event" or "the whole series"; no adding or removing guests in v1; an event with guests can be changed only when the owner organises it, and the guests are told. | Full guest editing | Jay (pending); recommended 2026-11-18 | Calendar plan §16.3 |
 | C21 | Creating repeating events | To confirm | Recommended: v1 creates single events only; repeating events can be edited but not created. | Repeating events can be created in v1 | Jay (pending); recommended 2026-11-18 | Calendar plan §16.3 |
 
@@ -139,7 +143,7 @@ column.
 | D5 | Siri scope and public paths | Dropped | Not needed: there is no Siri channel. | — | Jay, 2026-11-18 | Answers 20, 25; voice plan §7 |
 | D6 | Auto-confirm | Decided | Off. Every change needs Confirm. | Auto-confirm per action, off by default | Jay, 2026-11-18 | Answer 21; voice plan §7 |
 | D7 | AI provider | Decided | Anthropic (Claude) for now, paid from the owner's prepaid API credit. Gemini or ChatGPT may follow when the credit runs out, each as a new adapter and a new decision. Anthropic's privacy centre states that API inputs and outputs are not used for training unless the customer opts in ([source](https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training)). | Stay on OpenAI (the earlier recommendation) | Jay, 2026-11-18 | Earlier; Secretary brain §13 |
-| D8 | Monthly AI cap | Decided | $30 a month for all AI features together (Secretary, Coach and food), with no separate sub-cap. | An assistant sub-cap inside the $30 | Jay, 2026-11-18 | Answer 28; Secretary brain §15 |
+| D8 | Monthly AI cap | Decided | $30 a month for now, for all AI features together (Secretary, Coach and food). | An assistant sub-cap inside the $30 | Jay, 2026-11-18 | Answer 28; Secretary brain §15 |
 | D9 | How long conversations are kept | To confirm | Recommended: the full text of both sides for 1 year, with a delete button; no sound (S21). | Keep sound recordings as well | Jay (pending); recommended 2026-11-18 | Secretary brain §21 |
 | D10 | One proposal system | Decided | One generic proposal-and-change system for every change the AI proposes. | A second, health-only system | Jay, 2026-11-18 | Answer 29; voice plan §7 |
 | D11 | Reaching development or infrastructure | Decided | Never: no merge, deploy, shell or backend access. App data only. | — | Jay, 2026-11-18 | Answer 22; voice plan §7 |
@@ -150,26 +154,26 @@ column.
 | S6 | Event descriptions and guests | Decided | The Secretary may see event descriptions and guest names. Guest email addresses are not stored. | Only on request; guest names never | Jay, 2026-11-18 | Answer 23; calendar plan §16.4 |
 | S7 | Meaning of "next Friday" | Decided | The coming Friday. Every answer names the date. | Friday of next week | Jay, 2026-11-18 | Answer 10; Secretary brain §11 |
 | S8 | Free-time phrasing | Decided | The model phrases it; the server checks every time against the free-time engine and falls back to its own sentence. | Always a fixed template | Jay, 2026-11-18 | Answer 29; Secretary brain §11 |
-| S9 | Workout pick | Decided | A deterministic ranking from workout history and the weekly target; nutrition as context only; no medical claims. | Let the model choose freely | Jay, 2026-11-18 | Answer 29; Secretary brain §11 |
-| S10 | Adding a project | Decided | Always a proposal the owner confirms, never auto-confirmed, with undo for 10 minutes. | A high-class action (web plus password) | Jay, 2026-11-18 | Answer 21; Secretary brain §11 |
-| S11 | Proposals after reading email or invite text | Decided | Marked as tainted, labelled on the card, and never auto-applied. | Treated like other proposals | Jay, 2026-11-18 | Answer 29; Secretary brain §8, §11 |
+| S9 | Workout pick | Decided | A deterministic ranking from workout history and the weekly target; nutrition as context only; no medical claims. Accepted in the answer-29 group; shown to the owner for a second look. | Let the model choose freely | Jay, 2026-11-18 | Answer 29; Secretary brain §11 |
+| S10 | Adding a project | Decided | Always a proposal the owner confirms, never auto-confirmed, with Undo. Still to confirm: the 10-minute undo. | A high-class action (web plus password) | Jay, 2026-11-18 | Answer 21; Secretary brain §11 |
+| S11 | Proposals after reading email or invite text | Decided | Marked as tainted, labelled on the card, and never auto-applied. | Treated like other proposals | Jay, 2026-11-18 | Answer 21; Secretary brain §8, §11 |
 | S12 | Secretary-ready rule | Decided | Every chunk's Issue and PR names its Secretary tool, or says N/A. | Ad hoc | Jay, 2026-11-18 | Answer 29; Secretary brain §9, §11 |
 | S13 | Siri reading mail | Dropped | Not needed: there is no Siri channel. | — | Jay, 2026-11-18 | Answer 25; Secretary brain §22 |
 | S14 | A Secretary that speaks first | Decided | She speaks only when asked, except for the 08:00 morning brief. | No morning brief in v1 | Jay, 2026-11-18 | Answer 24; Secretary brain §20 |
 | S15 | Local-only items and the AI | To confirm | Recommended: items marked Local-only (and their tasks) stay hidden from the AI; Private items are sent. | Send Local-only items too | Jay (pending); recommended 2026-11-18 | Secretary brain §17 |
 | S16 | Sensitive-content guard | Decided | A deterministic check on the server runs before any text reaches the provider. An email, event, task or note that holds a licence or product key, an API key or token, a private key, a password, a one-time or recovery code, or a card, bank, social insurance or driver's licence number is withheld whole, never partly redacted. She replies with a fixed sentence that points to GYST. Skips are logged as a count only. It is an acceptance criterion for every Secretary PR. The detector list is refined in Issue #242 (S-G). | Redact the match and send the rest; ask the model to self-censor | Jay, 2026-11-18 | Earlier; Secretary brain §8.1 |
 | S17 | An event the guard flags | Decided | All its text is withheld; its times stay as "busy, details withheld", so free time stays correct. | Drop the whole event | Jay, 2026-11-18 | Answer 29; Secretary brain §8.1 |
-| S18 | Secretary results as a push | Decided | "Your answer is ready" only, never content, for turns the owner started, with its own switch. | Put the answer in the notification | Jay, 2026-11-18 | Answer 29; Secretary brain §11 |
+| S18 | Secretary results as a push | Decided | "Your answer is ready" only, never content, for turns the owner started, with its own switch. | Put the answer in the notification | Jay, 2026-11-18 | Answer 15; Secretary brain §11 |
 | S19 | Listening mode | Decided | Listening only while GYST is open, on screen and unlocked, with a visible sign and the wake word "Secretary"; it stops when the screen locks or the app is left. The VX-1 phone test proves it works first. | — | Jay, 2026-11-18 | Answer 20; Secretary brain §18 |
 | S20 | Speech recognition engine | To confirm | Recommended: an in-page keyword spotter and transcriber on the phone, so audio never leaves it, chosen after the VX-1 test; the browser's own recogniser where it works; keyboard dictation always available. | A hosted speech provider, only if the test fails and the owner approves a new provider | Jay (pending); recommended 2026-11-18 | Secretary brain §18 |
 | S21 | Conversation log | To confirm | Recommended: keep the full text of both sides; no sound recordings. | Keep sound recordings as well | Jay (pending); recommended 2026-11-18 | Secretary brain §21 |
 | S22 | Which model answers | Decided | Sonnet for every turn. Opus only through a fixed planning-job rule, after clarifying questions and a Confirm. The model never chooses the model. The rule's design is as recommended. | Let the model choose; Opus for everything | Jay, 2026-11-18 | Answer 27; Secretary brain §14 |
-| S23 | Control of app data | Decided | She can view, add, edit and delete tasks, projects, events, food and health logs, goals and reminders. Every write is confirmed, with single-item undo for 10 minutes. Still to confirm: a bulk delete needs the password and lists every item, at most 50 per card. | Bulk delete with Confirm alone (inferred) | Jay, 2026-11-18 | Answers 22, 35; Secretary brain §16 |
+| S23 | Control of app data | Decided | She can view, add, edit and delete tasks, projects, events, food and health logs, goals and reminders. Every write is confirmed, with single-item Undo. Still to confirm: the 10-minute undo, and that a bulk delete needs the password and lists every item, at most 50 per card. | Bulk delete with Confirm alone (inferred) | Jay, 2026-11-18 | Answers 22, 35; Secretary brain §16 |
 | S24 | What she may see | Decided | Everything a secretary would see. S16 items are always withheld. Still to confirm: Local-only items (S15). | Fixed limits on private projects, descriptions and guests (the earlier recommendation) | Jay, 2026-11-18 | Answer 23; Secretary brain §17 |
 | S25 | Roadmaps | Decided | From a goal: clarifying questions, then a planned route of courses, projects and certifications as milestones against a deadline; tracking in the morning brief; certificate or award emails proposed as milestone evidence, always as a proposal; the finished roadmap goes into an achievements book. The design is as recommended. | — | Jay, 2026-11-18 | Answer 5; Secretary brain §19 |
 | S26 | Web search to find real courses | Open | Recommended: allow it in planning jobs only, at most 10 searches a job. Each search costs money and sends the search words outside GYST. | No web search: courses come from the model's own knowledge, each link marked "check this link" | Jay (pending); recommended 2026-11-18 | Secretary brain §19 |
 | S27 | AI-written morning summary | Decided | Written by the AI once a day for the morning brief, within the cap. The push shows no content. S16 applies. | — | Jay, 2026-11-18 | Answers 14, 24; Secretary brain §20 |
-| P1 | Food-photo analysis on Claude | Decided | Identification only; the photo is the only data sent. It is its own Issue (#243). | Send the day's context with the photo | Jay, 2026-11-18 | Answer 35; Secretary brain §13 |
+| P1 | Food-photo analysis on Claude | Decided | Photo identification only; the photo is the only data in that call. It is its own Issue (#243). The owner later asked for the day's context to go with the meal; how that is sent is F6 (to confirm). | — | Jay, 2026-11-18 | Answer 35; Secretary brain §13 |
 
 ## 8. Mail
 
@@ -181,12 +185,12 @@ column.
 | M5 | Employer inboxes | Decided | None of the inboxes belongs to an employer. Generic rule kept: an employer-owned inbox would need that employer's agreement first. | — | Jay, 2026-11-18 | Earlier; mail plan §3 |
 | M6 | Sync timing | Decided | As M26: Inbox and Sent every 3 minutes, other folders every 30 minutes. | Every 5 minutes | Jay, 2026-11-18 | Answer 17; mail plan §16.5 |
 | M7 | What is kept | Decided | All history, and attachments. Still to confirm: what "all history" means in detail (M24). | Inbox only, 90 days, no attachments | Jay, 2026-11-18 | Answer 17; mail plan §17, §18 |
-| M9 | How email is shown | Decided | Text first. Sanitised HTML later, only after the site's content security policy is enforced. Remote images blocked. | Sanitised HTML in v1 (inferred) | Jay, 2026-11-18 | Answer 29; mail plan §9 |
+| M9 | How email is shown | To confirm | Recommended: text only first. Sanitised HTML later, only after the site's content security policy is enforced. Remote images blocked. | Sanitised HTML in v1 (inferred) | Jay (pending); recommended 2026-11-18 | Mail plan §9 |
 | M10 | AI summaries and triage | Decided | Summaries on request for every group, behind S16. No background AI triage. Amended: the scheduled morning-brief summary (S27) is allowed. | Background AI triage | Jay, 2026-11-18 | Earlier, amended by S27; mail plan §14 |
 | M12 | Unread state | Decided | Mirrors the provider. Opening a message in GYST clears the dot in GYST only. Sending doesn't change this. | Mark read at the provider (inferred) | Jay, 2026-11-18 | Answer 29; mail plan §14 |
 | M13 | Removing an inbox | Decided | Deletes its cached mail and its secret at once and revokes the token. Tasks keep the saved subject and sender. | Keep the cache until it ages out (inferred) | Jay, 2026-11-18 | Answer 29; mail plan §14 |
 | M14 | The Secretary and mail | Decided | She reads mail and may draft replies. Sending always needs the owner's Confirm (M22). | Read-only, no drafts | Jay, 2026-11-18 | Earlier, amended by answer 16; mail plan §19 |
-| M15 | Zoho | Decided | IMAP is on the account's plan. The server hosts are taken from the provider's documentation and the account's own settings, stored per account, never hard-coded. | The Zoho Mail API | Jay, 2026-11-18 | Answer 19; mail plan §16.6 |
+| M15 | Zoho | Decided | A Zoho account connects through IMAP; the owner confirms that the plan includes IMAP and which region the account is in. Server hosts are taken from the provider's documentation and the account's own settings, stored per account, never hard-coded. | The Zoho Mail API | Jay, 2026-11-18 | Answer 19; mail plan §16.6 |
 | M19 | Email summary | Decided | Inside the 08:00 morning brief, saying "Nothing major" when nothing needs attention. It replaces a separate daily digest. | A separate daily digest; hourly | Jay, 2026-11-18 | Answer 14; mail plan §19 |
 | M20 | Send permissions | Decided | Gmail `gmail.send`; Microsoft `Mail.Send` (plus `Mail.ReadWrite` only if drafts or large attachments are kept at the provider); Yahoo and Zoho through SMTP with the same app password. Scopes follow the vendors' documentation. | `gmail.compose` or `gmail.modify` (restricted and broader) | Jay, 2026-11-18 | Answer 16; mail plan §16.1 |
 | M21 | Build or adopt mail | To confirm | Recommended: build inside GYST on permissively licensed Go libraries. No permissively licensed mail application fits. | Adopt an open-source webmail app (those found are copyleft and add a second runtime) | Jay (pending); recommended 2026-11-18 | Mail plan §16.4 |
@@ -202,9 +206,9 @@ column.
 | F2 | Where a profile photo is kept | Decided | A re-encoded JPEG (at most 800 px and 250 KB, location data removed) inside the main database, so backups include it; served only behind the session; deleted with the profile. The design is as recommended. This changes "photos are never stored" for this one path only. | A file outside the database (not backed up) | Jay, 2026-11-18 | Later; Secretary brain §24.1 |
 | F3 | One photo per profile | Decided | A new photo for a profile that already has one is not kept unless the owner taps "Use this photo instead". | Keep several photos (inferred) | Jay, 2026-11-18 | Later; Secretary brain §24.1 |
 | F4 | Describe a meal in words | Decided | The AI names the foods and grams; GYST's own food data supplies the values; the AI's figures are used only where there is no match, labelled and stored as an estimate; nothing is saved without Save. Still to confirm: it can't ship until R1 is answered. | — | Jay, 2026-11-18 | Later; Secretary brain §24.2 |
-| F5 | Adjust before logging | Decided | Grams per item, a meal portion from ×0.5 to ×2, and macro edits only on AI-estimate items. The AI's original figures are kept to measure accuracy. The design is as recommended. | — | Jay, 2026-11-18 | Later; Secretary brain §24.3 |
+| F5 | Adjust before logging | Decided | Before logging, the owner can adjust every food in the meal, including raising or lowering its macros. The AI's original figures are kept to measure accuracy. The controls (grams per item, a meal portion from ×0.5 to ×2) follow the recommended design. | — | Jay, 2026-11-18 | Later; Secretary brain §24.3 |
 | F6 | The day's context for a meal | To confirm | Recommended: the day's diary and health numbers go in a separate "how this fits your day" note after Save, not in the photo identification call. | Send them with the photo identification call | Jay (pending); recommended 2026-11-18 | Secretary brain §24.4 |
-| F7 | What the AI keeps | Decided | The AI keeps nothing between calls and is not trained on this data. What it "knows" is what GYST sends each time. GYST learns usual portions itself. | — | Jay, 2026-11-18 | Later (a statement of fact); Secretary brain §24.5 |
+| F7 | What the AI keeps | Decided | Note, not a choice: the AI keeps nothing between calls and is not trained on this data. What it "knows" is what GYST sends each time. GYST learns usual portions itself. | — | — (a fact, recorded 2026-11-18) | Anthropic's data terms; Secretary brain §13, §24.5 |
 | F8 | Owner-entered macros | Decided | The owner can type a food's macros himself, per gram. The AI estimate is used only when he hasn't. | — | Jay, 2026-11-18 | Later |
 | R1 | Rule change for AI nutrition estimates | To confirm | Recommended: a line in [`docs/RULES.md`](../../RULES.md) §3.2 that allows a labelled AI nutrition estimate, saved by the owner, only where GYST's own food data has no match; an unknown nutrient stays NULL. Only the owner changes the rules. | No rule change, so no AI estimate is ever stored | Jay (pending); recommended 2026-11-18 | Secretary brain §24.2 |
 | S28 | The Secretary as personal coach | Decided | The Secretary is also the owner's personal coach: one assistant with the health-coach role, reading his history through GYST's lookups. The model is not trained on him; GYST sends what is needed each time. Still open: how the existing Coach screen and the Secretary share one assistant. | Two separate assistants (inferred) | Jay, 2026-11-18 | Later |
@@ -274,9 +278,9 @@ not yet opened; CF-8 doesn't add the New event button)
 - No adding or removing guests. An event with guests can be changed only when
   the owner organises it, and the card says the guests will be told
   (C20, to confirm).
-- A change proposed by the Secretary is a card the owner confirms (C19). Undo
-  lasts 10 minutes. A deleted event disappears from GYST at once, and the
-  provider delete waits 2 minutes.
+- A change proposed by the Secretary is a card the owner confirms (C19), with
+  Undo. A deleted event disappears from GYST at once, and the provider delete
+  waits a short time (10-minute undo and 2-minute hold: to confirm, C19).
 - If the event changed at the provider in the meantime, GYST shows the new
   version and the owner re-applies or drops the change (C18).
 - With the provider unreachable, the change fails with a clear message.

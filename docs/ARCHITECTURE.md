@@ -212,8 +212,10 @@ calculated in UTC, which preserves the correct offset on DST transition days.
 
 Docker Compose runs the Go app on the private Compose network and Caddy on
 HTTPS port 3443. Caddy terminates TLS and reverse-proxies to the private Compose
-service. VAPID private keys and link-provider tokens (GitHub, Jira, Slack) enter
-through environment variables and are never written to `app_settings` or committed.
+service. VAPID private keys, the Hevy and AI-provider API keys, the Health sync
+token and link-provider tokens (GitHub, Jira, Slack) enter through environment
+variables and are never written to `app_settings` or committed. An AI-provider
+key may instead be saved in Settings, encrypted in `ai_settings`.
 
 The app container has a Docker healthcheck (GYST-VN-016): every 30 s it runs
 `/app/lifeops healthcheck`, which GETs `http://127.0.0.1:8080/healthz` with a
