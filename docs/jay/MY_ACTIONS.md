@@ -1,3 +1,4 @@
+- [ ] CF-1 · Answer the "to confirm" and open items in 19A · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/audit/vnext/19A_CONNECTED_DATA_DECISIONS.md
 - [ ] AI-1 #243 · After deploy: analyse one meal photo with Claude selected · https://gyst.zaylolabs.com/health/nutrition
 - [ ] AI-1 #243 · Settings › AI provider: Anthropic, paste key; clear old photo model · https://gyst.zaylolabs.com/settings
 - [ ] AI-1 #243 · Anthropic Console: create key, set monthly spend limit, auto-reload off · https://github.com/JayDalool/gyst-lifeops/issues/243
