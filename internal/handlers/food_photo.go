@@ -67,7 +67,7 @@ func (h *Handler) healthFoodPhotoAnalyze(w http.ResponseWriter, r *http.Request)
 	result, err := analyzer.AnalyzeFoodPhoto(ctx, jpeg)
 	if err != nil {
 		status, msg := http.StatusBadGateway, healthcoach.ErrUnavailable.Error()
-		for _, known := range []error{healthcoach.ErrNotConfigured, healthcoach.ErrBusy, healthcoach.ErrDeclined, healthcoach.ErrPhotoUnreadable, healthcoach.ErrUnavailable} {
+		for _, known := range []error{healthcoach.ErrNotConfigured, healthcoach.ErrBusy, healthcoach.ErrDeclined, healthcoach.ErrCreditExhausted, healthcoach.ErrSpendLimit, healthcoach.ErrPhotoUnreadable, healthcoach.ErrUnavailable} {
 			if errors.Is(err, known) {
 				msg = known.Error()
 			}

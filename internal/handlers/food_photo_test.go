@@ -232,6 +232,9 @@ func TestPhotoAnalyzeProviderErrorsAreFixedMessages(t *testing.T) {
 		{healthcoach.ErrNotConfigured, 503},
 		{healthcoach.ErrDeclined, 502},
 		{healthcoach.ErrPhotoUnreadable, 502},
+		// 502, never 503: the camera script replaces any 503 with "set up yet".
+		{healthcoach.ErrCreditExhausted, 502},
+		{healthcoach.ErrSpendLimit, 502},
 		{errors.New("vendor said: sk-LEAK prompt text"), 502},
 	} {
 		h := visionHandler(t, &fakeVision{err: c.err})
@@ -241,6 +244,12 @@ func TestPhotoAnalyzeProviderErrorsAreFixedMessages(t *testing.T) {
 		}
 		if strings.Contains(w.Body.String(), "LEAK") || strings.Contains(w.Body.String(), "vendor") {
 			t.Errorf("vendor text leaked: %s", w.Body.String())
+		}
+		if errors.Is(c.err, healthcoach.ErrCreditExhausted) || errors.Is(c.err, healthcoach.ErrSpendLimit) {
+			var body map[string]string
+			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || body["error"] != c.err.Error() {
+				t.Errorf("%v: body %s", c.err, w.Body.String())
+			}
 		}
 	}
 }

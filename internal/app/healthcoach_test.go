@@ -1,6 +1,10 @@
 package app
 
-import "testing"
+import (
+	"testing"
+
+	"lifeops-tracker/internal/healthcoach"
+)
 
 func TestHealthCoachProviderSelection(t *testing.T) {
 	cases := []struct {
@@ -27,6 +31,10 @@ func TestHealthCoachProviderSelection(t *testing.T) {
 			}
 			if p == nil || p.Name() != c.want {
 				t.Fatalf("want %s, got %v", c.want, p)
+			}
+			// #243: both providers can read a meal photo.
+			if _, ok := p.(healthcoach.FoodPhotoAnalyzer); !ok {
+				t.Fatalf("%s is not a FoodPhotoAnalyzer", c.want)
 			}
 		})
 	}

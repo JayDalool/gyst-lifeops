@@ -1,17 +1,26 @@
 package healthcoach
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
+	"github.com/anthropics/anthropic-sdk-go/shared"
 	"github.com/anthropics/anthropic-sdk-go/shared/constant"
 )
+
+// anthropicBaseURL is unexported and constant in a normal build so an
+// environment variable can't redirect health data and the key elsewhere
+// (#243). Only anthropic_browsercheck.go, compiled with the browsercheck tag,
+// can change it, and only to a loopback address.
+var anthropicBaseURL = "https://api.anthropic.com/"
 
 // DefaultAnthropicModel is used when HEALTH_AI_MODEL is unset.
 const DefaultAnthropicModel = "claude-opus-5-5"
@@ -21,8 +30,24 @@ const maxSteps = 6
 
 // Anthropic calls the Claude Messages API through the official Go SDK.
 type Anthropic struct {
-	client anthropic.Client
-	model  string
+	client     anthropic.Client
+	model      string
+	photoModel string
+}
+
+// WithPhotoModel sets the model used for meal photos; empty keeps the default.
+func (a *Anthropic) WithPhotoModel(model string) *Anthropic {
+	if m := strings.TrimSpace(model); m != "" {
+		a.photoModel = m
+	}
+	return a
+}
+
+func (a *Anthropic) photoModelName() string {
+	if a.photoModel != "" {
+		return a.photoModel
+	}
+	return DefaultAnthropicModel
 }
 
 // NewAnthropic builds the adapter. The key is passed explicitly and kept
@@ -39,10 +64,11 @@ func newAnthropic(apiKey, model string, extra ...option.RequestOption) *Anthropi
 	opts := append([]option.RequestOption{
 		// Pinned so an environment variable (ANTHROPIC_BASE_URL) can't redirect
 		// health data and the key elsewhere. Tests override it explicitly.
-		option.WithBaseURL("https://api.anthropic.com/"),
+		option.WithBaseURL(anthropicBaseURL),
 		option.WithAPIKey(apiKey),
 		option.WithRequestTimeout(60 * time.Second),
 		option.WithMaxRetries(1),
+		option.WithMiddleware(noRetryOnCredit),
 	}, extra...)
 	return &Anthropic{model: model, client: anthropic.NewClient(opts...)}
 }
@@ -127,11 +153,72 @@ func (a *Anthropic) Respond(ctx context.Context, req Request) (Response, error) 
 	return Response{}, ErrUnavailable
 }
 
+// creditFailure classifies the documented "money" responses from the status
+// and body alone. It returns nil for every other response.
+//   - 402 billing_error: the prepaid credit is exhausted.
+//   - 400 invalid_request_error "You have reached your specified ... API usage
+//     limits": the monthly spend limit Jay set in the Console.
+//   - 429 with error.details.error_code enforced_spend_limit_reached: the tier
+//     spend cap. An ordinary 429 is a rate limit and stays retryable.
+//
+// Sources: platform.claude.com/docs/en/api/errors and api/rate-limits,
+// read 2026-11-18. Prepaid-balance exhaustion has no separate documented shape.
+func creditFailure(status int, body []byte) error {
+	var env struct {
+		Error struct {
+			Type    string `json:"type"`
+			Message string `json:"message"`
+			Details struct {
+				ErrorCode string `json:"error_code"`
+			} `json:"details"`
+		} `json:"error"`
+	}
+	_ = json.Unmarshal(body, &env) // a non-JSON body just matches nothing below
+	switch {
+	case status == http.StatusPaymentRequired || env.Error.Type == string(shared.ErrorTypeBillingError):
+		return ErrCreditExhausted
+	case status == http.StatusTooManyRequests && env.Error.Details.ErrorCode == "enforced_spend_limit_reached":
+		return ErrSpendLimit
+	case status == http.StatusBadRequest && strings.HasPrefix(env.Error.Message, "You have reached your specified"):
+		return ErrSpendLimit
+	}
+	return nil
+}
+
+// noRetryOnCredit stops the SDK retrying a response that more waiting cannot
+// fix. The SDK retries any 429 and obeys x-should-retry first, so the header
+// is set before it decides. A 429 body is read in full and restored for the
+// SDK, and the original is closed so the connection is not leaked.
+func noRetryOnCredit(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
+	res, err := next(req)
+	if err != nil || res == nil {
+		return res, err
+	}
+	switch res.StatusCode {
+	case http.StatusPaymentRequired:
+		res.Header.Set("x-should-retry", "false")
+	case http.StatusTooManyRequests:
+		if res.Body == nil {
+			return res, nil
+		}
+		b, readErr := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		res.Body = io.NopCloser(bytes.NewReader(b))
+		if readErr == nil && creditFailure(res.StatusCode, b) != nil {
+			res.Header.Set("x-should-retry", "false")
+		}
+	}
+	return res, nil
+}
+
 // mapAnthropicError keeps vendor detail (which may echo request content) out
 // of the page and the logs.
 func mapAnthropicError(err error) error {
 	var apiErr *anthropic.Error
 	if errors.As(err, &apiErr) {
+		if known := creditFailure(apiErr.StatusCode, []byte(apiErr.RawJSON())); known != nil {
+			return known
+		}
 		switch apiErr.StatusCode {
 		case http.StatusUnauthorized, http.StatusForbidden:
 			return ErrNotConfigured

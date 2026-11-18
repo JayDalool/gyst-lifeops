@@ -425,6 +425,10 @@ func TestAISettingsValidation(t *testing.T) {
 	if rec := f.post(t, v); rec.Code != http.StatusSeeOther || f.h.coach().Name() != "anthropic" {
 		t.Errorf("provider switch with a key = %d, provider %v", rec.Code, f.h.coach())
 	}
+	// #243: with Anthropic chosen the camera must find an analyzer.
+	if _, ok := f.h.coach().(healthcoach.FoodPhotoAnalyzer); !ok {
+		t.Error("the Anthropic provider chosen in Settings is not a FoodPhotoAnalyzer")
+	}
 }
 
 func TestAISettingsMethodAndBodyCap(t *testing.T) {
