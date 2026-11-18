@@ -2,12 +2,50 @@ package handlers
 
 import (
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
 )
+
+// render builds the page from its data alone. It once ran a PlayerStats query
+// on every page for the unused xpStats template function (#226); with the
+// database closed, any such query would now fail the render.
+func TestRenderDoesNotQueryDatabase(t *testing.T) {
+	db := migratedTestDB(t)
+	h := New(services.New(repository.New(db)), "../../web/templates")
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	h.render(rec, "galaxy.html", struct{ Page string }{Page: "galaxy"})
+	if rec.Code != 200 {
+		t.Fatalf("render with a closed database status %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+// The removed player-stat template functions must not come back unused.
+func TestTemplatesDoNotUseRemovedFuncs(t *testing.T) {
+	files, err := filepath.Glob("../../web/templates/*.html")
+	if err != nil || len(files) == 0 {
+		t.Fatalf("templates not found: %v", err)
+	}
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, name := range []string{"xpStats", "levelPct", "toNextLevel"} {
+			if strings.Contains(string(b), name) {
+				t.Errorf("%s uses removed template function %s", f, name)
+			}
+		}
+	}
+}
 
 // renderOK exercises the real render() path (layout + page + funcmap) and
 // fails on any non-200 or embedded template execution error. go test does not

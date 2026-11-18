@@ -15,7 +15,8 @@ import (
 // Food photo analysis (Issue #217): POST /health/nutrition/photo/analyze.
 // The photo is normalised in memory (imageintake), sent once to the configured
 // vision provider and dropped. Nothing is stored; the response is the
-// validated identification the review screen (#211) will show. No diary write.
+// validated identification plus a one-time nonce for the review screen
+// (food_camera.go). No diary write happens here.
 
 const foodPhotoField = "photo"
 
@@ -83,7 +84,7 @@ func (h *Handler) healthFoodPhotoAnalyze(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(h.buildPhotoReview(r, result))
 }
 
 func (h *Handler) logPhotoFailure(r *http.Request, category string) {
