@@ -1,3 +1,4 @@
+- [ ] CF-1 · Answer the "to confirm" and open items in 19A · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/audit/vnext/19A_CONNECTED_DATA_DECISIONS.md
 - [ ] #206 · Add "incline 8% · 5.0 km/h" to Hevy treadmill notes · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEVY_SETUP.md
 - [ ] #193 · Before and after deploy: read-only time zone check · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/timezone-data.md
 - [ ] #183 · After deploy: set export/calendar roadmaps to Public · https://github.com/JayDalool/gyst-lifeops/issues/183
