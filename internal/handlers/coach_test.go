@@ -242,3 +242,37 @@ func TestCoachProfile(t *testing.T) {
 		t.Fatalf("long notes: %d", w.Code)
 	}
 }
+
+// Issue #236: the Coach is offered exactly the nine Health tools plus the
+// navigation action, in this order, and never a Secretary-only tool or any
+// task, project, prayer or course data.
+func TestCoachOffersOnlyHealthTools(t *testing.T) {
+	fc := &fakeCoach{reply: "ok"}
+	h := coachHandler(t, fc)
+	h.Service.Clock.Now = func() time.Time { return time.Date(2026, 10, 7, 12, 0, 0, 0, h.Service.Location()) }
+	if err := h.Service.Repo.CreateTask(&models.Task{Title: "SENTINEL-TASK-TITLE", Category: "work", Status: "pending", Priority: "medium", RepeatType: "none"}); err != nil {
+		t.Fatal(err)
+	}
+	if w := ask(h, "Hi", "http://example.com"); w.Code != http.StatusSeeOther {
+		t.Fatalf("ask: %d", w.Code)
+	}
+	var names []string
+	for _, tool := range fc.seen.Tools {
+		names = append(names, tool.Name)
+	}
+	want := []string{"get_health_today", "get_health_plan", "get_weight_trend", "get_training_summary", "get_recent_workouts", "get_exercise_progress", "get_hevy_routines", "get_food_products", "get_daily_checklist", "suggest_gyst_page"}
+	if strings.Join(names, ",") != strings.Join(want, ",") {
+		t.Fatalf("Coach tools %v, want %v", names, want)
+	}
+	everything := fc.seen.System
+	for _, tool := range fc.seen.Tools {
+		if out, err := tool.Run(context.Background(), json.RawMessage(`{}`)); err == nil {
+			everything += out
+		}
+	}
+	for _, banned := range []string{"SENTINEL-TASK-TITLE", "prayer", "Fajr", "get_day_brief", "list_tasks", "list_projects", "get_courses"} {
+		if strings.Contains(everything, banned) {
+			t.Fatalf("%q reached the Coach", banned)
+		}
+	}
+}

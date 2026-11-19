@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/secretary"
 	"lifeops-tracker/internal/services"
 	"math"
 )
@@ -23,6 +23,8 @@ import (
 // Health Coach (Issue #64). GYST builds a small context and offers the model
 // allowlisted, read-only tools over Health data only. No SQL, files, shell,
 // URLs or other LifeOps areas (tasks, projects, prayer, courses) are exposed.
+// The Secretary's wider catalogue lives in internal/secretary (Issue #236);
+// the Coach stays Health-only and takes only secretary.HealthTools.
 
 const (
 	coachHistoryTurns = 8    // visible turns sent back to the provider
@@ -147,177 +149,11 @@ func coachToday(data HealthData) map[string]any {
 	}
 }
 
-// coachTools are the only things the model can read. Each returns compact JSON.
+// coachTools are the only things the model can read: the nine Health tools
+// (internal/secretary.HealthTools, over coachHealth) and the navigation action.
+// The Coach gets no other Secretary tool and no freshness sync (Issue #236).
 func (h *Handler) coachTools(data HealthData, action *string) []healthcoach.Tool {
-	now, loc := h.Service.Now(), h.Service.Location()
-	training := func() []models.TrainingEntry {
-		cache, err := h.Service.Repo.TrainingCache("hevy")
-		if err != nil {
-			return nil
-		}
-		return cache.Entries
-	}
-	none := func(f func() (any, error)) func(context.Context, json.RawMessage) (string, error) {
-		return func(context.Context, json.RawMessage) (string, error) {
-			v, err := f()
-			if err != nil {
-				return "", errors.New("data unavailable")
-			}
-			return toJSON(v)
-		}
-	}
-	return []healthcoach.Tool{
-		{Name: "get_health_today", Description: "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight.",
-			Run: none(func() (any, error) { return coachToday(data), nil })},
-		{Name: "get_health_plan", Description: "The current health plan: dates and daily targets (calories, macros, steps, strength and cardio sessions per week), plus reference_targets: outside recommendations (for example a dietitian) labelled with their source, all not_active. Never present a reference target as the active plan.",
-			Run: none(func() (any, error) {
-				c, err := h.Service.GetHealthCycleForDate(data.Today.Date)
-				var cycleID *int64
-				if err == nil {
-					cycleID = &c.ID
-				}
-				refs, rerr := h.coachReferenceTargets(cycleID)
-				if rerr != nil {
-					return nil, rerr
-				}
-				if err != nil {
-					return map[string]any{"plan": nil, "reference_targets": refs}, nil
-				}
-				return map[string]any{"reference_targets": refs, "title": c.Title, "goal": c.PrimaryGoal, "start": c.StartDate, "end": c.EndDate, "calories": c.DailyCalorieTarget, "protein_g": c.ProteinTargetG,
-					"carbs_g": c.CarbsTargetG, "fat_g": c.FatTargetG, "fiber_g": c.FiberTargetG, "target_daily_deficit_kcal": c.TargetDeficitKcal,
-					"strength_sessions_per_week": c.StrengthSessionsPerWeek, "cardio_sessions_per_week": c.CardioSessionsPerWeek, "step_target": c.StepTarget}, nil
-			})},
-		{Name: "get_weight_trend", Description: "Weight readings from the last 90 days (date, kg), latest reading, the 7-day average (null when fewer than 4 days have readings) and change since the plan started.",
-			Run: none(func() (any, error) {
-				entries, err := h.Service.ListHealthWeightEntries()
-				if err != nil {
-					return nil, err
-				}
-				readings := []map[string]any{}
-				cut := now.AddDate(0, 0, -90)
-				for _, e := range entries {
-					at, err := time.Parse(time.RFC3339Nano, e.MeasuredAt)
-					if err == nil && at.After(cut) && !at.After(now) {
-						readings = append(readings, map[string]any{"date": at.In(loc).Format("2006-01-02"), "kg": e.WeightKg})
-					}
-				}
-				if len(readings) > 30 {
-					readings = readings[:30]
-				}
-				avg := data.Weight.Average
-				out := map[string]any{"latest_kg": metricOrNilString(data.Weight.Present, data.Weight.Latest), "change_since": data.Weight.Since, "change": data.Weight.Change,
-					"change_is_between_7_day_averages": data.Weight.ChangeIsAverage, "readings_newest_first": readings,
-					"seven_day_average_kg": metricOrNilString(avg.Present, avg.Avg), "seven_day_average_days_used": nil, "seven_day_average_note": avg.Line,
-					"previous_seven_day_average_kg": metricOrNilString(avg.HasPrev, avg.Prev), "change_vs_previous_seven_days": metricOrNilString(avg.HasPrev, avg.Change)}
-				if avg.Present {
-					out["seven_day_average_days_used"] = avg.Days
-					if avg.MixedScales {
-						out["readings_note"] = avg.Note
-					}
-				}
-				return out, nil
-			})},
-		{Name: "get_training_summary", Description: "This week's workouts against the plan target, volume, training time, workouts per week for 8 weeks, and muscle-group shares over 30 days.",
-			Run: none(func() (any, error) {
-				e := training()
-				week := services.SummarizeTrainingWeek(e, now, loc)
-				target := 0
-				if c, err := h.Service.GetHealthCycleForDate(data.Today.Date); err == nil {
-					target = int(c.StrengthSessionsPerWeek)
-				}
-				groups := []map[string]any{}
-				for _, g := range services.MuscleGroupShares(e, now, 30) {
-					groups = append(groups, map[string]any{"group": g.Name, "percent": g.Percent, "sets": g.Sets})
-				}
-				return map[string]any{"this_week_workouts": week.Workouts, "weekly_target": target, "volume_kg": week.VolumeKG, "training_minutes": week.Minutes,
-					"workouts_without_end_time": week.UnknownTime, "workouts_per_week_oldest_first": services.WorkoutsPerWeek(e, now, loc, 8), "muscle_groups_30_days": groups}, nil
-			})},
-		{Name: "get_recent_workouts", Description: "The most recent Hevy workouts with each exercise's best set. Input: count (1-5).",
-			Properties: map[string]any{"count": map[string]any{"type": "integer", "minimum": 1, "maximum": 5}},
-			Run: func(_ context.Context, input json.RawMessage) (string, error) {
-				var in struct {
-					Count int `json:"count"`
-				}
-				_ = json.Unmarshal(input, &in)
-				in.Count = min(max(in.Count, 1), 5)
-				e := training()
-				sort.SliceStable(e, func(i, j int) bool { return e[i].StartedAt.After(e[j].StartedAt) })
-				out := []map[string]any{}
-				for _, w := range e {
-					if w.Kind != "workout" || len(out) == in.Count {
-						continue
-					}
-					exercises := []map[string]any{}
-					for _, ex := range w.Exercises {
-						item := map[string]any{"name": ex.Name, "muscle": services.MuscleName(ex.PrimaryMuscle), "best_set": bestSetText(ex.Sets), "work_sets": workSetCount(ex.Sets)}
-						addCardioFields(item, ex.Sets)
-						exercises = append(exercises, item)
-					}
-					item := map[string]any{"title": w.Title, "date": w.StartedAt.In(loc).Format("2006-01-02"), "exercises": exercises}
-					if !w.EndedAt.IsZero() {
-						item["minutes"] = int(w.EndedAt.Sub(w.StartedAt).Minutes())
-					}
-					out = append(out, item)
-				}
-				return toJSON(map[string]any{"workouts": out})
-			}},
-		{Name: "get_exercise_progress", Description: "Change in best estimated 1-rep max per exercise (exercises with 2+ sessions). Input: weeks (4, 12 or 26).",
-			Properties: map[string]any{"weeks": map[string]any{"type": "integer", "enum": []int{4, 12, 26}}},
-			Run: func(_ context.Context, input json.RawMessage) (string, error) {
-				var in struct {
-					Weeks int `json:"weeks"`
-				}
-				_ = json.Unmarshal(input, &in)
-				if in.Weeks != 4 && in.Weeks != 26 {
-					in.Weeks = 12
-				}
-				out := []map[string]any{}
-				for _, t := range services.ExerciseProgress(training(), now, in.Weeks*7) {
-					out = append(out, map[string]any{"exercise": t.Name, "change_percent": t.ChangePct, "sessions": t.Sessions, "best_set": t.BestSet})
-				}
-				return toJSON(map[string]any{"weeks": in.Weeks, "exercises": out, "note": "Only exercises logged in two or more sessions in the window appear."})
-			}},
-		{Name: "get_hevy_routines", Description: "Jay's Hevy routines and their exercises.",
-			Run: none(func() (any, error) {
-				out := []map[string]any{}
-				for _, r := range training() {
-					if r.Kind != "routine" {
-						continue
-					}
-					names := []string{}
-					for _, ex := range r.Exercises {
-						names = append(names, ex.Name)
-					}
-					out = append(out, map[string]any{"title": r.Title, "exercises": names})
-				}
-				return map[string]any{"routines": out}, nil
-			})},
-		{Name: "get_food_products", Description: "Foods and products Jay usually has, with per-serving nutrition (null = unknown).",
-			Run: none(func() (any, error) {
-				foods, err := h.Service.Repo.ListHealthFoods(false)
-				if err != nil {
-					return nil, err
-				}
-				out := []map[string]any{}
-				for _, f := range foods {
-					out = append(out, map[string]any{"name": f.Name, "serving": f.Serving, "kcal": f.Kcal, "protein_g": f.ProteinG, "carbs_g": f.CarbsG, "fat_g": f.FatG, "fiber_g": f.FiberG, "notes": f.Notes})
-				}
-				return map[string]any{"foods": out}, nil
-			})},
-		{Name: "get_daily_checklist", Description: "Today's checklist: Jay's own habits (done or not) and measured targets.",
-			Run: none(func() (any, error) {
-				out := []map[string]any{}
-				for _, r := range data.Checklist {
-					item := map[string]any{"name": r.Name, "done": r.Done}
-					if r.Measured {
-						item["measured"] = r.Value
-					}
-					out = append(out, item)
-				}
-				return map[string]any{"items": out}, nil
-			})},
-		healthcoach.ActionTool(action),
-	}
+	return append(secretary.HealthTools(coachHealth{h: h, data: data, now: h.Service.Now(), loc: h.Service.Location()}), healthcoach.ActionTool(action))
 }
 
 func metricOrNilString(ok bool, v string) any {
