@@ -146,7 +146,32 @@ func TestEditProjectArchivedLinkStillClearsOnNone(t *testing.T) {
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("status %d", rec.Code)
 	}
-	if p, r, d := linkRow(t, f.h, f.kid.ID); p != 0 || r != 0 || d != 0 {
+	// Unassigned is adopted into the dashboard roadmap in the same write (GYST-VN-028).
+	dash, err := f.h.Service.Repo.GetDashboardRoadmap()
+	if err != nil {
+		t.Fatalf("dashboard roadmap: %v", err)
+	}
+	if p, r, d := linkRow(t, f.h, f.kid.ID); p != 0 || r != dash.ID || d != 0 {
+		t.Fatalf("links after None = %d/%d/%d, want 0/%d/0", p, r, d, dash.ID)
+	}
+}
+
+// With no active roadmap there is nothing to adopt into: None leaves it NULL.
+func TestEditProjectNoneStaysUnassignedWithoutActiveRoadmap(t *testing.T) {
+	h, database := cycleHandler(t)
+	if _, err := database.Exec(`UPDATE roadmaps SET status='archived', archived_at=CURRENT_TIMESTAMP`); err != nil {
+		t.Fatal(err)
+	}
+	parent := cycleProject(t, h, "Fictional Parent Atlas", 0)
+	kid := cycleProject(t, h, "Fictional Child Orbit", parent.ID)
+	rec := serve(h, http.MethodPost, fmt.Sprintf("/projects/%d/edit", kid.ID), url.Values{
+		"name": {"Fictional Child Orbit"}, "status": {"active"}, "project_kind": {"subproject"},
+		"parent_project_id": {""}, "roadmap_id": {""}, "depends_on_project_id": {""},
+	})
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status %d", rec.Code)
+	}
+	if p, r, d := linkRow(t, h, kid.ID); p != 0 || r != 0 || d != 0 {
 		t.Fatalf("links after None = %d/%d/%d, want all cleared", p, r, d)
 	}
 }
