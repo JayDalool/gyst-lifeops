@@ -194,10 +194,6 @@ func (r *Repository) AdoptOrphanProjects() error {
 	return adoptOrphanProjectsTx(r.db)
 }
 
-type execer interface {
-	Exec(query string, args ...any) (sql.Result, error)
-}
-
 func adoptOrphanProjectsTx(x execer) error {
 	_, err := x.Exec(`UPDATE projects SET roadmap_id = (` + dashboardRoadmapIDSQL + `)
 		WHERE roadmap_id IS NULL AND EXISTS (
