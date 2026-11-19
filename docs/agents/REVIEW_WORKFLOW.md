@@ -15,6 +15,8 @@ implementing agent isn't independent and must say so (`docs/RULES.md` §7).
 
 ## Review output (posted as a PR review or comment)
 
+In the Command Center flow the code reviewer records its verdict in the ticket and also posts this format on the PR.
+
 ```markdown
 ## Independent review: Refs #<issue> (GYST-VN-nnn)
 
