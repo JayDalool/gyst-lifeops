@@ -61,6 +61,10 @@ var (
 	ErrUnavailable   = errors.New("The Health Coach couldn't answer right now. Try again in a minute")
 	ErrBusy          = errors.New("The Health Coach is busy. Try again in a moment")
 	ErrDeclined      = errors.New("The Health Coach can't help with that request")
+	// Anthropic money failures (#243). Handlers show both as 502: the camera
+	// page replaces any 503 with "set up yet".
+	ErrCreditExhausted = errors.New("The AI credit has run out. Add credit in the Anthropic Console, or switch provider in Settings.")
+	ErrSpendLimit      = errors.New("The monthly AI spend limit is reached. Raise it in the Anthropic Console, or switch provider in Settings.")
 )
 
 // Destinations is the navigation allowlist. The model may only name one of

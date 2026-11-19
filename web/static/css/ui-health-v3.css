@@ -536,3 +536,16 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
   .hv3-wbtl:not(.static):active { transform: none; }
 }
 [data-motion="reduced"] .hv3-wbtl.rise, [data-motion="reduced"] .wbt-wave, [data-motion="reduced"] .wbt-bub { animation: none; }
+
+/* AI food camera review (#211) */
+.hv3-cam .hv3-banner[hidden], .hv3-cam [hidden] { display: none; }
+.hv3-cam-notes { display: grid; gap: var(--vn-s1); padding-left: 1.1em; list-style: disc; font-size: var(--vn-t-sub); color: var(--vn-ink-2); margin: var(--vn-s2) 0; }
+.hv3-cam-notes:empty { display: none; }
+.hv3-cam-item { display: grid; gap: var(--vn-s3); padding: var(--vn-s3) var(--vn-s4); }
+.hv3-cam-tags { display: flex; flex-wrap: wrap; gap: var(--vn-s1); }
+.hv3-cam-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--vn-s2); }
+.hv3-cam-grid .wide { grid-column: 1 / -1; }
+.hv3-cam-grid label { display: grid; gap: 4px; font-size: var(--vn-t-foot); color: var(--vn-ink-2); }
+.hv3-cam-grid input { min-height: 44px; width: 100%; min-width: 0; font-size: 16px; }
+.hv3-cam-actions { display: flex; flex-wrap: wrap; gap: var(--vn-s2); margin: var(--vn-s3) 0; }
+@media (min-width: 600px) { .hv3-cam-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } .hv3-cam-grid .wide { grid-column: span 4; } }
