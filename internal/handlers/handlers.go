@@ -1545,12 +1545,12 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 	})
 }
 
-// defaultRoadmapFor returns the active dashboard roadmap that saving a project
-// with no roadmap chosen assigns it to, so the form can name the real
-// destination instead of "Unassigned". The note is non-empty when that
-// roadmap's privacy differs from the project's current effective privacy
-// (a new project counts as public), because the move could change what the
-// project exports (GYST-076 review).
+// defaultRoadmapFor returns the active dashboard roadmap that the form offers
+// as "<name> (default)" and posts by ID, so what is saved is what was shown
+// even if the default changes in another tab (GYST-076 review). The note is
+// non-empty only when moving the project there would really change its
+// effective privacy: the project's own flags and its parent's privacy keep it
+// hidden whatever the roadmap says. A new project counts as public.
 func (h *Handler) defaultRoadmapFor(project models.Project) (*models.Roadmap, string, error) {
 	rm, err := h.Service.Repo.GetDashboardRoadmap()
 	if errors.Is(err, sql.ErrNoRows) {
@@ -1559,23 +1559,38 @@ func (h *Handler) defaultRoadmapFor(project models.Project) (*models.Roadmap, st
 	if err != nil {
 		return nil, "", err
 	}
-	current := "public"
+	var current, own models.ProjectPrivacy
+	priv, err := h.Service.Repo.EffectiveProjectPrivacy()
+	if err != nil {
+		return nil, "", err
+	}
 	if project.ID != 0 {
-		priv, err := h.Service.Repo.EffectiveProjectPrivacy()
-		if err != nil {
+		current = priv[project.ID]
+		if own, err = h.Service.Repo.ProjectOwnPrivacy(project.ID); err != nil {
 			return nil, "", err
 		}
-		if p := priv[project.ID]; p.LocalOnly {
-			current = "local_only"
-		} else if p.Private {
-			current = "private"
+		if parent := priv[project.ParentProjectID]; project.ParentProjectID != 0 {
+			own.Private = own.Private || parent.Private
+			own.LocalOnly = own.LocalOnly || parent.LocalOnly
 		}
 	}
-	if rm.Privacy == current {
+	after := models.ProjectPrivacy{
+		Private:   own.Private || rm.Privacy == "private",
+		LocalOnly: own.LocalOnly || rm.Privacy == "local_only",
+	}
+	if after == current {
 		return &rm, "", nil
 	}
-	label := map[string]string{"public": "public", "private": "private", "local_only": "local only"}
-	return &rm, fmt.Sprintf("Choosing the default moves this project to a %s roadmap; it is %s now.", label[rm.Privacy], label[current]), nil
+	label := func(p models.ProjectPrivacy) string {
+		switch {
+		case p.LocalOnly:
+			return "local only"
+		case p.Private:
+			return "private"
+		}
+		return "public"
+	}
+	return &rm, fmt.Sprintf("Choosing the default changes this project from %s to %s.", label(current), label(after)), nil
 }
 
 // linkedArchivedProject returns the project linkID points at when it is not in

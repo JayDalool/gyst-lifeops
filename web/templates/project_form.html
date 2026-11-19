@@ -60,9 +60,10 @@
     <label class="field">
       <span>Roadmap</span>
       <select name="roadmap_id">
-        <option value="">{{if .DefaultRoadmap}}{{.DefaultRoadmap.Name}} (default){{else}}Unassigned{{end}}</option>
+        {{if not .DefaultRoadmap}}<option value="">Unassigned</option>{{end}}
         {{range .Roadmaps}}
-          <option value="{{.ID}}" {{if eq .ID $.Project.RoadmapID}}selected{{end}}>{{.Name}}</option>
+          {{$isDefault := and $.DefaultRoadmap (eq .ID $.DefaultRoadmap.ID)}}
+          <option value="{{.ID}}" {{if or (eq .ID $.Project.RoadmapID) (and $isDefault (eq $.Project.RoadmapID 0))}}selected{{end}}>{{.Name}}{{if $isDefault}} (default){{end}}</option>
         {{end}}
         {{with .LinkedRoadmap}}<option value="{{.ID}}" selected>{{.Name}} (archived)</option>{{end}}
       </select>
