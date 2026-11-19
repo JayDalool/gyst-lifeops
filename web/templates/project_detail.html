@@ -21,7 +21,7 @@
   {{if .Project.TotalItems}}{{with projectCard .Project}}{{template "gyst.progress" .ProgressView}}{{end}}{{end}}
   {{if .Stops}}
     <div class="phase-strip mt-16" aria-label="Stops on this trip">
-      {{range .Stops}}<i class="{{template "phaseClass" (nodeState .Project.Status .Progress)}}"></i>{{end}}
+      {{range .Stops}}<i class="{{template "phaseClass" (routeState .Project.Status .Progress)}}"></i>{{end}}
     </div>
     <p class="meta mt-8">{{len .Stops}} stops on this trip.</p>
   {{end}}
@@ -33,7 +33,7 @@
     <section class="gyst-card" id="overview">
       <h2 class="gyst-section-title">Overview</h2>
       <ul class="list">
-        <li><span class="grow meta">Status</span><span class="status {{template "detailStatusClass" (nodeState .Project.Project.Status .Project.Progress)}}"><span class="dot"></span>{{.Project.Project.Status}}</span></li>
+        <li><span class="grow meta">Status</span><span class="status {{template "detailStatusClass" (routeState .Project.Project.Status .Project.Progress)}}"><span class="dot"></span>{{.Project.Project.Status}}</span></li>
         <li><span class="grow meta">Missions</span><span class="num">{{.Project.CompletedItems}} / {{.Project.TotalItems}}</span></li>
         {{if .Project.Project.TargetDate}}<li><span class="grow meta">Target</span><span class="num">{{niceDate .Project.Project.TargetDate}}</span></li>{{end}}
         {{if .Project.NextDueItem}}<li><span class="grow meta">Next</span><span>{{.Project.NextDueItem}}</span></li>{{end}}

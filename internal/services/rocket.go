@@ -54,23 +54,6 @@ func (s *Service) ShipStats() (models.ShipStats, error) {
 	}, nil
 }
 
-// RouteState maps a project status + progress to a rocket-route node state.
-func RouteState(status string, progress int) string {
-	switch status {
-	case "completed", "done", "archived":
-		return "done"
-	case "locked", "upcoming", "paused":
-		return "locked"
-	case "blocked":
-		return "blocked"
-	default:
-		if progress >= 100 {
-			return "done"
-		}
-		return "active"
-	}
-}
-
 // BuildRocketRoute caps and positions nodes along the curved route. PathPct is
 // the node's fraction along the SVG path (the browser places nodes precisely
 // with getPointAtLength); LeftPct/TopPct follow a gentle wave as the no-JS
