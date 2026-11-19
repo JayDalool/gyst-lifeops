@@ -16,8 +16,8 @@ import (
 
 // FoodPhotoAnalyzer is the optional image capability of a Provider. It is a
 // separate interface so the text-only Provider contract is unchanged; a
-// provider without it (Anthropic today) simply reports the feature as not set
-// up. An Anthropic image path can implement it later.
+// provider without it simply reports the feature as not set up. OpenAI and
+// Anthropic (#243) implement it.
 type FoodPhotoAnalyzer interface {
 	// AnalyzeFoodPhoto takes one already-normalised JPEG and returns validated
 	// identification. The bytes are held in memory only.

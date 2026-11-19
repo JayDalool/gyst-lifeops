@@ -183,7 +183,7 @@ func healthCoachProvider(c HealthAIConfig) healthcoach.Provider {
 	case "anthropic":
 		if c.AnthropicKey != "" {
 			log.Printf("Health Coach: provider anthropic enabled")
-			return healthcoach.NewAnthropic(c.AnthropicKey, c.Model)
+			return healthcoach.NewAnthropic(c.AnthropicKey, c.Model).WithPhotoModel(c.VisionModel)
 		}
 		log.Printf("Health Coach: disabled (ANTHROPIC_API_KEY not set)")
 	case "openai":
