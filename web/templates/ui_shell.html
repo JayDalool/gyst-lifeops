@@ -12,6 +12,11 @@
 <nav aria-label="Primary" class="gyst-scope gyst-primary">
   <a href="/today" {{if eq $section "today"}}aria-current="page"{{end}}>{{template "gyst.icon" "house"}}<span>Today</span></a>
   <a href="/projects" {{if eq $section "projects"}}aria-current="page"{{end}}>{{template "gyst.icon" "folder-heart"}}<span>Projects</span></a>
+  {{if eq $section "projects"}}{{$area := projectsArea .Page}}<div class="gyst-projects-sub" role="group" aria-label="Projects areas">
+    <a href="/projects"{{if eq $area "projects"}} aria-current="page"{{end}}>Projects</a>
+    <a href="/galaxy"{{if eq $area "galaxy"}} aria-current="page"{{end}}>Galaxy</a>
+    <a href="/roadmap"{{if eq $area "roadmaps"}} aria-current="page"{{end}}>Roadmaps</a>
+  </div>{{end}}
   <a href="/health" {{if eq $section "health"}}aria-current="page"{{end}}>{{template "gyst.icon" "heart"}}<span>Health</span></a>
   {{if eq $section "health"}}{{$tab := healthTab .}}<div class="gyst-health-sub" role="group" aria-label="Health sections">
     <a href="/health"{{if eq $tab "today"}} aria-current="page"{{end}}>Today</a>
@@ -20,8 +25,8 @@
     {{if coachEnabled}}<a href="/health/coach"{{if eq $tab "coach"}} aria-current="page"{{end}}>Coach</a>{{end}}
     <a href="/health/more"{{if eq $tab "more"}} aria-current="page"{{end}}>More</a>
   </div>{{end}}
-  <a href="/courses" {{if eq $section "courses"}}aria-current="page"{{end}}>{{template "gyst.icon" "book-open"}}<span>Courses</span></a>
-  <a href="/more" {{if eq $section "more"}}aria-current="page"{{end}}>{{template "gyst.icon" "ellipsis"}}<span>Menu</span></a>
+  <a href="/learn" {{if eq $section "learn"}}aria-current="page"{{end}}>{{template "gyst.icon" "book-open"}}<span>Learn</span></a>
+  <a href="/more" {{if eq $section "more"}}aria-current="page"{{end}}>{{template "gyst.icon" "ellipsis"}}<span>More</span></a>
 </nav>
 {{if eq $section "health"}}{{$tab := healthTab .}}
 <nav aria-label="Health" class="gyst-scope hv3-tabbar">
