@@ -539,7 +539,9 @@ deleted when a new event is stored (best effort: a failed prune is logged and
 the event still counts as stored; `occurred_at` is indexed for it). Instants
 are stored as fixed-width UTC text with nine fractional digits, so sub-second
 order is kept. State per workflow is derived on read from
-`occurred_at`, never arrival order: Failed, Running (a start in the last 2
+`occurred_at`, never arrival order. Events at the same `occurred_at` order
+as: finishes after starts, a failure after a success, then `event_id`
+ascending, independent of delivery order. States: Failed, Running (a start in the last 2
 hours with no later finish), Healthy, or No events. Consecutive failures: 1 or
 2 is a warning, 3 or more is critical. No Attention items are created; the
 future Attention service (VN-066) and the GYST-132 view read these statuses.

@@ -138,7 +138,7 @@ func automationSummary(s string) string {
 // is not registered (nothing is stored). Validation failures are
 // *AutomationValidationError.
 func (s *Service) RecordAutomationEvent(in AutomationEventInput, workflows []AutomationWorkflow) (result string, ignored bool, err error) {
-	if id := in.EventID; id == "" || len(id) > 128 || strings.ContainsFunc(id, func(r rune) bool { return r < 0x21 || r > 0x7e }) {
+	if id := in.EventID; id == "" || len(id) > 128 || strings.ContainsFunc(id, func(r rune) bool { return r < 0x20 || r > 0x7e }) {
 		return "", false, invalidAutomation("event_id must be 1 to 128 printable characters")
 	}
 	if !safeAutomationID(in.WorkflowID, 64) {
@@ -232,14 +232,18 @@ func displayAutomationTime(stored string) string {
 
 func deriveAutomationStatus(w AutomationWorkflow, events []repository.AutomationEvent, now time.Time) AutomationStatus {
 	st := AutomationStatus{ID: w.ID, Name: w.Name, State: AutomationStateNoEvents}
-	// Newest first by occurred_at. At the same instant a finish counts as
-	// later than a start, so arrival order never decides.
+	// Newest first by occurred_at. Ties never depend on delivery order: a
+	// finish counts as later than a start, a failure as later than a success,
+	// then event_id ascending (the list is newest first).
 	sorted := append([]repository.AutomationEvent(nil), events...)
 	rank := func(e repository.AutomationEvent) int {
-		if e.Status == AutomationStatusStarted {
+		switch e.Status {
+		case AutomationStatusStarted:
 			return 0
+		case AutomationStatusSucceeded:
+			return 1
 		}
-		return 1
+		return 2
 	}
 	sort.SliceStable(sorted, func(i, j int) bool {
 		a, b := sorted[i], sorted[j]
@@ -249,7 +253,7 @@ func deriveAutomationStatus(w AutomationWorkflow, events []repository.Automation
 		if rank(a) != rank(b) {
 			return rank(a) > rank(b)
 		}
-		return a.ReceivedAt > b.ReceivedAt
+		return a.EventID < b.EventID
 	})
 	if len(sorted) == 0 {
 		return st

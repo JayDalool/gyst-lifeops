@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -276,5 +277,43 @@ func TestAutomationFailingPruneStillReportsApplied(t *testing.T) {
 	var n int
 	if err := database.QueryRow(`SELECT COUNT(*) FROM automation_events WHERE event_id = 'e1'`).Scan(&n); err != nil || n != 1 {
 		t.Fatalf("event not stored: %d %v", n, err)
+	}
+}
+
+// GYST-131 (Codex round 2): same-instant events must give the same state and
+// streak whichever arrives first.
+func TestAutomationSameInstantTiesIgnoreDeliveryOrder(t *testing.T) {
+	type ev struct{ id, status string }
+	a, b := ev{"e-a", "succeeded"}, ev{"e-b", "failed"}
+	var want AutomationStatus
+	for i, order := range [][]ev{{a, b}, {b, a}} {
+		svc, now := autoSvc(t)
+		for _, e := range order {
+			record(t, svc, now, e.id, "wf_backup", e.status, autoPinned, "")
+		}
+		got := statusOf(t, svc, "wf_backup")
+		if got.State != AutomationStateFailed {
+			t.Fatalf("order %d: %+v", i, got)
+		}
+		if i == 0 {
+			want = got
+		} else if got.State != want.State || got.ConsecutiveFailures != want.ConsecutiveFailures || got.LastSuccessAt != want.LastSuccessAt {
+			t.Fatalf("order differs: %+v vs %+v", got, want)
+		}
+	}
+}
+
+func TestAutomationEventIDAllowsSpaceRejectsControl(t *testing.T) {
+	svc, _ := autoSvc(t)
+	in := AutomationEventInput{EventID: "run 42", WorkflowID: "wf_backup", Status: "started", OccurredAt: autoPinned.Format(time.RFC3339)}
+	if _, _, err := svc.RecordAutomationEvent(in, autoWF); err != nil {
+		t.Fatalf("space rejected: %v", err)
+	}
+	for _, id := range []string{"run\t42", "run\x7f42"} {
+		in.EventID = id
+		var invalid *AutomationValidationError
+		if _, _, err := svc.RecordAutomationEvent(in, autoWF); !errors.As(err, &invalid) {
+			t.Fatalf("%q accepted: %v", id, err)
+		}
 	}
 }
