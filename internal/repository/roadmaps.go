@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"fmt"
 
 	"lifeops-tracker/internal/models"
@@ -60,8 +61,17 @@ func (r *Repository) GetRoadmap(id int64) (models.Roadmap, error) {
 	return scanRoadmap(r.db.QueryRow(fmt.Sprintf(`SELECT %s FROM roadmaps WHERE id = ?`, roadmapColumns), id))
 }
 
+// CreateRoadmap and UpdateRoadmap each write the roadmap, its featured flag
+// (when set) and the orphan adoption in one transaction, featured first so
+// adoption sees the new dashboard roadmap (GYST-076 review): a failed adoption must
+// not leave a saved roadmap behind a 500, or a retried create duplicates it.
 func (r *Repository) CreateRoadmap(roadmap *models.Roadmap) error {
-	res, err := r.db.Exec(`INSERT INTO roadmaps
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec(`INSERT INTO roadmaps
 		(name, description, priority, status, privacy, featured, icon, color)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		roadmap.Name,
@@ -76,18 +86,32 @@ func (r *Repository) CreateRoadmap(roadmap *models.Roadmap) error {
 	if err != nil {
 		return err
 	}
-	roadmap.ID, err = res.LastInsertId()
+	id, err := res.LastInsertId()
 	if err != nil {
 		return err
 	}
 	if roadmap.Featured {
-		return r.SetFeaturedRoadmap(roadmap.ID)
+		if err := setFeaturedRoadmapTx(tx, id); err != nil {
+			return err
+		}
 	}
+	if err := adoptOrphanProjectsTx(tx); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	roadmap.ID = id
 	return nil
 }
 
 func (r *Repository) UpdateRoadmap(roadmap *models.Roadmap) error {
-	_, err := r.db.Exec(`UPDATE roadmaps SET
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`UPDATE roadmaps SET
 		name = ?, description = ?, priority = ?, status = ?, privacy = ?,
 		icon = ?, color = ?, updated_at = CURRENT_TIMESTAMP, sync_version = sync_version + 1
 		WHERE id = ?`,
@@ -100,7 +124,18 @@ func (r *Repository) UpdateRoadmap(roadmap *models.Roadmap) error {
 		cleanRoadmapColor(roadmap.Color),
 		roadmap.ID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	if roadmap.Featured {
+		if err := setFeaturedRoadmapTx(tx, roadmap.ID); err != nil {
+			return err
+		}
+	}
+	if err := adoptOrphanProjectsTx(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *Repository) ArchiveRoadmap(id int64) error {
@@ -117,22 +152,33 @@ func (r *Repository) SetFeaturedRoadmap(id int64) error {
 	if err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`UPDATE roadmaps SET featured = 0, updated_at = CURRENT_TIMESTAMP WHERE featured = 1 AND id != ?`, id); err != nil {
-		tx.Rollback()
-		return err
-	}
-	if _, err := tx.Exec(`UPDATE roadmaps SET featured = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, id); err != nil {
+	if err := setFeaturedRoadmapTx(tx, id); err != nil {
 		tx.Rollback()
 		return err
 	}
 	return tx.Commit()
 }
 
+func setFeaturedRoadmapTx(tx *sql.Tx, id int64) error {
+	if _, err := tx.Exec(`UPDATE roadmaps SET featured = 0, updated_at = CURRENT_TIMESTAMP WHERE featured = 1 AND id != ?`, id); err != nil {
+		return err
+	}
+	_, err := tx.Exec(`UPDATE roadmaps SET featured = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, id)
+	return err
+}
+
+// dashboardRoadmapIDSQL is a scalar subquery giving the id of the roadmap
+// GetDashboardRoadmap picks (NULL when no active roadmap exists). Keep its
+// filter and ORDER BY identical to GetDashboardRoadmap; EffectiveProjectPrivacy
+// (roadmap.go) and the project and roadmap writes reuse it.
+const dashboardRoadmapIDSQL = `SELECT id FROM roadmaps
+	WHERE status = 'active' AND archived_at IS NULL
+	ORDER BY featured DESC, priority DESC, updated_at DESC, id DESC LIMIT 1`
+
 // GetDashboardRoadmap selects the single roadmap shown on the bridge:
 // featured beats priority; among equals, the most recently updated wins.
 // Steps 1-4 of the spec collapse to one ordered query over active roadmaps.
-// EffectiveProjectPrivacy (roadmap.go) repeats this selection for orphan
-// projects; keep the two in sync.
+// dashboardRoadmapIDSQL repeats this selection as SQL; keep the two in sync.
 func (r *Repository) GetDashboardRoadmap() (models.Roadmap, error) {
 	return scanRoadmap(r.db.QueryRow(fmt.Sprintf(`SELECT %s FROM roadmaps
 		WHERE status = 'active' AND archived_at IS NULL
@@ -141,9 +187,21 @@ func (r *Repository) GetDashboardRoadmap() (models.Roadmap, error) {
 }
 
 // AdoptOrphanProjects assigns projects with no roadmap (created before this
-// feature, via seed, or via the project form) to the given roadmap. Idempotent.
-func (r *Repository) AdoptOrphanProjects(roadmapID int64) error {
-	_, err := r.db.Exec(`UPDATE projects SET roadmap_id = ? WHERE roadmap_id IS NULL`, roadmapID)
+// feature, via seed, or while no active roadmap existed) to the dashboard
+// roadmap. It is a no-op without an active roadmap and idempotent. It runs at
+// startup and after roadmap writes, never on a GET.
+func (r *Repository) AdoptOrphanProjects() error {
+	return adoptOrphanProjectsTx(r.db)
+}
+
+type execer interface {
+	Exec(query string, args ...any) (sql.Result, error)
+}
+
+func adoptOrphanProjectsTx(x execer) error {
+	_, err := x.Exec(`UPDATE projects SET roadmap_id = (` + dashboardRoadmapIDSQL + `)
+		WHERE roadmap_id IS NULL AND EXISTS (
+			SELECT 1 FROM roadmaps WHERE status = 'active' AND archived_at IS NULL)`)
 	return err
 }
 

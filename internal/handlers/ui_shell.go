@@ -12,10 +12,23 @@ func primarySection(page string) string {
 		return "projects"
 	case "health":
 		return "health"
-	case "courses":
-		return "courses"
+	case "courses", "learn":
+		return "learn"
 	default:
 		return "more"
+	}
+}
+
+// projectsArea names the Projects sub-navigation item a page belongs to
+// (GYST-VN-039). Detail pages and forms belong to their list's area.
+func projectsArea(page string) string {
+	switch page {
+	case "galaxy":
+		return "galaxy"
+	case "roadmap", "roadmaps":
+		return "roadmaps"
+	default:
+		return "projects"
 	}
 }
 

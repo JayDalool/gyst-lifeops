@@ -28,11 +28,6 @@
 .today-metrics .gyst-caption, .today-metrics .gyst-status { font-size: .8125rem; }
 .today-metrics .gyst-number .gyst-unit { display: block; }
 .today-page .day-group { margin: 0; }
-.today-page .prayer-hero { display: grid; gap: 16px; margin: 0; color: var(--gyst-text); background: var(--gyst-surface); }
-.today-page .prayer-hero h2 { font-size: 1.25rem; }
-.today-page .prayer-time { color: var(--gyst-blue); font-size: 1.75rem; }
-.today-page .prayer-alert-panel { min-width: 0; text-align: left; }
-.today-page .prayer-countdown { font-size: 1.125rem; color: var(--gyst-text); }
 .today-page .prayer-alert-actions { justify-content: flex-start; flex-wrap: wrap; }
 .today-page .group-label { color: var(--gyst-text-secondary); font-size: .875rem; }
 .today-page .tracker-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -83,3 +78,21 @@
 .today-done[open] > .today-done-summary > .gyst-icon { transform: rotate(90deg); }
 @media (prefers-reduced-motion: reduce) { .today-done-summary > .gyst-icon { transition: none; } }
 [data-motion="reduced"] .today-done-summary > .gyst-icon { transition: none; }
+/* GYST-079 Now block: one action, the next prayer and the next timed item. */
+.today-now { display: grid; gap: var(--vn-s3, 12px); background: var(--vn-surface, var(--gyst-surface)); border-radius: var(--vn-r-lg, var(--gyst-radius-md)); padding: var(--vn-s4, 16px); }
+.today-now .gyst-section-title { font-size: var(--vn-t-section, 1.25rem); }
+.today-now .now-action { padding: 0; border: 0; }
+.today-now .now-action .task-title { font-size: 1.0625rem; font-weight: 600; }
+.today-now .now-empty { margin: 0; padding-block: var(--vn-s2, 8px); }
+.today-now .now-row { display: flex; align-items: center; justify-content: space-between; gap: var(--vn-s3, 12px); width: 100%; min-height: 56px; padding: var(--vn-s3, 12px) var(--vn-s4, 16px); box-sizing: border-box; font: inherit; text-align: left; text-decoration: none; color: var(--vn-ink, var(--gyst-text)); background: var(--vn-surface-2, var(--gyst-bg)); border: 1px solid var(--gyst-border); border-radius: var(--vn-r-md, var(--gyst-radius-sm)); cursor: pointer; }
+.today-now .now-row:hover { background: var(--gyst-blue-soft); }
+.today-now .now-row-copy { display: grid; gap: 2px; min-width: 0; }
+.today-now .now-label { color: var(--gyst-text-secondary); font-size: .8125rem; }
+.today-now .now-row-title { overflow-wrap: anywhere; }
+.today-now .now-countdown { flex: none; color: var(--gyst-text-secondary); white-space: nowrap; }
+.now-prayer-times { list-style: none; margin: 0; padding: 0; }
+.now-prayer-times li { display: grid; grid-template-columns: 1fr auto 4.5rem; align-items: center; gap: var(--vn-s3, 12px); min-height: 44px; border-bottom: 1px solid var(--gyst-border); }
+.now-prayer-times li:last-child { border-bottom: 0; }
+.now-prayer-times .gyst-caption { text-align: right; font-weight: 600; }
+dialog.gyst-sheet .prayer-alert-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+dialog.gyst-sheet .btn { min-width: 44px; min-height: 44px; padding: 8px 12px; white-space: normal; }

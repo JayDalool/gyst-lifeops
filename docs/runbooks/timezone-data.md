@@ -79,9 +79,18 @@ hour early). Do not record any real data.
 
 One behaviour change to know before deploying: `GYST_TIMEZONE` must now be a
 zone in the pinned IANA database. Host-only names such as `posixrules`,
-`posix/…` or `right/…` stop startup. `docker-compose.yml` does not pass
-`GYST_TIMEZONE` to the container, so with it production uses the default,
-`America/Winnipeg`, and is not affected.
+`posix/…` or `right/…` stop startup. `docker-compose.yml` now passes
+`GYST_TIMEZONE` to the container, so the zone set in the settings file reaches
+it (empty or unset still means the default, `America/Winnipeg`). Check it
+with `docker compose run --rm --no-deps gyst-lifeops /app/lifeops config`.
+The order is: backup, pull, build, config check, `up -d`. Run the check on the
+new image, after `docker compose build` and before `up -d`: images built
+before #191 have no `config` command, and that command on the old image
+starts a second server on the live database. Run `config` and `up` from the
+same shell, because a variable exported in the shell wins over the settings
+file. The check must show `config: OK`, `ALLOW_PUBLIC_CALENDAR_FEEDS: off`,
+`GYST_AUTH_DISABLED: off`, `HEALTH_AI_VISION_MODEL` as you expect, and the
+same time zone as today.
 
 ## 2. Deploying #193 and verifying it
 

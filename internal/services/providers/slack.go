@@ -6,16 +6,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"lifeops-tracker/internal/models"
 )
 
-type Slack struct{ Client *http.Client }
+type Slack struct {
+	Client *http.Client
+	Token  string
+}
 
 func (p Slack) Fetch(ctx context.Context, link models.ExternalLink) (LinkSnapshot, error) {
-	token := strings.TrimSpace(os.Getenv("SLACK_BOT_TOKEN"))
+	token := strings.TrimSpace(p.Token)
 	if token == "" {
 		return LinkSnapshot{}, ErrNotConfigured
 	}
