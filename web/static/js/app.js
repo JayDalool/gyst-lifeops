@@ -217,10 +217,13 @@
   function initMisc() {
     document.querySelectorAll("[data-next-prayer]").forEach(function (hero) {
       var output = hero.querySelector("[data-prayer-countdown]");
+      // The hooks live in the Now block; a missing one must not throw, because
+      // everything after this loop (copy buttons, motion toggle, nav menus) shares this function.
       var target = new Date(hero.dataset.nextPrayer).getTime();
 	  var enable = hero.querySelector("[data-prayer-enable]");
 	  var test = hero.querySelector("[data-prayer-test]");
 	  var alertState = hero.querySelector("[data-prayer-alert-state]");
+	  if (!output || !enable || !test || !alertState) return;
 	  var audio = document.querySelector("[data-prayer-audio]");
 	  var audioContext = null;
 	  var alertsEnabled = false;
@@ -284,8 +287,7 @@
         var total = Math.floor(remaining / 1000);
         var hours = Math.floor(total / 3600);
         var minutes = Math.floor((total % 3600) / 60);
-        var seconds = total % 60;
-        output.textContent = hours + "h " + String(minutes).padStart(2, "0") + "m " + String(seconds).padStart(2, "0") + "s";
+        output.textContent = isNaN(target) ? "\u2014" : (hours > 0 ? hours + "h " + String(minutes).padStart(2, "0") + "m" : minutes + "m");
 		checkPrayerAlerts();
         if (remaining === 0) window.setTimeout(function () { window.location.reload(); }, 1000);
       }
@@ -388,7 +390,7 @@
       form.dataset.completing = "1";
       // Schedule the real submit first so a failure in the animation can't lose it.
       setTimeout(function () { HTMLFormElement.prototype.submit.call(form); }, motionMs("--vn-base", 240) + 40);
-      var row = form.closest("li");
+      var row = form.closest("li, .now-action");
       if (row) row.classList.add("is-completing");
       try { easeProgress(form); } catch (_) {}
     }, true);
@@ -399,7 +401,7 @@
         delete f.dataset.completing;
         var b = f.querySelector("input[type=checkbox]");
         if (b) b.checked = false;
-        var r = f.closest("li");
+        var r = f.closest("li, .now-action");
         if (r) r.classList.remove("is-completing");
       });
     });
