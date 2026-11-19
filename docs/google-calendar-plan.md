@@ -97,14 +97,24 @@ instead of a calendar pulling them in — no public feed needed.
 
 ## Future: Google Calendar OAuth (not now)
 
+> **Superseded on 2026-11-18.** Connected calendars are now decided in
+> [19A](audit/vnext/19A_CONNECTED_DATA_DECISIONS.md) and designed in
+> [ADR 0002](adr/0002-secretary-reads-synced-store.md): GYST signs in to Google
+> and Microsoft, syncs the chosen calendars into a separate store, and creates,
+> edits and deletes events at the provider, which stays the source of truth
+> (C1, C11, C18). Provider events are never re-exported into GYST's `.ics`
+> feeds (C12). The sketch below is kept for history, with the secrets line
+> corrected.
+
 When two-way sync is worth the cost:
 - Connect a Google account via OAuth 2.0 (offline access for a refresh token).
 - Create/update events from GYST (course deadlines, project targets) keyed by the
   same stable UIDs so re-syncs upsert instead of duplicating.
 - Read Google events/reminders back and surface them in Today.
 - Sync Google reminders into GYST tasks.
-- Store the refresh token encrypted; **all secrets (client ID/secret, tokens) in
-  environment variables, never in the repo**.
+- Only the OAuth **client ID and secret** go in the environment file, never in
+  the repo. Each account's **refresh token is encrypted in the database**; it is
+  never kept in environment variables or the repo (19A, Secrets layout).
 - Handle token refresh + revocation; degrade gracefully to ICS export if a token
   is missing or revoked.
 
@@ -115,5 +125,5 @@ passwords, PROPFIND/REPORT); defer until there is real demand.
 ## Sequencing
 1. ICS export + subscribe — **done.**
 2. Tokenized feed URL (unblocks Cloudflare Access subscribers) — **done.**
-3. Google OAuth push — larger; only when one-way export isn't enough.
+3. Google OAuth push — larger; now planned as connected calendars (19A).
 4. CalDAV — last, demand-driven.
