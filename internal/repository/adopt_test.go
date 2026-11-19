@@ -153,3 +153,53 @@ func TestAdoptOrphanProjectsIdempotentAndLeavesUpdatedAt(t *testing.T) {
 		t.Fatalf("roadmap %d updated_at %q", rid, updated)
 	}
 }
+
+// GYST-076 review: when adoption fails, the roadmap write must roll back with
+// it, otherwise the POST returns 500 after the save and a retry duplicates it.
+func TestRoadmapWriteRollsBackWhenAdoptionFails(t *testing.T) {
+	repo := testRepository(t)
+	archiveAllRoadmaps(t, repo)
+	orphan := models.Project{Name: "Fictional Orphan", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&orphan); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.db.Exec(`CREATE TRIGGER fail_adoption BEFORE UPDATE OF roadmap_id ON projects
+		BEGIN SELECT RAISE(ABORT, 'forced adoption failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+
+	fresh := models.Roadmap{Name: "Fictional Rolled Back", Priority: 2, Status: "active", Featured: true}
+	if err := repo.CreateRoadmap(&fresh); err == nil {
+		t.Fatal("CreateRoadmap succeeded although adoption failed")
+	}
+	var rows int
+	if err := repo.db.QueryRow(`SELECT COUNT(*) FROM roadmaps WHERE name = ?`, fresh.Name).Scan(&rows); err != nil {
+		t.Fatal(err)
+	}
+	if rows != 0 {
+		t.Fatalf("roadmap rows after failed create = %d, want 0", rows)
+	}
+
+	if _, err := repo.db.Exec(`DROP TRIGGER fail_adoption`); err != nil {
+		t.Fatal(err)
+	}
+	rm := mustCreateRoadmap(t, repo, "Fictional Kept", 3)
+	if _, err := repo.db.Exec(`UPDATE projects SET roadmap_id = NULL`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.db.Exec(`CREATE TRIGGER fail_adoption BEFORE UPDATE OF roadmap_id ON projects
+		BEGIN SELECT RAISE(ABORT, 'forced adoption failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	rm.Name = "Fictional Renamed"
+	if err := repo.UpdateRoadmap(&rm); err == nil {
+		t.Fatal("UpdateRoadmap succeeded although adoption failed")
+	}
+	got, err := repo.GetRoadmap(rm.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "Fictional Kept" {
+		t.Fatalf("name after failed update = %q, want unchanged", got.Name)
+	}
+}

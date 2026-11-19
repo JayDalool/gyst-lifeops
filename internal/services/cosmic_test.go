@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"encoding/json"
+	"math"
 	"path/filepath"
 	"testing"
 
@@ -89,20 +90,10 @@ func TestGalaxyDataStablePositionsAndMoonsWithoutWrites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	byID := map[int64]models.Project{}
 	for _, project := range projects {
-		byID[project.Project.ID] = project.Project
 		if project.Project.PosX != nil || project.Project.PosY != nil || project.Project.PosZ != nil {
 			t.Fatalf("position stored by a read for %q", project.Project.Name)
 		}
-	}
-	x, y, z := galaxyPosition(byID[top.ID])
-	if first[0].X != x || first[0].Y != y || first[0].Z != z {
-		t.Fatal("planet position is not the UUID hash")
-	}
-	mx, my, mz := galaxyPosition(byID[moon.ID])
-	if first[0].Moons[0].X != mx || first[0].Moons[0].Y != my || first[0].Moons[0].Z != mz {
-		t.Fatal("moon position is not the UUID hash")
 	}
 }
 
@@ -191,5 +182,58 @@ func TestBuildRocketRouteCurrentAndPathSpread(t *testing.T) {
 	// PathPct spreads evenly from 6%..94% so the ship has runway at both ends.
 	if route.Nodes[0].PathPct != 6 || route.Nodes[2].PathPct != 94 {
 		t.Fatalf("path spread wrong: first=%v last=%v", route.Nodes[0].PathPct, route.Nodes[2].PathPct)
+	}
+}
+
+// GYST-076 review: parity with the base branch. The expected coordinates are
+// literals captured from master before this PR (where GalaxyData stored the
+// hash position on read) for fixed fictional UUIDs, so a change to the hash or
+// coordinate math fails here instead of passing through the helper under test.
+func TestGalaxyDataCoordinatesMatchBaseBranch(t *testing.T) {
+	svc, database := testServiceDB(t)
+	mk := func(name, kind, status, uuid string, parent int64) int64 {
+		p := models.Project{Name: name, ProjectKind: kind, Status: status, ParentProjectID: parent, AutoUnlock: true}
+		if err := svc.Repo.CreateProject(&p); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := database.Exec(`UPDATE projects SET uuid = ? WHERE id = ?`, uuid, p.ID); err != nil {
+			t.Fatal(err)
+		}
+		return p.ID
+	}
+	a := mk("Fictional Planet A", "main", "active", "00000000-0000-4000-8000-00000000000a", 0)
+	b := mk("Fictional Planet B", "main", "active", "00000000-0000-4000-8000-00000000000b", 0)
+	m1 := mk("Fictional Moon A1", "phase", "locked", "00000000-0000-4000-8000-0000000000a1", a)
+	m2 := mk("Fictional Moon A2", "phase", "active", "00000000-0000-4000-8000-0000000000a2", a)
+	want := map[int64][3]float64{
+		a:  {22.996171905306085, 10.444841325729433, 3.822785837587333},
+		b:  {-48.650702651082575, -7.552110131085014, -13.134201526790411},
+		m1: {-54.84498724075655, 16.210117896720217, 4.384637054689912},
+		m2: {34.4250004295751, 28.29543142812656, -9.68551338666482},
+	}
+	data, err := svc.GalaxyData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[int64]models.GalaxyPlanet{}
+	for _, planet := range data {
+		got[planet.ID] = planet
+		for _, moon := range planet.Moons {
+			got[moon.ID] = moon
+		}
+	}
+	if len(got) != len(want) {
+		t.Fatalf("galaxy has %d bodies, want %d", len(got), len(want))
+	}
+	for id, w := range want {
+		g, ok := got[id]
+		if !ok {
+			t.Fatalf("body %d missing", id)
+		}
+		for i, pair := range [][2]float64{{g.X, w[0]}, {g.Y, w[1]}, {g.Z, w[2]}} {
+			if math.Abs(pair[0]-pair[1]) > 1e-9 {
+				t.Errorf("body %d axis %d = %v, want %v", id, i, pair[0], pair[1])
+			}
+		}
 	}
 }
