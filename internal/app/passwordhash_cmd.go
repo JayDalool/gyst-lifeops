@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"lifeops-tracker/internal/services"
@@ -15,6 +16,32 @@ func passwordHashRequested(args []string) bool {
 	for _, arg := range args {
 		if arg == "passwordhash" {
 			return true
+		}
+	}
+	return false
+}
+
+// passwordHashFlagRequested reports the legacy -passwordhash / --passwordhash
+// flag (optionally =true or =1) before any other setting is loaded. It stops at
+// "--" and at the first non-flag argument, and skips the value of a
+// value-taking flag, so `-db -passwordhash` is still a database path.
+func passwordHashFlagRequested(args []string) bool {
+	valueFlags := map[string]bool{"addr": true, "db": true, "migrations": true, "seed-file": true, "templates": true, "static": true}
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" || arg == "-" || !strings.HasPrefix(arg, "-") {
+			return false
+		}
+		name, value, hasValue := strings.Cut(strings.TrimLeft(arg, "-"), "=")
+		switch {
+		case name == "passwordhash":
+			if !hasValue {
+				return true
+			}
+			on, err := strconv.ParseBool(value)
+			return err == nil && on
+		case valueFlags[name] && !hasValue:
+			i++
 		}
 	}
 	return false

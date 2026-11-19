@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/clock"
+	"lifeops-tracker/internal/config"
 	"lifeops-tracker/internal/tzdb"
 )
 
@@ -94,7 +95,8 @@ func hostZoneinfo(dir string) string {
 }
 
 func runTzinfoAndExit() {
-	err := RunTzinfo(os.Stdout, os.Args[2:], os.Getenv("GYST_TIMEZONE"), clock.System().Now())
+	getenv, _ := config.OS()
+	err := RunTzinfo(os.Stdout, os.Args[2:], getenv("GYST_TIMEZONE"), clock.System().Now())
 	switch {
 	case err == nil:
 		return

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/clock"
+	"lifeops-tracker/internal/config"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 )
@@ -25,6 +26,11 @@ type Service struct {
 	// BackupStatusPath is the backup status file (data/backups/last_run.json).
 	// Empty means unconfigured: the backup producer reports nothing.
 	BackupStatusPath string
+	// Push is the VAPID trio and ProviderCreds the external-link credentials;
+	// both are injected by app.New from config.Load and never read from the
+	// environment here. Zero values mean not configured.
+	Push          PushConfig
+	ProviderCreds config.Providers
 	// AIKeyPath is the 0600 file holding the AES-256 data key that encrypts
 	// the saved AI API key (GYST-169). Empty means saving a key is refused.
 	AIKeyPath string
