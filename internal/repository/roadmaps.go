@@ -61,8 +61,8 @@ func (r *Repository) GetRoadmap(id int64) (models.Roadmap, error) {
 	return scanRoadmap(r.db.QueryRow(fmt.Sprintf(`SELECT %s FROM roadmaps WHERE id = ?`, roadmapColumns), id))
 }
 
-// CreateRoadmap and UpdateRoadmap write the roadmap, its featured flag and the
-// orphan adoption in one transaction (GYST-076 review): a failed adoption must
+// CreateRoadmap (with its featured flag) and UpdateRoadmap each write the
+// roadmap and the orphan adoption in one transaction (GYST-076 review): a failed adoption must
 // not leave a saved roadmap behind a 500, or a retried create duplicates it.
 func (r *Repository) CreateRoadmap(roadmap *models.Roadmap) error {
 	tx, err := r.db.Begin()

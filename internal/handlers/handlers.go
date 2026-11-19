@@ -223,6 +223,12 @@ type ProjectFormData struct {
 	LinkedParent    *models.Project
 	LinkedDependsOn *models.Project
 	LinkedRoadmap   *models.Roadmap
+	// DefaultRoadmap is the active dashboard roadmap that an empty Roadmap
+	// choice is saved into (GYST-076); nil when none exists. DefaultNote is a
+	// help line shown only when that roadmap's privacy differs from the
+	// project's current effective privacy.
+	DefaultRoadmap *models.Roadmap
+	DefaultNote    string
 }
 
 type ProjectDetailData struct {
@@ -1239,14 +1245,21 @@ func (h *Handler) newProject(w http.ResponseWriter, r *http.Request) {
 		if id, ok := parseID(r.URL.Query().Get("roadmap")); ok {
 			newProject.RoadmapID = id
 		}
+		defRoadmap, defNote, err := h.defaultRoadmapFor(newProject)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
 		h.render(w, "project_form.html", ProjectFormData{
-			Page:     "projects",
-			Today:    h.Service.TodayString(),
-			Title:    "New Project",
-			Action:   "/projects/new",
-			Project:  newProject,
-			Projects: projects,
-			Roadmaps: roadmaps,
+			Page:           "projects",
+			Today:          h.Service.TodayString(),
+			Title:          "New Project",
+			Action:         "/projects/new",
+			Project:        newProject,
+			Projects:       projects,
+			Roadmaps:       roadmaps,
+			DefaultRoadmap: defRoadmap,
+			DefaultNote:    defNote,
 		})
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
@@ -1503,6 +1516,11 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 			return
 		}
 	}
+	defRoadmap, defNote, err := h.defaultRoadmapFor(models.Project{ID: id})
+	if err != nil {
+		serverError(w, err)
+		return
+	}
 	if status != http.StatusOK {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(status)
@@ -1521,7 +1539,43 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 		LinkedParent:    linkedParent,
 		LinkedDependsOn: linkedDependsOn,
 		LinkedRoadmap:   linkedRoadmap,
+
+		DefaultRoadmap: defRoadmap,
+		DefaultNote:    defNote,
 	})
+}
+
+// defaultRoadmapFor returns the active dashboard roadmap that saving a project
+// with no roadmap chosen assigns it to, so the form can name the real
+// destination instead of "Unassigned". The note is non-empty when that
+// roadmap's privacy differs from the project's current effective privacy
+// (a new project counts as public), because the move could change what the
+// project exports (GYST-076 review).
+func (h *Handler) defaultRoadmapFor(project models.Project) (*models.Roadmap, string, error) {
+	rm, err := h.Service.Repo.GetDashboardRoadmap()
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, "", nil
+	}
+	if err != nil {
+		return nil, "", err
+	}
+	current := "public"
+	if project.ID != 0 {
+		priv, err := h.Service.Repo.EffectiveProjectPrivacy()
+		if err != nil {
+			return nil, "", err
+		}
+		if p := priv[project.ID]; p.LocalOnly {
+			current = "local_only"
+		} else if p.Private {
+			current = "private"
+		}
+	}
+	if rm.Privacy == current {
+		return &rm, "", nil
+	}
+	label := map[string]string{"public": "public", "private": "private", "local_only": "local only"}
+	return &rm, fmt.Sprintf("Choosing the default moves this project to a %s roadmap; it is %s now.", label[rm.Privacy], label[current]), nil
 }
 
 // linkedArchivedProject returns the project linkID points at when it is not in
