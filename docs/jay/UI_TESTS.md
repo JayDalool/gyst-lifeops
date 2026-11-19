@@ -1,3 +1,4 @@
+- [ ] #187 · iPhone launcher Do: water, complete focus, confirm shows · https://gyst.zaylolabs.com/today
 - [ ] #243 · Nutrition photo with Claude selected: items listed · https://gyst.zaylolabs.com/health/nutrition
 - [ ] GYST-162 · Nutrition: photo a meal, edit items, save · https://gyst.zaylolabs.com/health/nutrition
 - [ ] #216 · Nutrition: add dinner, edit, remove, Undo · https://gyst.zaylolabs.com/health/nutrition
