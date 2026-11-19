@@ -106,10 +106,13 @@ when it is removed.
 same-origin) identifies foods in a meal photo. There is no page yet (#211 adds
 the review screen) and nothing is written to the diary.
 
-- Provider: OpenAI only for now (the provider offers an optional
-  `FoodPhotoAnalyzer` capability; Anthropic can add one later). Model:
-  `gpt-6.1-sol`, or `HEALTH_AI_VISION_MODEL` when set. The variable must also be
-  passed through `docker-compose.yml` to reach the container.
+- Provider: OpenAI or Anthropic, whichever is selected in Settings (both
+  implement the optional `FoodPhotoAnalyzer` capability, #243). OpenAI model:
+  `gpt-6.1-sol`, or `HEALTH_AI_VISION_MODEL` when set. Anthropic model: the
+  photo model saved in Settings (or `HEALTH_AI_VISION_MODEL`), otherwise
+  `claude-opus-5-5`. The variable must also be passed through
+  `docker-compose.yml` to reach the container. When switching provider, clear
+  a photo model saved for the other one.
 - The upload is held in memory only: no temp file, no disk. The type is sniffed
   from the bytes (JPEG and PNG only; HEIC and WebP get a fixed "use JPEG or PNG,
   set the iPhone camera to Most Compatible" message), dimensions are checked before decoding (at most 40 MP), the image
@@ -117,6 +120,23 @@ the review screen) and nothing is written to the diary.
   appended to the file. Orientation is applied to the pixels first.
 - Sent to OpenAI as `input_image` (base64 data URL) with strict structured
   output and `store: false`. GYST keeps nothing after the response.
+- Sent to Anthropic as one base64 `image/jpeg` block through the Messages API
+  with `output_config.format` (JSON schema) and effort `low`. The request holds
+  only model, max_tokens, system, messages and output_config: no tools, beta
+  header, fallbacks, metadata or diary data. A `refusal` or `max_tokens` stop
+  reason never reaches the parser and gives the "unreadable" message.
+- Anthropic money failures (Coach and camera, shown with status 502, never
+  retried): 402 `billing_error` gives "The AI credit has run out. Add credit in
+  the Anthropic Console, or switch provider in Settings."; the 400 "You have
+  reached your specified API usage limits" and the 429 `enforced_spend_limit_reached`
+  give "The monthly AI spend limit is reached. Raise it in the Anthropic Console,
+  or switch provider in Settings." The 400 "Your credit balance is too low to
+  access the Anthropic API" (prepaid balance used up) also gives the credit
+  sentence; it is matched on status, error type and message prefix together.
+- Browser checks: `go build -tags browsercheck` adds `GYST_BROWSERCHECK_ANTHROPIC_URL`
+  (only `http://127.0.0.1:<port>/`, otherwise the program refuses to start) and
+  `cmd/fakeanthropic`, a loopback fake (`-mode=ok|credit|spend`). The Dockerfile,
+  Makefile, compose file and CI never use the tag.
 - The model identifies only. Calories and macros are never requested, and any
   nutrient field it returns is discarded. Items are validated (roles, 0-3000 g,
   confidence 0-1, at most 15 items, string lengths); invalid items are dropped.
