@@ -1,4 +1,6 @@
 - [ ] #187 · iPhone launcher Do: water, complete focus, confirm shows · https://gyst.zaylolabs.com/today
+- [ ] #243 · Nutrition photo with Claude selected: items listed · https://gyst.zaylolabs.com/health/nutrition
+- [ ] GYST-162 · Nutrition: photo a meal, edit items, save · https://gyst.zaylolabs.com/health/nutrition
 - [ ] #216 · Nutrition: add dinner, edit, remove, Undo · https://gyst.zaylolabs.com/health/nutrition
 - [ ] #205 · Plan: reference targets and cycle comparison · https://gyst.zaylolabs.com/health/plan
 - [ ] #218 · Settings: save OpenAI key, Coach turns on · https://gyst.zaylolabs.com/settings

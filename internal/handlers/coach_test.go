@@ -173,6 +173,8 @@ func TestCoachRejectsUnlistedActionsAndHidesVendorErrors(t *testing.T) {
 		{errors.New("vendor: prompt echo 134.5 kg sk-secret"), http.StatusBadGateway, "couldn&#39;t answer right now"},
 		{healthcoach.ErrBusy, http.StatusTooManyRequests, "busy"},
 		{healthcoach.ErrDeclined, http.StatusBadGateway, "can&#39;t help with that"},
+		{healthcoach.ErrCreditExhausted, http.StatusBadGateway, "The AI credit has run out. Add credit in the Anthropic Console, or switch provider in Settings."},
+		{healthcoach.ErrSpendLimit, http.StatusBadGateway, "The monthly AI spend limit is reached. Raise it in the Anthropic Console, or switch provider in Settings."},
 	} {
 		h := coachHandler(t, &fakeCoach{err: tc.err})
 		w := ask(h, "Hi there", "")

@@ -96,6 +96,9 @@ type DiaryItem struct {
 	Nutrients
 	CreatedAt  string `json:"created_at"`
 	ArchivedAt string `json:"archived_at"`
+	// AIEstGrams is the camera's estimate beside the confirmed Grams (#211).
+	AIEstGrams *float64 `json:"ai_est_grams"`
+	CreatedVia string   `json:"created_via"`
 }
 
 // NewDiaryItem is the input for logging one food into a new meal.

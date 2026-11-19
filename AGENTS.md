@@ -16,10 +16,13 @@ person who merges and touches production.
 | Task branch | The implementation workspace |
 | Pull request | The implementation artifact |
 | Claude / Codex | Implementation and review workers |
+| Command Center ticket | The delivery record for the Issue: stages, plan, reviews and Jay's decisions (see below) |
 | GYST (later) | A control surface over the same Issues |
 | Jay | Final verification and merge |
 
-There is **one** editable task system: GitHub Issues. `docs/tasks/` is a
+There is **one** editable task system on GitHub: GitHub Issues. Command Center
+tickets (keys `GYST-<n>`) carry the delivery stages for an Issue; they don't
+replace it. `docs/tasks/` is a
 historical ledger (see its README). The vNext backlog
 (`docs/audit/vnext/15_TASK_BACKLOG.md`) is the planning source; once an item
 becomes an Issue, the Issue is the live record.
@@ -45,6 +48,48 @@ becomes an Issue, the Issue is the live record.
 Workflow detail: [`docs/agents/IMPLEMENTATION_WORKFLOW.md`](docs/agents/IMPLEMENTATION_WORKFLOW.md) ·
 review: [`docs/agents/REVIEW_WORKFLOW.md`](docs/agents/REVIEW_WORKFLOW.md) ·
 labels and Issue lifecycle: [`docs/agents/README.md`](docs/agents/README.md).
+
+## Command Center flow (trial from 2026-11-17)
+
+Jay's one-week trial (to 2026-11-24; after it Jay keeps, changes or removes this
+section): GYST work may run through Command Center's delivery flow
+(`docs/flow/FLOW.md` in `JayDalool/CommandCenter`, `/srv/server/repos/CommandCenter`
+on the server), worked by the jay-dev flow specialists (`jay-dev:project-lead`,
+`jay-dev:investigator`, …; skill `jay-dev:flow`). Everything above and below
+still applies. **Where the flow and this file disagree, this file wins.**
+
+- **Issue first.** Every flow ticket that changes code belongs to a GitHub Issue
+  made with the GYST task form (criteria, risk class, out of scope), and the
+  ticket's acceptance criteria are the Issue's. If they ever differ, the Issue
+  wins and the lead brings the ticket back in line. The ticket (`GYST-<n>`, a
+  Command Center key, not a `GYST-VN-nnn` roadmap ID) holds the stage results
+  written with `pipeline_cli`.
+- **Jay still decides what starts.** Build begins only on an Issue Jay has made
+  `status:ready` (rule 3 of `docs/agents/IMPLEMENTATION_WORKFLOW.md`). Agents never
+  set `status:ready`, `agent:ready` or any `risk:*` label. `agent:ready` stays the
+  night shift's gate.
+- **Not agent work, ever:** `risk:not-agent-eligible` Issues get no ticket past
+  intake. A `type:operations` step itself is Jay's; drafting the runbook or script
+  its Issue asks for may still be a ticket.
+- **Size.** The lead re-derives risk and never trusts a label alone. Always
+  **risky** (plan approved by Jay): `risk:elevated`, `risk:privileged`,
+  `type:security`, migrations, auth and sessions, the Health sync API, web push,
+  uploads, and health-data handling. Galaxy work is never small and follows `17A`.
+- **Branches and PRs** as rules 3, 4 and 14: `task/<issue>-<slug>` from `master`,
+  `Refs #<issue>`, the PR template, Issue labels as `docs/agents/README.md` says.
+- **Evidence.** Screenshots only from local dev with `seeds/example.sql`, never
+  from the real-data QA copy. Browser checks as rule 9 (390 and 1280 wide, light
+  and dark), which is more than the flow's 375 and 1280.
+- **Review.** The flow's code review is also posted on the PR in the
+  `docs/agents/REVIEW_WORKFLOW.md` format (every criterion PASS, FAIL, PARTIAL or
+  NOT VERIFIED). ELEVATED and PRIVILEGED work also gets `needs:security-review`
+  (`jay-dev:security-engineer`) and a second review from a different provider
+  (Codex), in line with rule 12.
+- **Release.** Agents never deploy or touch production, or real health data
+  except the QA copy described under Shared tools (rule 6); the flow's release check runs on local dev or a preview, and deploys
+  stay Jay's.
+- **Protected areas** for the flow's reviewers: the Galaxy (`17A`), migrations,
+  auth and sessions, the Health sync API, and anything in the security rules.
 
 ## Shared tools (jay-dev plugin)
 
