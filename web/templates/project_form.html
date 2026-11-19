@@ -60,14 +60,12 @@
     <label class="field">
       <span>Roadmap</span>
       <select name="roadmap_id">
-        {{if not .DefaultRoadmap}}<option value="">Unassigned</option>{{end}}
+        {{if not .DefaultRoadmap}}<option value="" {{if eq .SelectedRoadmapID 0}}selected{{end}}>Unassigned</option>{{end}}
         {{range .Roadmaps}}
-          {{$isDefault := and $.DefaultRoadmap (eq .ID $.DefaultRoadmap.ID)}}
-          <option value="{{.ID}}" {{if or (eq .ID $.Project.RoadmapID) (and $isDefault (eq $.Project.RoadmapID 0))}}selected{{end}}>{{.Name}}{{if $isDefault}} (default){{end}}</option>
+          <option value="{{.ID}}" {{if eq .ID $.SelectedRoadmapID}}selected{{end}}>{{.Name}}{{if and $.DefaultRoadmap (eq .ID $.DefaultRoadmap.ID)}} (default){{end}}</option>
         {{end}}
         {{with .LinkedRoadmap}}<option value="{{.ID}}" selected>{{.Name}} (archived)</option>{{end}}
       </select>
-      {{if .DefaultNote}}<small>{{.DefaultNote}}</small>{{end}}
     </label>
     <label class="field">
       <span>Parent project</span>

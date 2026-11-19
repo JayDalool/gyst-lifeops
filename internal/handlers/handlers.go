@@ -223,12 +223,12 @@ type ProjectFormData struct {
 	LinkedParent    *models.Project
 	LinkedDependsOn *models.Project
 	LinkedRoadmap   *models.Roadmap
-	// DefaultRoadmap is the active dashboard roadmap that an empty Roadmap
-	// choice is saved into (GYST-076); nil when none exists. DefaultNote is a
-	// help line shown only when that roadmap's privacy differs from the
-	// project's current effective privacy.
-	DefaultRoadmap *models.Roadmap
-	DefaultNote    string
+	// DefaultRoadmap is the active dashboard roadmap that an unassigned project
+	// is saved into (GYST-076); nil when none exists. SelectedRoadmapID is the
+	// one option the form preselects: the project's roadmap when it is offered,
+	// else the default, else 0 (Unassigned).
+	DefaultRoadmap    *models.Roadmap
+	SelectedRoadmapID int64
 }
 
 type ProjectDetailData struct {
@@ -1245,7 +1245,7 @@ func (h *Handler) newProject(w http.ResponseWriter, r *http.Request) {
 		if id, ok := parseID(r.URL.Query().Get("roadmap")); ok {
 			newProject.RoadmapID = id
 		}
-		defRoadmap, defNote, err := h.defaultRoadmapFor(newProject)
+		defRoadmap, err := h.defaultRoadmap()
 		if err != nil {
 			serverError(w, err)
 			return
@@ -1259,7 +1259,9 @@ func (h *Handler) newProject(w http.ResponseWriter, r *http.Request) {
 			Projects:       projects,
 			Roadmaps:       roadmaps,
 			DefaultRoadmap: defRoadmap,
-			DefaultNote:    defNote,
+			// A prefilled ?roadmap= that is not offered (archived) must not
+			// leave nothing selected, or the browser posts the first option.
+			SelectedRoadmapID: selectedRoadmapID(newProject.RoadmapID, roadmaps, nil, defRoadmap),
 		})
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
@@ -1516,7 +1518,7 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 			return
 		}
 	}
-	defRoadmap, defNote, err := h.defaultRoadmapFor(models.Project{ID: id})
+	defRoadmap, err := h.defaultRoadmap()
 	if err != nil {
 		serverError(w, err)
 		return
@@ -1540,57 +1542,35 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 		LinkedDependsOn: linkedDependsOn,
 		LinkedRoadmap:   linkedRoadmap,
 
-		DefaultRoadmap: defRoadmap,
-		DefaultNote:    defNote,
+		DefaultRoadmap:    defRoadmap,
+		SelectedRoadmapID: selectedRoadmapID(project.RoadmapID, roadmaps, linkedRoadmap, defRoadmap),
 	})
 }
 
-// defaultRoadmapFor returns the active dashboard roadmap that the form offers
-// as "<name> (default)" and posts by ID, so what is saved is what was shown
-// even if the default changes in another tab (GYST-076 review). The note is
-// non-empty only when moving the project there would really change its
-// effective privacy: the project's own flags and its parent's privacy keep it
-// hidden whatever the roadmap says. A new project counts as public.
-func (h *Handler) defaultRoadmapFor(project models.Project) (*models.Roadmap, string, error) {
+// defaultRoadmap returns the active dashboard roadmap the form offers as
+// "<name> (default)" and posts by ID, so what is saved is what was shown even
+// if the default changes in another tab (GYST-076 review). Nil when none.
+func (h *Handler) defaultRoadmap() (*models.Roadmap, error) {
 	rm, err := h.Service.Repo.GetDashboardRoadmap()
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, "", nil
+		return nil, nil
 	}
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	var current, own models.ProjectPrivacy
-	priv, err := h.Service.Repo.EffectiveProjectPrivacy()
-	if err != nil {
-		return nil, "", err
+	return &rm, nil
+}
+
+// selectedRoadmapID picks the single preselected Roadmap option: current when
+// the form offers it, else the default, else 0 (Unassigned).
+func selectedRoadmapID(current int64, roadmaps []models.Roadmap, linked, def *models.Roadmap) int64 {
+	if current != 0 && (roadmapListed(roadmaps, current) || (linked != nil && linked.ID == current)) {
+		return current
 	}
-	if project.ID != 0 {
-		current = priv[project.ID]
-		if own, err = h.Service.Repo.ProjectOwnPrivacy(project.ID); err != nil {
-			return nil, "", err
-		}
-		if parent := priv[project.ParentProjectID]; project.ParentProjectID != 0 {
-			own.Private = own.Private || parent.Private
-			own.LocalOnly = own.LocalOnly || parent.LocalOnly
-		}
+	if def != nil {
+		return def.ID
 	}
-	after := models.ProjectPrivacy{
-		Private:   own.Private || rm.Privacy == "private",
-		LocalOnly: own.LocalOnly || rm.Privacy == "local_only",
-	}
-	if after == current {
-		return &rm, "", nil
-	}
-	label := func(p models.ProjectPrivacy) string {
-		switch {
-		case p.LocalOnly:
-			return "local only"
-		case p.Private:
-			return "private"
-		}
-		return "public"
-	}
-	return &rm, fmt.Sprintf("Choosing the default changes this project from %s to %s.", label(current), label(after)), nil
+	return 0
 }
 
 // linkedArchivedProject returns the project linkID points at when it is not in

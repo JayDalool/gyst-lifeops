@@ -1,4 +1,4 @@
-- [ ] GYST-076 · New/edit project: Roadmap shows "(default)", privacy note · https://gyst.zaylolabs.com/projects/new
+- [ ] GYST-076 · New/edit project: Roadmap option shows "(default)" · https://gyst.zaylolabs.com/projects/new
 - [ ] #83 · Galaxy worlds unmoved; Projects groups unchanged · https://gyst.zaylolabs.com/galaxy
 - [ ] #187 · iPhone launcher Do: water, complete focus, confirm shows · https://gyst.zaylolabs.com/today
 - [ ] #243 · Nutrition photo with Claude selected: items listed · https://gyst.zaylolabs.com/health/nutrition

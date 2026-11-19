@@ -506,17 +506,6 @@ func (r *Repository) CreateRoadmapWeeklyReview(review *models.RoadmapWeeklyRevie
 	return err
 }
 
-// ProjectOwnPrivacy returns the privacy flags set on the project itself,
-// ignoring its roadmap and parents. No meta row means no flags.
-func (r *Repository) ProjectOwnPrivacy(id int64) (models.ProjectPrivacy, error) {
-	var priv, loc int
-	err := r.db.QueryRow(`SELECT is_private, local_only FROM roadmap_project_meta WHERE project_id = ?`, id).Scan(&priv, &loc)
-	if errors.Is(err, sql.ErrNoRows) {
-		return models.ProjectPrivacy{}, nil
-	}
-	return models.ProjectPrivacy{Private: priv == 1, LocalOnly: loc == 1}, err
-}
-
 func (r *Repository) SetRoadmapProjectMeta(meta models.RoadmapProjectMeta) error {
 	_, err := r.db.Exec(`UPDATE roadmap_project_meta SET
 		project_type = ?,

@@ -11,8 +11,7 @@ import (
 )
 
 // GYST-076 review: an unassigned project is saved into the active dashboard
-// roadmap, so the form names that roadmap, posts its ID, and warns when the
-// move would change the project's privacy.
+// roadmap, so the form names that roadmap and posts its ID.
 
 func archiveAllRoadmapRows(t *testing.T, database *sql.DB) {
 	t.Helper()
@@ -40,11 +39,8 @@ func TestProjectFormWithoutActiveRoadmapStaysUnassigned(t *testing.T) {
 			t.Fatalf("GET %s status %d", path, rec.Code)
 		}
 		body := rec.Body.String()
-		if !strings.Contains(selectBlock(t, body, "roadmap_id"), `<option value="">Unassigned</option>`) {
+		if !strings.Contains(selectBlock(t, body, "roadmap_id"), `<option value="" selected>Unassigned</option>`) {
 			t.Errorf("%s: want Unassigned option without an active roadmap", path)
-		}
-		if strings.Contains(body, "Choosing the default") {
-			t.Errorf("%s: unexpected privacy note without an active roadmap", path)
 		}
 	}
 }
@@ -81,36 +77,41 @@ func TestProjectFormPostsDisplayedDefaultRoadmap(t *testing.T) {
 	}
 }
 
-func TestProjectFormPrivacyNote(t *testing.T) {
+// A prefilled ?roadmap= that points at an archived roadmap is not offered, so
+// the form must fall back to the default (or Unassigned) and always have
+// exactly one selected option; the posted value is then that option's.
+func TestProjectFormArchivedPrefillFallsBack(t *testing.T) {
 	h, database := cycleHandler(t)
 	archiveAllRoadmapRows(t, database)
-	existing := cycleProject(t, h, "Fictional Loose Project", 0) // no roadmap yet
-	newTestRoadmap(t, h, "Fictional Harbor Plan", "private", 5)
-	// The roadmap write adopted the loose project, so it is already private.
-
-	const note = "Choosing the default changes this project from public to private."
-	if body := serve(h, http.MethodGet, "/projects/new", nil).Body.String(); !strings.Contains(body, note) {
-		t.Error("new project form: missing privacy note")
-	}
-	if body := serve(h, http.MethodGet, fmt.Sprintf("/projects/%d/edit", existing.ID), nil).Body.String(); strings.Contains(body, "Choosing the default") {
-		t.Error("edit form: note shown although privacy does not change")
-	}
-
-	// A project left outside the roadmap and public shows the note on edit.
-	outside := cycleProject(t, h, "Fictional Outside Project", 0)
-	otherPublic := newTestRoadmap(t, h, "Fictional Open Plan", "public", 1)
-	if _, err := database.Exec(`UPDATE projects SET roadmap_id = ? WHERE id = ?`, otherPublic.ID, outside.ID); err != nil {
+	old := newTestRoadmap(t, h, "Fictional Retired Plan", "public", 1)
+	if err := h.Service.Repo.ArchiveRoadmap(old.ID); err != nil {
 		t.Fatal(err)
 	}
-	if body := serve(h, http.MethodGet, fmt.Sprintf("/projects/%d/edit", outside.ID), nil).Body.String(); !strings.Contains(body, note) {
-		t.Error("edit form: missing privacy note for a public project")
+	path := fmt.Sprintf("/projects/new?roadmap=%d", old.ID)
+
+	// No active roadmap: Unassigned is the one selected option.
+	body := serve(h, http.MethodGet, path, nil).Body.String()
+	sel := selectBlock(t, body, "roadmap_id")
+	if strings.Count(sel, "selected") != 1 || !strings.Contains(sel, `<option value="" selected>Unassigned</option>`) {
+		t.Fatalf("want only Unassigned selected: %s", sel)
 	}
 
-	// The project's own Private flag keeps it private either way: no note.
-	if _, err := database.Exec(`INSERT INTO roadmap_project_meta (project_id, is_private) VALUES (?, 1)`, outside.ID); err != nil {
-		t.Fatal(err)
+	// With an active default, that option is the one selected and posted.
+	def := newTestRoadmap(t, h, "Fictional Harbor Plan", "private", 5)
+	body = serve(h, http.MethodGet, path, nil).Body.String()
+	sel = selectBlock(t, body, "roadmap_id")
+	if strings.Count(sel, "selected") != 1 || !strings.Contains(sel, fmt.Sprintf(`<option value="%d" selected>Fictional Harbor Plan (default)</option>`, def.ID)) {
+		t.Fatalf("want only the default selected: %s", sel)
 	}
-	if body := serve(h, http.MethodGet, fmt.Sprintf("/projects/%d/edit", outside.ID), nil).Body.String(); strings.Contains(body, "Choosing the default") {
-		t.Error("edit form: note shown although the own Private flag keeps it private")
+	if got := formValues(t, body, "x").Get("roadmap_id"); got != fmt.Sprint(def.ID) {
+		t.Fatalf("submitted roadmap_id = %q, want %d", got, def.ID)
+	}
+
+	// A listed prefill still wins over the default.
+	other := newTestRoadmap(t, h, "Fictional Lantern Plan", "public", 1)
+	body = serve(h, http.MethodGet, fmt.Sprintf("/projects/new?roadmap=%d", other.ID), nil).Body.String()
+	sel = selectBlock(t, body, "roadmap_id")
+	if strings.Count(sel, "selected") != 1 || !strings.Contains(sel, fmt.Sprintf(`<option value="%d" selected>Fictional Lantern Plan</option>`, other.ID)) {
+		t.Fatalf("want the prefilled roadmap selected: %s", sel)
 	}
 }
