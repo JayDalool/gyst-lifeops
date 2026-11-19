@@ -446,16 +446,6 @@ func ParentCycleRoots(projects []models.ProjectWithProgress) map[int64]bool {
 	return roots
 }
 
-func (r *Repository) UpdateProjectNotes(id int64, notes, unlockNotes string) error {
-	_, err := r.db.Exec(`UPDATE projects SET
-		notes = ?,
-		unlock_notes = ?,
-		updated_at = CURRENT_TIMESTAMP,
-		sync_version = sync_version + 1
-		WHERE id = ?`, notes, unlockNotes, id)
-	return err
-}
-
 // CountUnlockableDependents reports how many locked, auto-unlock projects
 // depend on the given project and would unlock if it were marked done. Used
 // only to decide whether to show the "New Destination Unlocked" cue.
