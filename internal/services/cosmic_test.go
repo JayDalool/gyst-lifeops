@@ -186,7 +186,7 @@ func TestBuildRocketRouteCurrentAndPathSpread(t *testing.T) {
 }
 
 // GYST-076 review: parity with the base branch. The expected coordinates are
-// literals captured from master before this PR (where GalaxyData stored the
+// literals captured from master 0b83127 before this PR (where GalaxyData stored the
 // hash position on read) for fixed fictional UUIDs, so a change to the hash or
 // coordinate math fails here instead of passing through the helper under test.
 func TestGalaxyDataCoordinatesMatchBaseBranch(t *testing.T) {
@@ -205,11 +205,24 @@ func TestGalaxyDataCoordinatesMatchBaseBranch(t *testing.T) {
 	b := mk("Fictional Planet B", "main", "active", "00000000-0000-4000-8000-00000000000b", 0)
 	m1 := mk("Fictional Moon A1", "phase", "locked", "00000000-0000-4000-8000-0000000000a1", a)
 	m2 := mk("Fictional Moon A2", "phase", "active", "00000000-0000-4000-8000-0000000000a2", a)
+	c := mk("Fictional Planet C", "main", "active", "00000000-0000-4000-8000-00000000000c", 0)
+	c1 := mk("Fictional Moon C1", "phase", "active", "00000000-0000-4000-8000-0000000000c1", c)
+	b1 := mk("Fictional Moon B1", "phase", "upcoming", "00000000-0000-4000-8000-0000000000b1", b)
+	// Stored positions (C, C1) are returned as saved; the rest are hashed.
+	if _, err := database.Exec(`UPDATE projects SET pos_x = 1.5, pos_y = -2.25, pos_z = 3 WHERE id = ?`, c); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(`UPDATE projects SET pos_x = -4, pos_y = 5.5, pos_z = 0.25 WHERE id = ?`, c1); err != nil {
+		t.Fatal(err)
+	}
 	want := map[int64][3]float64{
 		a:  {22.996171905306085, 10.444841325729433, 3.822785837587333},
 		b:  {-48.650702651082575, -7.552110131085014, -13.134201526790411},
 		m1: {-54.84498724075655, 16.210117896720217, 4.384637054689912},
 		m2: {34.4250004295751, 28.29543142812656, -9.68551338666482},
+		b1: {13.248659230553349, -50.65871346057022, -10.811759680530022},
+		c:  {1.5, -2.25, 3},
+		c1: {-4, 5.5, 0.25},
 	}
 	data, err := svc.GalaxyData()
 	if err != nil {

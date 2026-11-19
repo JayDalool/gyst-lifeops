@@ -115,3 +115,37 @@ func TestProjectFormArchivedPrefillFallsBack(t *testing.T) {
 		t.Fatalf("want the prefilled roadmap selected: %s", sel)
 	}
 }
+
+// The default comes from the same list the options are rendered from: a
+// roadmap created after that list was read must not become a selected value
+// that is not an option; the form falls back to Unassigned.
+func TestDefaultRoadmapIsAlwaysAnOption(t *testing.T) {
+	h, database := cycleHandler(t)
+	archiveAllRoadmapRows(t, database)
+	old := newTestRoadmap(t, h, "Fictional Harbor Plan", "public", 1)
+	stale, err := h.Service.Repo.ListRoadmaps(false) // options read here
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def, err := h.defaultRoadmap(stale)
+	if err != nil || def == nil || def.ID != old.ID {
+		t.Fatalf("default = %+v, %v; want roadmap %d", def, err, old.ID)
+	}
+	if got := selectedRoadmapID(0, stale, nil, def); got != old.ID || !roadmapListed(stale, got) {
+		t.Fatalf("selected %d is not a listed option", got)
+	}
+
+	// A newer default appears after the options were listed.
+	newTestRoadmap(t, h, "Fictional Lantern Plan", "public", 9)
+	def, err = h.defaultRoadmap(stale)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if def != nil {
+		t.Fatalf("default %d is not among the rendered options", def.ID)
+	}
+	if got := selectedRoadmapID(0, stale, nil, def); got != 0 {
+		t.Fatalf("selected = %d, want 0 (Unassigned)", got)
+	}
+}

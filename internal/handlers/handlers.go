@@ -1245,7 +1245,7 @@ func (h *Handler) newProject(w http.ResponseWriter, r *http.Request) {
 		if id, ok := parseID(r.URL.Query().Get("roadmap")); ok {
 			newProject.RoadmapID = id
 		}
-		defRoadmap, err := h.defaultRoadmap()
+		defRoadmap, err := h.defaultRoadmap(roadmaps)
 		if err != nil {
 			serverError(w, err)
 			return
@@ -1518,7 +1518,7 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 			return
 		}
 	}
-	defRoadmap, err := h.defaultRoadmap()
+	defRoadmap, err := h.defaultRoadmap(roadmaps)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -1549,14 +1549,19 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 
 // defaultRoadmap returns the active dashboard roadmap the form offers as
 // "<name> (default)" and posts by ID, so what is saved is what was shown even
-// if the default changes in another tab (GYST-076 review). Nil when none.
-func (h *Handler) defaultRoadmap() (*models.Roadmap, error) {
+// if the default changes in another tab (GYST-076 review). Nil when none, or
+// when it is not among the roadmaps rendered as options (one created or
+// archived since they were listed), so the selected value is always an option.
+func (h *Handler) defaultRoadmap(options []models.Roadmap) (*models.Roadmap, error) {
 	rm, err := h.Service.Repo.GetDashboardRoadmap()
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
+	}
+	if !roadmapListed(options, rm.ID) {
+		return nil, nil
 	}
 	return &rm, nil
 }
@@ -2352,12 +2357,6 @@ func (h *Handler) editRoadmap(w http.ResponseWriter, r *http.Request, id int64) 
 		if err := h.Service.Repo.UpdateRoadmap(&roadmap); err != nil {
 			serverError(w, err)
 			return
-		}
-		if roadmap.Featured {
-			if err := h.Service.Repo.SetFeaturedRoadmap(id); err != nil {
-				serverError(w, err)
-				return
-			}
 		}
 		http.Redirect(w, r, "/roadmap?roadmap="+strconv.FormatInt(id, 10), http.StatusSeeOther)
 	default:

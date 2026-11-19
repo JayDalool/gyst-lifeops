@@ -203,3 +203,55 @@ func TestRoadmapWriteRollsBackWhenAdoptionFails(t *testing.T) {
 		t.Fatalf("name after failed update = %q, want unchanged", got.Name)
 	}
 }
+
+// GYST-076 review: editing roadmap B with "Set as dashboard" must adopt orphans
+// into B (the base branch's next GET did), so the featured change and the
+// adoption share one transaction, featured first.
+func TestUpdateRoadmapSetAsDashboardAdoptsIntoIt(t *testing.T) {
+	repo := testRepository(t)
+	archiveAllRoadmaps(t, repo)
+	a := models.Roadmap{Name: "Fictional Roadmap A", Priority: 5, Status: "active", Featured: true}
+	if err := repo.CreateRoadmap(&a); err != nil {
+		t.Fatal(err)
+	}
+	b := models.Roadmap{Name: "Fictional Roadmap B", Priority: 1, Status: "active"}
+	if err := repo.CreateRoadmap(&b); err != nil {
+		t.Fatal(err)
+	}
+	orphan := models.Project{Name: "Fictional Orphan", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&orphan); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.db.Exec(`UPDATE projects SET roadmap_id = NULL WHERE id = ?`, orphan.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	// Failure: nothing changes, A stays the dashboard.
+	if _, err := repo.db.Exec(`CREATE TRIGGER fail_adoption BEFORE UPDATE OF roadmap_id ON projects
+		BEGIN SELECT RAISE(ABORT, 'forced adoption failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	b.Featured = true
+	if err := repo.UpdateRoadmap(&b); err == nil {
+		t.Fatal("UpdateRoadmap succeeded although adoption failed")
+	}
+	gotA, _ := repo.GetRoadmap(a.ID)
+	gotB, _ := repo.GetRoadmap(b.ID)
+	if !gotA.Featured || gotB.Featured {
+		t.Fatalf("featured after failed update: A=%v B=%v, want A only", gotA.Featured, gotB.Featured)
+	}
+	if _, err := repo.db.Exec(`DROP TRIGGER fail_adoption`); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.UpdateRoadmap(&b); err != nil {
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, orphan.ID); got != b.ID {
+		t.Fatalf("orphan adopted into %d, want the new dashboard roadmap %d", got, b.ID)
+	}
+	gotA, _ = repo.GetRoadmap(a.ID)
+	if gotA.Featured {
+		t.Error("roadmap A still featured")
+	}
+}
