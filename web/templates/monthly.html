@@ -1,49 +1,16 @@
 {{define "content"}}
-<div class="page-head">
-  <div>
-    <p class="kicker">{{.MonthName}}</p>
-    <h1 class="page-title">Monthly</h1>
-    <p class="page-sub">{{.Progress}}% of this month&rsquo;s tasks completed.</p>
-  </div>
-  <a class="btn ghost" href="/tasks/new">New task</a>
+<div class="gyst-scope gyst-more">
+  <header class="gyst-header"><div><h1 class="gyst-page-title">Monthly</h1></div><a class="gyst-button gyst-button--secondary" href="/tasks/new">New task</a></header>
+  <section class="gyst-card gyst-stack"><p class="gyst-caption">{{.MonthName}} &middot; {{.Progress}}% complete</p><progress class="gyst-progress" value="{{.Progress}}" max="100" aria-label="{{.Progress}}% of this month&rsquo;s tasks complete">{{.Progress}}%</progress></section>
+  <section class="gyst-stack"><h2 class="gyst-section-title">Completed per day</h2><div class="gyst-card">
+    <canvas class="chart" data-chart="line" data-labels="{{join .Chart.Labels "|"}}"
+      data-values="{{joinInts .Chart.Values "|"}}"
+      data-empty="Complete tasks to build the month's picture."></canvas>
+  </div></section>
+  <section class="gyst-stack"><h2 class="gyst-section-title">This month&rsquo;s queue</h2>
+  {{if .Items}}<ul class="gyst-list">
+    {{range .Items}}<li><a class="gyst-row" href="/tasks/{{.Task.ID}}"><span class="gyst-row-copy"><span>{{.Task.Title}}</span><span class="gyst-caption">{{.Task.RepeatType}} &middot; {{.Task.Priority}}</span></span>{{if eq .Status "completed"}}<span class="gyst-chip" data-state="ok"><span class="gyst-dot" aria-hidden="true"></span>Done</span>{{else if eq .Status "skipped"}}<span class="gyst-chip" data-state="idle"><span class="gyst-dot" aria-hidden="true"></span>Skipped</span>{{end}}<span class="gyst-row-meta">{{niceDate .Date}}</span>{{template "gyst.icon" "chevron-right"}}</a></li>{{end}}
+  </ul>{{else}}<div class="gyst-empty"><p>No tasks due this month.</p></div>{{end}}
+  </section>
 </div>
-
-<div class="card tight mt-24">
-  <div class="progress-row">
-    <span class="meta nowrap">This month</span>
-    <div class="progress"><span style="width: {{progressWidth .Progress}}"></span></div>
-    <span class="meta num">{{.Progress}}%</span>
-  </div>
-</div>
-
-<section class="section-head">
-  <h2 class="section-title">Completed per day</h2>
-</section>
-<div class="card">
-  <canvas class="chart" data-chart="line" data-labels="{{join .Chart.Labels "|"}}"
-    data-values="{{joinInts .Chart.Values "|"}}"
-    data-empty="Complete tasks to build the month's picture."></canvas>
-</div>
-
-<section class="section-head">
-  <h2 class="section-title">This month&rsquo;s queue</h2>
-</section>
-{{if .Items}}
-  <div class="card tight">
-    <ul class="list">
-      {{range .Items}}
-        <li>
-          <span class="status {{if eq .Status "completed"}}done{{else if eq .Status "skipped"}}locked{{else}}pending{{end}}"><span class="dot"></span></span>
-          <span class="grow">
-            <a href="/tasks/{{.Task.ID}}">{{.Task.Title}}</a>
-            <small>{{.Task.RepeatType}} &middot; {{.Task.Priority}}{{if ne .Status "pending"}} &middot; {{.Status}}{{end}}</small>
-          </span>
-          <span class="meta num">{{niceDate .Date}}</span>
-        </li>
-      {{end}}
-    </ul>
-  </div>
-{{else}}
-  <p class="meta">No tasks due this month.</p>
-{{end}}
 {{end}}

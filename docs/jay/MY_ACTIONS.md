@@ -1,9 +1,11 @@
+- [ ] GYST-138 · Count goals with bad or future dates on backup · https://github.com/JayDalool/gyst-lifeops/pull/230
 - [ ] CF-1 · Answer the "to confirm" and open items in 19A · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/audit/vnext/19A_CONNECTED_DATA_DECISIONS.md
 - [ ] AI-1 #243 · After deploy: analyse one meal photo with Claude selected · https://gyst.zaylolabs.com/health/nutrition
 - [ ] AI-1 #243 · Settings › AI provider: Anthropic, paste key; clear old photo model · https://gyst.zaylolabs.com/settings
 - [ ] AI-1 #243 · Anthropic Console: create key, set monthly spend limit, auto-reload off · https://github.com/JayDalool/gyst-lifeops/issues/243
 - [ ] #206 · Add "incline 8% · 5.0 km/h" to Hevy treadmill notes · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/HEVY_SETUP.md
 - [ ] #193 · Before and after deploy: read-only time zone check · https://github.com/JayDalool/gyst-lifeops/blob/master/docs/runbooks/timezone-data.md
+- [ ] #189 · After build, before up: run config check · https://github.com/JayDalool/gyst-lifeops/issues/189
 - [ ] #183 · After deploy: set export/calendar roadmaps to Public · https://github.com/JayDalool/gyst-lifeops/issues/183
 - [ ] #176 · Count project links lost to archived parents (backup copies) · https://github.com/JayDalool/gyst-lifeops/issues/176#issuecomment-6133715342
 - [ ] #175 · Count duplicate study catch-ups on a backup copy · https://github.com/JayDalool/gyst-lifeops/issues/175

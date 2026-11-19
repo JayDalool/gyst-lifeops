@@ -4,6 +4,7 @@
     <div><p class="gyst-caption">{{if .Greeting}}{{.Greeting}}{{else}}Your day, at a glance{{end}}</p><h1 class="gyst-page-title">Today</h1><p class="gyst-caption">{{niceDate .Today}}</p></div>
     <a class="gyst-button" href="/tasks/new">{{template "gyst.icon" "plus"}} Add task</a>
   </header>
+  {{template "today.now" .}}
   <section class="gyst-card gyst-card--tinted today-intention" aria-label="Daily focus">
     <span class="gyst-icon-tile">{{template "gyst.icon" "check"}}</span><div><p><strong>A focused today.</strong></p><p class="gyst-caption">Small steps build the life you want.</p></div>
   </section>
@@ -55,23 +56,6 @@
       <p class="meta">Done today: <b class="num">{{len .Completed}}</b> &middot; skipped: <b class="num">{{len .Skipped}}</b></p>
       <p class="meta">Streak: {{.ShipStats.Streak}} days &middot; level {{.ShipStats.Level}} &middot; {{.ShipStats.TotalFuel}} XP</p>
     </section>
-    <section class="prayer-hero gyst-card" data-next-prayer="{{.Prayer.NextAt}}" data-prayer-alerts data-alert-sound="{{.Prayer.Config.AlertSound}}">
-      <div>
-        <p class="group-label">Next prayer &middot; {{.Prayer.Schedule.Location}}</p>
-        <h2>{{.Prayer.Next.Prayer.Name}}</h2>
-        <p class="prayer-time num">{{.Prayer.Next.Prayer.Time}}</p>
-      </div>
-      <div class="prayer-alert-panel">
-        <div class="prayer-countdown num" data-prayer-countdown aria-live="polite">&mdash;</div>
-        <div class="prayer-alert-actions">
-          <button class="btn sm" type="button" data-prayer-enable>Enable prayer alerts and Athan</button>
-          <button class="btn sm ghost" type="button" data-prayer-test>Test Athan</button>
-        </div>
-        <span class="meta" data-prayer-alert-state>Alerts are off in this browser.</span>
-      </div>
-    </section>
-    <audio data-prayer-audio preload="auto" {{if .Prayer.Config.AthanFile}}src="/static/audio/{{.Prayer.Config.AthanFile}}"{{end}}></audio>
-
     <div class="day-group gyst-card" aria-label="Prayer tracker">
       <h2 class="gyst-section-title">Prayer &middot; <span class="num" data-mission="prayer">{{.Mission.PrayerCompletion}}%</span></h2>
       <div class="tracker-row prayer-row">
