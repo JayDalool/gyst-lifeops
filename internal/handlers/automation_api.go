@@ -13,8 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 
+	"lifeops-tracker/internal/config"
 	"lifeops-tracker/internal/services"
 )
 
@@ -23,7 +23,6 @@ const (
 	envN8NEventToken = "GYST_N8N_EVENT_TOKEN"
 	envN8NWorkflows  = "GYST_N8N_WORKFLOWS"
 
-	automationMinTokenBytes = 32
 	automationRatePerMinute = 60
 )
 
@@ -55,7 +54,7 @@ func (h *Handler) AutomationConfigProblem() string {
 	token := h.N8NEventToken
 	// Whitespace in a token can never match a bearer header (Fields splits on
 	// it), so it would silently answer 401 forever; report it as a config error.
-	if len(token) < automationMinTokenBytes || strings.ContainsFunc(token, unicode.IsSpace) {
+	if !config.ValidN8NToken(token) {
 		return envN8NEventToken
 	}
 	if h.HealthSyncToken != "" {

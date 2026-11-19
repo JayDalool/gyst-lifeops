@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"lifeops-tracker/internal/config"
 	"lifeops-tracker/internal/db"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
@@ -72,9 +73,7 @@ func TestBuildExternalLinkRejectsUnsafeAndMissingTargets(t *testing.T) {
 
 func TestSyncExternalLinkRefusesForeignJiraHost(t *testing.T) {
 	service, item := externalLinkService(t)
-	t.Setenv("JIRA_EMAIL", "dev@example.test")
-	t.Setenv("JIRA_API_TOKEN", "fake-token-not-real")
-	t.Setenv("JIRA_BASE_URL", "https://team.atlassian.net")
+	service.ProviderCreds = config.Providers{JiraEmail: "dev@example.test", JiraToken: "fake-token-not-real", JiraBaseURL: "https://team.atlassian.net"}
 	link, err := service.BuildExternalLink("project_item", item.ID, "https://team.atlassian.net.evil.example/browse/GYST-9", "Manual title")
 	if err != nil {
 		t.Fatal(err)

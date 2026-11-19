@@ -140,8 +140,8 @@ func (r *Repository) ImportRoadmapPlan(plan models.RoadmapImportPlan) (int64, er
 func insertRoadmapProject(tx *sql.Tx, importID int64, importedDate string, project models.RoadmapProjectPlan) (int64, error) {
 	res, err := tx.Exec(`INSERT INTO projects
 		(parent_project_id, name, description, category, project_kind, status, start_date, target_date, notes,
-		 unlock_notes, depends_on_project_id, auto_unlock)
-		VALUES (?, ?, ?, 'coding', ?, ?, ?, ?, ?, ?, ?, ?)`,
+		 unlock_notes, depends_on_project_id, auto_unlock, roadmap_id)
+		VALUES (?, ?, ?, 'coding', ?, ?, ?, ?, ?, ?, ?, ?, (`+dashboardRoadmapIDSQL+`))`,
 		nullableInt64(project.ParentProjectID),
 		project.Name,
 		project.Description,
@@ -538,17 +538,15 @@ func (r *Repository) SetRoadmapProjectMeta(meta models.RoadmapProjectMeta) error
 // rows and archived roadmaps are not filtered, and UNION (not UNION ALL)
 // makes the walk terminate on parent cycles.
 func (r *Repository) EffectiveProjectPrivacy() (map[int64]models.ProjectPrivacy, error) {
-	// The orphan fallback subquery must stay in sync with GetDashboardRoadmap
-	// (internal/repository/roadmaps.go).
+	// The orphan fallback subquery is dashboardRoadmapIDSQL, which mirrors
+	// GetDashboardRoadmap (internal/repository/roadmaps.go).
 	rows, err := r.db.Query(`WITH RECURSIVE f(id, priv, loc) AS (
 		SELECT id, priv, loc FROM (
 			SELECT project_id AS id, is_private AS priv, local_only AS loc FROM roadmap_project_meta WHERE is_private = 1 OR local_only = 1
 			UNION ALL
 			SELECT p.id, r.privacy = 'private', r.privacy = 'local_only'
 			FROM projects p
-			JOIN roadmaps r ON r.id = COALESCE(p.roadmap_id, (
-				SELECT id FROM roadmaps WHERE status = 'active' AND archived_at IS NULL
-				ORDER BY featured DESC, priority DESC, updated_at DESC, id DESC LIMIT 1))
+			JOIN roadmaps r ON r.id = COALESCE(p.roadmap_id, (` + dashboardRoadmapIDSQL + `))
 			WHERE r.privacy IN ('private', 'local_only')
 		)
 		UNION

@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"lifeops-tracker/internal/models"
 )
 
-type GitHub struct{ Client *http.Client }
+// GitHub sends Authorization only when Token is set.
+type GitHub struct {
+	Client *http.Client
+	Token  string
+}
 
 func (p GitHub) Fetch(ctx context.Context, link models.ExternalLink) (LinkSnapshot, error) {
 	u, err := url.Parse(link.URL)
@@ -27,7 +30,7 @@ func (p GitHub) Fetch(ctx context.Context, link models.ExternalLink) (LinkSnapsh
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	if token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN")); token != "" {
+	if token := strings.TrimSpace(p.Token); token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 	client := p.Client

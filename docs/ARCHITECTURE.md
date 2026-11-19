@@ -21,14 +21,31 @@ flowchart LR
 ## Process and routing
 
 - `main.go` and `cmd/lifeops/main.go` are equivalent entrypoints.
-- `internal/app/cli.go` reads command-line configuration and starts the HTTP
-  server.
+- `internal/config/` is the only place that reads command-line flags and the
+  environment. `config.Load(args, getenv, readFile)` returns one `Config`
+  (or named errors); `internal/app/cli.go` logs its startup summary (secrets
+  show only CONFIGURED / NOT CONFIGURED) and starts the HTTP server. VAPID and
+  the GitHub, Jira and Slack credentials are injected into the service, not
+  read at call time.
 - `internal/app/app.go` opens the database, applies migrations, constructs the
   application, and registers routes.
 - `internal/handlers/` handles requests and renders `web/templates/`.
 
 Runtime paths are configured with command-line flags such as `-addr`, `-db`,
-`-migrations`, `-templates`, and `-static`. Public calendar feeds are disabled
+`-migrations`, `-templates`, and `-static`; `PORT` and `DB_PATH` supply the
+defaults for `-addr` and `-db`. Any secret may come from `NAME_FILE` instead of
+`NAME` when the binary runs directly; `docker-compose.yml` does not forward
+`NAME_FILE` variables or mount secret files yet, so under Compose use `NAME`.
+A test keeps `docker-compose.yml`, `.env.example` and the variables
+`config.Load` reads in step. A half-set VAPID trio or Jira email/token pair, a bad `PORT` or an
+invalid `GYST_TIMEZONE` stops startup with a named error;
+`lifeops config` runs the same checks without opening the database; run it on
+the new image after `docker compose build` and before `up -d` (an image built
+before #191 has no `config` command and would start a second server). Every
+variable is listed in `.env.example`, including the n8n settings
+(`GYST_N8N_EVENT_TOKEN`, a secret that also accepts `_FILE`; `GYST_N8N_WORKFLOWS`;
+`GYST_N8N_URL`). A short or whitespace-bearing n8n token does not stop startup:
+`lifeops config` reports it as INVALID and the endpoint answers 503. Public calendar feeds are disabled
 unless `ALLOW_PUBLIC_CALENDAR_FEEDS` is explicitly enabled; tokenized feeds stay
 available.
 
@@ -527,7 +544,7 @@ token does not work on `/api/health/sync`.
 disables the endpoint. Startup logs the name of the offending variable only.
 `GYST_N8N_URL` is carried for later display and unused now.
 
-**Token handling.** Generate the token with `openssl rand -hex 32`; a token
+**Token handling.** `config.Load` reads the three `GYST_N8N_*` settings; the token is shown only as CONFIGURED, INVALID or NOT CONFIGURED. Generate the token with `openssl rand -hex 32`; a token
 containing whitespace also disables the endpoint (it could never match a
 bearer header). n8n posts over https only, never plain http. The server's
 settings file holding the token must be mode 0600 before the token goes in.

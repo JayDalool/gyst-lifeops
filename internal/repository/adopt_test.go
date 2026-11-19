@@ -1,0 +1,257 @@
+package repository
+
+import (
+	"testing"
+
+	"lifeops-tracker/internal/models"
+)
+
+func projectRoadmap(t *testing.T, repo *Repository, id int64) int64 {
+	t.Helper()
+	p, err := repo.ProjectByID(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p.RoadmapID
+}
+
+func archiveAllRoadmaps(t *testing.T, repo *Repository) {
+	t.Helper()
+	if _, err := repo.db.Exec(`UPDATE roadmaps SET status = 'archived', archived_at = CURRENT_TIMESTAMP`); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreateProjectUnassignedGetsDashboardRoadmap(t *testing.T) {
+	repo := testRepository(t)
+	dash, err := repo.GetDashboardRoadmap()
+	if err != nil {
+		t.Fatal(err)
+	}
+	other := mustCreateRoadmap(t, repo, "Fictional Other", 1)
+	un := models.Project{Name: "Fictional Unassigned", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&un); err != nil {
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, un.ID); got != dash.ID {
+		t.Fatalf("unassigned project roadmap = %d, want dashboard %d", got, dash.ID)
+	}
+	explicit := models.Project{Name: "Fictional Explicit", ProjectKind: "main", Status: "active", RoadmapID: other.ID}
+	if err := repo.CreateProject(&explicit); err != nil {
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, explicit.ID); got != other.ID {
+		t.Fatalf("explicit roadmap = %d, want %d kept", got, other.ID)
+	}
+}
+
+func TestCreateAndUpdateProjectStayUnassignedWithoutActiveRoadmap(t *testing.T) {
+	repo := testRepository(t)
+	archiveAllRoadmaps(t, repo)
+	p := models.Project{Name: "Fictional Loose", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&p); err != nil {
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, p.ID); got != 0 {
+		t.Fatalf("roadmap = %d, want NULL", got)
+	}
+	if err := repo.UpdateProject(&p); err != nil {
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, p.ID); got != 0 {
+		t.Fatalf("roadmap after update = %d, want NULL", got)
+	}
+	if err := repo.AdoptOrphanProjects(); err != nil {
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, p.ID); got != 0 {
+		t.Fatalf("roadmap after no-op adopt = %d, want NULL", got)
+	}
+}
+
+func TestUpdateProjectUnassignedGetsDashboardRoadmap(t *testing.T) {
+	repo := testRepository(t)
+	dash, _ := repo.GetDashboardRoadmap()
+	other := mustCreateRoadmap(t, repo, "Fictional Other", 1)
+	p := models.Project{Name: "Fictional Mover", ProjectKind: "main", Status: "active", RoadmapID: other.ID}
+	if err := repo.CreateProject(&p); err != nil {
+		t.Fatal(err)
+	}
+	p.RoadmapID = 0
+	if err := repo.UpdateProject(&p); err != nil {
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, p.ID); got != dash.ID {
+		t.Fatalf("roadmap = %d, want dashboard %d", got, dash.ID)
+	}
+}
+
+func TestImportRoadmapPlanProjectsGetDashboardRoadmap(t *testing.T) {
+	repo := testRepository(t)
+	dash, _ := repo.GetDashboardRoadmap()
+	if _, err := repo.ImportRoadmapPlan(models.RoadmapImportPlan{
+		SourceMarkdown: "fictional", ImportedDate: "2026-01-01",
+		Projects: []models.RoadmapProjectPlan{{Name: "Orbit Alpha", ProjectKind: "main", Status: "active"}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var got int64
+	if err := repo.db.QueryRow(`SELECT roadmap_id FROM projects WHERE name = 'Orbit Alpha'`).Scan(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got != dash.ID {
+		t.Fatalf("imported roadmap = %d, want %d", got, dash.ID)
+	}
+}
+
+func TestRoadmapWritesAdoptRemainingOrphans(t *testing.T) {
+	repo := testRepository(t)
+	archiveAllRoadmaps(t, repo)
+	orphan := models.Project{Name: "Fictional Orphan", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&orphan); err != nil {
+		t.Fatal(err)
+	}
+	rm := mustCreateRoadmap(t, repo, "Fictional Fresh", 3) // CreateRoadmap adopts
+	if got := projectRoadmap(t, repo, orphan.ID); got != rm.ID {
+		t.Fatalf("after CreateRoadmap roadmap = %d, want %d", got, rm.ID)
+	}
+
+	archiveAllRoadmaps(t, repo)
+	orphan2 := models.Project{Name: "Fictional Orphan Two", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&orphan2); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.db.Exec(`UPDATE roadmaps SET archived_at = NULL WHERE id = ?`, rm.ID); err != nil {
+		t.Fatal(err)
+	}
+	rm.Status = "active"
+	if err := repo.UpdateRoadmap(&rm); err != nil { // UpdateRoadmap adopts
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, orphan2.ID); got != rm.ID {
+		t.Fatalf("after UpdateRoadmap roadmap = %d, want %d", got, rm.ID)
+	}
+}
+
+func TestAdoptOrphanProjectsIdempotentAndLeavesUpdatedAt(t *testing.T) {
+	repo := testRepository(t)
+	if _, err := repo.db.Exec(`INSERT INTO projects (name, project_kind, status, updated_at) VALUES ('Fictional Raw Orphan', 'main', 'active', '2026-01-01 00:00:00')`); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		if err := repo.AdoptOrphanProjects(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var rid int64
+	var updated string
+	if err := repo.db.QueryRow(`SELECT roadmap_id, updated_at FROM projects WHERE name = 'Fictional Raw Orphan'`).Scan(&rid, &updated); err != nil {
+		t.Fatal(err)
+	}
+	dash, _ := repo.GetDashboardRoadmap()
+	if rid != dash.ID || updated != "2026-01-01 00:00:00" {
+		t.Fatalf("roadmap %d updated_at %q", rid, updated)
+	}
+}
+
+// GYST-076 review: when adoption fails, the roadmap write must roll back with
+// it, otherwise the POST returns 500 after the save and a retry duplicates it.
+func TestRoadmapWriteRollsBackWhenAdoptionFails(t *testing.T) {
+	repo := testRepository(t)
+	archiveAllRoadmaps(t, repo)
+	orphan := models.Project{Name: "Fictional Orphan", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&orphan); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.db.Exec(`CREATE TRIGGER fail_adoption BEFORE UPDATE OF roadmap_id ON projects
+		BEGIN SELECT RAISE(ABORT, 'forced adoption failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+
+	fresh := models.Roadmap{Name: "Fictional Rolled Back", Priority: 2, Status: "active", Featured: true}
+	if err := repo.CreateRoadmap(&fresh); err == nil {
+		t.Fatal("CreateRoadmap succeeded although adoption failed")
+	}
+	var rows int
+	if err := repo.db.QueryRow(`SELECT COUNT(*) FROM roadmaps WHERE name = ?`, fresh.Name).Scan(&rows); err != nil {
+		t.Fatal(err)
+	}
+	if rows != 0 {
+		t.Fatalf("roadmap rows after failed create = %d, want 0", rows)
+	}
+
+	if _, err := repo.db.Exec(`DROP TRIGGER fail_adoption`); err != nil {
+		t.Fatal(err)
+	}
+	rm := mustCreateRoadmap(t, repo, "Fictional Kept", 3)
+	if _, err := repo.db.Exec(`UPDATE projects SET roadmap_id = NULL`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.db.Exec(`CREATE TRIGGER fail_adoption BEFORE UPDATE OF roadmap_id ON projects
+		BEGIN SELECT RAISE(ABORT, 'forced adoption failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	rm.Name = "Fictional Renamed"
+	if err := repo.UpdateRoadmap(&rm); err == nil {
+		t.Fatal("UpdateRoadmap succeeded although adoption failed")
+	}
+	got, err := repo.GetRoadmap(rm.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "Fictional Kept" {
+		t.Fatalf("name after failed update = %q, want unchanged", got.Name)
+	}
+}
+
+// GYST-076 review: editing roadmap B with "Set as dashboard" must adopt orphans
+// into B (the base branch's next GET did), so the featured change and the
+// adoption share one transaction, featured first.
+func TestUpdateRoadmapSetAsDashboardAdoptsIntoIt(t *testing.T) {
+	repo := testRepository(t)
+	archiveAllRoadmaps(t, repo)
+	a := models.Roadmap{Name: "Fictional Roadmap A", Priority: 5, Status: "active", Featured: true}
+	if err := repo.CreateRoadmap(&a); err != nil {
+		t.Fatal(err)
+	}
+	b := models.Roadmap{Name: "Fictional Roadmap B", Priority: 1, Status: "active"}
+	if err := repo.CreateRoadmap(&b); err != nil {
+		t.Fatal(err)
+	}
+	orphan := models.Project{Name: "Fictional Orphan", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&orphan); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.db.Exec(`UPDATE projects SET roadmap_id = NULL WHERE id = ?`, orphan.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	// Failure: nothing changes, A stays the dashboard.
+	if _, err := repo.db.Exec(`CREATE TRIGGER fail_adoption BEFORE UPDATE OF roadmap_id ON projects
+		BEGIN SELECT RAISE(ABORT, 'forced adoption failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	b.Featured = true
+	if err := repo.UpdateRoadmap(&b); err == nil {
+		t.Fatal("UpdateRoadmap succeeded although adoption failed")
+	}
+	gotA, _ := repo.GetRoadmap(a.ID)
+	gotB, _ := repo.GetRoadmap(b.ID)
+	if !gotA.Featured || gotB.Featured {
+		t.Fatalf("featured after failed update: A=%v B=%v, want A only", gotA.Featured, gotB.Featured)
+	}
+	if _, err := repo.db.Exec(`DROP TRIGGER fail_adoption`); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.UpdateRoadmap(&b); err != nil {
+		t.Fatal(err)
+	}
+	if got := projectRoadmap(t, repo, orphan.ID); got != b.ID {
+		t.Fatalf("orphan adopted into %d, want the new dashboard roadmap %d", got, b.ID)
+	}
+	gotA, _ = repo.GetRoadmap(a.ID)
+	if gotA.Featured {
+		t.Error("roadmap A still featured")
+	}
+}

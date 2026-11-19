@@ -32,7 +32,7 @@ import (
 type Handler struct {
 	Service     *services.Service
 	TemplateDir string
-	// AllowPublicFeeds gates the unauthenticated plain .ics routes. Off by
+	// AllowPublicFeeds gates the plain .ics feed routes (session required). Off by
 	// default (production-safe); the tokenized /calendar/feed/{token} routes are
 	// unaffected. Enable in local/dev via ALLOW_PUBLIC_CALENDAR_FEEDS=true.
 	AllowPublicFeeds bool
@@ -231,6 +231,12 @@ type ProjectFormData struct {
 	LinkedParent    *models.Project
 	LinkedDependsOn *models.Project
 	LinkedRoadmap   *models.Roadmap
+	// DefaultRoadmap is the active dashboard roadmap that an unassigned project
+	// is saved into (GYST-076); nil when none exists. SelectedRoadmapID is the
+	// one option the form preselects: the project's roadmap when it is offered,
+	// else the default, else 0 (Unassigned).
+	DefaultRoadmap    *models.Roadmap
+	SelectedRoadmapID int64
 }
 
 type ProjectDetailData struct {
@@ -1156,15 +1162,6 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 			return
 		}
 
-		// Self-heal: adopt orphan trips into the dashboard roadmap so every trip
-		// lands in a group (mirrors the dashboard's adoption).
-		if dashboard, drErr := h.Service.Repo.GetDashboardRoadmap(); drErr == nil {
-			if err := h.Service.Repo.AdoptOrphanProjects(dashboard.ID); err != nil {
-				serverError(w, err)
-				return
-			}
-		}
-
 		groups := make([]RoadmapGroup, 0, len(roadmaps))
 		anyProjects := false
 		for _, roadmap := range roadmaps {
@@ -1258,14 +1255,23 @@ func (h *Handler) newProject(w http.ResponseWriter, r *http.Request) {
 		if id, ok := parseID(r.URL.Query().Get("roadmap")); ok {
 			newProject.RoadmapID = id
 		}
+		defRoadmap, err := h.defaultRoadmap(roadmaps)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
 		h.render(w, "project_form.html", ProjectFormData{
-			Page:     "projects",
-			Today:    h.Service.TodayString(),
-			Title:    "New Project",
-			Action:   "/projects/new",
-			Project:  newProject,
-			Projects: projects,
-			Roadmaps: roadmaps,
+			Page:           "projects",
+			Today:          h.Service.TodayString(),
+			Title:          "New Project",
+			Action:         "/projects/new",
+			Project:        newProject,
+			Projects:       projects,
+			Roadmaps:       roadmaps,
+			DefaultRoadmap: defRoadmap,
+			// A prefilled ?roadmap= that is not offered (archived) must not
+			// leave nothing selected, or the browser posts the first option.
+			SelectedRoadmapID: selectedRoadmapID(newProject.RoadmapID, roadmaps, nil, defRoadmap),
 		})
 	case http.MethodPost:
 		project, err := projectFromRequest(r)
@@ -1522,6 +1528,11 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 			return
 		}
 	}
+	defRoadmap, err := h.defaultRoadmap(roadmaps)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
 	if status != http.StatusOK {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(status)
@@ -1540,7 +1551,41 @@ func (h *Handler) renderEditProject(w http.ResponseWriter, id int64, project mod
 		LinkedParent:    linkedParent,
 		LinkedDependsOn: linkedDependsOn,
 		LinkedRoadmap:   linkedRoadmap,
+
+		DefaultRoadmap:    defRoadmap,
+		SelectedRoadmapID: selectedRoadmapID(project.RoadmapID, roadmaps, linkedRoadmap, defRoadmap),
 	})
+}
+
+// defaultRoadmap returns the active dashboard roadmap the form offers as
+// "<name> (default)" and posts by ID, so what is saved is what was shown even
+// if the default changes in another tab (GYST-076 review). Nil when none, or
+// when it is not among the roadmaps rendered as options (one created or
+// archived since they were listed), so the selected value is always an option.
+func (h *Handler) defaultRoadmap(options []models.Roadmap) (*models.Roadmap, error) {
+	rm, err := h.Service.Repo.GetDashboardRoadmap()
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !roadmapListed(options, rm.ID) {
+		return nil, nil
+	}
+	return &rm, nil
+}
+
+// selectedRoadmapID picks the single preselected Roadmap option: current when
+// the form offers it, else the default, else 0 (Unassigned).
+func selectedRoadmapID(current int64, roadmaps []models.Roadmap, linked, def *models.Roadmap) int64 {
+	if current != 0 && (roadmapListed(roadmaps, current) || (linked != nil && linked.ID == current)) {
+		return current
+	}
+	if def != nil {
+		return def.ID
+	}
+	return 0
 }
 
 // linkedArchivedProject returns the project linkID points at when it is not in
@@ -2322,12 +2367,6 @@ func (h *Handler) editRoadmap(w http.ResponseWriter, r *http.Request, id int64) 
 		if err := h.Service.Repo.UpdateRoadmap(&roadmap); err != nil {
 			serverError(w, err)
 			return
-		}
-		if roadmap.Featured {
-			if err := h.Service.Repo.SetFeaturedRoadmap(id); err != nil {
-				serverError(w, err)
-				return
-			}
 		}
 		http.Redirect(w, r, "/roadmap?roadmap="+strconv.FormatInt(id, 10), http.StatusSeeOther)
 	default:

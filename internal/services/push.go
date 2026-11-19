@@ -5,24 +5,22 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
+
+	"lifeops-tracker/internal/config"
 )
 
-type PushConfig struct{ PublicKey, PrivateKey, Subscriber string }
+// PushConfig is the VAPID trio, injected at construction (s.Push).
+type PushConfig = config.Push
 
-func PushConfigFromEnvironment() PushConfig {
-	return PushConfig{PublicKey: strings.TrimSpace(os.Getenv("VAPID_PUBLIC_KEY")), PrivateKey: strings.TrimSpace(os.Getenv("VAPID_PRIVATE_KEY")), Subscriber: strings.TrimSpace(os.Getenv("VAPID_SUBSCRIBER"))}
-}
-
-func (s *Service) PushPublicKey() string { return PushConfigFromEnvironment().PublicKey }
+func (s *Service) PushPublicKey() string { return s.Push.PublicKey }
 
 func (s *Service) RunPushScheduler(ctx context.Context) {
-	config := PushConfigFromEnvironment()
-	if config.PublicKey == "" || config.PrivateKey == "" || config.Subscriber == "" {
+	config := s.Push
+	if !config.Configured() {
 		return
 	}
 	s.sendDuePrayerPushes(ctx, config, s.Now())
