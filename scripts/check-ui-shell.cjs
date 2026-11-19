@@ -209,6 +209,7 @@ function parseCSS(text, media = null, out = []) {
 const TARGETS = [
   ['.gyst-primary > a', null, true, false], ['.gyst-primary > a', '(max-width: 1023px)', true, false],
   ['.gyst-health-sub > a', '(min-width: 1024px)', true, false], ['.hv3-tabbar > a', '(max-width: 1023px)', true, false],
+  ['.gyst-projects-sub > a', '(min-width: 1024px)', true, false],
   ['.gyst-brand', null, true, false], ['.gyst-skip', null, true, false],
   ['.gyst-button', null, true, false], ['.gyst-button--icon', null, false, true],
   ['.gyst-row', null, true, false], ['.gyst-segment', null, true, false], ['.gyst-input', null, true, false], ['.gyst-choice', null, true, false],
@@ -265,6 +266,7 @@ function controlSelector(c) {
   if (c.tag === 'button' && has('gyst-button')) return '.gyst-button';
   if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('gyst-primary')) return '.gyst-primary > a';
   if (c.tag === 'a' && parent.classes.includes('gyst-health-sub')) return '.gyst-health-sub > a';
+  if (c.tag === 'a' && parent.classes.includes('gyst-projects-sub')) return '.gyst-projects-sub > a';
   if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('hv3-tabbar')) return '.hv3-tabbar > a';
   if (within('dialog', 'gyst-command')) {
     if (c.tag === 'a' && within('div', 'command-results')) return ':root .gyst-command .command-results a';

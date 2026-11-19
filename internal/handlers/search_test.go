@@ -106,6 +106,35 @@ func TestSearchAPIGalaxyResult(t *testing.T) {
 	}
 }
 
+// The More tab is found by its name; "menu" still finds it, but no result
+// carries the old Menu label.
+func TestSearchAPIMoreLabel(t *testing.T) {
+	h := testHandler(t)
+	found := func(b searchBody) bool {
+		for _, g := range b.Groups {
+			for _, it := range g.Items {
+				if it.Label == "More" && it.Href == "/more" {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	for _, q := range []string{"more", "menu"} {
+		body, _ := doSearch(t, h, "", q)
+		if !found(body) {
+			t.Fatalf("q=%s: want More /more, got %+v", q, body)
+		}
+		for _, g := range body.Groups {
+			for _, it := range g.Items {
+				if it.Label == "Menu" {
+					t.Fatalf("q=%s: stale Menu label: %+v", q, it)
+				}
+			}
+		}
+	}
+}
+
 func TestSearchAPITailnetAppsHiddenOnPublicHost(t *testing.T) {
 	h := testHandler(t)
 	h.appRegistry = appsFixture(fxWork, fxTailnt)

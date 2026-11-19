@@ -13,12 +13,16 @@
 - [ ] #170 · Edit project: own sub-projects not offered as parent · https://github.com/JayDalool/gyst-lifeops/pull/172
 - [ ] #169 · Goal Log progress: blank value blocked, goal unchanged · https://github.com/JayDalool/gyst-lifeops/pull/171
 - [ ] GYST-102 · iPhone launcher: search, open, capture, VoiceOver · https://github.com/JayDalool/gyst-lifeops/pull/168
+- [ ] GYST-099 · iPhone Goals: list, edit a goal, save · https://github.com/JayDalool/gyst-lifeops/pull/167
+- [ ] GYST-079 · iPhone Today: Now block, prayer sheet alerts · https://github.com/JayDalool/gyst-lifeops/pull/159
+- [ ] GYST-073 · iPhone nav: Learn and More tabs, old links work · https://github.com/JayDalool/gyst-lifeops/pull/158
 - [ ] GYST-072 · iPhone: search panel Esc and Add task easy to tap · https://github.com/JayDalool/gyst-lifeops/pull/128
 - [ ] GYST-101 · Apps page: grouped rows, links open in new tab · https://github.com/JayDalool/gyst-lifeops/pull/155
 - [ ] GYST-126 · Gallery overlays: open, close, focus return · https://github.com/JayDalool/gyst-lifeops/pull/149
 - [ ] GYST-077 · iPhone Today: each task once, Done · n opens · https://github.com/JayDalool/gyst-lifeops/pull/130
 - [ ] GYST-113 · Sign out everywhere: other device asks to sign in · https://gyst.zaylolabs.com/settings#security
 - [ ] GYST-133 · Weekly task off-day tick lands on last due day · https://github.com/JayDalool/gyst-lifeops/issues/122
+- [ ] #124 · iPhone: Projects, Galaxy, Roadmaps segments; Galaxy still flies · https://gyst.zaylolabs.com/projects
 - [ ] #103 · iPhone PWA launches; Galaxy and Today toast work · https://gyst.zaylolabs.com/galaxy
 - [ ] #99 · iPhone: Today overdue rows and Do today · https://github.com/JayDalool/gyst-lifeops/pull/100
 - [ ] #89 · iPhone: state components and offline banner · https://github.com/JayDalool/gyst-lifeops/pull/93
