@@ -125,6 +125,9 @@ func New(cfg Config) (*App, error) {
 	webHandler := handlers.New(service, cfg.TemplateDir)
 	webHandler.AllowPublicFeeds = cfg.AllowPublicFeeds
 	webHandler.HealthSyncToken = cfg.HealthSyncToken
+	webHandler.N8NEventToken = cfg.N8NEventToken
+	webHandler.N8NWorkflows = cfg.N8NWorkflows
+	webHandler.N8NURL = cfg.N8NURL
 	webHandler.Auth = services.AuthConfig{PasswordHash: cfg.PasswordHash}
 	webHandler.AuthDisabled = cfg.AuthDisabled
 	webHandler.Coach = healthCoachProvider(cfg.HealthAI)
@@ -137,6 +140,7 @@ func New(cfg Config) (*App, error) {
 		logger = slog.Default()
 	}
 	webHandler.Logger = logger
+	webHandler.LogAutomationConfig()
 
 	if cfg.AuthDisabled {
 		log.Println("=======================================================")

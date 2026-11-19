@@ -132,3 +132,20 @@ func TestRunBackupDefaultDBFollowsDBPath(t *testing.T) {
 		t.Fatal("expected failure on the missing default database")
 	}
 }
+
+// GYST-131: `lifeops config` shows the n8n token only as a state.
+func TestRunConfigRedactsTheN8NToken(t *testing.T) {
+	token := strings.Repeat("n8n-secret-fictional-", 2)
+	var out bytes.Buffer
+	if err := RunConfig([]string{"-seed=false"}, testEnv("GYST_N8N_EVENT_TOKEN", token, "GYST_N8N_WORKFLOWS", "wf_a:A"), noFile, &out); err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	if strings.Contains(text, token) || !strings.Contains(text, "GYST_N8N_EVENT_TOKEN: CONFIGURED") {
+		t.Fatalf("output:\n%s", text)
+	}
+	out.Reset()
+	if err := RunConfig([]string{"-seed=false"}, testEnv("GYST_N8N_EVENT_TOKEN", "short-fictional"), noFile, &out); err != nil || !strings.Contains(out.String(), "GYST_N8N_EVENT_TOKEN: INVALID") || strings.Contains(out.String(), "short-fictional") {
+		t.Fatalf("short token: %v\n%s", err, out.String())
+	}
+}

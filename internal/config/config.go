@@ -17,6 +17,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"lifeops-tracker/internal/clock"
 )
@@ -81,6 +82,13 @@ type Config struct {
 	HealthAI  HealthAI
 	Push      Push
 	Providers Providers
+
+	// N8NEventToken, N8NWorkflows and N8NURL configure n8n event ingestion
+	// (GYST-VN-110). The token is a secret (also NAME_FILE). An empty, short or
+	// whitespace-bearing token does not fail startup: the endpoint answers 503.
+	N8NEventToken string
+	N8NWorkflows  string
+	N8NURL        string
 
 	// AllowPublicFeeds enables the plain .ics feed routes (session required). Default
 	// false (production-safe); tokenized feeds are always available.
@@ -202,6 +210,9 @@ func Load(args []string, getenv func(string) string, readFile func(string) ([]by
 	}
 	c.HealthSyncToken = l.secret("GYST_HEALTH_SYNC_TOKEN")
 	c.PasswordHash = l.secret("GYST_PASSWORD_HASH")
+	c.N8NEventToken = l.secret("GYST_N8N_EVENT_TOKEN")
+	c.N8NWorkflows = getenv("GYST_N8N_WORKFLOWS")
+	c.N8NURL = getenv("GYST_N8N_URL")
 	c.Push = Push{
 		PublicKey:  l.trimmedSecret("VAPID_PUBLIC_KEY"),
 		PrivateKey: l.trimmedSecret("VAPID_PRIVATE_KEY"),
@@ -248,6 +259,26 @@ func (l *loader) pair(names []string, set []bool) {
 		l.fail("%s must be all set or all empty: %s set, %s missing",
 			strings.Join(names, ", "), strings.Join(have, ", "), strings.Join(missing, ", "))
 	}
+}
+
+// MinN8NTokenBytes is the shortest accepted n8n event token.
+const MinN8NTokenBytes = 32
+
+// ValidN8NToken reports whether token may authenticate n8n events: at least 32
+// bytes and no whitespace (whitespace can never match a bearer header, so it
+// would answer 401 forever instead of naming the misconfiguration).
+func ValidN8NToken(token string) bool {
+	return len(token) >= MinN8NTokenBytes && !strings.ContainsFunc(token, unicode.IsSpace)
+}
+
+func n8nTokenState(token string) string {
+	switch {
+	case token == "":
+		return "NOT CONFIGURED"
+	case !ValidN8NToken(token):
+		return "INVALID, endpoint off (too short or contains whitespace)"
+	}
+	return "CONFIGURED"
 }
 
 func state(set bool) string {
@@ -298,6 +329,9 @@ func (c Config) Summary() []string {
 		"HEALTH_AI_VISION_MODEL: " + aiVisionModel,
 		"GYST_PASSWORD_HASH: " + state(c.PasswordHash != ""),
 		"GYST_HEALTH_SYNC_TOKEN: " + state(c.HealthSyncToken != ""),
+		"GYST_N8N_EVENT_TOKEN: " + n8nTokenState(c.N8NEventToken),
+		"GYST_N8N_WORKFLOWS: " + state(strings.TrimSpace(c.N8NWorkflows) != ""),
+		"GYST_N8N_URL: " + state(strings.TrimSpace(c.N8NURL) != ""),
 		"HEVY_API_KEY: " + state(c.HevyAPIKey != ""),
 		"ANTHROPIC_API_KEY: " + state(c.HealthAI.AnthropicKey != ""),
 		"OPENAI_API_KEY: " + state(c.HealthAI.OpenAIKey != ""),

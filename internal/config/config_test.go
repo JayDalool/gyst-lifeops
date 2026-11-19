@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -218,7 +219,7 @@ func TestSecretFiles(t *testing.T) {
 	}
 	// every secret honours NAME_FILE
 	for _, name := range []string{"HEVY_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GYST_HEALTH_SYNC_TOKEN", "GYST_PASSWORD_HASH",
-		"VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "GITHUB_TOKEN", "JIRA_API_TOKEN", "SLACK_BOT_TOKEN"} {
+		"VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "GITHUB_TOKEN", "JIRA_API_TOKEN", "SLACK_BOT_TOKEN", "GYST_N8N_EVENT_TOKEN"} {
 		_, err := Load(nil, env(name+"_FILE", "/run/secrets/missing"), fs)
 		if err == nil || !strings.Contains(err.Error(), name+"_FILE") {
 			t.Errorf("%s_FILE not honoured: %v", name, err)
@@ -283,5 +284,61 @@ func TestHelpAndBadFlagAreErrors(t *testing.T) {
 func TestDBPathFromEnv(t *testing.T) {
 	if DBPathFromEnv(env()) != "data/lifeops.db" || DBPathFromEnv(env("DB_PATH", " /x/y.db ")) != "/x/y.db" {
 		t.Fatal("DB_PATH default")
+	}
+}
+
+// GYST-131: the n8n settings go through config.Load like the other secrets.
+func TestN8NSettings(t *testing.T) {
+	good := strings.Repeat("n8n-fict-", 5)
+	fs := files(map[string]string{"/run/secrets/n8n": good + "\n"})
+
+	c, err := load(t, nil, env("GYST_N8N_EVENT_TOKEN", good, "GYST_N8N_WORKFLOWS", "wf_a:A", "GYST_N8N_URL", "https://n8n.example.test"))
+	if err != nil || c.N8NEventToken != good || c.N8NWorkflows != "wf_a:A" || c.N8NURL != "https://n8n.example.test" || !ValidN8NToken(c.N8NEventToken) {
+		t.Fatalf("env: %+v %v", c, err)
+	}
+	c, err = Load(nil, env("GYST_N8N_EVENT_TOKEN_FILE", "/run/secrets/n8n"), fs)
+	if err != nil || c.N8NEventToken != good {
+		t.Fatalf("file: %q %v", c.N8NEventToken, err)
+	}
+	if _, err := Load(nil, env("GYST_N8N_EVENT_TOKEN", good, "GYST_N8N_EVENT_TOKEN_FILE", "/run/secrets/n8n"), fs); err == nil || !strings.Contains(err.Error(), "GYST_N8N_EVENT_TOKEN") {
+		t.Fatalf("both set: %v", err)
+	}
+
+	// Empty, short and whitespace tokens load (the endpoint answers 503) and
+	// are never valid; the summary says which without echoing the value.
+	for name, token := range map[string]string{"empty": "", "short": strings.Repeat("s", 31), "space": good + " x", "tab": good + "\t", "inner newline": good + "\nx"} {
+		c, err := load(t, nil, env("GYST_N8N_EVENT_TOKEN", token))
+		if err != nil || ValidN8NToken(c.N8NEventToken) {
+			t.Errorf("%s: valid=%v err=%v", name, ValidN8NToken(c.N8NEventToken), err)
+		}
+		text := strings.Join(c.Summary(), "\n")
+		if token != "" && strings.Contains(text, token) {
+			t.Errorf("%s: summary shows the token", name)
+		}
+		want := "GYST_N8N_EVENT_TOKEN: NOT CONFIGURED"
+		if token != "" {
+			want = "GYST_N8N_EVENT_TOKEN: INVALID"
+		}
+		if !strings.Contains(text, want) {
+			t.Errorf("%s: summary lacks %q:\n%s", name, want, text)
+		}
+	}
+	if !ValidN8NToken(strings.Repeat("a", 32)) || ValidN8NToken(strings.Repeat("a", 31)) {
+		t.Error("the minimum is 32 bytes")
+	}
+}
+
+func TestN8NTokenIsRedactedInSummaryAndFormatting(t *testing.T) {
+	token := strings.Repeat("n8n-secret-fictional-", 2)
+	c, err := load(t, nil, env("GYST_N8N_EVENT_TOKEN", token, "GYST_N8N_WORKFLOWS", "wf_a:A"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := strings.Join(c.Summary(), "\n") + c.String() + fmt.Sprintf("%v %+v %#v", c, c, c)
+	if strings.Contains(out, token) {
+		t.Fatal("the n8n token leaked")
+	}
+	if !strings.Contains(out, "GYST_N8N_EVENT_TOKEN: CONFIGURED") || !strings.Contains(out, "GYST_N8N_WORKFLOWS: CONFIGURED") {
+		t.Fatalf("states missing:\n%s", out)
 	}
 }
