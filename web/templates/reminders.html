@@ -1,45 +1,15 @@
 {{define "content"}}
-<div class="page-head">
-  <div>
-    <p class="kicker">{{niceDate .Today}}</p>
-    <h1 class="page-title">Reminders</h1>
-    <p class="page-sub">{{len .RemindersToday}} due today, {{len .OverdueReminders}} overdue.</p>
-  </div>
-</div>
-
-<div class="cols page-body">
-  <section class="card tight">
-    <h2 class="section-title card-title">Due today</h2>
-    {{if .RemindersToday}}
-      <ul class="list">
-        {{range .RemindersToday}}
-          <li>
-            <span class="status soon"><span class="dot"></span></span>
-            <span class="grow">{{.Title}}</span>
-            <span class="meta num">{{.ReminderTime}}</span>
-          </li>
-        {{end}}
-      </ul>
-    {{else}}
-      <p class="meta">No reminders due today.</p>
-    {{end}}
+<div class="gyst-scope gyst-more">
+  <header class="gyst-header"><div><h1 class="gyst-page-title">Reminders</h1></div></header>
+  <section class="gyst-stack"><h2 class="gyst-section-title">Due today</h2>
+    {{if .RemindersToday}}<ul class="gyst-list">
+      {{range .RemindersToday}}<li><div class="gyst-row"><span class="gyst-row-copy"><span>{{.Title}}</span></span><span class="gyst-row-meta">{{.ReminderTime}}</span></div></li>{{end}}
+    </ul>{{else}}<div class="gyst-empty"><p>No reminders due today.</p></div>{{end}}
   </section>
-
-  <section class="card tight">
-    <h2 class="section-title card-title">Overdue</h2>
-    {{if .OverdueReminders}}
-      <ul class="list">
-        {{range .OverdueReminders}}
-          <li>
-            <span class="status late"><span class="dot"></span></span>
-            <span class="grow">{{.Title}}</span>
-            <span class="meta num">{{niceDate .ReminderDate}}{{if .ReminderTime}} &middot; {{.ReminderTime}}{{end}}</span>
-          </li>
-        {{end}}
-      </ul>
-    {{else}}
-      <p class="meta">No overdue reminders.</p>
-    {{end}}
+  <section class="gyst-stack"><h2 class="gyst-section-title">Overdue</h2>
+    {{if .OverdueReminders}}<ul class="gyst-list">
+      {{range .OverdueReminders}}<li><div class="gyst-row"><span class="gyst-row-copy"><span>{{.Title}}</span><span class="gyst-caption">{{niceDate .ReminderDate}}{{if .ReminderTime}} &middot; {{.ReminderTime}}{{end}}</span></span><span class="gyst-chip" data-state="warn"><span class="gyst-dot" aria-hidden="true"></span>Overdue</span></div></li>{{end}}
+    </ul>{{else}}<div class="gyst-empty"><p>No overdue reminders.</p></div>{{end}}
   </section>
 </div>
 {{end}}

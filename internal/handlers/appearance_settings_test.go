@@ -23,8 +23,12 @@ func TestSettingsAppearanceIsSystemLightDark(t *testing.T) {
 			t.Errorf("GET /settings is missing %s", want)
 		}
 	}
-	if got := strings.Count(page, "data-theme-choice="); got != 3 {
-		t.Errorf("appearance choices = %d, want 3", got)
+	// Three in Settings plus the same three in the launcher's Do panel (GYST-103).
+	if got := strings.Count(page, "data-theme-choice="); got != 6 {
+		t.Errorf("appearance choices = %d, want 6", got)
+	}
+	if dialog := page[strings.Index(page, "<dialog"):]; strings.Count(dialog, "data-theme-choice=") != 3 {
+		t.Errorf("launcher should hold exactly three appearance choices")
 	}
 	for _, gone := range []string{"data-theme-toggle", "Light mode"} {
 		if strings.Contains(page, gone) {

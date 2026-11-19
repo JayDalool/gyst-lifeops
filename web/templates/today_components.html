@@ -1,12 +1,14 @@
 {{define "today.checklist"}}
 {{$study := and (not .ChecklistOnly) (or .Learning.Blocks .Learning.SuggestStudy)}}
+{{/* The Now block shows one action; the list leaves it out. Counts keep .Pending. */}}
+{{$rows := .ListPending}}{{$blocks := .ListBlocks}}
 <section class="gyst-card today-checklist" id="checklist" aria-label="Today's checklist" data-done="{{len .Completed}}" data-pending="{{len .Pending}}" data-skipped="{{len .Skipped}}">
       <header class="gyst-header"><h2 class="gyst-section-title">Today’s checklist</h2><span class="gyst-caption">{{len .Completed}} done · {{len .Pending}} left{{if .Skipped}} · {{len .Skipped}} skipped{{end}}</span><a class="today-link" href="{{if .ChecklistOnly}}/today{{else}}/checklist{{end}}">{{if .ChecklistOnly}}Back to Today{{else}}Open checklist{{end}}</a></header>
       {{if or .Pending .Completed .Skipped}}<progress class="gyst-progress" value="{{.Progress}}" max="100" aria-label="Today’s task completion">{{.Progress}}%</progress>{{end}}
       {{if or .Pending .Completed .Skipped $study}}
-        {{if or .Pending (and (not .ChecklistOnly) .Learning.Blocks)}}
+        {{if or $rows (and (not .ChecklistOnly) $blocks)}}
         <ul class="tasks">
-          {{range .Pending}}
+          {{range $rows}}
             <li class="task" id="task-{{.Task.ID}}">
               <form method="post" action="/tasks/{{.Task.ID}}/complete">
                 <input type="hidden" name="occurrence_date" value="{{.Date}}">
@@ -24,7 +26,7 @@
               </form>
             </li>
           {{end}}
-          {{if not .ChecklistOnly}}{{range .Learning.Blocks}}
+          {{if not .ChecklistOnly}}{{range $blocks}}
             <li class="task" id="block-{{.ID}}">
               <form method="post" action="/courses/{{.CourseID}}/blocks/{{.ID}}/complete">
                 <input type="hidden" name="return_to" value="/today#block-{{.ID}}">
@@ -42,7 +44,7 @@
           {{end}}{{end}}
         </ul>
         {{end}}
-        {{if and (not .ChecklistOnly) (not .Learning.Blocks) .Learning.SuggestStudy}}
+        {{if and (not .ChecklistOnly) (not .Learning.Blocks) .Learning.SuggestStudy (not (and .Now.Action (eq .Now.Action.Kind "continue")))}}
           <p class="meta">Nothing scheduled from {{.Learning.SuggestCourse.Name}} today. <a href="/courses/{{.Learning.SuggestCourse.ID}}">Add a study block &rarr;</a></p>
         {{end}}
         {{if or .Completed .Skipped}}
@@ -80,4 +82,76 @@
         <p class="meta">Your day is open. Add a mission to get started.</p>
       {{end}}
     </section>
+{{end}}
+
+{{/* GYST-079 Now block. The prayer hooks (countdown, alert buttons, schedule rows,
+     audio) stay nested inside [data-next-prayer]: app.js initMisc looks them up
+     there, and a missing hook would stop every other script in that function. */}}
+{{define "today.now"}}
+<section class="gyst-card today-now" aria-labelledby="now-title" data-next-prayer="{{.Prayer.NextAt}}" data-prayer-alerts data-alert-sound="{{.Prayer.Config.AlertSound}}">
+  <h2 id="now-title" class="gyst-section-title">Now</h2>
+  {{with .Now.Action}}
+    {{if eq .Kind "task"}}
+      <div class="task now-action" id="now-task-{{.Task.Task.ID}}">
+        <form method="post" action="/tasks/{{.Task.Task.ID}}/complete">
+          <input type="hidden" name="occurrence_date" value="{{.Task.Date}}">
+          <input type="hidden" name="return_to" value="/today">
+          <label class="today-task-check"><input type="checkbox" aria-label="Complete: {{.Task.Task.Title}}" data-autosubmit></label>
+        </form>
+        <div class="task-body">
+          <div class="task-title"><a href="/tasks/{{.Task.Task.ID}}">{{.Task.Task.Title}}</a></div>
+          <div class="task-meta">{{.Task.Task.Category}} &middot; {{.Task.Task.Priority}}{{if .Task.Task.ReminderTime}} &middot; reminder <span class="num">{{.Task.Task.ReminderTime}}</span>{{end}}</div>
+        </div>
+      </div>
+    {{else if eq .Kind "session"}}
+      <div class="task now-action" id="now-block-{{.Block.ID}}">
+        <form method="post" action="/courses/{{.Block.CourseID}}/blocks/{{.Block.ID}}/complete">
+          <input type="hidden" name="return_to" value="/today">
+          <label class="today-task-check"><input type="checkbox" aria-label="Done: {{.Block.Title}}" data-autosubmit></label>
+        </form>
+        <div class="task-body">
+          <div class="task-title"><a href="/courses/{{.Block.CourseID}}#block-{{.Block.ID}}">{{.Block.Title}}</a></div>
+          <div class="task-meta">{{if .Block.StartTime}}<span class="num">{{.Block.StartTime}}</span> &middot; {{end}}{{.Block.CourseName}} &middot; {{blockLabel .Block.BlockType}}</div>
+        </div>
+      </div>
+    {{else}}
+      <div class="task now-action">
+        <div class="task-body">
+          <div class="task-title"><a href="/courses/{{.Course.ID}}">Continue {{.Course.Name}}</a></div>
+          <div class="task-meta">Nothing scheduled today. Pick up where you left off.</div>
+        </div>
+      </div>
+    {{end}}
+  {{else}}
+    <p class="meta now-empty">Nothing else today</p>
+  {{end}}
+  <button class="now-row now-prayer" type="button" data-gyst-open="prayer-sheet" aria-haspopup="dialog" aria-expanded="false">
+    <span class="now-row-copy"><span class="now-label">Next prayer</span><span class="now-row-title">{{.Now.Prayer.Prayer.Name}}{{if .Now.Prayer.Tomorrow}} tomorrow{{end}} <span class="num">{{.Now.Prayer.Prayer.Time}}</span></span></span>
+    <span class="now-countdown num">in <span data-prayer-countdown>&mdash;</span></span>
+  </button>
+  {{with .Now.Timed}}
+    <a class="now-row now-timed" href="{{$.NowTimedHref}}">
+      <span class="now-row-copy"><span class="now-label">Later today</span><span class="now-row-title">{{.Title}}</span></span>
+      <span class="now-countdown num">{{.At.Format "15:04"}}</span>
+    </a>
+  {{end}}
+  <dialog id="prayer-sheet" class="gyst-overlay gyst-sheet" aria-labelledby="prayer-sheet-title">
+    <div class="gyst-overlay-head"><h2 id="prayer-sheet-title" class="gyst-section-title">Prayer times</h2><button class="gyst-overlay-close" type="button" data-gyst-close aria-label="Close prayer times">{{template "gyst.icon" "x"}}</button></div>
+    <p class="gyst-caption">{{.Prayer.Schedule.Location}}</p>
+    <ul class="now-prayer-times">
+      {{range .Prayer.Schedule.Times}}
+        <li data-prayer-name="{{.Name}}" data-prayer-at="{{.At.Format "2006-01-02T15:04:05Z07:00"}}">
+          <span>{{.Name}}</span><span class="num">{{.Time}}</span>
+          <span class="gyst-caption">{{if and (not $.Now.Prayer.Tomorrow) (eq .Name $.Now.Prayer.Prayer.Name)}}Next{{else if eq .Name $.Prayer.CurrentName}}Current{{end}}</span>
+        </li>
+      {{end}}
+    </ul>
+    <div class="prayer-alert-actions">
+      <button class="btn sm" type="button" data-prayer-enable>Enable prayer alerts and Athan</button>
+      <button class="btn sm ghost" type="button" data-prayer-test>Test Athan</button>
+    </div>
+    <p class="meta" data-prayer-alert-state>Alerts are off in this browser.</p>
+    <audio data-prayer-audio preload="auto" {{if .Prayer.Config.AthanFile}}src="/static/audio/{{.Prayer.Config.AthanFile}}"{{end}}></audio>
+  </dialog>
+</section>
 {{end}}
