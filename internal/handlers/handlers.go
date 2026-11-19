@@ -31,7 +31,7 @@ import (
 type Handler struct {
 	Service     *services.Service
 	TemplateDir string
-	// AllowPublicFeeds gates the unauthenticated plain .ics routes. Off by
+	// AllowPublicFeeds gates the plain .ics feed routes (session required). Off by
 	// default (production-safe); the tokenized /calendar/feed/{token} routes are
 	// unaffected. Enable in local/dev via ALLOW_PUBLIC_CALENDAR_FEEDS=true.
 	AllowPublicFeeds bool

@@ -2,6 +2,8 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -27,25 +29,76 @@ func fullConfig(t *testing.T) Config {
 	return c
 }
 
-// A stray print, log or JSON of the struct must not dump the secrets.
-func TestPrintingTheConfigNeverShowsSecrets(t *testing.T) {
+type holder struct {
+	Name string
+	Cfg  Config
+	AI   HealthAI
+}
+
+type wrapErr struct{ cfg Config }
+
+func (e wrapErr) Error() string { return fmt.Sprintf("load failed: %+v", e.cfg) }
+
+// Covered: fmt verbs %v %+v %#v %s %d %t on a value and a pointer, Sprint,
+// json.Marshal of each type and of a holding struct, slog text and JSON
+// handlers (directly and inside a struct), and an error wrapped with %w.
+// Not covered: %w on a value that is not an error (fmt prints bad verbs by
+// reflection and skips Format; it is a vet error anyway) and reflection that
+// reads unexported fields directly.
+func TestConfigNeverPrintsSecrets(t *testing.T) {
 	c := fullConfig(t)
-	var logged bytes.Buffer
-	slog.New(slog.NewTextHandler(&logged, nil)).Info("x", "cfg", c, "push", c.Push, "providers", c.Providers, "ai", c.HealthAI)
-	outputs := []string{
-		fmt.Sprintf("%v", c), fmt.Sprintf("%+v", c), fmt.Sprintf("%#v", c), fmt.Sprint(c),
-		fmt.Sprintf("%+v", c.Push), fmt.Sprintf("%#v", c.Providers), fmt.Sprintf("%+v", c.HealthAI),
-		fmt.Sprintf("%+v", &c), logged.String(),
+	var text, jsonLog bytes.Buffer
+	slog.New(slog.NewTextHandler(&text, nil)).Info("x", "cfg", c, "push", c.Push, "providers", c.Providers, "ai", c.HealthAI)
+	slog.New(slog.NewJSONHandler(&jsonLog, nil)).Info("x", "cfg", c, "holder", holder{"h", c, c.HealthAI})
+
+	outputs := map[string]string{"slog text": text.String(), "slog json": jsonLog.String()}
+	for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%d", "%t"} {
+		outputs["Config "+verb] = fmt.Sprintf(verb, c)
+		outputs["*Config "+verb] = fmt.Sprintf(verb, &c)
+		outputs["Push "+verb] = fmt.Sprintf(verb, c.Push)
+		outputs["Providers "+verb] = fmt.Sprintf(verb, c.Providers)
+		outputs["HealthAI "+verb] = fmt.Sprintf(verb, c.HealthAI)
+		outputs["holder "+verb] = fmt.Sprintf(verb, holder{"h", c, c.HealthAI})
 	}
-	for _, out := range outputs {
+	outputs["Sprint"] = fmt.Sprint(c, c.Push, c.Providers, c.HealthAI)
+	wrapped := fmt.Errorf("start: %w", wrapErr{c})
+	outputs["wrapped error"] = wrapped.Error()
+	var target wrapErr
+	if !errors.As(wrapped, &target) {
+		t.Fatal("the wrapped error lost its type")
+	}
+	for name, value := range map[string]any{"Config": c, "Push": c.Push, "Providers": c.Providers, "HealthAI": c.HealthAI, "holder": holder{"h", c, c.HealthAI}} {
+		raw, err := json.Marshal(value)
+		if err != nil {
+			t.Fatalf("json %s: %v", name, err)
+		}
+		outputs["json "+name] = string(raw)
+	}
+
+	for name, out := range outputs {
 		for _, secret := range fictionalSecrets {
 			if strings.Contains(out, secret) {
-				t.Fatalf("a printed form contains a secret value (%s)", secret)
+				t.Errorf("%s contains a secret value (%s)", name, secret)
 			}
 		}
 	}
-	if !strings.Contains(outputs[0], "CONFIGURED") {
+	if !strings.Contains(outputs["Config %v"], "CONFIGURED") {
 		t.Error("the redacted form should still say which settings are configured")
+	}
+}
+
+func TestVisionModelShowsInTheSummaryButNoKey(t *testing.T) {
+	c, err := Load(nil, env("HEALTH_AI_VISION_MODEL", "vision-model-fictional", "OPENAI_API_KEY", "oai-secret-fictional"), noFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := strings.Join(c.Summary(), "\n")
+	if !strings.Contains(got, "HEALTH_AI_VISION_MODEL: vision-model-fictional") || strings.Contains(got, "oai-secret-fictional") {
+		t.Errorf("summary = %q", got)
+	}
+	c, _ = Load(nil, env(), noFiles)
+	if !strings.Contains(strings.Join(c.Summary(), "\n"), "HEALTH_AI_VISION_MODEL: default") {
+		t.Error("unset vision model should read default")
 	}
 }
 

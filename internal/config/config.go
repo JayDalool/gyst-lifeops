@@ -82,7 +82,7 @@ type Config struct {
 	Push      Push
 	Providers Providers
 
-	// AllowPublicFeeds enables the unauthenticated plain .ics routes. Default
+	// AllowPublicFeeds enables the plain .ics feed routes (session required). Default
 	// false (production-safe); tokenized feeds are always available.
 	AllowPublicFeeds bool
 	HealthSyncToken  string
@@ -279,6 +279,10 @@ func (c Config) Summary() []string {
 	if aiModel == "" {
 		aiModel = "default"
 	}
+	aiVisionModel := c.HealthAI.VisionModel
+	if aiVisionModel == "" {
+		aiVisionModel = "default"
+	}
 	return []string{
 		"GYST_TIMEZONE: " + zone,
 		"addr: " + c.Addr,
@@ -291,6 +295,7 @@ func (c Config) Summary() []string {
 		"GYST_AUTH_DISABLED: " + onOff(c.AuthDisabled),
 		"HEALTH_AI_PROVIDER: " + aiProvider,
 		"HEALTH_AI_MODEL: " + aiModel,
+		"HEALTH_AI_VISION_MODEL: " + aiVisionModel,
 		"GYST_PASSWORD_HASH: " + state(c.PasswordHash != ""),
 		"GYST_HEALTH_SYNC_TOKEN: " + state(c.HealthSyncToken != ""),
 		"HEVY_API_KEY: " + state(c.HevyAPIKey != ""),

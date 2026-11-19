@@ -38,6 +38,9 @@ func composeApp(t *testing.T) map[string]string {
 	if start < 0 || end < start {
 		t.Fatal("docker-compose.yml: gyst-lifeops service not found")
 	}
+	if strings.Contains(text[start:end], "env_file:") {
+		t.Fatal("the service uses env_file:, which would forward every variable; list them under environment: instead")
+	}
 	out := map[string]string{}
 	re := regexp.MustCompile(`(?m)^\s+- ([A-Z][A-Z0-9_]*)=(.*)$`)
 	for _, m := range re.FindAllStringSubmatch(text[start:end], -1) {

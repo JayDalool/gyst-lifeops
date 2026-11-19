@@ -79,9 +79,12 @@ hour early). Do not record any real data.
 
 One behaviour change to know before deploying: `GYST_TIMEZONE` must now be a
 zone in the pinned IANA database. Host-only names such as `posixrules`,
-`posix/…` or `right/…` stop startup. `docker-compose.yml` does not pass
-`GYST_TIMEZONE` to the container, so with it production uses the default,
-`America/Winnipeg`, and is not affected.
+`posix/…` or `right/…` stop startup. `docker-compose.yml` now passes
+`GYST_TIMEZONE` to the container, so the zone set in the settings file reaches
+it (empty or unset still means the default, `America/Winnipeg`). Before a
+deploy, check it with
+`docker compose run --rm --no-deps gyst-lifeops /app/lifeops config`: it must
+report `config: OK` and the zone you expect.
 
 ## 2. Deploying #193 and verifying it
 
