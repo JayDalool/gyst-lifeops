@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/models"
 )
 
@@ -64,9 +65,23 @@ func (r *Repository) GoalWithProgress(id int64) (models.GoalWithProgress, error)
 	}, nil
 }
 
-// CreateGoal stores a goal. today is the application's local day, used as the
-// initial progress entry date when the goal has no start date.
+// CreateGoal stores a goal. today is the application's local day. The initial
+// progress entry is dated the start date, but never later than today: a goal
+// planned for the future may be stored, yet its first entry must not pin the
+// current value ahead of real entries. Non-canonical start or end dates, or an
+// end before the start, are refused before anything is written.
 func (r *Repository) CreateGoal(goal *models.Goal, today string) error {
+	for _, d := range []string{goal.StartDate, goal.EndDate} {
+		if d == "" {
+			continue
+		}
+		if _, err := clock.ParseLocalDate(d); err != nil {
+			return fmt.Errorf("goal date %q must be YYYY-MM-DD", d)
+		}
+	}
+	if goal.StartDate != "" && goal.EndDate != "" && goal.EndDate < goal.StartDate {
+		return fmt.Errorf("goal end date is before its start date")
+	}
 	goal.Type = clean(goal.Type, "yearly")
 	goal.Category = clean(goal.Category, "personal")
 	goal.Unit = clean(goal.Unit, "tasks")
@@ -95,7 +110,8 @@ func (r *Repository) CreateGoal(goal *models.Goal, today string) error {
 	}
 	if goal.CurrentValue > 0 {
 		entryDate := goal.StartDate
-		if entryDate == "" {
+		// Canonical YYYY-MM-DD dates compare lexically.
+		if entryDate == "" || entryDate > today {
 			entryDate = today
 		}
 		return r.AddGoalProgress(goal.ID, entryDate, goal.CurrentValue, "Initial progress")

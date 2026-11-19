@@ -15,3 +15,5 @@
 </ul>
 {{if and (not .Main) (not .Upcoming)}}<p class="gyst-caption">No projects match this view. Choose another status or roadmap.</p>{{end}}
 {{end}}
+{{/* GYST-VN-039 Projects area sub-navigation, phone and tablet. The desktop sidebar group is in ui_shell.html. Development joins only once it has a destination. */}}
+{{define "gyst.projects-subnav"}}<nav class="gyst-scope gyst-segments gyst-subnav gyst-projects-subnav" aria-label="Projects areas"><a class="gyst-segment" href="/projects"{{if eq . "projects"}} aria-current="page"{{end}}>Projects</a><a class="gyst-segment" href="/galaxy"{{if eq . "galaxy"}} aria-current="page"{{end}}>Galaxy</a><a class="gyst-segment" href="/roadmap"{{if eq . "roadmaps"}} aria-current="page"{{end}}>Roadmaps</a></nav>{{end}}

@@ -72,7 +72,7 @@ type Handler struct {
 
 type TodayData struct {
 	ChecklistOnly  bool
-	NextReminder   *models.ReminderView
+	Now            services.NowSet
 	Greeting       string
 	HealthSnapshot TodayHealthSnapshot
 	Page           string
@@ -431,6 +431,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.roadmaps(w, r, segments)
 	case "courses":
 		h.courses(w, r, segments)
+	case "learn":
+		// Alias of the course list (GYST-073); /courses stays valid.
+		if len(segments) != 1 {
+			http.NotFound(w, r)
+			return
+		}
+		h.courseList(w, r)
 	case "calendar.ics":
 		h.allCalendarICS(w, r)
 	case "calendar":
@@ -592,11 +599,13 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	nextPrayer, err := h.Service.NextPrayer(now)
+	// The Now block (GYST-078) owns the next prayer, so Today has one source.
+	nowSet, err := h.Service.TodayNow()
 	if err != nil {
 		serverError(w, err)
 		return
 	}
+	nextPrayer := nowSet.Prayer
 	currentName := ""
 	for i, prayer := range schedule.Times {
 		if !prayer.At.After(now) {
@@ -620,7 +629,7 @@ func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 	h.render(w, page, TodayData{
 		ChecklistOnly:  checklistOnly,
 		Greeting:       greeting,
-		NextReminder:   nextTodayReminder(remindersToday, now),
+		Now:            nowSet,
 		HealthSnapshot: healthSnapshot,
 		Page:           "today",
 		Today:          h.Service.TodayString(),
@@ -1791,6 +1800,18 @@ func (h *Handler) newGoal(w http.ResponseWriter, r *http.Request) {
 			serverError(w, err)
 			return
 		}
+		if !validDueDate(goal.StartDate) {
+			invalidDate(w, "start_date")
+			return
+		}
+		if !validDueDate(goal.EndDate) {
+			invalidDate(w, "end_date")
+			return
+		}
+		if goal.StartDate != "" && goal.EndDate != "" && goal.EndDate < goal.StartDate {
+			http.Error(w, "end_date must not be before start_date", http.StatusBadRequest)
+			return
+		}
 		if err := h.Service.Repo.CreateGoal(&goal, h.Service.TodayString()); err != nil {
 			serverError(w, err)
 			return
@@ -2620,6 +2641,7 @@ func (h *Handler) renderStatus(w http.ResponseWriter, status int, page string, d
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
 		"primarySection": primarySection,
+		"projectsArea":   projectsArea,
 		"projectCard":    projectCard,
 		"join":           strings.Join,
 		"joinInts":       joinInts,
