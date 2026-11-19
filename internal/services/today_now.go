@@ -7,11 +7,10 @@ import (
 	"lifeops-tracker/internal/models"
 )
 
-// nowTimedHorizon is the one place that defines how far ahead the "next timed
-// item" looks: to the end of the current local day, the same horizon as the
-// Today page's Next up. Jay chose this over a rolling 12 hours (2026-10-11).
-// An item dated tomorrow never qualifies, even a few minutes after midnight.
-const nowTimedHorizon = "end of the current local day"
+// The "next timed item" horizon is the end of the current local day, the same
+// as the Today page's Next up. Jay chose this over a rolling 12 hours
+// (2026-10-11). An item dated tomorrow never qualifies, even a few minutes
+// after midnight.
 
 // NowInput is everything SelectNow needs. The caller gathers it; SelectNow
 // reads no database and no clock.
@@ -74,7 +73,7 @@ const nowTimeLayout = "2006-01-02 15:04"
 // tomorrow's Fajr with Tomorrow = true.
 //
 // Next timed item: the earliest of today's reminders (task or standalone) and
-// timed study blocks due today, strictly after Now and within nowTimedHorizon.
+// timed study blocks due today, strictly after Now and within the end-of-local-day horizon.
 // A reminder at exactly Now is skipped. The item chosen as the action is
 // excluded. Ties:
 //
@@ -147,7 +146,7 @@ func nextNowTimed(in NowInput, chosenTaskID, chosenBlockID int64) *NowTimed {
 	today := in.Now.Format("2006-01-02")
 	var items []NowTimed
 	add := func(kind, title, date, clock, sourceType string, id int64) {
-		// Horizon: nowTimedHorizon, enforced by requiring the current local date.
+		// Horizon: end of the local day, enforced by requiring the current local date.
 		if date != today || clock == "" {
 			return
 		}
