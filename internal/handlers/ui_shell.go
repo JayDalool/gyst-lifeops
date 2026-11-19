@@ -12,8 +12,8 @@ func primarySection(page string) string {
 		return "projects"
 	case "health":
 		return "health"
-	case "courses":
-		return "courses"
+	case "courses", "learn":
+		return "learn"
 	default:
 		return "more"
 	}

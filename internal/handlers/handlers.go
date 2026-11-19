@@ -427,6 +427,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.roadmaps(w, r, segments)
 	case "courses":
 		h.courses(w, r, segments)
+	case "learn":
+		// Alias of the course list (GYST-073); /courses stays valid.
+		if len(segments) != 1 {
+			http.NotFound(w, r)
+			return
+		}
+		h.courseList(w, r)
 	case "calendar.ics":
 		h.allCalendarICS(w, r)
 	case "calendar":
@@ -1777,6 +1784,18 @@ func (h *Handler) newGoal(w http.ResponseWriter, r *http.Request) {
 		goal, err := goalFromRequest(r)
 		if err != nil {
 			serverError(w, err)
+			return
+		}
+		if !validDueDate(goal.StartDate) {
+			invalidDate(w, "start_date")
+			return
+		}
+		if !validDueDate(goal.EndDate) {
+			invalidDate(w, "end_date")
+			return
+		}
+		if goal.StartDate != "" && goal.EndDate != "" && goal.EndDate < goal.StartDate {
+			http.Error(w, "end_date must not be before start_date", http.StatusBadRequest)
 			return
 		}
 		if err := h.Service.Repo.CreateGoal(&goal, h.Service.TodayString()); err != nil {
