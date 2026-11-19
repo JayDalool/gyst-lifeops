@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -232,6 +233,9 @@ func TestPhotoAnalyzeProviderErrorsAreFixedMessages(t *testing.T) {
 		{healthcoach.ErrNotConfigured, 503},
 		{healthcoach.ErrDeclined, 502},
 		{healthcoach.ErrPhotoUnreadable, 502},
+		// 502, never 503: the camera script replaces any 503 with "set up yet".
+		{healthcoach.ErrCreditExhausted, 502},
+		{healthcoach.ErrSpendLimit, 502},
 		{errors.New("vendor said: sk-LEAK prompt text"), 502},
 	} {
 		h := visionHandler(t, &fakeVision{err: c.err})
@@ -241,6 +245,12 @@ func TestPhotoAnalyzeProviderErrorsAreFixedMessages(t *testing.T) {
 		}
 		if strings.Contains(w.Body.String(), "LEAK") || strings.Contains(w.Body.String(), "vendor") {
 			t.Errorf("vendor text leaked: %s", w.Body.String())
+		}
+		if errors.Is(c.err, healthcoach.ErrCreditExhausted) || errors.Is(c.err, healthcoach.ErrSpendLimit) {
+			var body map[string]string
+			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || body["error"] != c.err.Error() {
+				t.Errorf("%v: body %s", c.err, w.Body.String())
+			}
 		}
 	}
 }
@@ -267,6 +277,20 @@ func TestPhotoAnalyzeFailureLogHasNoContent(t *testing.T) {
 	out := buf.String()
 	if !strings.Contains(out, "photo.analyze.failed") || strings.Contains(out, "SECRET-MEAL-DATA") {
 		t.Fatalf("log: %s", out)
+	}
+}
+
+// A wrapped credit error logs the fixed category only, never the wrapped text.
+func TestPhotoAnalyzeCreditFailureLogHasNoContent(t *testing.T) {
+	for _, base := range []error{healthcoach.ErrCreditExhausted, healthcoach.ErrSpendLimit} {
+		var buf bytes.Buffer
+		h := visionHandler(t, &fakeVision{err: fmt.Errorf("%w: vendor said SECRET-MEAL-DATA", base)})
+		h.Logger = slog.New(slog.NewJSONHandler(&buf, nil))
+		doPhoto(h, photoReq(t, "photo", testJPEG(t), nil))
+		out := buf.String()
+		if !strings.Contains(out, "photo.analyze.failed") || strings.Contains(out, "SECRET-MEAL-DATA") {
+			t.Fatalf("log: %s", out)
+		}
 	}
 }
 

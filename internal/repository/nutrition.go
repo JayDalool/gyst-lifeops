@@ -86,12 +86,6 @@ func (r *Repository) GetNutritionFood(id int64) (models.NutritionFood, error) {
 	return scanNutritionFood(r.db.QueryRow(`SELECT `+nutritionFoodColumns+` FROM nutrition_foods WHERE id = ?`, id))
 }
 
-// GetCurrentNutritionFood returns the current (not superseded) version.
-func (r *Repository) GetCurrentNutritionFood(provider, providerID string) (models.NutritionFood, error) {
-	return scanNutritionFood(r.db.QueryRow(`SELECT `+nutritionFoodColumns+` FROM nutrition_foods
- WHERE provider = ? AND provider_id = ? AND superseded_at IS NULL`, provider, providerID))
-}
-
 // escapeLike escapes the LIKE wildcards and the escape character itself.
 func escapeLike(s string) string {
 	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
@@ -192,6 +186,7 @@ type DiaryItemInsert struct {
 	Grams                             *float64
 	QuantityProvenance, NutritionProv string
 	Nutrients                         models.Nutrients
+	AIEstGrams                        *float64 // camera estimate snapshot (#211); nil otherwise
 }
 
 // DiaryMealInsert is the meal row for CreateMealWithItems.
@@ -220,9 +215,9 @@ func (r *Repository) CreateMealWithItems(ctx context.Context, m DiaryMealInsert,
 		created = true
 		for _, it := range items {
 			if _, e := conn.ExecContext(ctx, `INSERT INTO nutrition_meal_items (meal_id, food_id, food_version, name, unit, amount, grams,
- quantity_provenance, nutrition_provenance, kcal, protein_g, carbs_g, fat_g, fiber_g, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+ quantity_provenance, nutrition_provenance, kcal, protein_g, carbs_g, fat_g, fiber_g, ai_est_grams, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				mealID, it.FoodID, it.FoodVersion, it.Name, it.Unit, it.Amount, it.Grams, it.QuantityProvenance, it.NutritionProv,
-				it.Nutrients.Kcal, it.Nutrients.ProteinG, it.Nutrients.CarbsG, it.Nutrients.FatG, it.Nutrients.FiberG, m.CreatedAt); e != nil {
+				it.Nutrients.Kcal, it.Nutrients.ProteinG, it.Nutrients.CarbsG, it.Nutrients.FatG, it.Nutrients.FiberG, it.AIEstGrams, m.CreatedAt); e != nil {
 				return e
 			}
 		}
@@ -296,14 +291,14 @@ func collectItemIDs(ctx context.Context, conn *sql.Conn, mealID int64, out *[]in
 }
 
 const diaryItemSelect = `SELECT i.id, i.meal_id, m.meal_slot, m.local_date, i.food_id, i.food_version, i.name, i.unit, i.amount, i.grams,
- i.quantity_provenance, i.nutrition_provenance, i.kcal, i.protein_g, i.carbs_g, i.fat_g, i.fiber_g, i.created_at, i.archived_at, m.archived_at
+ i.quantity_provenance, i.nutrition_provenance, i.kcal, i.protein_g, i.carbs_g, i.fat_g, i.fiber_g, i.created_at, i.archived_at, m.archived_at, i.ai_est_grams, m.created_via
  FROM nutrition_meal_items i JOIN nutrition_meals m ON m.id = i.meal_id`
 
 func scanDiaryItem(row scanner) (models.DiaryItem, error) {
 	var it models.DiaryItem
 	var archived, mealArchived sql.NullString
 	err := row.Scan(&it.ID, &it.MealID, &it.MealSlot, &it.LocalDate, &it.FoodID, &it.FoodVersion, &it.Name, &it.Unit, &it.Amount, &it.Grams,
-		&it.QuantityProvenance, &it.NutritionProvenance, &it.Kcal, &it.ProteinG, &it.CarbsG, &it.FatG, &it.FiberG, &it.CreatedAt, &archived, &mealArchived)
+		&it.QuantityProvenance, &it.NutritionProvenance, &it.Kcal, &it.ProteinG, &it.CarbsG, &it.FatG, &it.FiberG, &it.CreatedAt, &archived, &mealArchived, &it.AIEstGrams, &it.CreatedVia)
 	it.ArchivedAt = archived.String
 	if it.ArchivedAt == "" {
 		it.ArchivedAt = mealArchived.String // an item of an archived meal is not live

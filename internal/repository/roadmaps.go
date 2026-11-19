@@ -163,13 +163,6 @@ func (r *Repository) AdoptOrphanProjects() error {
 	return err
 }
 
-// HasRoadmap reports whether any non-archived roadmap exists (empty-state check).
-func (r *Repository) HasRoadmap() (bool, error) {
-	var count int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM roadmaps WHERE archived_at IS NULL AND status != 'archived'`).Scan(&count)
-	return count > 0, err
-}
-
 func cleanRoadmapStatus(value string) string {
 	switch value {
 	case "active", "upcoming", "locked", "done", "archived":
