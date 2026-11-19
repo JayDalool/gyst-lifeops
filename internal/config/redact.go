@@ -11,8 +11,11 @@ import (
 // A Config holds every secret as a plain string, so a stray print, log or JSON
 // encode of the struct (or of Push, Providers, HealthAI) must not dump them.
 // Each type prints only names, states and non-secret values: String and
-// GoString cover %v and %#v, Format covers every verb (%s, %d, %t, %w ...),
-// LogValue covers slog, and MarshalJSON covers encoding/json.
+// GoString cover %v and %#v, Format covers the other verbs fmt hands to a
+// Formatter (%s, %d, %t, %x ...), LogValue covers slog, and MarshalJSON covers
+// encoding/json. Known exceptions: fmt never calls Format for %p or %w on a
+// value that is not an error, and prints the fields by reflection. Never format
+// these structs with %p or %w, and keep every secret in an exported field.
 
 func (c Config) String() string   { return "config.Config{" + strings.Join(c.Summary(), "; ") + "}" }
 func (c Config) GoString() string { return c.String() }

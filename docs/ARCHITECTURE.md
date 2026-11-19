@@ -39,7 +39,9 @@ defaults for `-addr` and `-db`. Any secret may come from `NAME_FILE` instead of
 A test keeps `docker-compose.yml`, `.env.example` and the variables
 `config.Load` reads in step. A half-set VAPID trio or Jira email/token pair, a bad `PORT` or an
 invalid `GYST_TIMEZONE` stops startup with a named error;
-`lifeops config` runs the same checks without opening the database. Every
+`lifeops config` runs the same checks without opening the database; run it on
+the new image after `docker compose build` and before `up -d` (an image built
+before #191 has no `config` command and would start a second server). Every
 variable is listed in `.env.example`. Public calendar feeds are disabled
 unless `ALLOW_PUBLIC_CALENDAR_FEEDS` is explicitly enabled; tokenized feeds stay
 available.

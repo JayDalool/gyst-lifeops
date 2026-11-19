@@ -42,9 +42,9 @@ func (e wrapErr) Error() string { return fmt.Sprintf("load failed: %+v", e.cfg) 
 // Covered: fmt verbs %v %+v %#v %s %d %t on a value and a pointer, Sprint,
 // json.Marshal of each type and of a holding struct, slog text and JSON
 // handlers (directly and inside a struct), and an error wrapped with %w.
-// Not covered: %w on a value that is not an error (fmt prints bad verbs by
-// reflection and skips Format; it is a vet error anyway) and reflection that
-// reads unexported fields directly.
+// Not covered, and still unsafe: %p, and %w on a value that is not an error
+// (fmt never calls Format for them and prints the fields by reflection; go vet
+// flags %w but not %p), and reflection that reads fields directly.
 func TestConfigNeverPrintsSecrets(t *testing.T) {
 	c := fullConfig(t)
 	var text, jsonLog bytes.Buffer
