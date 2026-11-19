@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -38,7 +39,9 @@ const (
 	automationRunningLimit = 2 * time.Hour
 	automationRetention    = 30 * 24 * time.Hour
 	automationMaxSummary   = 200
-	automationInstant      = "2006-01-02T15:04:05Z"
+	// Fixed nine fractional digits: the stored text sorts as time, and a finish
+	// at .100 stays before a start at .900 in the same second (GYST-131).
+	automationInstant = "2006-01-02T15:04:05.000000000Z"
 )
 
 // AutomationWorkflow is one registered workflow from GYST_N8N_WORKFLOWS.
@@ -178,8 +181,10 @@ func (s *Service) RecordAutomationEvent(in AutomationEventInput, workflows []Aut
 	if !inserted {
 		return AutomationDuplicate, false, nil
 	}
+	// The event is committed; a failed prune must not make n8n retry or report
+	// failure. Best effort: log and carry on (next stored event prunes again).
 	if _, err := s.Repo.PruneAutomationEventsBefore(now.Add(-automationRetention).Format(automationInstant)); err != nil {
-		return "", false, err
+		slog.Error("automation prune failed", "event", "automation.prune_failed", "error", err.Error())
 	}
 	return AutomationApplied, false, nil
 }
@@ -215,6 +220,16 @@ func (s *Service) AutomationStatuses(workflows []AutomationWorkflow) ([]Automati
 	return out, nil
 }
 
+// displayAutomationTime shows a stored instant as RFC 3339 (fraction only when
+// non-zero); the storage format is an ordering detail.
+func displayAutomationTime(stored string) string {
+	t, err := time.Parse(automationInstant, stored)
+	if err != nil {
+		return stored
+	}
+	return t.Format(time.RFC3339Nano)
+}
+
 func deriveAutomationStatus(w AutomationWorkflow, events []repository.AutomationEvent, now time.Time) AutomationStatus {
 	st := AutomationStatus{ID: w.ID, Name: w.Name, State: AutomationStateNoEvents}
 	// Newest first by occurred_at. At the same instant a finish counts as
@@ -239,7 +254,7 @@ func deriveAutomationStatus(w AutomationWorkflow, events []repository.Automation
 	if len(sorted) == 0 {
 		return st
 	}
-	st.LastRunAt = sorted[0].OccurredAt
+	st.LastRunAt = displayAutomationTime(sorted[0].OccurredAt)
 	counting := true
 	var latestFinish *repository.AutomationEvent
 	for i := range sorted {
@@ -252,7 +267,7 @@ func deriveAutomationStatus(w AutomationWorkflow, events []repository.Automation
 		}
 		if e.Status == AutomationStatusSucceeded {
 			if st.LastSuccessAt == "" {
-				st.LastSuccessAt = e.OccurredAt
+				st.LastSuccessAt = displayAutomationTime(e.OccurredAt)
 			}
 			counting = false
 		} else if counting {

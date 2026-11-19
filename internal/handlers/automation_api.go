@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"lifeops-tracker/internal/services"
 )
@@ -51,7 +53,9 @@ func (l *automationLimiter) allow(now time.Time) bool {
 // an unusable workflow list all switch it off (503).
 func (h *Handler) AutomationConfigProblem() string {
 	token := h.N8NEventToken
-	if len(token) < automationMinTokenBytes {
+	// Whitespace in a token can never match a bearer header (Fields splits on
+	// it), so it would silently answer 401 forever; report it as a config error.
+	if len(token) < automationMinTokenBytes || strings.ContainsFunc(token, unicode.IsSpace) {
 		return envN8NEventToken
 	}
 	if h.HealthSyncToken != "" {
@@ -118,8 +122,20 @@ func (h *Handler) automationAPI(w http.ResponseWriter, r *http.Request, segments
 		healthJSONError(w, 429, "too many events")
 		return
 	}
+	// Read the bounded body first so an oversized body is 413 even when its
+	// start is malformed JSON; only then decode.
+	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 16<<10))
+	if err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			healthJSONError(w, 413, "request body too large")
+		} else {
+			healthJSONError(w, 400, "invalid event JSON")
+		}
+		return
+	}
 	var input services.AutomationEventInput
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
+	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	err = decoder.Decode(&input)
 	if err == nil {
@@ -132,12 +148,7 @@ func (h *Handler) automationAPI(w http.ResponseWriter, r *http.Request, segments
 		}
 	}
 	if err != nil {
-		var tooLarge *http.MaxBytesError
-		if errors.As(err, &tooLarge) {
-			healthJSONError(w, 413, "request body too large")
-		} else {
-			healthJSONError(w, 400, "invalid event JSON")
-		}
+		healthJSONError(w, 400, "invalid event JSON")
 		return
 	}
 	workflows, _ := services.ParseWorkflows(h.N8NWorkflows) // validated above

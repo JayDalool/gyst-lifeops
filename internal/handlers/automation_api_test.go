@@ -83,6 +83,7 @@ func TestAutomationAPITable(t *testing.T) {
 		{"missing media", "POST", "/api/automation/events", valid, autoTestToken, "", 415, "", 0},
 		{"oversize", "POST", "/api/automation/events", `{"event_id":"` + strings.Repeat("x", 17<<10) + `"}`, autoTestToken, "application/json", 413, "", 0},
 		{"oversize trailing whitespace", "POST", "/api/automation/events", valid + strings.Repeat(" ", 17<<10), autoTestToken, "application/json", 413, "", 0},
+		{"oversize malformed start", "POST", "/api/automation/events", "{" + strings.Repeat("x", 17<<10), autoTestToken, "application/json", 413, "", 0},
 		{"unknown route", "POST", "/api/automation/other", valid, autoTestToken, "application/json", 404, "", 0},
 		{"nested route", "POST", "/api/automation/events/extra", valid, autoTestToken, "application/json", 404, "", 0},
 	} {
@@ -159,6 +160,8 @@ func TestAutomationAPIFailsClosed(t *testing.T) {
 		{"empty token", func(h *Handler) { h.N8NEventToken = "" }},
 		{"short token", func(h *Handler) { h.N8NEventToken = strings.Repeat("s", 31) }},
 		{"same as health token", func(h *Handler) { h.N8NEventToken = autoHealthToken }},
+		{"token with space", func(h *Handler) { h.N8NEventToken = autoTestToken + " tail" }},
+		{"token with newline", func(h *Handler) { h.N8NEventToken = autoTestToken + "\n" }},
 		{"empty workflows", func(h *Handler) { h.N8NWorkflows = "" }},
 		{"unparsable workflows", func(h *Handler) { h.N8NWorkflows = "wf_backup" }},
 		{"bad workflow entry", func(h *Handler) { h.N8NWorkflows = "wf_backup:Backup,bad id:Oops" }},
@@ -276,5 +279,13 @@ func TestAutomationErrorSummaryIsSanitisedBeforeStorage(t *testing.T) {
 	got := events[0].ErrorSummary
 	if strings.ContainsAny(got, "\n\x00") || len([]rune(got)) != 200 {
 		t.Fatalf("stored summary %q (%d runes)", got, len([]rune(got)))
+	}
+}
+
+func TestAutomationConfigProblemNamesTokenVariableForWhitespace(t *testing.T) {
+	h := autoHandler(t)
+	h.N8NEventToken = autoTestToken + "\t"
+	if got := h.AutomationConfigProblem(); got != envN8NEventToken {
+		t.Fatalf("got %q want %q", got, envN8NEventToken)
 	}
 }

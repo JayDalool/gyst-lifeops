@@ -2,9 +2,13 @@ package services
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"lifeops-tracker/internal/db"
+	"lifeops-tracker/internal/repository"
 )
 
 var autoPinned = time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
@@ -24,7 +28,7 @@ func autoSvc(t *testing.T) (*Service, *time.Time) {
 func record(t *testing.T, svc *Service, now *time.Time, id, wf, status string, at time.Time, summary string) {
 	t.Helper()
 	*now = at
-	res, ignored, err := svc.RecordAutomationEvent(AutomationEventInput{EventID: id, WorkflowID: wf, Status: status, OccurredAt: at.Format(time.RFC3339), ErrorSummary: summary}, autoWF)
+	res, ignored, err := svc.RecordAutomationEvent(AutomationEventInput{EventID: id, WorkflowID: wf, Status: status, OccurredAt: at.Format(time.RFC3339Nano), ErrorSummary: summary}, autoWF)
 	if err != nil || ignored || res != AutomationApplied {
 		t.Fatalf("record %s: %q ignored=%v err=%v", id, res, ignored, err)
 	}
@@ -88,7 +92,7 @@ func TestRecordAutomationEventNormalisesAndUsesServerReceiveTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, _ := svc.Repo.AutomationEventsForWorkflows([]string{"wf_backup"})
-	if len(rows) != 1 || rows[0].OccurredAt != "2026-10-11T11:59:00Z" || rows[0].ReceivedAt != "2026-10-11T12:00:00Z" || rows[0].ErrorSummary != "abcd" {
+	if len(rows) != 1 || rows[0].OccurredAt != "2026-10-11T11:59:00.250000000Z" || rows[0].ReceivedAt != "2026-10-11T12:00:00.000000000Z" || rows[0].ErrorSummary != "abcd" {
 		t.Fatalf("%+v", rows)
 	}
 }
@@ -228,5 +232,49 @@ func TestAutomationPruneAt30Days(t *testing.T) {
 		if r.EventID == "old" {
 			t.Fatal("old row survived")
 		}
+	}
+}
+
+// GYST-131 (Codex P2): sub-second order must survive storage, or a finish at
+// .100 followed by a start at .900 in the same second would read as Healthy.
+func TestAutomationSubSecondOrderKeepsRunning(t *testing.T) {
+	svc, now := autoSvc(t)
+	record(t, svc, now, "e1", "wf_backup", "succeeded", autoPinned.Add(100*time.Millisecond), "")
+	record(t, svc, now, "e2", "wf_backup", "started", autoPinned.Add(900*time.Millisecond), "")
+	if got := statusOf(t, svc, "wf_backup"); got.State != AutomationStateRunning {
+		t.Fatalf("want Running: %+v", got)
+	}
+}
+
+// GYST-131 (Codex P2): the insert has committed, so a failing prune must not
+// turn the response into an error (n8n would retry a stored event).
+func TestAutomationFailingPruneStillReportsApplied(t *testing.T) {
+	database, err := db.Open(filepath.Join(t.TempDir(), "lifeops.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { database.Close() })
+	if err := db.Migrate(database, filepath.Join("..", "..", "migrations")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(`CREATE TRIGGER fail_prune BEFORE DELETE ON automation_events
+		BEGIN SELECT RAISE(ABORT, 'prune blocked'); END`); err != nil {
+		t.Fatal(err)
+	}
+	svc := New(repository.New(database))
+	now := autoPinned
+	svc.Now = func() time.Time { return now }
+	// An old row makes the prune actually try to delete something.
+	if _, err := database.Exec(`INSERT INTO automation_events (event_id, workflow_id, status, occurred_at, received_at)
+		VALUES ('old', 'wf_backup', 'succeeded', '2020-01-01T00:00:00.000000000Z', '2020-01-01T00:00:00.000000000Z')`); err != nil {
+		t.Fatal(err)
+	}
+	res, ignored, err := svc.RecordAutomationEvent(AutomationEventInput{EventID: "e1", WorkflowID: "wf_backup", Status: "started", OccurredAt: now.Format(time.RFC3339)}, autoWF)
+	if err != nil || ignored || res != AutomationApplied {
+		t.Fatalf("%q ignored=%v err=%v", res, ignored, err)
+	}
+	var n int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM automation_events WHERE event_id = 'e1'`).Scan(&n); err != nil || n != 1 {
+		t.Fatalf("event not stored: %d %v", n, err)
 	}
 }

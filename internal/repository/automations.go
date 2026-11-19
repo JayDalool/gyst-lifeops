@@ -13,12 +13,15 @@ type AutomationEvent struct {
 	ErrorSummary string
 }
 
+// ON CONFLICT(event_id) rather than OR IGNORE: OR IGNORE would also swallow
+// CHECK violations silently.
 // InsertAutomationEvent stores the event unless its event_id already exists.
 // inserted is false for a duplicate, and nothing changes in that case.
 func (r *Repository) InsertAutomationEvent(e AutomationEvent) (inserted bool, err error) {
-	result, err := r.db.Exec(`INSERT OR IGNORE INTO automation_events
+	result, err := r.db.Exec(`INSERT INTO automation_events
 		(event_id, workflow_id, status, occurred_at, received_at, error_summary)
-		VALUES (?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(event_id) DO NOTHING`,
 		e.EventID, e.WorkflowID, e.Status, e.OccurredAt, e.ReceivedAt, e.ErrorSummary)
 	if err != nil {
 		return false, err
@@ -27,10 +30,12 @@ func (r *Repository) InsertAutomationEvent(e AutomationEvent) (inserted bool, er
 	return n == 1, err
 }
 
+const pruneAutomationEventsSQL = `DELETE FROM automation_events WHERE occurred_at < ?`
+
 // PruneAutomationEventsBefore deletes events that occurred before cutoff
 // (UTC text in the table's format) and returns how many.
 func (r *Repository) PruneAutomationEventsBefore(cutoff string) (int64, error) {
-	result, err := r.db.Exec(`DELETE FROM automation_events WHERE occurred_at < ?`, cutoff)
+	result, err := r.db.Exec(pruneAutomationEventsSQL, cutoff)
 	if err != nil {
 		return 0, err
 	}
