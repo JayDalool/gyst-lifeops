@@ -67,7 +67,7 @@ func (h *Handler) coach() healthcoach.Provider {
 	var built healthcoach.Provider
 	switch cfg.Provider {
 	case services.AIProviderAnthropic:
-		built = healthcoach.NewAnthropic(cfg.Key, cfg.ChatModel)
+		built = healthcoach.NewAnthropic(cfg.Key, cfg.ChatModel).WithPhotoModel(cfg.PhotoModel)
 	case services.AIProviderOpenAI:
 		built = healthcoach.NewOpenAI(cfg.Key, cfg.ChatModel).WithVisionModel(cfg.PhotoModel)
 	default:
