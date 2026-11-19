@@ -5,10 +5,11 @@
     <h1 class="page-title">{{.Title}}</h1>
     <p class="page-sub">A goal is a number you move toward &mdash; sessions, hours, days. Fields marked <em class="req">*</em> are required.</p>
   </div>
-  <a class="btn quiet" href="/goals">Cancel</a>
+  <a class="btn quiet goal-edit-link" href="{{if .IsEdit}}/goals/{{.Goal.ID}}{{else}}/goals{{end}}">Cancel</a>
 </div>
 
-<form class="card form-card form-stack mt-24" method="post" action="{{.Action}}">
+{{if .Error}}<p class="gyst-field-error mt-24" role="alert" id="goal-error">{{template "gyst.icon" "circle-alert"}} {{.Error}}</p>{{end}}
+<form class="card form-card form-stack goal-form mt-24" method="post" action="{{.Action}}">
   <label class="field">
     <span>Title <em class="req">*</em></span>
     <input name="title" required value="{{.Goal.Title}}">
@@ -43,10 +44,18 @@
       <span>Target value</span>
       <input type="number" step="0.1" min="0" name="target_value" value="{{niceNumber .Goal.TargetValue}}">
     </label>
+    {{if .IsEdit}}
+    <div class="field goal-progress-note">
+      <span>Current progress</span>
+      <strong>{{niceNumber .Goal.CurrentValue}} {{.Goal.Unit}}</strong>
+      <a class="gyst-caption goal-log-link" href="/goals/{{.Goal.ID}}#log">Log progress to change it</a>
+    </div>
+    {{else}}
     <label class="field">
       <span>Current value</span>
       <input type="number" step="0.1" min="0" name="current_value" value="{{niceNumber .Goal.CurrentValue}}">
     </label>
+    {{end}}
   </div>
   <label class="field">
     <span>Unit</span>
@@ -57,7 +66,7 @@
     <select name="status">
       <option value="active" {{if eq .Goal.Status "active"}}selected{{end}}>Active</option>
       <option value="completed" {{if eq .Goal.Status "completed"}}selected{{end}}>Completed</option>
-      <option value="archived" {{if eq .Goal.Status "archived"}}selected{{end}}>Archived</option>
+      {{if not .IsEdit}}<option value="archived" {{if eq .Goal.Status "archived"}}selected{{end}}>Archived</option>{{end}}
     </select>
   </label>
   <div class="form-row">
@@ -70,6 +79,6 @@
       <input type="date" name="end_date" value="{{.Goal.EndDate}}">
     </label>
   </div>
-  <button class="btn" type="submit">Save goal</button>
+  <button class="btn goal-edit-link" type="submit">Save goal</button>
 </form>
 {{end}}
