@@ -59,6 +59,8 @@ type Handler struct {
 	coachLimit   coachLimiter
 	// photoLimit guards photo analysis separately from the Coach (#217).
 	photoLimit coachLimiter
+	// camera holds the one-time nonces of photo reviews (#211).
+	camera     cameraStore
 	coachMu    sync.Mutex
 	coachCfg   services.AIConfig
 	coachBuilt healthcoach.Provider
@@ -388,6 +390,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.training(w, r)
 		} else if len(segments) == 4 && segments[1] == "nutrition" && segments[2] == "photo" && segments[3] == "analyze" {
 			h.healthFoodPhotoAnalyze(w, r)
+		} else if len(segments) == 4 && segments[1] == "nutrition" && segments[2] == "photo" && segments[3] == "confirm" {
+			h.healthFoodPhotoConfirm(w, r)
 		} else if len(segments) == 2 && segments[1] == "nutrition" {
 			h.nutrition(w, r)
 		} else if len(segments) >= 3 && len(segments) <= 5 && segments[1] == "nutrition" && segments[2] == "items" {
@@ -2537,15 +2541,6 @@ func (h *Handler) appClock() clock.Clock {
 }
 
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {
-	playerXP := models.PlayerStats{CurrentLevel: 1}
-	if h.Service != nil && h.Service.Repo != nil {
-		var err error
-		playerXP, err = h.Service.Repo.PlayerStats()
-		if err != nil {
-			serverError(w, err)
-			return
-		}
-	}
 	files := []string{
 		filepath.Join(h.TemplateDir, "layout.html"),
 		filepath.Join(h.TemplateDir, "rocket_route.html"),
@@ -2560,7 +2555,6 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
 		"primarySection": primarySection,
 		"projectCard":    projectCard,
-		"xpStats":        func() models.PlayerStats { return playerXP },
 		"join":           strings.Join,
 		"joinInts":       joinInts,
 		"niceDate":       niceDate,
@@ -2621,10 +2615,8 @@ func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 			}
 			return h.Service.Now().In(h.Service.Location()).Format("15:04")
 		},
-		"routeState":  models.RouteState,
-		"levelPct":    levelPct,
-		"toNextLevel": toNextLevel,
-		"blockLabel":  services.BlockTypeLabel,
+		"routeState": models.RouteState,
+		"blockLabel": services.BlockTypeLabel,
 		"routeDone": func(nodes []models.RouteNode) int {
 			done := 0
 			for _, node := range nodes {
@@ -2877,23 +2869,6 @@ func niceNumber(value float64) string {
 		return fmt.Sprintf("%.0f", value)
 	}
 	return fmt.Sprintf("%.1f", value)
-}
-
-// levelPct returns how far into the current level the player is (0-99),
-// where every 100 stars is one level. Used for the captain XP bar width.
-func levelPct(stars int) int {
-	if stars < 0 {
-		return 0
-	}
-	return stars % 100
-}
-
-// toNextLevel returns stars remaining until the next level threshold.
-func toNextLevel(stars int) int {
-	if stars < 0 {
-		return 100
-	}
-	return 100 - (stars % 100)
 }
 
 // greetingFor is the Today page greeting for a local hour.

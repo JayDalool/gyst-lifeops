@@ -66,6 +66,7 @@
     <a class="hv3-btn small" href="https://www.myfitnesspal.com/" target="_blank" rel="noopener noreferrer">Open {{template "gyst.icon" "external-link"}}<span class="hv3-sr">MyFitnessPal (opens in a new tab)</span></a>
   </section>
 </div>
+<script defer src="/static/js/food-camera.js?v=cam-1"></script>
 <p class="hv3-foot">Daily totals only from Apple Health. A day counts your GYST diary when it has food, otherwise the Apple Health total; they are never added together.</p>
 </div>
 {{end}}
@@ -100,8 +101,31 @@
     {{end}}
   </section>
 
+  <section class="hv3-card hv3-span hv3-cam" id="camera-review" aria-labelledby="cam-title" hidden>
+    <div class="hv3-card-h"><h2 id="cam-title" class="hv3-k">{{template "gyst.icon" "camera"}}Review photo</h2></div>
+    <p class="hv3-banner" id="cam-status" role="status" hidden></p>
+    <p class="hv3-banner warn" id="cam-error" role="alert" hidden><span id="cam-error-text"></span><a id="cam-error-link" href="/settings#ai" hidden>Settings › AI provider</a></p>
+    <div id="cam-body" hidden>
+      <p class="hv3-s">The AI only names what it sees and guesses grams. Nothing is saved until you press Save meal. Check each name, grams and the nutrition; leave nutrition blank if you don't know it.</p>
+      <ul class="hv3-cam-notes" id="cam-notes"></ul>
+      <ul class="hv3-group" id="cam-items"></ul>
+      <div class="hv3-cam-actions">
+        <button class="hv3-btn small secondary" type="button" id="cam-add">Add oil, sauce or another food</button>
+      </div>
+      <form class="hv3-form" id="cam-form">
+        <label class="hv3-field"><span>Meal</span><select id="cam-slot">{{range .Slots}}<option value="{{.Slot}}"{{if eq .Slot $.Diary.Preslot}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+        <button class="hv3-btn" type="submit" id="cam-save">Save meal</button>
+        <button class="hv3-btn secondary" type="button" id="cam-cancel">Discard</button>
+      </form>
+    </div>
+  </section>
+
   <section class="hv3-card hv3-span" id="add-food" aria-labelledby="add-title">
-    <h2 id="add-title" class="hv3-k">{{template "gyst.icon" "search"}}Add food</h2>
+    <div class="hv3-card-h"><h2 id="add-title" class="hv3-k">{{template "gyst.icon" "search"}}Add food</h2>
+      <span class="hv3-cam-pick" id="camera-pick" hidden>
+        <label class="hv3-btn small secondary" for="camera-input">{{template "gyst.icon" "camera"}}Photo<span class="hv3-sr"> of your meal</span></label>
+        <input class="hv3-sr" type="file" id="camera-input" accept="image/*">
+      </span></div>
     <form class="hv3-form" method="get" action="/health/nutrition#add-food" role="search">
       <label class="hv3-field wide"><span>Search your foods</span><input type="search" name="q" maxlength="80" autocomplete="off" value="{{.Query}}"></label>
       <button class="hv3-btn" type="submit">Search</button>
