@@ -288,6 +288,11 @@ func TestMakeoverColourSwaps(t *testing.T) {
 		{"styles.css", ":root :where(body:not(.galaxy-page)) .btn:where(:hover)", "background", "color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink))"},
 		{"styles.css", ":root :where(body:not(.galaxy-page)) .btn:hover", "opacity", "1"},
 		{"styles.css", ":root .btn:hover", "opacity", "0.9"}, // Galaxy still reads this one
+		// Secondary legacy buttons had only that fade as hover feedback; each now has an opaque tint.
+		{"ui-health.css", ":root .health-ui .btn:hover", "background", "var(--gyst-blue-soft)"},
+		{"ui-courses.css", ":root .courses-ui .btn:hover", "background", "var(--gyst-blue-soft)"},
+		{"ui-courses.css", ":root .courses-ui .btn.danger:hover", "background", "var(--vn-crit-soft)"},
+		{"styles.css", ":root :where(body:not(.galaxy-page)) .btn.danger:hover", "background", "var(--vn-crit-soft)"},
 		// The current prayer on Today is a state too: border here, outline in ui-today.css (its second
 		// colour-only edit, by the lead's ruling), so the tile is one colour.
 		{"styles.css", ":root .tracker-dot.prayer-current", "border-color", "var(--vn-info)"},
