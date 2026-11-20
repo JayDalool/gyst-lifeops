@@ -218,7 +218,7 @@ func TestDayBriefNullStaysNull(t *testing.T) {
 	// instead of being a bare null.
 	_, tomorrow := build(t, cat, "tomorrow")
 	h, ok := tomorrow["health"].(map[string]any)
-	if !ok || h["available"] != false || h["reason"] != "today_only" || h["as_of"] != nil || h["stale"] != true {
+	if _, hasAsOf := h["as_of"]; !ok || !hasAsOf || h["available"] != false || h["reason"] != "today_only" || h["as_of"] != nil || h["stale"] != true {
 		t.Fatalf("tomorrow's health: %v", tomorrow["health"])
 	}
 }
@@ -386,7 +386,8 @@ func TestGetDayBriefTool(t *testing.T) {
 	// A calendar that fails gives a calendar section of nulls, not an error.
 	bad := briefCatalogue(t, e, secretarytest.FakeHealth{Err: context.Canceled}, secretarytest.FakeCalendar{Err: context.Canceled})
 	_, bm := build(t, bad, "today")
-	if h, _ := bm["health"].(map[string]any); h["available"] != false || h["reason"] != "unavailable" || bm["calendar"].(map[string]any)["events"] != nil || bm["calendar"].(map[string]any)["connected"] != true {
+	h, _ := bm["health"].(map[string]any)
+	if _, hasAsOf := h["as_of"]; !hasAsOf || h["available"] != false || h["reason"] != "unavailable" || bm["calendar"].(map[string]any)["events"] != nil || bm["calendar"].(map[string]any)["connected"] != true {
 		t.Fatalf("failures: health %v calendar %v", bm["health"], bm["calendar"])
 	}
 }

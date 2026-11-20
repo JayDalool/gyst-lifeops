@@ -103,7 +103,6 @@ func (c *Catalogue) BuildDayBrief(day Day) ([]byte, error) {
 	b.Now = mustJSON(map[string]any{"as_of": asOf(now), "stale": false, "date": day.Date, "weekday": day.Weekday})
 	b.Prayer = c.briefPrayer(day, asOf)
 	b.Tasks = c.briefTasks(day, asOf(now))
-	hevy := c.fresh.Peek(SourceHevy)
 	cal, mail := c.fresh.Peek(SourceCalendar), c.fresh.Peek(SourceMail)
 	b.Calendar = c.briefCalendar(day, cal, asOf)
 	var health HealthBrief
@@ -115,9 +114,10 @@ func (c *Catalogue) BuildDayBrief(day Day) ([]byte, error) {
 		}
 	}
 	b.Health = briefHealth(health, healthOK, day.Offset == 0, asOf)
-	b.Training = c.briefTraining(hevy, asOf)
+	var trainedAt time.Time
+	b.Training, trainedAt = c.briefTraining(asOf)
 	b.Mail = mustJSON(map[string]any{"as_of": asOf(mail.AsOf), "stale": mail.Stale, "connected": mail.Connected, "unread": nil})
-	b.Sync = mustJSON(map[string]any{"hevy": asOf(hevy.AsOf), "calendar": asOf(cal.AsOf), "mail": asOf(mail.AsOf), "health": asOf(health.AsOf), "as_of": asOf(now), "stale": false})
+	b.Sync = mustJSON(map[string]any{"hevy": asOf(trainedAt), "calendar": asOf(cal.AsOf), "mail": asOf(mail.AsOf), "health": asOf(health.AsOf), "as_of": asOf(now), "stale": false})
 	caps := map[string]int{"now": capNow, "prayer": capPrayer, "tasks": capTasks, "calendar": capCalendar, "health": capHealth, "training": capTraining, "mail": capMail, "sync": capSync}
 	return finalize(b, caps, BriefBudget)
 }
@@ -306,12 +306,16 @@ func briefHealth(h HealthBrief, ok, today bool, asOf func(time.Time) any) json.R
 	})
 }
 
-func (c *Catalogue) briefTraining(f Freshness, asOf func(time.Time) any) json.RawMessage {
+// briefTraining takes as_of and stale from the snapshot it reads the rows from,
+// not from the turn's cached freshness decision, which can predate a refresh
+// that finished after the budget. It also returns that snapshot's time.
+func (c *Catalogue) briefTraining(asOf func(time.Time) any) (json.RawMessage, time.Time) {
 	svc := c.deps.Service
 	cache, err := svc.Repo.TrainingCache("hevy")
 	if err != nil {
-		return mustJSON(map[string]any{"as_of": nil, "stale": true, "last": nil, "week": nil})
+		return mustJSON(map[string]any{"as_of": nil, "stale": true, "last": nil, "week": nil}), time.Time{}
 	}
+	stale := cache.SyncedAt.IsZero() || svc.Now().Sub(cache.SyncedAt) >= freshLimit[SourceHevy]
 	var last any
 	var newest *models.TrainingEntry
 	for i := range cache.Entries {
@@ -327,14 +331,14 @@ func (c *Catalogue) briefTraining(f Freshness, asOf func(time.Time) any) json.Ra
 	// No snapshot yet means unknown, not zero workouts (RULES 3.2): the week is
 	// null until Hevy has synced once; 0 is only a synced week with none.
 	if cache.SyncedAt.IsZero() {
-		return mustJSON(map[string]any{"as_of": asOf(f.AsOf), "stale": true, "last": last, "week": nil})
+		return mustJSON(map[string]any{"as_of": asOf(cache.SyncedAt), "stale": true, "last": last, "week": nil}), cache.SyncedAt
 	}
 	week := services.SummarizeTrainingWeek(cache.Entries, svc.Now(), svc.Location())
 	var target any
 	if cycle, err := svc.GetHealthCycleForDate(svc.TodayString()); err == nil && cycle.StrengthSessionsPerWeek > 0 {
 		target = cycle.StrengthSessionsPerWeek
 	}
-	return mustJSON(map[string]any{"as_of": asOf(f.AsOf), "stale": f.Stale, "last": last, "week": map[string]any{"workouts": week.Workouts, "target": target}})
+	return mustJSON(map[string]any{"as_of": asOf(cache.SyncedAt), "stale": stale, "last": last, "week": map[string]any{"workouts": week.Workouts, "target": target}}), cache.SyncedAt
 }
 
 // getDayBrief is the get_day_brief tool.

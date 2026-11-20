@@ -40,7 +40,9 @@
 //
 //  1. Write a builder, func(*Catalogue) []ToolSpec, and add it to builders in
 //     catalogue.go. A spec that reads a synced source lists it in Sources; its
-//     Run returns a value (encoded as compact JSON) or a fixed-string error.
+//     Run returns a value (encoded as compact JSON) or a fixed-string error. A
+//     tool that takes a date or other input sets Validate, which runs before
+//     the freshness check so bad input starts no sync and writes nothing.
 //  2. Add the tool's name to allowlist, in offer order, and to the literal in
 //     TestRegistryEqualsAllowlist. This is the reviewed step.
 //  3. Pass the data source in Deps (for example Deps.Calendar, a

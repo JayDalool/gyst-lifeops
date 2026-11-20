@@ -10,6 +10,7 @@ import (
 
 	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/healthcoach"
+	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/services"
 )
 
@@ -28,13 +29,19 @@ var builders = []func(*Catalogue) []ToolSpec{healthBuilder, coreBuilder}
 
 // hevyBacked are the Health tools that read the Hevy copy. On the Secretary's
 // path (and only there) they declare SourceHevy, so a direct workout question
-// gets the same freshness check as the brief, and say how old the data is. The
-// Coach takes HealthTools instead, which has no freshness and is unchanged.
+// gets the same freshness check as the brief, and they are wrapped to:
+//   - say "unavailable" until a snapshot exists, instead of zeros and empty
+//     lists that would read as observed (RULES 3.2);
+//   - take as_of and stale from the snapshot that supplied the rows, not from
+//     the turn's cached "do not retry" decision, which can predate a refresh
+//     that finished late;
+//   - clean and cap the workout, routine and exercise names (untrusted text).
+//
+// The Coach takes HealthTools instead, which has none of this and is unchanged.
 var hevyBacked = map[string]bool{"get_training_summary": true, "get_recent_workouts": true, "get_exercise_progress": true, "get_hevy_routines": true}
 
 func healthBuilder(c *Catalogue) []ToolSpec {
 	specs := healthSpecs(c.deps.Health)
-	loc := c.deps.Service.Location
 	for i := range specs {
 		if !hevyBacked[specs[i].Name] {
 			continue
@@ -42,24 +49,120 @@ func healthBuilder(c *Catalogue) []ToolSpec {
 		inner := specs[i].Run
 		specs[i].Sources = []string{SourceHevy}
 		specs[i].Run = func(ctx context.Context, input json.RawMessage) (any, error) {
-			v, err := inner(ctx, input)
-			m, ok := v.(map[string]any)
-			if err != nil || !ok {
-				return v, err
-			}
-			out := make(map[string]any, len(m)+2) // copy: the reader's map is not ours to change
-			for k, val := range m {
-				out[k] = val
-			}
-			st := c.fresh.Peek(SourceHevy)
-			out["as_of"], out["stale"] = nil, st.Stale
-			if !st.AsOf.IsZero() {
-				out["as_of"] = st.AsOf.In(loc()).Format(minuteLayout)
-			}
-			return out, nil
+			return c.hevyAnswer(ctx, input, inner)
 		}
 	}
 	return specs
+}
+
+// hevyAnswer runs a Hevy-backed tool and decorates its result.
+func (c *Catalogue) hevyAnswer(ctx context.Context, input json.RawMessage, inner func(context.Context, json.RawMessage) (any, error)) (any, error) {
+	svc := c.deps.Service
+	var cache models.TrainingCache
+	var v any
+	var err error
+	// The rows and the timestamp must come from one snapshot: if a refresh
+	// lands between reading the stamp and the rows, read again.
+	for try := 0; try < 3; try++ {
+		before, cerr := svc.Repo.TrainingCache("hevy")
+		if cerr != nil {
+			return nil, errUnavailable
+		}
+		if v, err = inner(ctx, input); err != nil {
+			return nil, err
+		}
+		after, cerr := svc.Repo.TrainingCache("hevy")
+		if cerr != nil {
+			return nil, errUnavailable
+		}
+		if before.SyncedAt.Equal(after.SyncedAt) {
+			cache = after
+			break
+		}
+		cache = after
+	}
+	if cache.SyncedAt.IsZero() {
+		return map[string]any{"available": false, "reason": "no_hevy_data", "as_of": nil, "stale": true}, nil
+	}
+	m, ok := v.(map[string]any)
+	if !ok {
+		return v, nil
+	}
+	out := make(map[string]any, len(m)+2) // copy: the reader's map is not ours to change
+	for k, val := range m {
+		out[k] = val
+	}
+	out["as_of"] = cache.SyncedAt.In(svc.Location()).Format(minuteLayout)
+	out["stale"] = svc.Now().Sub(cache.SyncedAt) >= freshLimit[SourceHevy]
+	cleanNames(out)
+	return out, nil
+}
+
+// cleanNames cleans and caps the free-text names in a Hevy-backed result:
+// workout and routine titles (TitleCap) and exercise names (NameCap). Shapes it
+// does not know are left alone.
+func cleanNames(m map[string]any) {
+	title := func(s string) string { t, _ := Clean(s, TitleCap); return t }
+	name := func(s string) string { t, _ := Clean(s, NameCap); return t }
+	rows := func(key string) []map[string]any {
+		src, ok := m[key].([]map[string]any)
+		if !ok {
+			return nil
+		}
+		out := make([]map[string]any, len(src))
+		for i, r := range src {
+			out[i] = make(map[string]any, len(r))
+			for k, v := range r {
+				out[i][k] = v
+			}
+		}
+		m[key] = out
+		return out
+	}
+	for _, w := range rows("workouts") {
+		if s, ok := w["title"].(string); ok {
+			w["title"] = title(s)
+		}
+		for _, ex := range rows2(w, "exercises") {
+			if s, ok := ex["name"].(string); ok {
+				ex["name"] = name(s)
+			}
+		}
+	}
+	for _, r := range rows("routines") {
+		if s, ok := r["title"].(string); ok {
+			r["title"] = title(s)
+		}
+		if names, ok := r["exercises"].([]string); ok {
+			cleaned := make([]string, len(names))
+			for i, n := range names {
+				cleaned[i] = name(n)
+			}
+			r["exercises"] = cleaned
+		}
+	}
+	for _, ex := range rows("exercises") {
+		if s, ok := ex["exercise"].(string); ok {
+			ex["exercise"] = name(s)
+		}
+	}
+}
+
+// rows2 copies a nested []map[string]any under key in place.
+func rows2(m map[string]any, key string) []map[string]any {
+	src, ok := m[key].([]map[string]any)
+	if !ok {
+		return nil
+	}
+	out := make([]map[string]any, len(src))
+	for i, r := range src {
+		out[i] = make(map[string]any, len(r))
+		for k, v := range r {
+			out[i][k] = v
+		}
+	}
+	m[key] = out
+	return out
 }
 
 // Deps is what a Catalogue reads. Every field is read-only data access.

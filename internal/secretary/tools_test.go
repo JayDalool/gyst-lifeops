@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/secretary"
@@ -77,6 +78,7 @@ func TestRegistryEqualsAllowlist(t *testing.T) {
 // schema for schema and output for output.
 func TestCatalogueHealthToolsEqualHealthTools(t *testing.T) {
 	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-5 * time.Minute)) // a snapshot exists, so the Hevy tools answer
 	fake := secretarytest.FakeHealth{}
 	direct := map[string]healthcoach.Tool{}
 	for _, tool := range secretary.HealthTools(fake) {
@@ -413,4 +415,130 @@ func withoutFreshness(out string) string {
 	delete(m, "stale")
 	b, _ := json.Marshal(m)
 	return string(b)
+}
+
+// Before any Hevy snapshot the four Hevy-backed tools say "unavailable" with
+// null freshness; a synced, empty copy answers normally (a real zero).
+func TestHevyToolsUnavailableBeforeFirstSync(t *testing.T) {
+	e := secretarytest.New(t)
+	cat := catalogue(t, e)
+	names := []string{"get_training_summary", "get_recent_workouts", "get_exercise_progress", "get_hevy_routines"}
+	for _, name := range names {
+		m := run(t, cat, name, `{}`)
+		if m["available"] != false || m["reason"] != "no_hevy_data" || m["stale"] != true {
+			t.Errorf("%s: %v", name, m)
+		}
+		if v, has := m["as_of"]; !has || v != nil {
+			t.Errorf("%s as_of: %v", name, m)
+		}
+		if len(m) != 4 {
+			t.Errorf("%s shows more than the unavailable marker: %v", name, m)
+		}
+	}
+	if err := e.Svc.Repo.SaveTraining("hevy", nil, e.Svc.Now().Add(-5*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range names {
+		m := run(t, cat, name, `{}`)
+		if _, marker := m["available"]; marker || m["stale"] != false || m["as_of"] != "2026-11-19T11:55" {
+			t.Errorf("%s with a synced empty copy: %v", name, m)
+		}
+	}
+}
+
+// A refresh that outlives the budget and finishes before a later call in the
+// same turn: that call's as_of and stale come from the new snapshot, not from
+// the turn's cached decision.
+func TestHevyToolFreshnessFollowsTheSnapshotRead(t *testing.T) {
+	e := secretarytest.New(t)
+	stored := e.Svc.Now().Add(-2 * time.Hour)
+	e.SeedHevy(stored)
+	slow := secretarytest.SlowHevy(false)
+	slow.Entries = nil
+	e.ConnectHevy(slow)
+	t.Cleanup(slow.Release)
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: secretarytest.FakeHealth{}, Budget: 100 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	first := run(t, cat, "get_recent_workouts", `{}`)
+	if first["stale"] != true || first["as_of"] != "2026-11-19T10:00" {
+		t.Fatalf("first call: %v", first)
+	}
+	slow.Release()
+	cat.Wait()
+	second := run(t, cat, "get_hevy_routines", `{}`)
+	if second["stale"] != false || second["as_of"] != "2026-11-19T12:00" {
+		t.Fatalf("second call in the same turn: %v", second)
+	}
+	day, _ := secretary.ResolveDate("today", cat.Clock())
+	raw, _ := cat.BuildDayBrief(day)
+	var b map[string]map[string]any
+	if err := json.Unmarshal(raw, &b); err != nil {
+		t.Fatal(err)
+	}
+	if b["training"]["as_of"] != "2026-11-19T12:00" || b["training"]["stale"] != false || b["sync"]["hevy"] != "2026-11-19T12:00" {
+		t.Fatalf("brief: %v / %v", b["training"], b["sync"])
+	}
+}
+
+// On the Secretary path, workout, routine and exercise names are cleaned and
+// capped; the reader's own values are not changed.
+func TestHevyToolsCleanNames(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-5 * time.Minute))
+	dirty := "Push\u202E day\u200B " + strings.Repeat("x", 200)
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: dirtyHealth{dirty}, Budget: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	w := run(t, cat, "get_recent_workouts", `{}`)["workouts"].([]any)[0].(map[string]any)
+	title, ex := w["title"].(string), w["exercises"].([]any)[0].(map[string]any)["name"].(string)
+	r := run(t, cat, "get_hevy_routines", `{}`)["routines"].([]any)[0].(map[string]any)
+	prog := run(t, cat, "get_exercise_progress", `{}`)["exercises"].([]any)[0].(map[string]any)["exercise"].(string)
+	for label, got := range map[string]string{"workout title": title, "routine title": r["title"].(string)} {
+		if strings.ContainsAny(got, "\u202E\u200B") || utf8.RuneCountInString(got) != secretary.TitleCap || !strings.HasSuffix(got, "…") {
+			t.Errorf("%s %q (%d runes)", label, got, utf8.RuneCountInString(got))
+		}
+	}
+	for label, got := range map[string]string{"exercise": ex, "routine exercise": r["exercises"].([]any)[0].(string), "progress": prog} {
+		if strings.ContainsAny(got, "\u202E\u200B") || utf8.RuneCountInString(got) != secretary.NameCap {
+			t.Errorf("%s %q (%d runes)", label, got, utf8.RuneCountInString(got))
+		}
+	}
+	// The Coach's tool, over the same reader, is untouched.
+	for _, tool := range secretary.HealthTools(dirtyHealth{dirty}) {
+		if tool.Name == "get_recent_workouts" {
+			out, _ := tool.Run(context.Background(), nil)
+			if !strings.Contains(out, "\\u202e") && !strings.Contains(out, "\u202e") {
+				t.Errorf("Coach output was cleaned: %s", out)
+			}
+		}
+	}
+}
+
+// dirtyHealth answers the Hevy tools with one hidden-character, over-long name.
+type dirtyHealth struct{ name string }
+
+func (d dirtyHealth) Today() (any, error)       { return nil, nil }
+func (d dirtyHealth) Plan() (any, error)        { return nil, nil }
+func (d dirtyHealth) WeightTrend() (any, error) { return nil, nil }
+func (d dirtyHealth) TrainingSummary() (any, error) {
+	return map[string]any{"this_week_workouts": 0}, nil
+}
+func (d dirtyHealth) RecentWorkouts(int) (any, error) {
+	return map[string]any{"workouts": []map[string]any{{"title": d.name, "exercises": []map[string]any{{"name": d.name}}}}}, nil
+}
+func (d dirtyHealth) ExerciseProgress(int) (any, error) {
+	return map[string]any{"exercises": []map[string]any{{"exercise": d.name}}}, nil
+}
+func (d dirtyHealth) HevyRoutines() (any, error) {
+	return map[string]any{"routines": []map[string]any{{"title": d.name, "exercises": []string{d.name}}}}, nil
+}
+func (d dirtyHealth) FoodProducts() (any, error)   { return nil, nil }
+func (d dirtyHealth) DailyChecklist() (any, error) { return nil, nil }
+func (d dirtyHealth) BriefHealth() (secretary.HealthBrief, error) {
+	return secretary.HealthBrief{}, nil
 }

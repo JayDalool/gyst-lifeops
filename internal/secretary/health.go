@@ -29,8 +29,9 @@ type HealthReader interface {
 
 // healthSpecs are the Coach's nine Health tools: the same names, descriptions
 // and schemas as before they moved here (Issue #236, golden file in
-// internal/handlers/testdata/coach_tools.golden.json). They read no synced
-// source, so they have no Sources.
+// internal/handlers/testdata/coach_tools.golden.json). Here they have no
+// Sources and no freshness: this is what the Coach takes. The Secretary's
+// Catalogue wraps the four Hevy-backed ones (healthBuilder in catalogue.go).
 func healthSpecs(r HealthReader) []ToolSpec {
 	plain := func(f func() (any, error)) func(context.Context, json.RawMessage) (any, error) {
 		return func(context.Context, json.RawMessage) (any, error) {
