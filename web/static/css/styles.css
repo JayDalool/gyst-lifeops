@@ -4052,6 +4052,10 @@ i.map-node-state {
   text-decoration: none;
   transition: opacity var(--vn-fast) var(--vn-ease), transform var(--vn-fast) var(--vn-ease), color var(--vn-fast) var(--vn-ease);
 }
+/* GYST-168: one primary fill. The legacy button takes the accent itself, like .gyst-button, not the
+   text grade behind --accent. Galaxy keeps its pinned --accent: the rule is scoped off it with :where(),
+   which adds no specificity, so .ghost and .quiet below still win. */
+:root :where(body:not(.galaxy-page)) .btn { background: var(--vn-accent); }
 :root .btn:hover { opacity: 0.9; }
 :root .btn:not(:disabled):active { transform: scale(.97); }
 :root .btn.ghost {
@@ -4407,15 +4411,16 @@ i.map-node-state {
 :root .map .node.current i {
   width: 16px;
   height: 16px;
-  background: var(--accent);
-  border-color: var(--accent);
+  /* GYST-168 E4: the current stop is a state, so it is drawn in the info colour, not the accent. */
+  background: var(--vn-info);
+  border-color: var(--vn-info);
 }
 :root .map .node.current::after {   /* the one allowed ambient animation */
   content: "";
   position: absolute;
   inset: 8px;
   border-radius: 50%;
-  border: 1.5px solid var(--accent);
+  border: 1.5px solid var(--vn-info);
   opacity: 0.5;
   animation: v2-ring 3s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
 }
@@ -4765,7 +4770,8 @@ i.map-node-state {
   background: var(--panel-soft);
 }
 :root .phase-strip i.done { background: var(--green); }
-:root .phase-strip i.current { background: var(--accent); }
+/* GYST-168 E4: the active phase is a state. */
+:root .phase-strip i.current { background: var(--vn-info); }
 :root .body-text { color: var(--muted); font-size: 14.5px; }
 
 /* ---- forms ------------------------------------------------------------------- */

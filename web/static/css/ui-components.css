@@ -33,7 +33,9 @@
    there, so the old literals stay as the base rule and the accent is applied everywhere else through
    :where(), which adds no specificity: the later --secondary and --danger rules still win as before. */
 :where(body:not(.galaxy-page)) .gyst-button { background: var(--vn-accent); color: var(--vn-on-accent); }
-:where(body:not(.galaxy-page)) .gyst-button:hover { background: var(--vn-accent-text); }
+/* Hover mixes a little ink into the accent: darker in light, lighter in dark (where accent-text equals the
+   accent and would show no change). The label gains contrast in both themes. */
+:where(body:not(.galaxy-page)) .gyst-button:hover { background: color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink)); }
 .gyst-button--secondary { background: var(--gyst-surface); color: var(--gyst-blue); border-color: var(--gyst-blue); }
 .gyst-button--secondary:hover { background: var(--gyst-blue-soft); }
 .gyst-button--danger { background: #b91c1c; color: #fff; }

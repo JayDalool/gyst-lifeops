@@ -276,7 +276,14 @@ func TestMakeoverColourSwaps(t *testing.T) {
 		// Primary controls take the accent everywhere but on the pinned Galaxy page.
 		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-button", "background", "var(--vn-accent)"},
 		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-button", "color", "var(--vn-on-accent)"},
-		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-button:hover", "background", "var(--vn-accent-text)"},
+		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-button:hover", "background", "color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink))"},
+		// One primary fill: the legacy button takes the accent too, off the pinned Galaxy page.
+		{"styles.css", ":root :where(body:not(.galaxy-page)) .btn", "background", "var(--vn-accent)"},
+		// E4: current and active state graphics read the info colour, never the accent.
+		{"styles.css", ":root .phase-strip i.current", "background", "var(--vn-info)"},
+		{"styles.css", ":root .map .node.current i", "background", "var(--vn-info)"},
+		{"styles.css", ":root .map .node.current i", "border-color", "var(--vn-info)"},
+		{"styles.css", ":root .map .node.current::after", "border", "1.5px solid var(--vn-info)"},
 		{"ui-components.css", `:where(body:not(.galaxy-page)) .gyst-segment[aria-pressed="true"]`, "background", "var(--vn-accent)"},
 		{"ui-components.css", `:where(body:not(.galaxy-page)) .gyst-segment[aria-current="page"]`, "color", "var(--vn-on-accent)"},
 		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-switch:checked", "background", "var(--vn-accent)"},
@@ -311,6 +318,31 @@ func TestMakeoverColourSwaps(t *testing.T) {
 			t.Errorf("%s: no %s declaration on %s", s.file, s.prop, s.selector)
 		} else if got != s.want {
 			t.Errorf("%s: %s { %s: %s }, want %s", s.file, s.selector, s.prop, got, s.want)
+		}
+	}
+}
+
+// The primary button's hover fill is the accent with 14% ink mixed in. It must differ from the resting
+// fill in both themes (in dark, accent-text equals the accent, so that token showed no change) and keep
+// the label at 4.5:1.
+func TestPrimaryButtonHoverIsDistinctAndReadable(t *testing.T) {
+	channel := func(hex string, i int) float64 {
+		n, _ := strconv.ParseUint(hex[i:i+2], 16, 8)
+		return float64(n)
+	}
+	light, _, dark := themeBlocks(t, accentsCSS)
+	for theme, block := range map[string]cssRule{"light": light, "dark": dark} {
+		accent, ink, label := block.Decls["--vn-accent"], block.Decls["--vn-ink"], block.Decls["--vn-on-accent"]
+		hover := "#"
+		for _, i := range []int{1, 3, 5} {
+			hover += strings.ToUpper(hex.EncodeToString([]byte{byte(math.Round(0.86*channel(accent, i) + 0.14*channel(ink, i)))}))
+		}
+		if hover == strings.ToUpper(accent) {
+			t.Errorf("%s: hover fill %s equals the resting fill", theme, hover)
+		}
+		rest, over := contrastRatio(t, label, accent), contrastRatio(t, label, hover)
+		if over < 4.5 || over < rest {
+			t.Errorf("%s: label %s on hover %s is %.2f:1 (resting %.2f:1); it needs 4.5:1 and must not drop", theme, label, hover, over, rest)
 		}
 	}
 }
