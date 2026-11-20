@@ -27,16 +27,27 @@ func ParseTypedNumber(raw string, thousands bool) (float64, bool) {
 	return v, err == nil
 }
 
-// validThousands reports whether every comma in s sits between a leading group
-// of 1-3 digits and groups of exactly 3, before any decimal dot.
+// validThousands reports whether s is [1-9]\d{0,2}(,\d{3})+ with an optional
+// .digits tail. Anything else (a comma after the dot, "2.000,00", a leading
+// zero as in "0,125") is not a thousands number and falls back to the diary
+// rule, so it is refused instead of silently reinterpreted.
 func validThousands(s string) bool {
-	if !strings.Contains(s, ",") {
+	whole, frac, hasDot := strings.Cut(s, ".")
+	if !strings.Contains(whole, ",") {
 		return false
 	}
-	whole, _, _ := strings.Cut(s, ".")
-	groups := strings.Split(whole, ",")
-	for i, g := range groups {
-		if i == 0 && (len(g) < 1 || len(g) > 3) || i > 0 && len(g) != 3 {
+	if hasDot {
+		if frac == "" {
+			return false
+		}
+		for _, c := range frac {
+			if c < '0' || c > '9' {
+				return false
+			}
+		}
+	}
+	for i, g := range strings.Split(whole, ",") {
+		if i == 0 && (len(g) < 1 || len(g) > 3 || g[0] == '0') || i > 0 && len(g) != 3 {
 			return false
 		}
 		for _, c := range g {

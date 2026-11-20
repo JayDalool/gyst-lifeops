@@ -111,7 +111,7 @@ func TestParseHealthReferenceThousandsComma(t *testing.T) {
 		return map[string]*float64{"kcal": t.Kcal, "protein": t.ProteinG, "carbs": t.CarbsG, "fat": t.FatG, "fiber": t.FiberG}[name]
 	}
 	for name, setter := range set {
-		for raw, want := range map[string]float64{"2,000": 2000, "1,500": 1500, "2.5": 2.5, "2": 2, " 2 ": 2, "2,5": 2.5} {
+		for raw, want := range map[string]float64{"2,000": 2000, "1,500": 1500, "2.5": 2.5, "2": 2, " 2 ": 2, "2,5": 2.5, "1,000.5": 1000.5} {
 			f := refForm()
 			f.Kcal, f.Protein = "", ""
 			setter(&f, raw)
@@ -120,7 +120,7 @@ func TestParseHealthReferenceThousandsComma(t *testing.T) {
 				t.Errorf("%s %q: got %v %v, want %v", name, raw, v, err, want)
 			}
 		}
-		for _, raw := range []string{"2,00,0", "abc", "2,0000", "1,5,0"} {
+		for _, raw := range []string{"2,00,0", "abc", "2,0000", "1,5,0", "2.000,00", "1.000,5", "0,125", ",500"} {
 			f := refForm()
 			setter(&f, raw)
 			_, err := ParseHealthReference(f)
@@ -136,6 +136,19 @@ func TestParseTypedNumberMatchesDiaryRuleWithoutThousands(t *testing.T) {
 	for _, raw := range []string{"1,000", "2,000", "1,234"} {
 		if _, ok := ParseTypedNumber(raw, false); ok {
 			t.Errorf("%q must stay refused for the diary", raw)
+		}
+	}
+}
+
+func TestParseTypedNumberThousandsShapes(t *testing.T) {
+	for raw, want := range map[string]float64{"12,345,678": 12345678, "1,000.5": 1000.5, "999,999": 999999} {
+		if got, ok := ParseTypedNumber(raw, true); !ok || got != want {
+			t.Errorf("%q: got %v %v, want %v", raw, got, ok, want)
+		}
+	}
+	for _, raw := range []string{"2.000,00", "1.000,5", "0,125", ",500", "1,000."} {
+		if got, ok := ParseTypedNumber(raw, true); ok {
+			t.Errorf("%q: got %v, want refused", raw, got)
 		}
 	}
 }
