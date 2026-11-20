@@ -8,8 +8,9 @@ import (
 )
 
 // GYST-165: created_at has one-second resolution, so projects made in the same
-// second tied and SQLite returned them in either order. Ties now break by id
-// ASC (creation order, the order imports rely on); newest created_at stays first.
+// second tie. SQLite scans such ties in id order (creation order, which imports
+// rely on) as a plan accident; the explicit id ASC tiebreak now guarantees it.
+// Newest created_at stays first.
 func TestListProjectsOrdersNewestFirstThenLowerID(t *testing.T) {
 	repo := newTestRepo(t)
 	var ids []int64
