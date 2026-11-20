@@ -130,6 +130,13 @@ near-empty while the real data sits in `-wal`, and the copy looks fine.
 current must remain distinguishable all the way to the screen. Never render
 missing data as zero, and never invent a value to fill a gap.
 
+One exception (Jay, 2026-11-19; see 19A R1 and F4): food nutrition. The
+owner's own entered values always take priority. Where GYST's food data has
+no reliable match, the owner may review, adjust and save an AI estimate. It
+is stored and shown clearly labelled as an estimate, never as an observed
+value, and nothing is saved until the owner saves it. A nutrient the estimate
+does not give stays `NULL`.
+
 ### 3.3 Never sum Watch and phone steps
 
 The sources overlap, so adding them double-counts. Store and display them
