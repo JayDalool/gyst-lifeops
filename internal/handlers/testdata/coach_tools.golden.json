@@ -1,0 +1,795 @@
+{
+  "fixtures": {
+    "empty": {
+      "get_daily_checklist": [
+        {
+          "input": "{}",
+          "output": "{\"items\":[]}"
+        },
+        {
+          "input": "",
+          "output": "{\"items\":[]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"items\":[]}"
+        }
+      ],
+      "get_exercise_progress": [
+        {
+          "input": "",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "null",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":0}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":4}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":4}"
+        },
+        {
+          "input": "{\"weeks\":7}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":12}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":26}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":26}"
+        },
+        {
+          "input": "{\"weeks\":-4}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":4.5}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":\"26\"}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":null}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "[]",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        }
+      ],
+      "get_food_products": [
+        {
+          "input": "{}",
+          "output": "{\"foods\":[]}"
+        },
+        {
+          "input": "",
+          "output": "{\"foods\":[]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"foods\":[]}"
+        }
+      ],
+      "get_health_plan": [
+        {
+          "input": "{}",
+          "output": "{\"plan\":null,\"reference_targets\":[]}"
+        },
+        {
+          "input": "",
+          "output": "{\"plan\":null,\"reference_targets\":[]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"plan\":null,\"reference_targets\":[]}"
+        }
+      ],
+      "get_health_today": [
+        {
+          "input": "{}",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"none today\",\"burned_so_far_kcal\":null,\"calories_kcal\":{\"eaten\":null,\"partial\":false,\"target\":null},\"date\":\"2026-10-07\",\"energy_balance_so_far\":null,\"exercise_minutes\":null,\"intake_source\":\"none\",\"latest_weight_kg\":null,\"macros\":[{\"eaten_g\":null,\"name\":\"Protein\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Carbs\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Fat\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":null}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":null,\"source\":\"Apple Watch\",\"target\":null},\"sync_stale\":false,\"water\":{\"bottle_l\":null,\"logged_l\":null,\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":0,\"target_l\":null,\"target_reached\":null},\"weight_change_since_plan\":null}"
+        },
+        {
+          "input": "",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"none today\",\"burned_so_far_kcal\":null,\"calories_kcal\":{\"eaten\":null,\"partial\":false,\"target\":null},\"date\":\"2026-10-07\",\"energy_balance_so_far\":null,\"exercise_minutes\":null,\"intake_source\":\"none\",\"latest_weight_kg\":null,\"macros\":[{\"eaten_g\":null,\"name\":\"Protein\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Carbs\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Fat\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":null}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":null,\"source\":\"Apple Watch\",\"target\":null},\"sync_stale\":false,\"water\":{\"bottle_l\":null,\"logged_l\":null,\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":0,\"target_l\":null,\"target_reached\":null},\"weight_change_since_plan\":null}"
+        },
+        {
+          "input": "null",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"none today\",\"burned_so_far_kcal\":null,\"calories_kcal\":{\"eaten\":null,\"partial\":false,\"target\":null},\"date\":\"2026-10-07\",\"energy_balance_so_far\":null,\"exercise_minutes\":null,\"intake_source\":\"none\",\"latest_weight_kg\":null,\"macros\":[{\"eaten_g\":null,\"name\":\"Protein\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Carbs\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Fat\",\"note\":\"\",\"partial\":false,\"target_g\":null},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":null}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":null,\"source\":\"Apple Watch\",\"target\":null},\"sync_stale\":false,\"water\":{\"bottle_l\":null,\"logged_l\":null,\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":0,\"target_l\":null,\"target_reached\":null},\"weight_change_since_plan\":null}"
+        }
+      ],
+      "get_hevy_routines": [
+        {
+          "input": "{}",
+          "output": "{\"routines\":[]}"
+        },
+        {
+          "input": "",
+          "output": "{\"routines\":[]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"routines\":[]}"
+        }
+      ],
+      "get_recent_workouts": [
+        {
+          "input": "",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":0}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":1}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":3}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":5}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":99}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":-2}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":1.5}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":\"3\"}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":null}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "[]",
+          "output": "{\"workouts\":[]}"
+        }
+      ],
+      "get_training_summary": [
+        {
+          "input": "{}",
+          "output": "{\"muscle_groups_30_days\":[],\"this_week_workouts\":0,\"training_minutes\":0,\"volume_kg\":0,\"weekly_target\":0,\"workouts_per_week_oldest_first\":[0,0,0,0,0,0,0,0],\"workouts_without_end_time\":0}"
+        },
+        {
+          "input": "",
+          "output": "{\"muscle_groups_30_days\":[],\"this_week_workouts\":0,\"training_minutes\":0,\"volume_kg\":0,\"weekly_target\":0,\"workouts_per_week_oldest_first\":[0,0,0,0,0,0,0,0],\"workouts_without_end_time\":0}"
+        },
+        {
+          "input": "null",
+          "output": "{\"muscle_groups_30_days\":[],\"this_week_workouts\":0,\"training_minutes\":0,\"volume_kg\":0,\"weekly_target\":0,\"workouts_per_week_oldest_first\":[0,0,0,0,0,0,0,0],\"workouts_without_end_time\":0}"
+        }
+      ],
+      "get_weight_trend": [
+        {
+          "input": "{}",
+          "output": "{\"change\":\"\",\"change_is_between_7_day_averages\":false,\"change_since\":\"\",\"change_vs_previous_seven_days\":null,\"latest_kg\":null,\"previous_seven_day_average_kg\":null,\"readings_newest_first\":[],\"seven_day_average_days_used\":null,\"seven_day_average_kg\":null,\"seven_day_average_note\":\"\"}"
+        },
+        {
+          "input": "",
+          "output": "{\"change\":\"\",\"change_is_between_7_day_averages\":false,\"change_since\":\"\",\"change_vs_previous_seven_days\":null,\"latest_kg\":null,\"previous_seven_day_average_kg\":null,\"readings_newest_first\":[],\"seven_day_average_days_used\":null,\"seven_day_average_kg\":null,\"seven_day_average_note\":\"\"}"
+        },
+        {
+          "input": "null",
+          "output": "{\"change\":\"\",\"change_is_between_7_day_averages\":false,\"change_since\":\"\",\"change_vs_previous_seven_days\":null,\"latest_kg\":null,\"previous_seven_day_average_kg\":null,\"readings_newest_first\":[],\"seven_day_average_days_used\":null,\"seven_day_average_kg\":null,\"seven_day_average_note\":\"\"}"
+        }
+      ]
+    },
+    "seeded": {
+      "get_daily_checklist": [
+        {
+          "input": "{}",
+          "output": "{\"items\":[{\"done\":false,\"name\":\"Stretch \\u003c5 min\\u003e\"},{\"done\":false,\"measured\":\"96 / 180 g\",\"name\":\"Protein target\"}]}"
+        },
+        {
+          "input": "",
+          "output": "{\"items\":[{\"done\":false,\"name\":\"Stretch \\u003c5 min\\u003e\"},{\"done\":false,\"measured\":\"96 / 180 g\",\"name\":\"Protein target\"}]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"items\":[{\"done\":false,\"name\":\"Stretch \\u003c5 min\\u003e\"},{\"done\":false,\"measured\":\"96 / 180 g\",\"name\":\"Protein target\"}]}"
+        }
+      ],
+      "get_exercise_progress": [
+        {
+          "input": "",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "null",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":0}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":4}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":4}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":4}"
+        },
+        {
+          "input": "{\"weeks\":7}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":12}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":26}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":26}"
+        },
+        {
+          "input": "{\"weeks\":-4}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":4.5}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":\"26\"}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":null}",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "[]",
+          "output": "{\"exercises\":[{\"best_set\":\"80 kg × 8\",\"change_percent\":14,\"exercise\":\"Bench Press\",\"sessions\":2},{\"best_set\":\"100 kg × 5\",\"change_percent\":11,\"exercise\":\"Squat\",\"sessions\":2},{\"best_set\":\"50 kg × 10\",\"change_percent\":0,\"exercise\":\"Row\",\"sessions\":6}],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        }
+      ],
+      "get_food_products": [
+        {
+          "input": "{}",
+          "output": "{\"foods\":[{\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"kcal\":250,\"name\":\"Crème \\u003cfraîche\\u003e \\u0026 miel\",\"notes\":\"naïve \\u003cb\\u003enote\\u003c/b\\u003e \\u0026 日本語\",\"protein_g\":3,\"serving\":\"100 g\"},{\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"kcal\":null,\"name\":\"Plain skyr\",\"notes\":\"\",\"protein_g\":16,\"serving\":\"150 g\"}]}"
+        },
+        {
+          "input": "",
+          "output": "{\"foods\":[{\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"kcal\":250,\"name\":\"Crème \\u003cfraîche\\u003e \\u0026 miel\",\"notes\":\"naïve \\u003cb\\u003enote\\u003c/b\\u003e \\u0026 日本語\",\"protein_g\":3,\"serving\":\"100 g\"},{\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"kcal\":null,\"name\":\"Plain skyr\",\"notes\":\"\",\"protein_g\":16,\"serving\":\"150 g\"}]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"foods\":[{\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"kcal\":250,\"name\":\"Crème \\u003cfraîche\\u003e \\u0026 miel\",\"notes\":\"naïve \\u003cb\\u003enote\\u003c/b\\u003e \\u0026 日本語\",\"protein_g\":3,\"serving\":\"100 g\"},{\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"kcal\":null,\"name\":\"Plain skyr\",\"notes\":\"\",\"protein_g\":16,\"serving\":\"150 g\"}]}"
+        }
+      ],
+      "get_health_plan": [
+        {
+          "input": "{}",
+          "output": "{\"calories\":2300,\"carbs_g\":250,\"cardio_sessions_per_week\":2,\"end\":\"2027-03-31\",\"fat_g\":70,\"fiber_g\":30,\"goal\":\"Consistency\",\"protein_g\":180,\"reference_targets\":[{\"calories\":2000,\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"issued_on\":\"\",\"not_active\":true,\"notes\":\"\",\"protein_g\":null,\"source_kind\":\"device\",\"source_label\":\"Example device\"},{\"calories\":2100,\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"issued_on\":\"2026-10-02\",\"not_active\":true,\"notes\":\"\",\"protein_g\":150,\"source_kind\":\"dietitian\",\"source_label\":\"Example \\u003cdietitian\\u003e\"}],\"start\":\"2026-10-01\",\"step_target\":8000,\"strength_sessions_per_week\":3,\"target_daily_deficit_kcal\":300,\"title\":\"Autumn \\u003cplan\\u003e \\u0026 más\"}"
+        },
+        {
+          "input": "",
+          "output": "{\"calories\":2300,\"carbs_g\":250,\"cardio_sessions_per_week\":2,\"end\":\"2027-03-31\",\"fat_g\":70,\"fiber_g\":30,\"goal\":\"Consistency\",\"protein_g\":180,\"reference_targets\":[{\"calories\":2000,\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"issued_on\":\"\",\"not_active\":true,\"notes\":\"\",\"protein_g\":null,\"source_kind\":\"device\",\"source_label\":\"Example device\"},{\"calories\":2100,\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"issued_on\":\"2026-10-02\",\"not_active\":true,\"notes\":\"\",\"protein_g\":150,\"source_kind\":\"dietitian\",\"source_label\":\"Example \\u003cdietitian\\u003e\"}],\"start\":\"2026-10-01\",\"step_target\":8000,\"strength_sessions_per_week\":3,\"target_daily_deficit_kcal\":300,\"title\":\"Autumn \\u003cplan\\u003e \\u0026 más\"}"
+        },
+        {
+          "input": "null",
+          "output": "{\"calories\":2300,\"carbs_g\":250,\"cardio_sessions_per_week\":2,\"end\":\"2027-03-31\",\"fat_g\":70,\"fiber_g\":30,\"goal\":\"Consistency\",\"protein_g\":180,\"reference_targets\":[{\"calories\":2000,\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"issued_on\":\"\",\"not_active\":true,\"notes\":\"\",\"protein_g\":null,\"source_kind\":\"device\",\"source_label\":\"Example device\"},{\"calories\":2100,\"carbs_g\":null,\"fat_g\":null,\"fiber_g\":null,\"issued_on\":\"2026-10-02\",\"not_active\":true,\"notes\":\"\",\"protein_g\":150,\"source_kind\":\"dietitian\",\"source_label\":\"Example \\u003cdietitian\\u003e\"}],\"start\":\"2026-10-01\",\"step_target\":8000,\"strength_sessions_per_week\":3,\"target_daily_deficit_kcal\":300,\"title\":\"Autumn \\u003cplan\\u003e \\u0026 más\"}"
+        }
+      ],
+      "get_health_today": [
+        {
+          "input": "{}",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"just now\",\"burned_so_far_kcal\":\"1,410\",\"calories_kcal\":{\"budget_left\":\"850\",\"eaten\":\"1,450\",\"partial\":false,\"target\":\"2,300\"},\"date\":\"2026-10-07\",\"energy_balance_so_far\":\"+40\",\"exercise_minutes\":\"25\",\"intake_source\":\"apple_health\",\"latest_weight_kg\":\"82\",\"macros\":[{\"eaten_g\":\"96\",\"name\":\"Protein\",\"note\":\"84 g to go\",\"partial\":false,\"target_g\":\"180\"},{\"eaten_g\":\"150\",\"name\":\"Carbs\",\"note\":\"100 g to go\",\"partial\":false,\"target_g\":\"250\"},{\"eaten_g\":\"40\",\"name\":\"Fat\",\"note\":\"30 g to go\",\"partial\":false,\"target_g\":\"70\"},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":\"30\"}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":\"5,200\",\"source\":\"Apple Watch\",\"target\":\"8,000\"},\"sync_stale\":false,\"water\":{\"bottle_l\":\"1.5\",\"logged_l\":\"1.5\",\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":1,\"target_l\":\"3.0\",\"target_reached\":false},\"weight_change_since_plan\":\"−0.6 kg\"}"
+        },
+        {
+          "input": "",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"just now\",\"burned_so_far_kcal\":\"1,410\",\"calories_kcal\":{\"budget_left\":\"850\",\"eaten\":\"1,450\",\"partial\":false,\"target\":\"2,300\"},\"date\":\"2026-10-07\",\"energy_balance_so_far\":\"+40\",\"exercise_minutes\":\"25\",\"intake_source\":\"apple_health\",\"latest_weight_kg\":\"82\",\"macros\":[{\"eaten_g\":\"96\",\"name\":\"Protein\",\"note\":\"84 g to go\",\"partial\":false,\"target_g\":\"180\"},{\"eaten_g\":\"150\",\"name\":\"Carbs\",\"note\":\"100 g to go\",\"partial\":false,\"target_g\":\"250\"},{\"eaten_g\":\"40\",\"name\":\"Fat\",\"note\":\"30 g to go\",\"partial\":false,\"target_g\":\"70\"},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":\"30\"}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":\"5,200\",\"source\":\"Apple Watch\",\"target\":\"8,000\"},\"sync_stale\":false,\"water\":{\"bottle_l\":\"1.5\",\"logged_l\":\"1.5\",\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":1,\"target_l\":\"3.0\",\"target_reached\":false},\"weight_change_since_plan\":\"−0.6 kg\"}"
+        },
+        {
+          "input": "null",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"just now\",\"burned_so_far_kcal\":\"1,410\",\"calories_kcal\":{\"budget_left\":\"850\",\"eaten\":\"1,450\",\"partial\":false,\"target\":\"2,300\"},\"date\":\"2026-10-07\",\"energy_balance_so_far\":\"+40\",\"exercise_minutes\":\"25\",\"intake_source\":\"apple_health\",\"latest_weight_kg\":\"82\",\"macros\":[{\"eaten_g\":\"96\",\"name\":\"Protein\",\"note\":\"84 g to go\",\"partial\":false,\"target_g\":\"180\"},{\"eaten_g\":\"150\",\"name\":\"Carbs\",\"note\":\"100 g to go\",\"partial\":false,\"target_g\":\"250\"},{\"eaten_g\":\"40\",\"name\":\"Fat\",\"note\":\"30 g to go\",\"partial\":false,\"target_g\":\"70\"},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":\"30\"}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":\"5,200\",\"source\":\"Apple Watch\",\"target\":\"8,000\"},\"sync_stale\":false,\"water\":{\"bottle_l\":\"1.5\",\"logged_l\":\"1.5\",\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":1,\"target_l\":\"3.0\",\"target_reached\":false},\"weight_change_since_plan\":\"−0.6 kg\"}"
+        }
+      ],
+      "get_hevy_routines": [
+        {
+          "input": "{}",
+          "output": "{\"routines\":[{\"exercises\":[\"Bench Press\",\"Squat\"],\"title\":\"Routine \\u003cA\\u003e\"}]}"
+        },
+        {
+          "input": "",
+          "output": "{\"routines\":[{\"exercises\":[\"Bench Press\",\"Squat\"],\"title\":\"Routine \\u003cA\\u003e\"}]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"routines\":[{\"exercises\":[\"Bench Press\",\"Squat\"],\"title\":\"Routine \\u003cA\\u003e\"}]}"
+        }
+      ],
+      "get_recent_workouts": [
+        {
+          "input": "",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "{}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "{",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "{\"count\":0}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "{\"count\":1}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "{\"count\":3}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"},{\"date\":\"2026-10-04\",\"exercises\":[{\"best_set\":\"100 kg × 5\",\"muscle\":\"Quadriceps\",\"name\":\"Squat\",\"work_sets\":2},{\"best_set\":\"\",\"muscle\":\"Cardio\",\"name\":\"Bike\",\"work_sets\":1}],\"title\":\"Legs\"},{\"date\":\"2026-09-21\",\"exercises\":[{\"best_set\":\"50 kg × 10\",\"muscle\":\"Lats\",\"name\":\"Row\",\"work_sets\":1}],\"title\":\"Extra 4\"}]}"
+        },
+        {
+          "input": "{\"count\":5}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"},{\"date\":\"2026-10-04\",\"exercises\":[{\"best_set\":\"100 kg × 5\",\"muscle\":\"Quadriceps\",\"name\":\"Squat\",\"work_sets\":2},{\"best_set\":\"\",\"muscle\":\"Cardio\",\"name\":\"Bike\",\"work_sets\":1}],\"title\":\"Legs\"},{\"date\":\"2026-09-21\",\"exercises\":[{\"best_set\":\"50 kg × 10\",\"muscle\":\"Lats\",\"name\":\"Row\",\"work_sets\":1}],\"title\":\"Extra 4\"},{\"date\":\"2026-09-17\",\"exercises\":[{\"best_set\":\"70 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":1},{\"best_set\":\"90 kg × 5\",\"muscle\":\"Quadriceps\",\"name\":\"Squat\",\"work_sets\":1}],\"minutes\":50,\"title\":\"Push old\"},{\"date\":\"2026-09-17\",\"exercises\":[{\"best_set\":\"50 kg × 10\",\"muscle\":\"Lats\",\"name\":\"Row\",\"work_sets\":1}],\"title\":\"Extra 5\"}]}"
+        },
+        {
+          "input": "{\"count\":99}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"},{\"date\":\"2026-10-04\",\"exercises\":[{\"best_set\":\"100 kg × 5\",\"muscle\":\"Quadriceps\",\"name\":\"Squat\",\"work_sets\":2},{\"best_set\":\"\",\"muscle\":\"Cardio\",\"name\":\"Bike\",\"work_sets\":1}],\"title\":\"Legs\"},{\"date\":\"2026-09-21\",\"exercises\":[{\"best_set\":\"50 kg × 10\",\"muscle\":\"Lats\",\"name\":\"Row\",\"work_sets\":1}],\"title\":\"Extra 4\"},{\"date\":\"2026-09-17\",\"exercises\":[{\"best_set\":\"70 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":1},{\"best_set\":\"90 kg × 5\",\"muscle\":\"Quadriceps\",\"name\":\"Squat\",\"work_sets\":1}],\"minutes\":50,\"title\":\"Push old\"},{\"date\":\"2026-09-17\",\"exercises\":[{\"best_set\":\"50 kg × 10\",\"muscle\":\"Lats\",\"name\":\"Row\",\"work_sets\":1}],\"title\":\"Extra 5\"}]}"
+        },
+        {
+          "input": "{\"count\":-2}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "{\"count\":1.5}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "{\"count\":\"3\"}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "{\"count\":null}",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        },
+        {
+          "input": "[]",
+          "output": "{\"workouts\":[{\"date\":\"2026-10-06\",\"exercises\":[{\"best_set\":\"80 kg × 8\",\"muscle\":\"Chest\",\"name\":\"Bench Press\",\"work_sets\":2},{\"best_set\":\"\",\"incline_pct\":8,\"muscle\":\"Cardio\",\"name\":\"Treadmill\",\"sets\":[{\"duration_min\":20,\"incline_pct\":8,\"speed_kmh\":5}],\"speed_kmh\":5,\"work_sets\":1}],\"minutes\":55,\"title\":\"Push \\u003cday\\u003e \\u0026 core\"}]}"
+        }
+      ],
+      "get_training_summary": [
+        {
+          "input": "{}",
+          "output": "{\"muscle_groups_30_days\":[{\"group\":\"Back\",\"percent\":33,\"sets\":4},{\"group\":\"Chest\",\"percent\":25,\"sets\":3},{\"group\":\"Legs\",\"percent\":25,\"sets\":3},{\"group\":\"Other\",\"percent\":17,\"sets\":2}],\"this_week_workouts\":1,\"training_minutes\":55,\"volume_kg\":1135,\"weekly_target\":3,\"workouts_per_week_oldest_first\":[0,0,2,2,2,1,1,1],\"workouts_without_end_time\":0}"
+        },
+        {
+          "input": "",
+          "output": "{\"muscle_groups_30_days\":[{\"group\":\"Back\",\"percent\":33,\"sets\":4},{\"group\":\"Chest\",\"percent\":25,\"sets\":3},{\"group\":\"Legs\",\"percent\":25,\"sets\":3},{\"group\":\"Other\",\"percent\":17,\"sets\":2}],\"this_week_workouts\":1,\"training_minutes\":55,\"volume_kg\":1135,\"weekly_target\":3,\"workouts_per_week_oldest_first\":[0,0,2,2,2,1,1,1],\"workouts_without_end_time\":0}"
+        },
+        {
+          "input": "null",
+          "output": "{\"muscle_groups_30_days\":[{\"group\":\"Back\",\"percent\":33,\"sets\":4},{\"group\":\"Chest\",\"percent\":25,\"sets\":3},{\"group\":\"Legs\",\"percent\":25,\"sets\":3},{\"group\":\"Other\",\"percent\":17,\"sets\":2}],\"this_week_workouts\":1,\"training_minutes\":55,\"volume_kg\":1135,\"weekly_target\":3,\"workouts_per_week_oldest_first\":[0,0,2,2,2,1,1,1],\"workouts_without_end_time\":0}"
+        }
+      ],
+      "get_weight_trend": [
+        {
+          "input": "{}",
+          "output": "{\"change\":\"−0.6 kg\",\"change_is_between_7_day_averages\":false,\"change_since\":\"Oct 1\",\"change_vs_previous_seven_days\":\"−0.1 kg\",\"latest_kg\":\"82\",\"previous_seven_day_average_kg\":\"82.4\",\"readings_newest_first\":[{\"date\":\"2026-10-07\",\"kg\":82},{\"date\":\"2026-10-06\",\"kg\":82.1},{\"date\":\"2026-10-05\",\"kg\":82.2},{\"date\":\"2026-10-04\",\"kg\":82.3},{\"date\":\"2026-10-03\",\"kg\":82.4},{\"date\":\"2026-10-02\",\"kg\":82.5},{\"date\":\"2026-10-01\",\"kg\":82.6},{\"date\":\"2026-09-30\",\"kg\":82.7},{\"date\":\"2026-09-29\",\"kg\":82.8},{\"date\":\"2026-09-28\",\"kg\":82},{\"date\":\"2026-09-27\",\"kg\":82.1},{\"date\":\"2026-09-26\",\"kg\":82.2},{\"date\":\"2026-09-25\",\"kg\":82.3},{\"date\":\"2026-09-24\",\"kg\":82.4},{\"date\":\"2026-09-23\",\"kg\":82.5},{\"date\":\"2026-09-22\",\"kg\":82.6},{\"date\":\"2026-09-21\",\"kg\":82.7},{\"date\":\"2026-09-20\",\"kg\":82.8},{\"date\":\"2026-09-19\",\"kg\":82},{\"date\":\"2026-09-18\",\"kg\":82.1},{\"date\":\"2026-09-17\",\"kg\":82.2},{\"date\":\"2026-09-16\",\"kg\":82.3},{\"date\":\"2026-09-15\",\"kg\":82.4},{\"date\":\"2026-09-14\",\"kg\":82.5},{\"date\":\"2026-09-13\",\"kg\":82.6},{\"date\":\"2026-09-12\",\"kg\":82.7},{\"date\":\"2026-09-11\",\"kg\":82.8},{\"date\":\"2026-09-10\",\"kg\":82},{\"date\":\"2026-09-09\",\"kg\":82.1},{\"date\":\"2026-09-08\",\"kg\":82.2}],\"seven_day_average_days_used\":7,\"seven_day_average_kg\":\"82.3\",\"seven_day_average_note\":\"7-day average 82.3 kg · 7 days\"}"
+        },
+        {
+          "input": "",
+          "output": "{\"change\":\"−0.6 kg\",\"change_is_between_7_day_averages\":false,\"change_since\":\"Oct 1\",\"change_vs_previous_seven_days\":\"−0.1 kg\",\"latest_kg\":\"82\",\"previous_seven_day_average_kg\":\"82.4\",\"readings_newest_first\":[{\"date\":\"2026-10-07\",\"kg\":82},{\"date\":\"2026-10-06\",\"kg\":82.1},{\"date\":\"2026-10-05\",\"kg\":82.2},{\"date\":\"2026-10-04\",\"kg\":82.3},{\"date\":\"2026-10-03\",\"kg\":82.4},{\"date\":\"2026-10-02\",\"kg\":82.5},{\"date\":\"2026-10-01\",\"kg\":82.6},{\"date\":\"2026-09-30\",\"kg\":82.7},{\"date\":\"2026-09-29\",\"kg\":82.8},{\"date\":\"2026-09-28\",\"kg\":82},{\"date\":\"2026-09-27\",\"kg\":82.1},{\"date\":\"2026-09-26\",\"kg\":82.2},{\"date\":\"2026-09-25\",\"kg\":82.3},{\"date\":\"2026-09-24\",\"kg\":82.4},{\"date\":\"2026-09-23\",\"kg\":82.5},{\"date\":\"2026-09-22\",\"kg\":82.6},{\"date\":\"2026-09-21\",\"kg\":82.7},{\"date\":\"2026-09-20\",\"kg\":82.8},{\"date\":\"2026-09-19\",\"kg\":82},{\"date\":\"2026-09-18\",\"kg\":82.1},{\"date\":\"2026-09-17\",\"kg\":82.2},{\"date\":\"2026-09-16\",\"kg\":82.3},{\"date\":\"2026-09-15\",\"kg\":82.4},{\"date\":\"2026-09-14\",\"kg\":82.5},{\"date\":\"2026-09-13\",\"kg\":82.6},{\"date\":\"2026-09-12\",\"kg\":82.7},{\"date\":\"2026-09-11\",\"kg\":82.8},{\"date\":\"2026-09-10\",\"kg\":82},{\"date\":\"2026-09-09\",\"kg\":82.1},{\"date\":\"2026-09-08\",\"kg\":82.2}],\"seven_day_average_days_used\":7,\"seven_day_average_kg\":\"82.3\",\"seven_day_average_note\":\"7-day average 82.3 kg · 7 days\"}"
+        },
+        {
+          "input": "null",
+          "output": "{\"change\":\"−0.6 kg\",\"change_is_between_7_day_averages\":false,\"change_since\":\"Oct 1\",\"change_vs_previous_seven_days\":\"−0.1 kg\",\"latest_kg\":\"82\",\"previous_seven_day_average_kg\":\"82.4\",\"readings_newest_first\":[{\"date\":\"2026-10-07\",\"kg\":82},{\"date\":\"2026-10-06\",\"kg\":82.1},{\"date\":\"2026-10-05\",\"kg\":82.2},{\"date\":\"2026-10-04\",\"kg\":82.3},{\"date\":\"2026-10-03\",\"kg\":82.4},{\"date\":\"2026-10-02\",\"kg\":82.5},{\"date\":\"2026-10-01\",\"kg\":82.6},{\"date\":\"2026-09-30\",\"kg\":82.7},{\"date\":\"2026-09-29\",\"kg\":82.8},{\"date\":\"2026-09-28\",\"kg\":82},{\"date\":\"2026-09-27\",\"kg\":82.1},{\"date\":\"2026-09-26\",\"kg\":82.2},{\"date\":\"2026-09-25\",\"kg\":82.3},{\"date\":\"2026-09-24\",\"kg\":82.4},{\"date\":\"2026-09-23\",\"kg\":82.5},{\"date\":\"2026-09-22\",\"kg\":82.6},{\"date\":\"2026-09-21\",\"kg\":82.7},{\"date\":\"2026-09-20\",\"kg\":82.8},{\"date\":\"2026-09-19\",\"kg\":82},{\"date\":\"2026-09-18\",\"kg\":82.1},{\"date\":\"2026-09-17\",\"kg\":82.2},{\"date\":\"2026-09-16\",\"kg\":82.3},{\"date\":\"2026-09-15\",\"kg\":82.4},{\"date\":\"2026-09-14\",\"kg\":82.5},{\"date\":\"2026-09-13\",\"kg\":82.6},{\"date\":\"2026-09-12\",\"kg\":82.7},{\"date\":\"2026-09-11\",\"kg\":82.8},{\"date\":\"2026-09-10\",\"kg\":82},{\"date\":\"2026-09-09\",\"kg\":82.1},{\"date\":\"2026-09-08\",\"kg\":82.2}],\"seven_day_average_days_used\":7,\"seven_day_average_kg\":\"82.3\",\"seven_day_average_note\":\"7-day average 82.3 kg · 7 days\"}"
+        }
+      ]
+    },
+    "unavailable": {
+      "get_daily_checklist": [
+        {
+          "input": "{}",
+          "output": "{\"items\":[{\"done\":false,\"name\":\"Stretch \\u003c5 min\\u003e\"},{\"done\":false,\"measured\":\"96 / 180 g\",\"name\":\"Protein target\"}]}"
+        },
+        {
+          "input": "",
+          "output": "{\"items\":[{\"done\":false,\"name\":\"Stretch \\u003c5 min\\u003e\"},{\"done\":false,\"measured\":\"96 / 180 g\",\"name\":\"Protein target\"}]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"items\":[{\"done\":false,\"name\":\"Stretch \\u003c5 min\\u003e\"},{\"done\":false,\"measured\":\"96 / 180 g\",\"name\":\"Protein target\"}]}"
+        }
+      ],
+      "get_exercise_progress": [
+        {
+          "input": "",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "null",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":0}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":4}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":4}"
+        },
+        {
+          "input": "{\"weeks\":7}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":12}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":26}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":26}"
+        },
+        {
+          "input": "{\"weeks\":-4}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":4.5}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":\"26\"}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "{\"weeks\":null}",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        },
+        {
+          "input": "[]",
+          "output": "{\"exercises\":[],\"note\":\"Only exercises logged in two or more sessions in the window appear.\",\"weeks\":12}"
+        }
+      ],
+      "get_food_products": [
+        {
+          "input": "{}",
+          "error": "data unavailable"
+        },
+        {
+          "input": "",
+          "error": "data unavailable"
+        },
+        {
+          "input": "null",
+          "error": "data unavailable"
+        }
+      ],
+      "get_health_plan": [
+        {
+          "input": "{}",
+          "error": "data unavailable"
+        },
+        {
+          "input": "",
+          "error": "data unavailable"
+        },
+        {
+          "input": "null",
+          "error": "data unavailable"
+        }
+      ],
+      "get_health_today": [
+        {
+          "input": "{}",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"just now\",\"burned_so_far_kcal\":\"1,410\",\"calories_kcal\":{\"budget_left\":\"850\",\"eaten\":\"1,450\",\"partial\":false,\"target\":\"2,300\"},\"date\":\"2026-10-07\",\"energy_balance_so_far\":\"+40\",\"exercise_minutes\":\"25\",\"intake_source\":\"apple_health\",\"latest_weight_kg\":\"82\",\"macros\":[{\"eaten_g\":\"96\",\"name\":\"Protein\",\"note\":\"84 g to go\",\"partial\":false,\"target_g\":\"180\"},{\"eaten_g\":\"150\",\"name\":\"Carbs\",\"note\":\"100 g to go\",\"partial\":false,\"target_g\":\"250\"},{\"eaten_g\":\"40\",\"name\":\"Fat\",\"note\":\"30 g to go\",\"partial\":false,\"target_g\":\"70\"},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":\"30\"}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":\"5,200\",\"source\":\"Apple Watch\",\"target\":\"8,000\"},\"sync_stale\":false,\"water\":{\"bottle_l\":\"1.5\",\"logged_l\":\"1.5\",\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":1,\"target_l\":\"3.0\",\"target_reached\":false},\"weight_change_since_plan\":\"−0.6 kg\"}"
+        },
+        {
+          "input": "",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"just now\",\"burned_so_far_kcal\":\"1,410\",\"calories_kcal\":{\"budget_left\":\"850\",\"eaten\":\"1,450\",\"partial\":false,\"target\":\"2,300\"},\"date\":\"2026-10-07\",\"energy_balance_so_far\":\"+40\",\"exercise_minutes\":\"25\",\"intake_source\":\"apple_health\",\"latest_weight_kg\":\"82\",\"macros\":[{\"eaten_g\":\"96\",\"name\":\"Protein\",\"note\":\"84 g to go\",\"partial\":false,\"target_g\":\"180\"},{\"eaten_g\":\"150\",\"name\":\"Carbs\",\"note\":\"100 g to go\",\"partial\":false,\"target_g\":\"250\"},{\"eaten_g\":\"40\",\"name\":\"Fat\",\"note\":\"30 g to go\",\"partial\":false,\"target_g\":\"70\"},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":\"30\"}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":\"5,200\",\"source\":\"Apple Watch\",\"target\":\"8,000\"},\"sync_stale\":false,\"water\":{\"bottle_l\":\"1.5\",\"logged_l\":\"1.5\",\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":1,\"target_l\":\"3.0\",\"target_reached\":false},\"weight_change_since_plan\":\"−0.6 kg\"}"
+        },
+        {
+          "input": "null",
+          "output": "{\"apple_health_kcal_not_counted\":null,\"apple_health_last_sync\":\"just now\",\"burned_so_far_kcal\":\"1,410\",\"calories_kcal\":{\"budget_left\":\"850\",\"eaten\":\"1,450\",\"partial\":false,\"target\":\"2,300\"},\"date\":\"2026-10-07\",\"energy_balance_so_far\":\"+40\",\"exercise_minutes\":\"25\",\"intake_source\":\"apple_health\",\"latest_weight_kg\":\"82\",\"macros\":[{\"eaten_g\":\"96\",\"name\":\"Protein\",\"note\":\"84 g to go\",\"partial\":false,\"target_g\":\"180\"},{\"eaten_g\":\"150\",\"name\":\"Carbs\",\"note\":\"100 g to go\",\"partial\":false,\"target_g\":\"250\"},{\"eaten_g\":\"40\",\"name\":\"Fat\",\"note\":\"30 g to go\",\"partial\":false,\"target_g\":\"70\"},{\"eaten_g\":null,\"name\":\"Fiber\",\"note\":\"\",\"partial\":false,\"target_g\":\"30\"}],\"note_on_balance\":\"Observed so far today; the day isn't over, so this is not a final deficit.\",\"steps\":{\"count\":\"5,200\",\"source\":\"Apple Watch\",\"target\":\"8,000\"},\"sync_stale\":false,\"water\":{\"bottle_l\":\"1.5\",\"logged_l\":\"1.5\",\"note\":\"Logged by bottle taps on Today; taps_today counts taps, not litres. null means nothing logged, not zero. GYST stops adding bottles at the target, so the real amount may be higher. Nothing is estimated from food or Apple Health.\",\"taps_today\":1,\"target_l\":\"3.0\",\"target_reached\":false},\"weight_change_since_plan\":\"−0.6 kg\"}"
+        }
+      ],
+      "get_hevy_routines": [
+        {
+          "input": "{}",
+          "output": "{\"routines\":[]}"
+        },
+        {
+          "input": "",
+          "output": "{\"routines\":[]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"routines\":[]}"
+        }
+      ],
+      "get_recent_workouts": [
+        {
+          "input": "",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "null",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":0}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":1}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":3}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":5}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":99}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":-2}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":1.5}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":\"3\"}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "{\"count\":null}",
+          "output": "{\"workouts\":[]}"
+        },
+        {
+          "input": "[]",
+          "output": "{\"workouts\":[]}"
+        }
+      ],
+      "get_training_summary": [
+        {
+          "input": "{}",
+          "output": "{\"muscle_groups_30_days\":[],\"this_week_workouts\":0,\"training_minutes\":0,\"volume_kg\":0,\"weekly_target\":0,\"workouts_per_week_oldest_first\":[0,0,0,0,0,0,0,0],\"workouts_without_end_time\":0}"
+        },
+        {
+          "input": "",
+          "output": "{\"muscle_groups_30_days\":[],\"this_week_workouts\":0,\"training_minutes\":0,\"volume_kg\":0,\"weekly_target\":0,\"workouts_per_week_oldest_first\":[0,0,0,0,0,0,0,0],\"workouts_without_end_time\":0}"
+        },
+        {
+          "input": "null",
+          "output": "{\"muscle_groups_30_days\":[],\"this_week_workouts\":0,\"training_minutes\":0,\"volume_kg\":0,\"weekly_target\":0,\"workouts_per_week_oldest_first\":[0,0,0,0,0,0,0,0],\"workouts_without_end_time\":0}"
+        }
+      ],
+      "get_weight_trend": [
+        {
+          "input": "{}",
+          "error": "data unavailable"
+        },
+        {
+          "input": "",
+          "error": "data unavailable"
+        },
+        {
+          "input": "null",
+          "error": "data unavailable"
+        }
+      ]
+    }
+  },
+  "schemas": {
+    "get_daily_checklist": {
+      "description": "Today's checklist: Jay's own habits (done or not) and measured targets.",
+      "name": "get_daily_checklist",
+      "properties": null,
+      "required": null
+    },
+    "get_exercise_progress": {
+      "description": "Change in best estimated 1-rep max per exercise (exercises with 2+ sessions). Input: weeks (4, 12 or 26).",
+      "name": "get_exercise_progress",
+      "properties": {
+        "weeks": {
+          "enum": [
+            4,
+            12,
+            26
+          ],
+          "type": "integer"
+        }
+      },
+      "required": null
+    },
+    "get_food_products": {
+      "description": "Foods and products Jay usually has, with per-serving nutrition (null = unknown).",
+      "name": "get_food_products",
+      "properties": null,
+      "required": null
+    },
+    "get_health_plan": {
+      "description": "The current health plan: dates and daily targets (calories, macros, steps, strength and cardio sessions per week), plus reference_targets: outside recommendations (for example a dietitian) labelled with their source, all not_active. Never present a reference target as the active plan.",
+      "name": "get_health_plan",
+      "properties": null,
+      "required": null
+    },
+    "get_health_today": {
+      "description": "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight.",
+      "name": "get_health_today",
+      "properties": null,
+      "required": null
+    },
+    "get_hevy_routines": {
+      "description": "Jay's Hevy routines and their exercises.",
+      "name": "get_hevy_routines",
+      "properties": null,
+      "required": null
+    },
+    "get_recent_workouts": {
+      "description": "The most recent Hevy workouts with each exercise's best set. Input: count (1-5).",
+      "name": "get_recent_workouts",
+      "properties": {
+        "count": {
+          "maximum": 5,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": null
+    },
+    "get_training_summary": {
+      "description": "This week's workouts against the plan target, volume, training time, workouts per week for 8 weeks, and muscle-group shares over 30 days.",
+      "name": "get_training_summary",
+      "properties": null,
+      "required": null
+    },
+    "get_weight_trend": {
+      "description": "Weight readings from the last 90 days (date, kg), latest reading, the 7-day average (null when fewer than 4 days have readings) and change since the plan started.",
+      "name": "get_weight_trend",
+      "properties": null,
+      "required": null
+    },
+    "suggest_gyst_page": {
+      "description": "Attach one button that opens a GYST Health page relevant to your answer. Use at most once, only when the page helps.",
+      "name": "suggest_gyst_page",
+      "properties": {
+        "destination": {
+          "enum": [
+            "health_checklist",
+            "health_foods",
+            "health_log_weight",
+            "health_more",
+            "health_nutrition",
+            "health_plan",
+            "health_progress",
+            "health_today",
+            "health_workout",
+            "health_workout_progress"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "destination"
+      ]
+    }
+  },
+  "suggest_gyst_page_runs": [
+    {
+      "input": "{\"destination\":\"health_today\"}",
+      "output": "{\"ok\":true}",
+      "chosen": "health_today"
+    },
+    {
+      "input": "{\"destination\":\"health_workout_progress\"}",
+      "output": "{\"ok\":true}",
+      "chosen": "health_workout_progress"
+    },
+    {
+      "input": "{\"destination\":\"https://evil.example\"}",
+      "error": "unknown destination"
+    },
+    {
+      "input": "{\"destination\":\"\"}",
+      "error": "unknown destination"
+    },
+    {
+      "input": "{}",
+      "error": "unknown destination"
+    },
+    {
+      "input": "{",
+      "error": "invalid input"
+    },
+    {
+      "input": "",
+      "error": "invalid input"
+    },
+    {
+      "input": "null",
+      "error": "unknown destination"
+    }
+  ],
+  "tool_order": [
+    "get_health_today",
+    "get_health_plan",
+    "get_weight_trend",
+    "get_training_summary",
+    "get_recent_workouts",
+    "get_exercise_progress",
+    "get_hevy_routines",
+    "get_food_products",
+    "get_daily_checklist",
+    "suggest_gyst_page"
+  ]
+}
