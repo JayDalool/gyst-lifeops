@@ -18,7 +18,7 @@
 .today-page .task-title a { display: flex; align-items: center; min-height: 44px; color: var(--gyst-text); overflow-wrap: anywhere; }
 .today-page .task-meta, .today-page .task-when, .today-page .meta { color: var(--gyst-text-secondary); font-size: .8125rem; line-height: 1.5; }
 .today-page .task form { margin: 0; }
-.today-page input[type="checkbox"] { appearance: auto; width: 24px; height: 24px; margin: 10px; accent-color: #2563eb; cursor: pointer; }
+.today-page input[type="checkbox"] { appearance: auto; width: 24px; height: 24px; margin: 10px; accent-color: var(--vn-accent); cursor: pointer; }
 .today-page .task input:disabled { cursor: default; }
 .today-page .btn { min-width: 44px; min-height: 44px; color: var(--gyst-blue); border: 1px solid var(--gyst-border); background: var(--gyst-surface); border-radius: var(--gyst-radius-sm); padding: 8px 12px; white-space: normal; }
 .today-page .btn:hover { background: var(--gyst-blue-soft); }

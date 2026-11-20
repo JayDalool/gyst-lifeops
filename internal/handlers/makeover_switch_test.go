@@ -283,6 +283,8 @@ func TestMakeoverColourSwaps(t *testing.T) {
 		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-choice input", "accent-color", "var(--vn-accent)"},
 		{"ui-shell.css", ":where(body:not(.galaxy-page)) .gyst-skip", "background", "var(--vn-accent)"},
 		{"ui-projects.css", `.projects-ui input[type="checkbox"]`, "accent-color", "var(--vn-accent)"},
+		// The one edit in ui-today.css, colour only (lead ruling): the checkbox beside the accent "Add task".
+		{"ui-today.css", `.today-page input[type="checkbox"]`, "accent-color", "var(--vn-accent)"},
 		// Galaxy reads these base rules, so they keep the literal it had.
 		{"ui-components.css", ".gyst-button:hover", "background", "#1d4ed8"},
 		{"ui-components.css", ".gyst-switch:checked", "background", "#2563eb"},
