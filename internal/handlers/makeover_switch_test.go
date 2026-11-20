@@ -255,9 +255,10 @@ func TestMakeoverColourSwaps(t *testing.T) {
 		{"ui-health-v3.css", `.hv3-tabbar > a[aria-current="page"]`, "color", "var(--vn-accent-text)"},
 		{"ui-health-v3.css", ".hv3 a", "color", "var(--vn-accent-text)"},
 		{"ui-health-v3.css", ".hv3-disclose > summary", "color", "var(--vn-accent-text)"},
-		{"ui-health-v3.css", ".hv3-days .is-today", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-days .is-today", "color", "var(--vn-info-text)"}, // "today" is a state (lead rule)
 		{"ui-health-v3.css", ".hv3-tile", "color", "var(--vn-accent-text)"},
-		{"ui-health-v3.css", ".hv3-kdays span.today", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-kdays span.today", "color", "var(--vn-info-text)"},
+		{"ui-health-v3.css", ".hv3-kbars span.today", "background", "var(--vn-info)"},
 		{"ui-health-v3.css", ".hv3-av", "color", "var(--vn-accent-text)"},
 		{"ui-health-v3.css", ".hv3-tile-h a:hover", "color", "var(--vn-accent-text)"},
 		{"ui-health-v3.css", ".hv3-logw", "color", "var(--vn-accent-text)"},
@@ -435,6 +436,11 @@ func TestStateSelectorsNeverResolveToTheAccent(t *testing.T) {
 		{"ui-health-v3.css", ".hv3-day.done"},
 		{"ui-health-v3.css", ".hv3-check.done"},
 		{"ui-training.css", ".training-ui .training-day.done"},
+		// Lead rule: "now, current, today, active item" indicators are states.
+		{"ui-health-v3.css", ".hv3-days .is-today"},
+		{"ui-health-v3.css", ".hv3-days .is-today .hv3-day"},
+		{"ui-health-v3.css", ".hv3-kbars span.today"},
+		{"ui-health-v3.css", ".hv3-kdays span.today"},
 	}
 	parsed := map[string][]cssRule{}
 	for _, s := range states {
@@ -467,7 +473,7 @@ func TestAccentFillsCarryOnAccent(t *testing.T) {
 	graphics := map[string]bool{
 		// Bars, dots and knobs: nothing is written on them.
 		":root .progress span": true, ".goal-row-bar .progress > span": true, ".hv3-bar i": true, ".hv3-weekbars span": true,
-		".hv3-kbars span.today": true, ":root .switch input:checked + i::after": true, ".gyst-switch:checked": true,
+		":root .switch input:checked + i::after": true, ".gyst-switch:checked": true,
 		".training-ui .training-bar i": true,
 		// Galaxy's own state dot; the page is pinned (E1).
 		":root .galaxy-state.state-active, :root .galaxy-state.state-current": true,
