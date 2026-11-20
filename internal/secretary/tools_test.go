@@ -58,7 +58,7 @@ func TestRegistryEqualsAllowlist(t *testing.T) {
 	want := []string{
 		"get_health_today", "get_health_plan", "get_weight_trend", "get_training_summary", "get_recent_workouts",
 		"get_exercise_progress", "get_hevy_routines", "get_food_products", "get_daily_checklist",
-		"list_tasks", "list_projects", "get_prayer_times", "get_courses",
+		"get_day_brief", "list_tasks", "list_projects", "get_prayer_times", "get_courses",
 	}
 	cat := catalogue(t, secretarytest.New(t))
 	var got []string

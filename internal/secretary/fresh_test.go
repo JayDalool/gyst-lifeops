@@ -189,11 +189,21 @@ func TestEnsureFreshBusyAndThrottled(t *testing.T) {
 }
 
 func TestEnsureFreshUnconnectedAndNeverSynced(t *testing.T) {
-	t.Run("not connected", func(t *testing.T) {
+	t.Run("not connected, nothing stored", func(t *testing.T) {
 		e := secretarytest.New(t)
-		e.SeedHevy(e.Svc.Now().Add(-2 * time.Hour))
 		got := freshener(e, time.Second).EnsureFresh(context.Background(), secretary.SourceHevy)[secretary.SourceHevy]
 		if got.Connected || !got.Stale || !got.AsOf.IsZero() {
+			t.Fatalf("%+v", got)
+		}
+	})
+	t.Run("not connected, rows stored earlier", func(t *testing.T) {
+		// The stored rows keep their real age: nothing is synced, and the answer
+		// says so rather than pretending the copy is new or absent.
+		e := secretarytest.New(t)
+		stored := e.Svc.Now().Add(-2 * time.Hour)
+		e.SeedHevy(stored)
+		got := freshener(e, time.Second).EnsureFresh(context.Background(), secretary.SourceHevy)[secretary.SourceHevy]
+		if got.Connected || !got.Stale || !got.AsOf.Equal(stored) {
 			t.Fatalf("%+v", got)
 		}
 	})

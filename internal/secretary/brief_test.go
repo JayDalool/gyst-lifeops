@@ -1,0 +1,370 @@
+package secretary_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"strings"
+	"testing"
+	"time"
+	"unicode/utf8"
+
+	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/secretary"
+	"lifeops-tracker/internal/secretary/secretarytest"
+)
+
+func briefCatalogue(t *testing.T, e *secretarytest.Env, h secretarytest.FakeHealth, cal secretary.CalendarReader) *secretary.Catalogue {
+	t.Helper()
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: h, Calendar: cal, Budget: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	return cat
+}
+
+func build(t *testing.T, cat *secretary.Catalogue, date string) ([]byte, map[string]any) {
+	t.Helper()
+	day, err := secretary.ResolveDate(date, cat.Clock())
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := cat.BuildDayBrief(day)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatalf("brief is not JSON: %v\n%s", err, raw)
+	}
+	return raw, m
+}
+
+func addTasks(t *testing.T, e *secretarytest.Env, n int, title func(i int) string) {
+	t.Helper()
+	for i := 0; i < n; i++ {
+		task := models.Task{Title: title(i), Category: "personal", Priority: "medium", Status: "pending", DueDate: secretarytest.Today, RepeatType: "none"}
+		if err := e.Svc.Repo.CreateTask(&task); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func counts(t *testing.T, m map[string]any) (tasksListed, tasksTotal, tasksMore, evListed, evTotal, evMore int) {
+	t.Helper()
+	tk := m["tasks"].(map[string]any)
+	ca := m["calendar"].(map[string]any)
+	tasksListed, tasksTotal, tasksMore = len(tk["titles"].([]any)), int(tk["due"].(float64)), int(tk["more"].(float64))
+	evListed, evTotal, evMore = len(ca["events"].([]any)), int(ca["total"].(float64)), int(ca["more"].(float64))
+	return
+}
+
+func TestDayBriefBudget(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-10 * time.Minute))
+	addTasks(t, e, 50, func(i int) string { return fmt.Sprintf("Fictional task number %d", i+1) })
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, secretarytest.FakeCalendar{N: 30})
+	raw, m := build(t, cat, "today")
+	if len(raw) > secretary.BriefBudget {
+		t.Fatalf("%d bytes", len(raw))
+	}
+	tl, tt, tm, el, et, em := counts(t, m)
+	if tt != 50 || tl+tm != tt || et != 30 || el+em != et || tl != 5 || el == 0 {
+		t.Fatalf("tasks %d+%d/%d events %d+%d/%d", tl, tm, tt, el, em, et)
+	}
+	// Sections come in this fixed order, with nothing cut.
+	last := -1
+	for _, key := range []string{`"now"`, `"prayer"`, `"tasks"`, `"calendar"`, `"health"`, `"training"`, `"mail"`, `"sync"`} {
+		i := strings.Index(string(raw), key)
+		if i <= last {
+			t.Fatalf("%s out of order in %s", key, raw)
+		}
+		last = i
+	}
+	if _, cut := m["cut"]; cut {
+		t.Fatalf("sections cut: %v", m["cut"])
+	}
+}
+
+func TestDayBriefWorstCaseStaysInBudget(t *testing.T) {
+	for name, title := range map[string]string{"escaped": strings.Repeat("<", 200), "four-byte": strings.Repeat("\U0001F600", 200), "quotes": strings.Repeat(`"`, 200), "backslash": strings.Repeat(`\`, 200)} {
+		t.Run(name, func(t *testing.T) {
+			e := secretarytest.New(t)
+			e.SeedHevy(e.Svc.Now().Add(-10 * time.Minute))
+			if _, err := e.DB.Exec(`UPDATE training_snapshots SET entries_json = ?`, fmt.Sprintf(`[{"ID":"w","Kind":"workout","Title":%q,"StartedAt":"2026-11-18T10:00:00Z"}]`, title)); err != nil {
+				t.Fatal(err)
+			}
+			addTasks(t, e, 50, func(int) string { return title })
+			cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, secretarytest.FakeCalendar{N: 30, Title: func(int) string { return title }})
+			raw, m := build(t, cat, "today")
+			if len(raw) > secretary.BriefBudget {
+				t.Fatalf("%d bytes", len(raw))
+			}
+			tl, tt, tm, el, et, em := counts(t, m)
+			if tl+tm != tt || el+em != et || tl == 0 && tt > 0 && m["cut"] == nil {
+				t.Fatalf("tasks %d+%d/%d events %d+%d/%d cut %v", tl, tm, tt, el, em, et, m["cut"])
+			}
+			// The worst-case training title must have been kept whole or the section named in cut.
+			if tr, ok := m["training"].(map[string]any); ok {
+				if last, _ := tr["last"].(map[string]any); last != nil {
+					if got := last["title"].(string); utf8.RuneCountInString(got) > secretary.TitleCap {
+						t.Fatalf("training title %d runes", utf8.RuneCountInString(got))
+					}
+				}
+			} else if m["cut"] == nil {
+				t.Fatal("training missing and not named in cut")
+			}
+		})
+	}
+}
+
+var hiddenAlphabet = []rune("ab é日<>&\"\\ ​‮\U0001F600 \t")
+
+func randomTitle(r *rand.Rand) string {
+	n := r.Intn(130)
+	out := make([]rune, n)
+	for i := range out {
+		out[i] = hiddenAlphabet[r.Intn(len(hiddenAlphabet))]
+	}
+	return string(out)
+}
+
+// 500 seeded random inputs: always valid JSON within budget, and every title
+// listed is the cleaned whole title, never a piece of one.
+func TestDayBriefRandomInputs(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-10 * time.Minute))
+	addTasks(t, e, 12, func(i int) string { return fmt.Sprint("t", i) })
+	r := rand.New(rand.NewSource(163))
+	for round := 0; round < 500; round++ {
+		tasks := 12
+		want := map[string]bool{}
+		tx, err := e.DB.Begin()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := 0; i < tasks; i++ {
+			title := randomTitle(r)
+			if _, err := tx.Exec(`UPDATE tasks SET title = ? WHERE id = (SELECT id FROM tasks ORDER BY id LIMIT 1 OFFSET ?)`, title, i); err != nil {
+				t.Fatal(err)
+			}
+			clean, _ := secretary.Clean(title, secretary.TitleCap)
+			want[clean] = true
+		}
+		if err := tx.Commit(); err != nil {
+			t.Fatal(err)
+		}
+		titles := make([]string, r.Intn(45))
+		for i := range titles {
+			titles[i] = randomTitle(r)
+		}
+		cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, secretarytest.FakeCalendar{N: len(titles), Title: func(i int) string { return titles[i] }})
+		raw, m := build(t, cat, "today")
+		if len(raw) > secretary.BriefBudget || !json.Valid(raw) {
+			t.Fatalf("round %d: %d bytes", round, len(raw))
+		}
+		for _, v := range m["tasks"].(map[string]any)["titles"].([]any) {
+			if !want[v.(string)] {
+				t.Fatalf("round %d: task title %q is not a whole cleaned title", round, v)
+			}
+		}
+		for i, v := range m["calendar"].(map[string]any)["events"].([]any) {
+			env := v.(map[string]any)["title"].(map[string]any)
+			clean, trunc := secretary.Clean(titles[i], secretary.TitleCap)
+			if env["text"] != clean || env["truncated"] != trunc || env["untrusted"] != true || env["source"] != "calendar" {
+				t.Fatalf("round %d event %d: %v", round, i, env)
+			}
+		}
+	}
+}
+
+func TestDayBriefNullStaysNull(t *testing.T) {
+	e := secretarytest.New(t) // no plan, no Hevy, no calendar, no mail
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{Empty: true}, nil)
+	_, m := build(t, cat, "today")
+	health := m["health"].(map[string]any)
+	if health["as_of"] != nil || health["stale"] != true || health["weight"] != nil || health["burned"] != nil || health["balance"] != nil {
+		t.Fatalf("health: %v", health)
+	}
+	for _, group := range []string{"food", "protein", "steps", "water"} {
+		for k, v := range health[group].(map[string]any) {
+			if v != nil {
+				t.Errorf("health.%s.%s = %v, want null", group, k, v)
+			}
+		}
+	}
+	tr := m["training"].(map[string]any)
+	if tr["as_of"] != nil || tr["last"] != nil || tr["week"].(map[string]any)["target"] != nil || tr["week"].(map[string]any)["workouts"] != 0.0 {
+		t.Fatalf("training: %v", tr)
+	}
+	cal := m["calendar"].(map[string]any)
+	if cal["connected"] != false || cal["events"] != nil || cal["as_of"] != nil || cal["total"] != nil {
+		t.Fatalf("calendar: %v", cal)
+	}
+	mail := m["mail"].(map[string]any)
+	if mail["connected"] != false || mail["unread"] != nil || mail["as_of"] != nil {
+		t.Fatalf("mail: %v", mail)
+	}
+	sync := m["sync"].(map[string]any)
+	for _, k := range []string{"hevy", "calendar", "mail", "health"} {
+		if v, ok := sync[k]; !ok || v != nil {
+			t.Errorf("sync.%s = %v", k, v)
+		}
+	}
+	// Another day: Health is today only, so the section is null, not an empty object.
+	_, tomorrow := build(t, cat, "tomorrow")
+	if v, ok := tomorrow["health"]; !ok || v != nil {
+		t.Fatalf("tomorrow's health: %v", v)
+	}
+}
+
+// Every section says when its data is from and whether that is stale.
+func TestDayBriefAsOf(t *testing.T) {
+	e := secretarytest.New(t)
+	stored := e.Svc.Now().Add(-90 * time.Minute)
+	e.SeedHevy(stored)
+	e.ConnectHevy(&secretarytest.FakeHevy{})
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, secretarytest.FakeCalendar{N: 2})
+	_, m := build(t, cat, "today")
+	for _, key := range []string{"now", "prayer", "tasks", "calendar", "health", "training", "mail"} {
+		sec := m[key].(map[string]any)
+		if _, ok := sec["as_of"]; !ok {
+			t.Errorf("%s has no as_of", key)
+		}
+		if _, ok := sec["stale"]; !ok {
+			t.Errorf("%s has no stale", key)
+		}
+	}
+	if m["now"].(map[string]any)["as_of"] != "2026-11-19T12:00" || m["now"].(map[string]any)["stale"] != false {
+		t.Fatalf("now: %v", m["now"])
+	}
+	tr := m["training"].(map[string]any)
+	if tr["as_of"] != "2026-11-19T10:30" || tr["stale"] != true {
+		t.Fatalf("training as_of %v stale %v: a 90 minute old copy is stale", tr["as_of"], tr["stale"])
+	}
+	if m["health"].(map[string]any)["as_of"] != "2026-11-19T11:40" || m["sync"].(map[string]any)["hevy"] != "2026-11-19T10:30" || m["sync"].(map[string]any)["health"] != "2026-11-19T11:40" {
+		t.Fatalf("health/sync: %v / %v", m["health"], m["sync"])
+	}
+	if m["tasks"].(map[string]any)["stale"] != false || m["prayer"].(map[string]any)["stale"] != false {
+		t.Fatal("local data reported stale")
+	}
+}
+
+func walkKeys(v any, f func(string)) {
+	switch x := v.(type) {
+	case map[string]any:
+		for k, val := range x {
+			f(k)
+			walkKeys(val, f)
+		}
+	case []any:
+		for _, val := range x {
+			walkKeys(val, f)
+		}
+	}
+}
+
+func TestDayBriefNoDescriptionsSendersSubjects(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedTasks()
+	e.SeedProjects()
+	e.SeedCourses()
+	e.SeedHevy(e.Svc.Now().Add(-10 * time.Minute))
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, secretarytest.FakeCalendar{N: 5})
+	raw, m := build(t, cat, "today")
+	banned := map[string]bool{"description": true, "notes": true, "sender": true, "from": true, "subject": true, "body": true, "attendees": true, "location": true, "url": true}
+	walkKeys(m, func(k string) {
+		if banned[strings.ToLower(k)] {
+			t.Errorf("brief has key %q", k)
+		}
+	})
+	noSentinels(t, string(raw))
+	if !strings.Contains(string(raw), "Draft the") {
+		t.Fatalf("a due task title is missing: %s", raw)
+	}
+}
+
+// #188: building the brief never starts a sync and never writes.
+func TestBriefNeverSyncs(t *testing.T) {
+	e := secretarytest.New(t)
+	stored := e.Svc.Now().Add(-5 * time.Hour)
+	e.SeedHevy(stored)
+	fake := &secretarytest.FakeHevy{}
+	e.ConnectHevy(fake)
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, nil)
+	before := secretarytest.DumpTables(t, e.DB)
+	_, m := build(t, cat, "today")
+	cat.Wait()
+	if fake.Fetches() != 0 || len(secretarytest.Changed(before, secretarytest.DumpTables(t, e.DB))) != 0 {
+		t.Fatalf("%d fetches, tables changed", fake.Fetches())
+	}
+	tr := m["training"].(map[string]any)
+	if tr["stale"] != true || tr["as_of"] != "2026-11-19T07:00" || tr["last"].(map[string]any)["title"] != "Push day" {
+		t.Fatalf("training: %v", tr)
+	}
+}
+
+// With a slow provider the tool still answers inside the budget, from the
+// stored workout, and says it is stale.
+func TestGetDayBriefToolWithSlowHevy(t *testing.T) {
+	e := secretarytest.New(t)
+	stored := e.Svc.Now().Add(-2 * time.Hour)
+	e.SeedHevy(stored)
+	slow := secretarytest.SlowHevy(false)
+	e.ConnectHevy(slow)
+	t.Cleanup(slow.Release)
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: secretarytest.FakeHealth{}, Budget: 100 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	start := time.Now()
+	out, err := secretarytest.Run(t, cat, "get_day_brief", `{}`)
+	if err != nil || time.Since(start) > 3*time.Second {
+		t.Fatalf("%v after %v", err, time.Since(start))
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(out), &m); err != nil || len(out) > secretary.BriefBudget {
+		t.Fatalf("%v, %d bytes", err, len(out))
+	}
+	tr := m["training"].(map[string]any)
+	if tr["stale"] != true || tr["as_of"] != "2026-11-19T10:00" || tr["last"].(map[string]any)["title"] != "Push day" {
+		t.Fatalf("training: %v", tr)
+	}
+	slow.Release()
+	cat.Wait()
+	if c, _ := e.Svc.Repo.TrainingCache("hevy"); c.Error != "" {
+		t.Fatalf("failure row %q", c.Error)
+	}
+}
+
+func TestGetDayBriefTool(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedTasks()
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, nil)
+	for _, in := range []string{``, `{}`, `{"date":"today"}`, `{"date":"tomorrow"}`, `{"date":"2026-12-03"}`, `{"date":"next friday"}`} {
+		out, err := secretarytest.Run(t, cat, "get_day_brief", in)
+		if err != nil || len(out) > secretary.BriefBudget || !json.Valid([]byte(out)) {
+			t.Errorf("%s: %v (%d bytes)", in, err, len(out))
+		}
+	}
+	m := run(t, cat, "get_day_brief", `{"date":"friday"}`)
+	if n := m["now"].(map[string]any); n["date"] != "2026-11-20" || n["weekday"] != "Friday" {
+		t.Fatalf("now: %v", n)
+	}
+	secret := "IGNORE-PREVIOUS-INSTRUCTIONS"
+	for _, in := range []string{`{"date":"2026-12-04"}`, `{"date":"2026-11-18"}`, `{"date":"` + secret + `"}`, `{`} {
+		out, err := secretarytest.Run(t, cat, "get_day_brief", in)
+		if err == nil || out != "" || strings.Contains(err.Error(), "IGNORE") {
+			t.Errorf("%s: %q %v", in, out, err)
+		}
+	}
+	// A calendar that fails gives a calendar section of nulls, not an error.
+	bad := briefCatalogue(t, e, secretarytest.FakeHealth{Err: context.Canceled}, secretarytest.FakeCalendar{Err: context.Canceled})
+	_, bm := build(t, bad, "today")
+	if bm["health"] != nil || bm["calendar"].(map[string]any)["events"] != nil || bm["calendar"].(map[string]any)["connected"] != true {
+		t.Fatalf("failures: health %v calendar %v", bm["health"], bm["calendar"])
+	}
+}

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"sort"
 	"time"
 
@@ -167,4 +169,70 @@ func (c coachHealth) DailyChecklist() (any, error) {
 		out = append(out, item)
 	}
 	return map[string]any{"items": out}, nil
+}
+
+// BriefHealth is today's Health for the Secretary's day brief. It reads the
+// same view fields as coachToday, so the brief and the Coach cannot disagree,
+// and it follows RULES 3.3-3.5: not-observed stays nil (never 0), steps are the
+// one count the Today view shows with its source (Watch and phone are never
+// added), nothing is derived from steps, and the food budget and the observed
+// energy balance are separate fields.
+func (c coachHealth) BriefHealth() (secretary.HealthBrief, error) {
+	t := c.data.Today
+	str := func(m HealthMetricView) *string {
+		if !m.Present {
+			return nil
+		}
+		v := m.Value
+		return &v
+	}
+	out := secretary.HealthBrief{
+		Stale:                  t.LastSyncedStale,
+		FoodEatenKcal:          str(t.Calories.Consumed),
+		FoodTargetKcal:         str(t.CalorieTarget),
+		BurnedSoFarKcal:        str(t.ObservedBurn),
+		EnergyBalanceSoFarKcal: str(t.ObservedEnergy),
+	}
+	if t.Calories.HasBar {
+		budget := t.BudgetAbs
+		if t.CaloriesOver {
+			out.FoodOverBudgetByKcal = &budget
+		} else {
+			out.FoodBudgetLeftKcal = &budget
+		}
+	}
+	for _, m := range t.Nutrients {
+		if m.Short() == "Protein" {
+			out.ProteinEatenG, out.ProteinTargetG = str(m.Consumed), str(m.Target)
+		}
+	}
+	if out.Steps = str(t.Steps); out.Steps != nil {
+		out.StepsSource = map[string]string{"Apple Watch": "watch", "iPhone": "phone"}[t.StepsSource]
+	}
+	if w := c.data.Water; w.Logged {
+		total := w.Total
+		out.WaterLoggedL = &total
+		if w.HasTarget {
+			target := w.Target
+			out.WaterTargetL = &target
+		}
+	} else if w.HasTarget {
+		target := w.Target
+		out.WaterTargetL = &target
+	}
+	if c.data.Weight.Present {
+		latest := c.data.Weight.Latest
+		out.WeightKg = &latest
+	}
+	snap, err := c.h.Service.GetDailyHealthSnapshot(t.Date)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+	case err != nil:
+		return secretary.HealthBrief{}, err
+	default:
+		if at, perr := time.Parse(time.RFC3339Nano, snap.LastSyncedAt); perr == nil {
+			out.AsOf = at
+		}
+	}
+	return out, nil
 }

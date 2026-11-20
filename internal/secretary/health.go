@@ -23,6 +23,8 @@ type HealthReader interface {
 	HevyRoutines() (any, error)
 	FoodProducts() (any, error)
 	DailyChecklist() (any, error)
+	// BriefHealth is today's Health for the day brief. Missing values stay nil.
+	BriefHealth() (HealthBrief, error)
 }
 
 // healthSpecs are the Coach's nine Health tools: the same names, descriptions

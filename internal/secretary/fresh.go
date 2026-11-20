@@ -102,13 +102,15 @@ func (f *Freshener) Peek(source string) Freshness {
 func (f *Freshener) inspect(source string) Freshness {
 	st := Freshness{Source: source, Stale: true}
 	slot, ok := f.slots[source]
-	if !ok || (slot.Connected != nil && !slot.Connected()) {
+	if !ok {
 		return st
 	}
-	st.Connected = true
+	st.Connected = slot.Connected == nil || slot.Connected()
 	if slot.LastSync == nil {
 		return st
 	}
+	// The stored copy has an age whether or not the source is connected now:
+	// rows from an earlier sync are still what a tool will read.
 	at, err := slot.LastSync()
 	if err != nil || at.IsZero() {
 		return st
@@ -140,9 +142,9 @@ func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[stri
 		}
 		st := f.inspect(source)
 		slot := f.slots[source]
-		// Only a stored copy that has aged out is refreshed. A source that is not
-		// connected, or has never produced a copy, is left alone: its own loop
-		// (the 37-minute Hevy loop) owns the first fill.
+		// Only a connected source whose stored copy has aged out is refreshed. One
+		// that is not connected, or has never produced a copy, is left alone: its
+		// own loop (the 37-minute Hevy loop) owns the first fill.
 		if st.Connected && !st.AsOf.IsZero() && st.Stale && slot.Sync != nil {
 			p := pending{source: source, start: time.Now(), done: make(chan error, 1)} //gyst:instant duration for the log line
 			f.wg.Add(1)

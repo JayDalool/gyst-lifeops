@@ -23,6 +23,7 @@ import (
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
+	"lifeops-tracker/internal/secretary"
 	"lifeops-tracker/internal/services"
 )
 
@@ -368,7 +369,11 @@ func (e *Env) SeedCourses() {
 
 // FakeHealth is a secretary.HealthReader with fictional, fixed answers. Err
 // makes every call fail, to show that the cause never reaches the model.
-type FakeHealth struct{ Err error }
+type FakeHealth struct {
+	Err error
+	// Empty makes BriefHealth report nothing observed: every value nil.
+	Empty bool
+}
 
 func (f FakeHealth) val(name string) (any, error) {
 	if f.Err != nil {
@@ -399,3 +404,49 @@ func (f FakeHealth) ExerciseProgress(w int) (any, error) {
 func (f FakeHealth) HevyRoutines() (any, error)   { return f.val("routines") }
 func (f FakeHealth) FoodProducts() (any, error)   { return f.val("foods") }
 func (f FakeHealth) DailyChecklist() (any, error) { return f.val("checklist") }
+
+// BriefHealth is a fictional Health summary for the day brief: a synced day
+// with a food budget left, one step count and an observed balance.
+func (f FakeHealth) BriefHealth() (secretary.HealthBrief, error) {
+	if f.Err != nil {
+		return secretary.HealthBrief{}, f.Err
+	}
+	if f.Empty {
+		return secretary.HealthBrief{}, nil
+	}
+	s := func(v string) *string { return &v }
+	return secretary.HealthBrief{
+		AsOf:          time.Date(2026, 11, 19, 16, 40, 0, 0, time.UTC), // 11:40 local
+		FoodEatenKcal: s("1,450"), FoodTargetKcal: s("2,300"), FoodBudgetLeftKcal: s("850"),
+		ProteinEatenG: s("96"), ProteinTargetG: s("180"),
+		Steps: s("5,200"), StepsSource: "watch",
+		BurnedSoFarKcal: s("1,410"), EnergyBalanceSoFarKcal: s("+40"),
+		WaterLoggedL: s("1.5"), WaterTargetL: s("3.0"), WeightKg: s("82.4"),
+	}, nil
+}
+
+// FakeCalendar is a CalendarReader with n fictional events on the asked day,
+// 30 minutes apart from 08:00, alternating busy and free.
+type FakeCalendar struct {
+	N int
+	// Title makes the title of event i; nil gives "Fictional meeting i".
+	Title func(i int) string
+	Err   error
+}
+
+// Events implements secretary.CalendarReader.
+func (f FakeCalendar) Events(day secretary.Day) ([]secretary.CalendarEvent, error) {
+	if f.Err != nil {
+		return nil, f.Err
+	}
+	out := make([]secretary.CalendarEvent, 0, f.N)
+	for i := 0; i < f.N; i++ {
+		start := day.Time().Add(8*time.Hour + time.Duration(i)*30*time.Minute)
+		title := fmt.Sprintf("Fictional meeting %d", i+1)
+		if f.Title != nil {
+			title = f.Title(i)
+		}
+		out = append(out, secretary.CalendarEvent{Start: start, End: start.Add(25 * time.Minute), Busy: i%2 == 0, Title: title})
+	}
+	return out, nil
+}

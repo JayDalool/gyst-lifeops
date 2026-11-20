@@ -32,9 +32,10 @@ func (r *recordingHealth) ExerciseProgress(w int) (any, error) {
 	r.weeks = w
 	return r.val("progress")
 }
-func (r *recordingHealth) HevyRoutines() (any, error)   { return r.val("routines") }
-func (r *recordingHealth) FoodProducts() (any, error)   { return r.val("foods") }
-func (r *recordingHealth) DailyChecklist() (any, error) { return r.val("checklist") }
+func (r *recordingHealth) BriefHealth() (HealthBrief, error) { return HealthBrief{}, nil }
+func (r *recordingHealth) HevyRoutines() (any, error)        { return r.val("routines") }
+func (r *recordingHealth) FoodProducts() (any, error)        { return r.val("foods") }
+func (r *recordingHealth) DailyChecklist() (any, error)      { return r.val("checklist") }
 
 func TestHealthToolsNamesAndOrder(t *testing.T) {
 	var got []string

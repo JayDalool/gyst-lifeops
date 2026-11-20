@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/services"
 )
@@ -18,7 +19,7 @@ import (
 var allowlist = []string{
 	"get_health_today", "get_health_plan", "get_weight_trend", "get_training_summary", "get_recent_workouts",
 	"get_exercise_progress", "get_hevy_routines", "get_food_products", "get_daily_checklist",
-	"list_tasks", "list_projects", "get_prayer_times", "get_courses",
+	"get_day_brief", "list_tasks", "list_projects", "get_prayer_times", "get_courses",
 }
 
 // builders produce the specs. A later chunk adds its builder here (see doc.go).
@@ -31,6 +32,8 @@ type Deps struct {
 	Service *services.Service
 	// Health is required: the Health tools and the brief's health section read it.
 	Health HealthReader
+	// Calendar is filled by the calendar chunks; nil means connected:false.
+	Calendar CalendarReader
 	// Syncers fills the freshness slots for sources beyond Hevy ("calendar",
 	// "mail"). Empty slots report connected:false and never sync.
 	Syncers map[string]Syncer
@@ -131,3 +134,6 @@ func (c *Catalogue) Names() []string {
 	}
 	return out
 }
+
+// Clock is the application clock the Catalogue reads dates from.
+func (c *Catalogue) Clock() clock.Clock { return c.deps.Service.Clock }
