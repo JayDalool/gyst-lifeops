@@ -2,6 +2,7 @@ package secretary
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -25,7 +26,41 @@ var allowlist = []string{
 // builders produce the specs. A later chunk adds its builder here (see doc.go).
 var builders = []func(*Catalogue) []ToolSpec{healthBuilder, coreBuilder}
 
-func healthBuilder(c *Catalogue) []ToolSpec { return healthSpecs(c.deps.Health) }
+// hevyBacked are the Health tools that read the Hevy copy. On the Secretary's
+// path (and only there) they declare SourceHevy, so a direct workout question
+// gets the same freshness check as the brief, and say how old the data is. The
+// Coach takes HealthTools instead, which has no freshness and is unchanged.
+var hevyBacked = map[string]bool{"get_training_summary": true, "get_recent_workouts": true, "get_exercise_progress": true, "get_hevy_routines": true}
+
+func healthBuilder(c *Catalogue) []ToolSpec {
+	specs := healthSpecs(c.deps.Health)
+	loc := c.deps.Service.Location
+	for i := range specs {
+		if !hevyBacked[specs[i].Name] {
+			continue
+		}
+		inner := specs[i].Run
+		specs[i].Sources = []string{SourceHevy}
+		specs[i].Run = func(ctx context.Context, input json.RawMessage) (any, error) {
+			v, err := inner(ctx, input)
+			m, ok := v.(map[string]any)
+			if err != nil || !ok {
+				return v, err
+			}
+			out := make(map[string]any, len(m)+2) // copy: the reader's map is not ours to change
+			for k, val := range m {
+				out[k] = val
+			}
+			st := c.fresh.Peek(SourceHevy)
+			out["as_of"], out["stale"] = nil, st.Stale
+			if !st.AsOf.IsZero() {
+				out["as_of"] = st.AsOf.In(loc()).Format(minuteLayout)
+			}
+			return out, nil
+		}
+	}
+	return specs
+}
 
 // Deps is what a Catalogue reads. Every field is read-only data access.
 type Deps struct {

@@ -114,10 +114,10 @@ func (c *Catalogue) BuildDayBrief(day Day) ([]byte, error) {
 			healthOK = true
 		}
 	}
-	b.Health = briefHealth(health, healthOK, asOf)
+	b.Health = briefHealth(health, healthOK, day.Offset == 0, asOf)
 	b.Training = c.briefTraining(hevy, asOf)
 	b.Mail = mustJSON(map[string]any{"as_of": asOf(mail.AsOf), "stale": mail.Stale, "connected": mail.Connected, "unread": nil})
-	b.Sync = mustJSON(map[string]any{"hevy": asOf(hevy.AsOf), "calendar": asOf(cal.AsOf), "mail": asOf(mail.AsOf), "health": asOf(health.AsOf)})
+	b.Sync = mustJSON(map[string]any{"hevy": asOf(hevy.AsOf), "calendar": asOf(cal.AsOf), "mail": asOf(mail.AsOf), "health": asOf(health.AsOf), "as_of": asOf(now), "stale": false})
 	caps := map[string]int{"now": capNow, "prayer": capPrayer, "tasks": capTasks, "calendar": capCalendar, "health": capHealth, "training": capTraining, "mail": capMail, "sync": capSync}
 	return finalize(b, caps, BriefBudget)
 }
@@ -282,16 +282,21 @@ func (c *Catalogue) briefCalendar(day Day, f Freshness, asOf func(time.Time) any
 	})
 }
 
-func briefHealth(h HealthBrief, ok bool, asOf func(time.Time) any) json.RawMessage {
+func briefHealth(h HealthBrief, ok, today bool, asOf func(time.Time) any) json.RawMessage {
 	if !ok {
-		return json.RawMessage("null") // not today, or unreadable: null stays null
+		// Not today, or unreadable: say so, with its as_of, instead of a bare null.
+		reason := "unavailable"
+		if !today {
+			reason = "today_only"
+		}
+		return mustJSON(map[string]any{"as_of": nil, "stale": true, "available": false, "reason": reason})
 	}
 	var source any
 	if h.StepsSource != "" {
 		source = h.StepsSource
 	}
 	return mustJSON(map[string]any{
-		"as_of": asOf(h.AsOf), "stale": h.Stale || h.AsOf.IsZero(),
+		"as_of": asOf(h.AsOf), "stale": h.Stale || h.AsOf.IsZero(), "available": true,
 		"food":    map[string]any{"eaten": h.FoodEatenKcal, "target": h.FoodTargetKcal, "left": h.FoodBudgetLeftKcal, "over_by": h.FoodOverBudgetByKcal},
 		"protein": map[string]any{"eaten_g": h.ProteinEatenG, "target_g": h.ProteinTargetG},
 		"steps":   map[string]any{"count": h.Steps, "source": source},
@@ -318,6 +323,11 @@ func (c *Catalogue) briefTraining(f Freshness, asOf func(time.Time) any) json.Ra
 	if newest != nil {
 		title, _ := Clean(newest.Title, TitleCap)
 		last = map[string]any{"date": svc.DateOf(newest.StartedAt), "title": title}
+	}
+	// No snapshot yet means unknown, not zero workouts (RULES 3.2): the week is
+	// null until Hevy has synced once; 0 is only a synced week with none.
+	if cache.SyncedAt.IsZero() {
+		return mustJSON(map[string]any{"as_of": asOf(f.AsOf), "stale": true, "last": last, "week": nil})
 	}
 	week := services.SummarizeTrainingWeek(cache.Entries, svc.Now(), svc.Location())
 	var target any

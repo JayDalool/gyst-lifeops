@@ -20,7 +20,11 @@ type ToolSpec struct {
 	// Sources are the freshness sources ("hevy", "calendar", "mail") checked
 	// before Run. Tools that read no synced copy leave it empty.
 	Sources []string
-	Run     func(ctx context.Context, input json.RawMessage) (any, error)
+	// Validate, when set, checks the input before any freshness check runs, so
+	// malformed or out-of-range input answers with its fixed error and starts
+	// no sync and no write.
+	Validate func(input json.RawMessage) error
+	Run      func(ctx context.Context, input json.RawMessage) (any, error)
 }
 
 // errDataUnavailable is what the Coach's tools have always answered when the
@@ -43,6 +47,11 @@ func (s ToolSpec) tool(before func(ctx context.Context, sources []string)) healt
 		Properties:  s.Properties,
 		Required:    s.Required,
 		Run: func(ctx context.Context, input json.RawMessage) (string, error) {
+			if s.Validate != nil {
+				if err := s.Validate(input); err != nil {
+					return "", err
+				}
+			}
 			if before != nil && len(s.Sources) > 0 {
 				before(ctx, s.Sources)
 			}

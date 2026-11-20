@@ -196,7 +196,8 @@ func TestDayBriefNullStaysNull(t *testing.T) {
 		}
 	}
 	tr := m["training"].(map[string]any)
-	if tr["as_of"] != nil || tr["last"] != nil || tr["week"].(map[string]any)["target"] != nil || tr["week"].(map[string]any)["workouts"] != 0.0 {
+	// Hevy never synced: the week is unknown (null), not "0 workouts" (RULES 3.2).
+	if tr["as_of"] != nil || tr["last"] != nil || tr["week"] != nil {
 		t.Fatalf("training: %v", tr)
 	}
 	cal := m["calendar"].(map[string]any)
@@ -213,10 +214,31 @@ func TestDayBriefNullStaysNull(t *testing.T) {
 			t.Errorf("sync.%s = %v", k, v)
 		}
 	}
-	// Another day: Health is today only, so the section is null, not an empty object.
+	// Another day: Health is today only. The section says so, with its as_of,
+	// instead of being a bare null.
 	_, tomorrow := build(t, cat, "tomorrow")
-	if v, ok := tomorrow["health"]; !ok || v != nil {
-		t.Fatalf("tomorrow's health: %v", v)
+	h, ok := tomorrow["health"].(map[string]any)
+	if !ok || h["available"] != false || h["reason"] != "today_only" || h["as_of"] != nil || h["stale"] != true {
+		t.Fatalf("tomorrow's health: %v", tomorrow["health"])
+	}
+}
+
+// A synced snapshot with no workouts this week is a real zero; before any
+// snapshot the week is null.
+func TestDayBriefTrainingWeekZeroVersusNull(t *testing.T) {
+	e := secretarytest.New(t)
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{Empty: true}, nil)
+	_, m := build(t, cat, "today")
+	if m["training"].(map[string]any)["week"] != nil {
+		t.Fatalf("never synced: %v", m["training"])
+	}
+	if err := e.Svc.Repo.SaveTraining("hevy", []models.TrainingEntry{}, e.Svc.Now().Add(-5*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	_, m = build(t, cat, "today")
+	week, ok := m["training"].(map[string]any)["week"].(map[string]any)
+	if !ok || week["workouts"] != 0.0 || week["target"] != nil {
+		t.Fatalf("synced, no workouts: %v", m["training"])
 	}
 }
 
@@ -228,7 +250,7 @@ func TestDayBriefAsOf(t *testing.T) {
 	e.ConnectHevy(&secretarytest.FakeHevy{})
 	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, secretarytest.FakeCalendar{N: 2})
 	_, m := build(t, cat, "today")
-	for _, key := range []string{"now", "prayer", "tasks", "calendar", "health", "training", "mail"} {
+	for _, key := range []string{"now", "prayer", "tasks", "calendar", "health", "training", "mail", "sync"} {
 		sec := m[key].(map[string]any)
 		if _, ok := sec["as_of"]; !ok {
 			t.Errorf("%s has no as_of", key)
@@ -364,7 +386,27 @@ func TestGetDayBriefTool(t *testing.T) {
 	// A calendar that fails gives a calendar section of nulls, not an error.
 	bad := briefCatalogue(t, e, secretarytest.FakeHealth{Err: context.Canceled}, secretarytest.FakeCalendar{Err: context.Canceled})
 	_, bm := build(t, bad, "today")
-	if bm["health"] != nil || bm["calendar"].(map[string]any)["events"] != nil || bm["calendar"].(map[string]any)["connected"] != true {
+	if h, _ := bm["health"].(map[string]any); h["available"] != false || h["reason"] != "unavailable" || bm["calendar"].(map[string]any)["events"] != nil || bm["calendar"].(map[string]any)["connected"] != true {
 		t.Fatalf("failures: health %v calendar %v", bm["health"], bm["calendar"])
+	}
+}
+
+// Malformed or out-of-range input answers with its fixed error before any
+// freshness check: no fetch, no write, even with a stale Hevy copy.
+func TestGetDayBriefValidatesBeforeRefreshing(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-5 * time.Hour))
+	fake := &secretarytest.FakeHevy{}
+	e.ConnectHevy(fake)
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, nil)
+	before := secretarytest.DumpTables(t, e.DB)
+	for _, in := range []string{`{"date":"2026-12-25"}`, `{"date":"2020-01-01"}`, `{"date":"nonsense"}`, `{"date":1}`, `{`} {
+		if out, err := secretarytest.Run(t, cat, "get_day_brief", in); err == nil || out != "" {
+			t.Errorf("%s accepted", in)
+		}
+	}
+	cat.Wait()
+	if fake.Fetches() != 0 || len(secretarytest.Changed(before, secretarytest.DumpTables(t, e.DB))) != 0 {
+		t.Fatalf("%d fetches or a write on invalid input", fake.Fetches())
 	}
 }

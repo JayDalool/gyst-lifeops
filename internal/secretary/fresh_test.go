@@ -5,6 +5,8 @@ import (
 	"context"
 	"log/slog"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -253,4 +255,99 @@ func TestFreshLogsNoContent(t *testing.T) {
 			t.Errorf("log holds %q", banned)
 		}
 	}
+}
+
+// The caller's context ends in the middle of a refresh (the request went away).
+// The sync runs on a context without cancellation, so the provider is not told
+// to stop, no false "could not be reached" is stored, and the sync finishes.
+func TestEnsureFreshCallerCancelsMidRefresh(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-2 * time.Hour))
+	slow := secretarytest.SlowHevy(true) // returns ctx.Err() if its context ends
+	slow.Entries = nil
+	e.ConnectHevy(slow)
+	f := freshener(e, 5*time.Second)
+	t.Cleanup(slow.Release)
+	ctx, cancel := context.WithCancel(context.Background())
+	got := make(chan secretary.Freshness, 1)
+	go func() { got <- f.EnsureFresh(ctx, secretary.SourceHevy)[secretary.SourceHevy] }()
+	for i := 0; slow.Fetches() == 0 && i < 400; i++ {
+		time.Sleep(5 * time.Millisecond)
+	}
+	if slow.Fetches() != 1 {
+		t.Fatal("the refresh never started")
+	}
+	cancel()
+	select {
+	case st := <-got:
+		if !st.Stale {
+			t.Fatalf("%+v", st)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("EnsureFresh did not return after the caller's cancel")
+	}
+	slow.Release()
+	f.Wait()
+	cache, _ := e.Svc.Repo.TrainingCache("hevy")
+	if cache.Error != "" {
+		t.Fatalf("a cancelled caller stored a Hevy failure: %q", cache.Error)
+	}
+	if !cache.SyncedAt.Equal(e.Svc.Now()) {
+		t.Fatalf("the sync did not complete: synced at %v", cache.SyncedAt)
+	}
+}
+
+func countingSlot(gate chan struct{}, calls *atomic.Int64) map[string]secretary.Syncer {
+	return map[string]secretary.Syncer{secretary.SourceCalendar: {
+		LastSync: func() (time.Time, error) { return time.Date(2026, 11, 19, 10, 0, 0, 0, time.UTC), nil },
+		Sync:     func(context.Context) error { calls.Add(1); <-gate; return nil },
+	}}
+}
+
+// One refresh per source, however the calls arrive: a source repeated inside
+// one call, or two overlapping calls, share the first attempt.
+func TestEnsureFreshOneRefreshPerSource(t *testing.T) {
+	now := func() time.Time { return time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC) }
+	t.Run("repeated in one call", func(t *testing.T) {
+		var calls atomic.Int64
+		gate := make(chan struct{})
+		f := secretary.NewFreshener(countingSlot(gate, &calls), 100*time.Millisecond, now)
+		t.Cleanup(f.Wait)
+		f.EnsureFresh(context.Background(), secretary.SourceCalendar, secretary.SourceCalendar, secretary.SourceCalendar)
+		close(gate)
+		f.Wait()
+		if calls.Load() != 1 {
+			t.Fatalf("%d refreshes", calls.Load())
+		}
+	})
+	t.Run("overlapping calls", func(t *testing.T) {
+		var calls atomic.Int64
+		gate := make(chan struct{})
+		f := secretary.NewFreshener(countingSlot(gate, &calls), 5*time.Second, now)
+		t.Cleanup(f.Wait)
+		var wg sync.WaitGroup
+		results := make([]secretary.Freshness, 4)
+		for i := range results {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				results[i] = f.EnsureFresh(context.Background(), secretary.SourceCalendar)[secretary.SourceCalendar]
+			}()
+		}
+		for i := 0; calls.Load() == 0 && i < 400; i++ {
+			time.Sleep(5 * time.Millisecond)
+		}
+		time.Sleep(50 * time.Millisecond) // let every caller reach the wait
+		close(gate)
+		wg.Wait()
+		f.Wait()
+		if calls.Load() != 1 {
+			t.Fatalf("%d refreshes for 4 overlapping calls", calls.Load())
+		}
+		for i := 1; i < len(results); i++ {
+			if results[i] != results[0] {
+				t.Fatalf("callers disagree: %+v vs %+v", results[0], results[i])
+			}
+		}
+	})
 }

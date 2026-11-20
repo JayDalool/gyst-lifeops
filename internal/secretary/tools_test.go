@@ -96,6 +96,7 @@ func TestCatalogueHealthToolsEqualHealthTools(t *testing.T) {
 		}
 		for _, in := range []string{`{}`, `{"count":99}`, `{"weeks":26}`} {
 			x, xerr := tool.Run(context.Background(), json.RawMessage(in))
+			x = withoutFreshness(x)
 			y, yerr := d.Run(context.Background(), json.RawMessage(in))
 			if x != y || (xerr == nil) != (yerr == nil) {
 				t.Errorf("%s %s: %q vs %q", tool.Name, in, x, y)
@@ -136,8 +137,8 @@ func TestEveryToolIsReadOnly(t *testing.T) {
 }
 
 // The one side effect a tool may have is a Hevy refresh, and it writes only
-// training_snapshots. No Catalogue tool names a source yet, so the check goes
-// through EnsureFresh itself, which is what a tool with Sources calls.
+// training_snapshots. get_day_brief and the four Hevy-backed Health tools name
+// the Hevy source, so running them is what starts it.
 func TestFreshSyncWritesOnlyTrainingSnapshots(t *testing.T) {
 	e := secretarytest.New(t)
 	e.SeedTasks()
@@ -148,11 +149,44 @@ func TestFreshSyncWritesOnlyTrainingSnapshots(t *testing.T) {
 	e.ConnectHevy(fake)
 	cat := catalogue(t, e)
 	before := secretarytest.DumpTables(t, e.DB)
-	got := cat.Freshness().EnsureFresh(context.Background(), secretary.SourceHevy)[secretary.SourceHevy]
+	run(t, cat, "get_day_brief", `{}`)
 	cat.Wait()
 	changed := secretarytest.Changed(before, secretarytest.DumpTables(t, e.DB))
-	if got.Stale || fake.Fetches() != 1 || len(changed) != 1 || changed[0] != "training_snapshots" {
-		t.Fatalf("stale=%v fetches=%d changed=%v", got.Stale, fake.Fetches(), changed)
+	if fake.Fetches() != 1 || len(changed) != 1 || changed[0] != "training_snapshots" {
+		t.Fatalf("fetches=%d changed=%v", fake.Fetches(), changed)
+	}
+}
+
+// On the Secretary's path the four Hevy-backed Health tools check freshness and
+// say how old their data is; the other five do not. The Coach's HealthTools
+// stay free of both (covered by the golden test in internal/handlers).
+func TestHevyBackedHealthToolsCarryFreshness(t *testing.T) {
+	e := secretarytest.New(t)
+	stored := e.Svc.Now().Add(-3 * time.Hour)
+	e.SeedHevy(stored)
+	fake := &secretarytest.FakeHevy{}
+	e.ConnectHevy(fake)
+	cat := catalogue(t, e)
+	m := run(t, cat, "get_recent_workouts", `{"count":2}`)
+	cat.Wait()
+	if fake.Fetches() != 1 || m["stale"] != false || m["as_of"] != "2026-11-19T12:00" || m["count"] != 2.0 {
+		t.Fatalf("fetches %d: %v", fake.Fetches(), m)
+	}
+	for _, name := range []string{"get_training_summary", "get_exercise_progress", "get_hevy_routines"} {
+		if m := run(t, cat, name, `{}`); m["as_of"] == nil || m["stale"] == nil {
+			t.Errorf("%s lacks as_of/stale: %v", name, m)
+		}
+	}
+	for _, name := range []string{"get_health_today", "get_health_plan", "get_weight_trend", "get_food_products", "get_daily_checklist"} {
+		if m := run(t, cat, name, `{}`); m["as_of"] != nil || m["stale"] != nil {
+			t.Errorf("%s has freshness fields: %v", name, m)
+		}
+	}
+	for _, tool := range secretary.HealthTools(secretarytest.FakeHealth{}) {
+		out, _ := tool.Run(context.Background(), nil)
+		if strings.Contains(out, "as_of") || strings.Contains(out, "stale") {
+			t.Errorf("Coach tool %s carries freshness: %s", tool.Name, out)
+		}
 	}
 }
 
@@ -366,4 +400,17 @@ func TestGetCourses(t *testing.T) {
 			}
 		}
 	}
+}
+
+// withoutFreshness removes the as_of and stale keys the Secretary path adds to
+// the Hevy-backed tools, so the rest can be compared with the Coach's output.
+func withoutFreshness(out string) string {
+	var m map[string]any
+	if json.Unmarshal([]byte(out), &m) != nil {
+		return out
+	}
+	delete(m, "as_of")
+	delete(m, "stale")
+	b, _ := json.Marshal(m)
+	return string(b)
 }

@@ -69,9 +69,10 @@ type Freshener struct {
 	budget time.Duration
 	now    func() time.Time
 
-	mu   sync.Mutex
-	done map[string]Freshness
-	wg   sync.WaitGroup
+	mu     sync.Mutex
+	done   map[string]Freshness
+	flight map[string]*attempt
+	wg     sync.WaitGroup
 }
 
 // NewFreshener builds one. A zero budget means WebBudget.
@@ -79,7 +80,7 @@ func NewFreshener(slots map[string]Syncer, budget time.Duration, now func() time
 	if budget <= 0 {
 		budget = WebBudget
 	}
-	return &Freshener{slots: slots, budget: budget, now: now, done: map[string]Freshness{}}
+	return &Freshener{slots: slots, budget: budget, now: now, done: map[string]Freshness{}, flight: map[string]*attempt{}}
 }
 
 // Wait blocks until every sync started by EnsureFresh has finished. Tests call
@@ -120,58 +121,83 @@ func (f *Freshener) inspect(source string) Freshness {
 	return st
 }
 
+// attempt is one refresh of one source. It is reserved under the mutex before
+// the goroutine starts, so a repeated source in one call, or an overlapping
+// call, waits on it instead of starting a second refresh whose stale result
+// could overwrite a good one.
+type attempt struct {
+	initial Freshness
+	start   time.Time
+	done    chan struct{} // closed when Sync returns
+	err     error         // valid after done is closed
+}
+
 // EnsureFresh checks each source once for this Freshener and returns the state
 // after at most one budget. It logs only the source, the outcome and the
 // duration (09 B.8): never a title, a name or an error text.
 func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[string]Freshness {
 	deadline := time.Now().Add(f.budget) //gyst:instant wall-clock budget for a wait, not a calendar day
-	type pending struct {
-		source string
-		start  time.Time
-		done   chan error
-	}
 	out := map[string]Freshness{}
-	var waits []pending
+	waits := map[string]*attempt{}
+	var order []string
 	for _, source := range sources {
 		f.mu.Lock()
-		prev, seen := f.done[source]
-		f.mu.Unlock()
-		if seen {
+		if prev, seen := f.done[source]; seen {
+			f.mu.Unlock()
 			out[source] = prev
 			continue
 		}
+		if at, running := f.flight[source]; running {
+			f.mu.Unlock()
+			if _, queued := waits[source]; !queued {
+				waits[source], order = at, append(order, source)
+			}
+			out[source] = at.initial
+			continue
+		}
+		f.mu.Unlock()
 		st := f.inspect(source)
 		slot := f.slots[source]
 		// Only a connected source whose stored copy has aged out is refreshed. One
 		// that is not connected, or has never produced a copy, is left alone: its
 		// own loop (the 37-minute Hevy loop) owns the first fill.
-		if st.Connected && !st.AsOf.IsZero() && st.Stale && slot.Sync != nil {
-			p := pending{source: source, start: time.Now(), done: make(chan error, 1)} //gyst:instant duration for the log line
+		if !(st.Connected && !st.AsOf.IsZero() && st.Stale && slot.Sync != nil) {
+			out[source] = f.record(source, st, outcomeOf(st), time.Time{})
+			continue
+		}
+		f.mu.Lock()
+		if prev, seen := f.done[source]; seen { // decided while inspecting
+			f.mu.Unlock()
+			out[source] = prev
+			continue
+		}
+		at, running := f.flight[source]
+		if !running {
+			at = &attempt{initial: st, start: time.Now(), done: make(chan struct{})} //gyst:instant duration for the log line
+			f.flight[source] = at
 			f.wg.Add(1)
 			go func() {
 				defer f.wg.Done()
-				p.done <- slot.Sync(context.WithoutCancel(ctx))
+				at.err = slot.Sync(context.WithoutCancel(ctx))
+				close(at.done)
 			}()
-			waits = append(waits, p)
-			out[source] = st
-			continue
 		}
-		f.record(source, st, outcomeOf(st), time.Time{})
-		out[source] = st
+		f.mu.Unlock()
+		if _, queued := waits[source]; !queued {
+			waits[source], order = at, append(order, source)
+		}
+		out[source] = at.initial
 	}
 	wctx, cancel := context.WithDeadline(ctx, deadline)
 	defer cancel()
-	for _, p := range waits {
-		st := out[p.source]
-		var outcome string
-		var err error
+	for _, source := range order {
+		at := waits[source]
+		st, outcome := at.initial, ""
 		select {
-		case err = <-p.done: // already finished, even if the budget is spent
-			outcome = "synced"
+		case <-at.done: // already finished, even if the budget is spent
 		default:
 			select {
-			case err = <-p.done:
-				outcome = "synced"
+			case <-at.done:
 			case <-wctx.Done():
 				// The sync goes on in its goroutine; the next turn sees its rows.
 				outcome = "timeout"
@@ -180,14 +206,14 @@ func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[stri
 				}
 			}
 		}
-		switch {
-		case outcome == "synced" && err != nil:
-			outcome = "failed"
-		case outcome == "synced":
-			st = f.inspect(p.source)
+		if outcome == "" {
+			if at.err != nil {
+				outcome = "failed"
+			} else {
+				outcome, st = "synced", f.inspect(source)
+			}
 		}
-		f.record(p.source, st, outcome, p.start)
-		out[p.source] = st
+		out[source] = f.record(source, st, outcome, at.start)
 	}
 	return out
 }
@@ -204,15 +230,23 @@ func outcomeOf(st Freshness) string {
 	return "fresh"
 }
 
-func (f *Freshener) record(source string, st Freshness, outcome string, start time.Time) {
+// record stores the first decision for a source and returns the stored one, so
+// two callers waiting on the same attempt agree.
+func (f *Freshener) record(source string, st Freshness, outcome string, start time.Time) Freshness {
 	f.mu.Lock()
+	if prev, seen := f.done[source]; seen {
+		f.mu.Unlock()
+		return prev
+	}
 	f.done[source] = st
+	delete(f.flight, source)
 	f.mu.Unlock()
 	d := time.Duration(0)
 	if !start.IsZero() {
 		d = time.Since(start) //gyst:instant duration for the log line
 	}
 	slog.Info("secretary freshness", "event", "secretary.fresh", "source", source, "outcome", outcome, "ms", d.Milliseconds())
+	return st
 }
 
 // HevySyncer fills the Hevy slot with the existing training sync. SyncTraining
