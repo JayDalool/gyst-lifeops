@@ -21,13 +21,14 @@ func TestRegisterRejects(t *testing.T) {
 		specs []ToolSpec
 		want  string
 	}{
-		"unknown name":   {[]ToolSpec{{Name: "zzz", Description: "d", Run: okRun}}, "not on the allowlist"},
-		"duplicate":      {[]ToolSpec{good, good}, "twice"},
-		"empty desc":     {[]ToolSpec{{Name: "a", Run: okRun}}, "no description"},
-		"nil run":        {[]ToolSpec{{Name: "a", Description: "d"}}, "no Run"},
-		"unknown source": {[]ToolSpec{{Name: "a", Description: "d", Run: okRun, Sources: []string{"fax"}}}, "unknown source"},
-		"empty name":     {[]ToolSpec{{Description: "d", Run: okRun}}, "not on the allowlist"},
-		"case differs":   {[]ToolSpec{{Name: "A", Description: "d", Run: okRun}}, "not on the allowlist"},
+		"unknown name":             {[]ToolSpec{{Name: "zzz", Description: "d", Run: okRun}}, "not on the allowlist"},
+		"duplicate":                {[]ToolSpec{good, good}, "twice"},
+		"empty desc":               {[]ToolSpec{{Name: "a", Run: okRun}}, "no description"},
+		"nil run":                  {[]ToolSpec{{Name: "a", Description: "d"}}, "no Run"},
+		"unknown source":           {[]ToolSpec{{Name: "a", Description: "d", Run: okRun, Sources: []string{"fax"}}}, "unknown source"},
+		"sources without validate": {[]ToolSpec{{Name: "a", Description: "d", Run: okRun, Sources: []string{SourceCalendar}}}, "no Validate"},
+		"empty name":               {[]ToolSpec{{Description: "d", Run: okRun}}, "not on the allowlist"},
+		"case differs":             {[]ToolSpec{{Name: "A", Description: "d", Run: okRun}}, "not on the allowlist"},
 	} {
 		if _, err := register(allow, tc.specs); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%s: %v, want %q", name, err, tc.want)
@@ -68,7 +69,8 @@ func TestBuilderHook(t *testing.T) {
 	t.Cleanup(func() { builders, allowlist = oldBuilders, oldAllow })
 	builders = append(append([]func(*Catalogue) []ToolSpec{}, oldBuilders...), func(*Catalogue) []ToolSpec {
 		return []ToolSpec{{Name: "list_events", Description: "Events for a day.", Sources: []string{SourceCalendar},
-			Run: func(context.Context, json.RawMessage) (any, error) { return map[string]any{"events": []string{}}, nil }}}
+			Validate: func(json.RawMessage) error { return nil },
+			Run:      func(context.Context, json.RawMessage) (any, error) { return map[string]any{"events": []string{}}, nil }}}
 	})
 	allowlist = append(append([]string{}, oldAllow...), "list_events")
 	synced := 0

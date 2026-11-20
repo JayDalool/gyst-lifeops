@@ -40,6 +40,13 @@ var builders = []func(*Catalogue) []ToolSpec{healthBuilder, coreBuilder}
 // The Coach takes HealthTools instead, which has none of this and is unchanged.
 var hevyBacked = map[string]bool{"get_training_summary": true, "get_recent_workouts": true, "get_exercise_progress": true, "get_hevy_routines": true}
 
+var hevyValidators = map[string]func(json.RawMessage) error{
+	"get_training_summary":  validateObject,
+	"get_hevy_routines":     validateObject,
+	"get_recent_workouts":   validateCount,
+	"get_exercise_progress": validateWeeks,
+}
+
 func healthBuilder(c *Catalogue) []ToolSpec {
 	specs := healthSpecs(c.deps.Health)
 	for i := range specs {
@@ -48,6 +55,9 @@ func healthBuilder(c *Catalogue) []ToolSpec {
 		}
 		inner := specs[i].Run
 		specs[i].Sources = []string{SourceHevy}
+		// Without a Validate, bad input would reach EnsureFresh and could start
+		// a Hevy fetch (GYST-164). These set it on the Catalogue's copy only.
+		specs[i].Validate = hevyValidators[specs[i].Name]
 		specs[i].Run = func(ctx context.Context, input json.RawMessage) (any, error) {
 			return c.hevyAnswer(ctx, input, inner)
 		}
@@ -231,6 +241,11 @@ func register(allow []string, specs []ToolSpec) ([]ToolSpec, error) {
 			if !validSource(src) {
 				return nil, fmt.Errorf("secretary: tool %q names unknown source %q", s.Name, src)
 			}
+		}
+		// A tool with Sources is refreshed before it runs, so unchecked input
+		// could start a sync (GYST-164). Every such tool must validate.
+		if len(s.Sources) > 0 && s.Validate == nil {
+			return nil, fmt.Errorf("secretary: tool %q has Sources but no Validate", s.Name)
 		}
 		seen[s.Name] = true
 	}

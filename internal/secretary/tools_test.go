@@ -96,7 +96,7 @@ func TestCatalogueHealthToolsEqualHealthTools(t *testing.T) {
 		if string(a) != string(b) {
 			t.Errorf("%s: schema differs", tool.Name)
 		}
-		for _, in := range []string{`{}`, `{"count":99}`, `{"weeks":26}`} {
+		for _, in := range []string{`{}`, `{"count":3}`, `{"weeks":26}`} {
 			x, xerr := tool.Run(context.Background(), json.RawMessage(in))
 			x = withoutFreshness(x)
 			y, yerr := d.Run(context.Background(), json.RawMessage(in))
@@ -107,6 +107,15 @@ func TestCatalogueHealthToolsEqualHealthTools(t *testing.T) {
 	}
 	if n != 9 {
 		t.Fatalf("%d Health tools in the Catalogue", n)
+	}
+	// GYST-164: out of range is an error on the Secretary path (the model can
+	// retry) and a clamp on the Coach path (unchanged).
+	sec, err := secretarytest.Run(t, catalogue(t, e), "get_recent_workouts", `{"count":99}`)
+	if err == nil || err.Error() != "invalid input" || sec != "" {
+		t.Errorf("Secretary count 99: %q %v", sec, err)
+	}
+	if out, err := direct["get_recent_workouts"].Run(context.Background(), json.RawMessage(`{"count":99}`)); err != nil || out == "" {
+		t.Errorf("Coach count 99: %q %v", out, err)
 	}
 }
 
@@ -541,4 +550,99 @@ func (d dirtyHealth) FoodProducts() (any, error)   { return nil, nil }
 func (d dirtyHealth) DailyChecklist() (any, error) { return nil, nil }
 func (d dirtyHealth) BriefHealth() (secretary.HealthBrief, error) {
 	return secretary.HealthBrief{}, nil
+}
+
+// GYST-164 c1: input is checked before any refresh. Each invalid input gets the
+// fixed error, starts no Hevy fetch, writes nothing and never appears in the
+// error. A fresh Catalogue per input: freshness is decided once per turn.
+func TestHevyToolsValidateBeforeRefreshing(t *testing.T) {
+	invalid := map[string][]string{
+		"get_recent_workouts":   {`{`, `[1]`, `"x"`, `{"count":"three"}`, `{"count":2.5}`, `{"count":3.0}`, `{"count":true}`, `{"count":0}`, `{"count":6}`, `{"count":-4}`, `{"count":99}`, `{"count":1e0}`, `{"count":[3]}`},
+		"get_exercise_progress": {`{`, `[1]`, `"x"`, `{"weeks":"4"}`, `{"weeks":7}`, `{"weeks":0}`, `{"weeks":12.0}`, `{"weeks":false}`},
+		"get_training_summary":  {`{`, `[1]`, `"x"`, `5`},
+		"get_hevy_routines":     {`{`, `[1]`, `"x"`, `true`},
+	}
+	valid := map[string][]string{
+		"get_recent_workouts":   {``, `null`, `{}`, `{"count":null}`, `{"count":1}`, `{"count":3}`, `{"count":5}`, `{"count":3,"extra":"ignored"}`},
+		"get_exercise_progress": {``, `null`, `{}`, `{"weeks":null}`, `{"weeks":4}`, `{"weeks":12}`, `{"weeks":26}`},
+		"get_training_summary":  {``, `null`, `{}`, `{"anything":1}`},
+		"get_hevy_routines":     {``, `null`, `{}`},
+	}
+	build := func() (*secretarytest.Env, *secretarytest.FakeHevy, *secretary.Catalogue) {
+		e := secretarytest.New(t)
+		e.SeedHevy(e.Svc.Now().Add(-2 * time.Hour))
+		fake := &secretarytest.FakeHevy{}
+		e.ConnectHevy(fake)
+		return e, fake, catalogue(t, e)
+	}
+	for name, inputs := range invalid {
+		for _, in := range inputs {
+			e, fake, cat := build()
+			before := secretarytest.DumpTables(t, e.DB)
+			out, err := secretarytest.Run(t, cat, name, in)
+			cat.Wait()
+			if err == nil || err.Error() != "invalid input" || out != "" {
+				t.Errorf("%s %s: %q %v", name, in, out, err)
+			}
+			if fake.Fetches() != 0 || len(secretarytest.Changed(before, secretarytest.DumpTables(t, e.DB))) != 0 {
+				t.Errorf("%s %s: fetches %d, tables changed", name, in, fake.Fetches())
+			}
+		}
+	}
+	for name, inputs := range valid {
+		for _, in := range inputs {
+			e, fake, cat := build()
+			out, err := secretarytest.Run(t, cat, name, in)
+			cat.Wait()
+			if err != nil || out == "" || fake.Fetches() != 1 {
+				t.Errorf("%s %q: %q %v, fetches %d", name, in, out, err, fake.Fetches())
+			}
+			_ = e
+		}
+	}
+}
+
+// Run gets exactly the number the model sent; a default fills only an absent
+// or null field, and nothing accepted is silently replaced.
+func TestHevyValidatedInputReachesRunUnchanged(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-5 * time.Minute))
+	h := &argHealth{}
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: h, Budget: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	for _, tc := range []struct {
+		name, in string
+		count    int
+		weeks    int
+	}{
+		{"get_recent_workouts", ``, 1, 0}, {"get_recent_workouts", `{"count":null}`, 1, 0}, {"get_recent_workouts", `{"count":1}`, 1, 0},
+		{"get_recent_workouts", `{"count":3}`, 3, 0}, {"get_recent_workouts", `{"count":5}`, 5, 0},
+		{"get_exercise_progress", `{}`, 0, 12}, {"get_exercise_progress", `{"weeks":4}`, 0, 4}, {"get_exercise_progress", `{"weeks":26}`, 0, 26}, {"get_exercise_progress", `{"weeks":12}`, 0, 12},
+	} {
+		h.count, h.weeks = 0, 0
+		if _, err := secretarytest.Run(t, cat, tc.name, tc.in); err != nil {
+			t.Fatalf("%s %s: %v", tc.name, tc.in, err)
+		}
+		if h.count != tc.count || h.weeks != tc.weeks {
+			t.Errorf("%s %s: Run got count %d weeks %d, want %d %d", tc.name, tc.in, h.count, h.weeks, tc.count, tc.weeks)
+		}
+	}
+}
+
+// argHealth records the clamped arguments the Hevy tools pass to the reader.
+type argHealth struct {
+	secretarytest.FakeHealth
+	count, weeks int
+}
+
+func (a *argHealth) RecentWorkouts(n int) (any, error) {
+	a.count = n
+	return map[string]any{"workouts": []map[string]any{}}, nil
+}
+func (a *argHealth) ExerciseProgress(w int) (any, error) {
+	a.weeks = w
+	return map[string]any{"exercises": []map[string]any{}}, nil
 }
