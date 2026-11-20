@@ -31,3 +31,23 @@ func TestSecurityHeadersThroughAppHandler(t *testing.T) {
 		}
 	}
 }
+
+// GYST-169, 13B DD-15: the icon sprite is a file of this site (img-src 'self' covers it) and is
+// served as SVG, with the same headers as every other static file.
+func TestIconSpriteIsServedSameOrigin(t *testing.T) {
+	a := healthzApp(t)
+	rec := httptest.NewRecorder()
+	a.Handler.ServeHTTP(rec, httptest.NewRequest("GET", "/static/icons.svg?v=r7-1", nil))
+	if rec.Code != 200 {
+		t.Fatalf("GET /static/icons.svg = %d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "image/svg+xml") {
+		t.Errorf("Content-Type = %q, want image/svg+xml", ct)
+	}
+	if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Error("sprite served without nosniff")
+	}
+	if !strings.Contains(rec.Body.String(), `<symbol id="i-home" viewBox="0 0 24 24">`) {
+		t.Error("sprite body is not the icon sprite")
+	}
+}

@@ -18,6 +18,9 @@
 .gyst-card--tinted { background: var(--gyst-blue-soft); border-color: transparent; }
 .gyst-card--inset { background: var(--gyst-control-bg); box-shadow: none; }
 .gyst-icon { width: 24px; height: 24px; flex-shrink: 0; vertical-align: middle; }
+/* Makeover sprite icon (GYST-169, 13B DD-15). The stroke is set here, not in the sprite, so one rule
+   holds the 1.75 weight for every symbol. 20 px is the row and button size; 16, 22 and 24 arrive with their first use. */
+.vn-icon { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .gyst-icon-tile { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--gyst-radius-sm); background: var(--gyst-blue-soft); color: var(--gyst-blue); }
 .gyst-icon-tile--mono { font-size: .75rem; font-weight: 700; letter-spacing: .02em; line-height: 1; }
 .gyst-row .gyst-chip .gyst-icon { width: 14px; height: 14px; }

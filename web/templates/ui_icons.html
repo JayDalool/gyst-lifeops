@@ -184,3 +184,8 @@
   <path d="M6.391 20.279a10 10 0 0 1-2.69-2.7" />
 
 {{else}}<circle cx="12" cy="12" r="9" />{{end}}</svg>{{end}}
+{{/* Makeover icons (GYST-169, 13B DD-15): one same-origin sprite, called with a literal name:
+     {{template "vn.icon" "home"}}. The ?v= here is the sprite's only version; change it when
+     icons.svg changes. scripts/check-icons.cjs checks every name. gyst.icon above stays until
+     the shells move over (R2, R3). */}}
+{{define "vn.icon"}}<svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-1#i-{{.}}"/></svg>{{end}}

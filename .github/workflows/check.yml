@@ -35,6 +35,16 @@ jobs:
       - name: Galaxy gesture checks
         run: node scripts/check-galaxy.cjs
 
+      # The Look and accent tokens are generated. This fails when a value breaks a
+      # contrast pair (13B DD-6, DD-7), when ui-accents.css was edited by hand, or
+      # when the output stops matching the round 7 tool's (Issue #259).
+      - name: Accent tokens
+        run: node scripts/build-accents.cjs --check
+
+      # A symbol missing from the sprite draws nothing and reports nothing (Issue #259).
+      - name: Icon sprite
+        run: node scripts/check-icons.cjs
+
       - name: gofmt
         run: |
           unformatted=$(gofmt -l .)

@@ -25,6 +25,7 @@ func galleryHTML(t *testing.T) []byte {
 			Value template.CSS
 		}
 		Icons           []string
+		VNIcons         []string
 		Actions         []UIAction
 		Fields          []UIField
 		Choices         []UIChoice
@@ -53,6 +54,8 @@ func galleryHTML(t *testing.T) []byte {
 		Value template.CSS
 	}{{"Navy", "#0f172a"}, {"Blue", "#2563eb"}, {"Green", "#10b981"}, {"Orange", "#f59e0b"}, {"Purple", "#8b5cf6"}, {"Surface", "#ffffff"}}
 	data.Icons = []string{"house", "folder-heart", "heart", "book-open", "bell", "settings"}
+	// The makeover icon section lists the sprite itself, so the gallery cannot fall behind it (GYST-169).
+	data.VNIcons = spriteIDs(t)
 	data.Actions = []UIAction{{Label: "Save changes"}, {Label: "Learn more", Variant: "secondary"}, {Label: "Favorite", Icon: "heart", Variant: "icon"}, {Label: "Add example", Icon: "plus", Variant: "fab"}, {Label: "Unavailable", Disabled: true}}
 	data.Fields = []UIField{{ID: "search", Name: "search", Label: "Search", Type: "search", Placeholder: "Search anything…"}, {ID: "title", Name: "title", Label: "Goal title", Value: "", Placeholder: "Enter your goal", Required: true, Error: "Give your goal a title."}, {ID: "category", Name: "category", Label: "Category", Type: "select", Options: []UIOption{{Value: "personal", Label: "Personal", Selected: true}, {Value: "learning", Label: "Learning"}}}}
 	data.Choices = []UIChoice{{ID: "alerts", Name: "alerts", Label: "Notifications", Kind: "switch", Checked: true}, {ID: "complete", Name: "complete", Label: "Completed example", Checked: true}, {ID: "radio-day", Name: "period", Label: "Daily", Kind: "radio", Value: "daily", Checked: true}, {ID: "radio-week", Name: "period", Label: "Weekly", Kind: "radio", Value: "weekly"}}
@@ -100,6 +103,18 @@ func TestExportUIGallery(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "index.html"), galleryHTML(t), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// The icons load from /static/icons.svg, so the export carries the sprite at that path:
+	// serve the folder over HTTP to see them (a page opened from a file cannot load it).
+	sprite, err := os.ReadFile("../../web/static/icons.svg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "static"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "static", "icons.svg"), sprite, 0644); err != nil {
 		t.Fatal(err)
 	}
 }

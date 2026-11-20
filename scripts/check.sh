@@ -7,7 +7,7 @@
 # tree, and caches the module downloads in a named volume so repeat runs are
 # fast.
 #
-# Usage: ./scripts/check.sh          # fmt + vet + test
+# Usage: ./scripts/check.sh          # accent tokens + icon sprite (Node) + fmt + vet + test
 #        ./scripts/check.sh test     # test only
 set -euo pipefail
 
@@ -30,6 +30,12 @@ run() {
 case "$MODE" in
   test) run 'go test ./...' ;;
   *)
+    # Node runs on the host, like check-ui-shell.cjs and check-galaxy.cjs: the Go image has no Node.
+    # The generated accent tokens and the icon sprite are checked first because they need no container (GYST-169).
+    echo "==> accent tokens"
+    node scripts/build-accents.cjs --check
+    echo "==> icon sprite"
+    node scripts/check-icons.cjs
     echo "==> gofmt"
     unformatted=$(run "gofmt -l .")
     if [ -n "$unformatted" ]; then
