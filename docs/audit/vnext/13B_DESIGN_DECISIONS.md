@@ -29,7 +29,7 @@ Source short names:
 | # | Topic | Decision | Supersedes | Source |
 |---|---|---|---|---|
 | DD-5 | Appearance setting | One setting holds Theme, Look, Accent, Cards, Density, Text size and Navigation | 13A DD-1 (extended); 11 §J | Direction; round 6; answer 4 |
-| DD-6 | Accent | One accent, chosen by Jay from seven; violet is no longer the fixed identity colour | 13A DD-4 (revised); 11 §A, §H | Direction; round 7; lead, 2026-11-20 (fixed values) |
+| DD-6 | Accent | One accent, chosen by Jay from seven; violet is no longer the fixed identity colour; never good, warning or bad | 13A DD-4 (revised); 11 §A, §H | Direction; round 7; lead, 2026-11-20 (fixed values) |
 | DD-7 | Looks | Three: Aurora (blue, default), Lagoon (green), Sunrise (orange) | 11 §F, §H | Answer 4; round 7 |
 | DD-8 | Section colours | Six, one per launcher group | new | Round 6 |
 | DD-9 | Typography | Geist, eight sizes on one scale factor, three weights | 11 §C | Direction |
@@ -62,7 +62,7 @@ Source short names:
 | DD-1 Default appearance | **Extended.** System · Light · Dark stays exactly as written. The same single setting gains more options. | DD-5 |
 | DD-2 Today Rhythm strip | **Unchanged.** Still to be implemented: Today still shows three large prayer sections. | — |
 | DD-3 XP on Today | **Unchanged.** A small "Lv" chip in the header. | — |
-| DD-4 Violet identity accent | **Revised.** There is one accent and Jay chooses it. The rule behind DD-4 is kept and widened: no accent, section or project colour ever means a state. | DD-6 |
+| DD-4 Violet identity accent | **Revised.** There is one accent and Jay chooses it. The rule behind DD-4 is kept: the accent never means a health or status state (good, warning or bad). Info and active (Working, Reviewing) are drawn in the accent, with their word and icon. Section and project colours never mean any state. | DD-6, DD-13 |
 
 13A's "Implementation discipline" section still applies. This file is the "recorded decision" it asks for.
 
@@ -84,11 +84,11 @@ Still true from DD-1: one setting for the whole app, no per-area appearance sett
 | | |
 |---|---|
 | **Old** | A fixed blue `--accent` (#2563eb / #6ea8ff) for action, and violet `--xp` / `--xp-soft` as the identity accent (13A DD-4; 11 §A, §H). |
-| **New** | **One accent, chosen by Jay** from seven: Iris, Blue, Teal, Volt, Orchid, Ember, Graphite. It means "act" or "selected" and nothing else. `--xp` and `--xp-soft` merge into `--accent` and `--accent-soft`. |
+| **New** | **One accent, chosen by Jay** from seven: Iris, Blue, Teal, Volt, Orchid, Ember, Graphite. It means "act" or "selected", and it is the colour of the info and active state (Working, Reviewing; DD-13). `--xp` and `--xp-soft` merge into `--accent` and `--accent-soft`. |
 | **Default** | Each Look starts with its own accent (DD-7): Aurora with Iris, Lagoon with Teal, Sunrise with Ember. Any of the seven works on any Look. |
-| **Never a state** | The accent never means a health or status state. No pure green, amber or red accent is offered. Volt and Ember sit closest to state colours, so a state always carries a dot or icon and a word (DD-13). |
+| **Never good, warning or bad** | The accent never means a health or status state: not success, healthy, warning, error, blocked, destructive or needs attention. Info and active is the one state drawn in it, always with its word and a dot or icon. No pure green, amber or red accent is offered. Volt and Ember sit closest to state colours, so a state always carries a dot or icon and a word (DD-13). |
 | **Why** | One colour for "act" is easier to read than blue for action and violet for identity, and Jay wanted to pick it. |
-| **Source** | Direction, "Changes to recorded decisions"; round 7 (the seven accents stay). |
+| **Source** | Direction, "Changes to recorded decisions" ("Info uses the accent"); round 7 (the seven accents stay); lead, 2026-11-20 (the wording of the state rule, following Direction). |
 
 Each accent has four variants per theme. These are the audited values, and they are **binding as fixed values**. R1 ships them as written. The generator does not derive them from hue seeds; it asserts the contrast pairs below and fails the build on a value that breaks one. Direction described each accent as a stored seed (a hue and a strength), but no round recorded seed numbers, so re-deriving the hues is not required. Decided by the lead on 2026-11-20; it follows the round 7 drawings Jay approved.
 
@@ -119,7 +119,8 @@ What 13A DD-4 still means after this change:
 
 - XP and level use the accent. They stay small and quiet (13A DD-3).
 - Status chips, badges, banners, Attention severity and state dots never use the accent to mean success, warning, error, blocked, destructive or needs attention.
-- DD-4's note on the Agents prototype now reads: "Reviewing" is an active state and uses the **accent** with its word and icon, as "Working" does (DD-13).
+- Info and active states (Working, Reviewing, Queued, Syncing) use the accent, with their word and icon (DD-13). This follows 13A DD-4's own ruling that "Reviewing" is an active state drawn in the info colour like "Working"; the info colour is now the chosen accent instead of the fixed blue.
+- One consequence is open: when the chosen accent is Iris or Orchid, an active state is drawn in a violet, which 13A DD-4 and `AGENTS.md` forbid in their current words (O-12).
 
 ## DD-7 — Looks
 
@@ -127,6 +128,7 @@ What 13A DD-4 still means after this change:
 |---|---|
 | **Old** | One set of cool navy neutrals (11 §F, §H). |
 | **New** | Three Looks. Each is a set of neutrals, section colours and state-text values, in light and dark. **Aurora** is the default; **Lagoon** and **Sunrise** are the other two. Jay picks in Settings › Appearance › Look. |
+| **Not graphite** | The default neutrals are **Aurora's blue-violet** (hue 248), not graphite. Direction's graphite neutrals (#F3F4F6, #08090B and the rest) were rounds 2 to 5; they survive only as the declined Instrument Look and are not shipped. With no Look chosen, the app shows Aurora. Where an Issue or plan says "graphite", this entry wins. |
 | **Declined** | The round 6 Looks **Instrument** (the round 5 graphite palette) and **Court** (near-white and true black) are removed. |
 | **Why** | Jay liked all five and asked to keep one blue, one green and one orange, and to choose after the deploy (answer 4). The default until he chooses is blue. |
 | **Source** | Answer 4 (2026-11-18); round 7. |
@@ -176,7 +178,7 @@ Two more neutrals are the same in every Look: `--hairline` is #0B0D12 at 8% in l
 | Neutral hue | 248 | 188 | 32 |
 | Neutral saturation, light / dark | 0.42 / 0.30 | 0.40 / 0.34 | 0.50 / 0.16 |
 | Dark canvas lightness | 0.045 | 0.04 | 0.045 |
-| Section saturation | 0.82 | 0.78 | 0.80 |
+| Section saturation (System is 0.10 in every Look) | 0.82 | 0.78 | 0.80 |
 | Section hues (Plan, Work, Connect, Health, Learn, System) | 222, 16, 268, 335, 172, 248 | 215, 24, 256, 332, 165, 192 | 206, 12, 282, 346, 174, 30 |
 
 The generator asserts 714 pairs across the three Looks, with all seven accents on each. Search targets are 4.7:1 for text and 7:1 for strong text; the assertion is AA (4.5:1 text, 3:1 fills). See [Token tools](#token-tools-for-r1).
@@ -188,7 +190,7 @@ The generator asserts 714 pairs across the three Looks, with all seven accents o
 | **Old** | None. Navigation used the accent only. |
 | **New** | Six section colours, one per launcher group (DD-20): **Plan** blue, **Work** orange, **Connect** violet, **Health** pink, **Learn** teal, **System** grey. |
 | **Used on** | Launcher tiles, the current tab, sidebar rows, the date line above a page title, small header icons and chart lines. |
-| **Never** | A state. A section colour says where you are, never how something is doing. Violet is now the Connect section's colour and still never a state colour (13A DD-4's rule). |
+| **Never** | A state. A section colour says where you are, never how something is doing. Violet is now the Connect section's colour; as a section colour it never means a state. |
 | **Why** | Jay asked for a more colourful app where every place is easy to find (round 6). |
 | **Source** | Round 6; carried into round 7 unchanged. |
 
@@ -281,7 +283,7 @@ Why: larger, softer containers against the hairline edges. Source: Direction.
 |---|---|
 | **Old** | ok / info / warn / crit / idle, with "info / active" drawn in the fixed blue accent (11 §I). |
 | **New** | The graphic values are unchanged and **do not change with the accent or the Look**: ok #16A34A / #4ADE80, warn #D97706 / #FBBF24, crit #DC2626 / #F87171 (light / dark). Soft backgrounds: warn #FDF1E1 / #33260C, crit #FDEAEA / #3A1618. |
-| **Info / active** | Uses the chosen accent (`--accent`, `--accent-text`, `--accent-soft`), always with its word and a dot or icon. |
+| **Info / active** | Uses the chosen accent (`--accent`, `--accent-text`, `--accent-soft`), always with its word and a dot or icon. It is the only state drawn in the accent (DD-6). |
 | **State text** | Checked per Look. Dark is the same in every Look: ok #6EE7A0, warn #FCD062, crit #FCA5A5. Light is in the table below. |
 | **Rule kept** | State is never colour alone. Healthy stays quiet. |
 | **Why** | Green "on track" text measured 4.31:1 on grey tiles in round 5, under AA. The generator now darkens state text until it passes on every neutral of the Look. |
@@ -335,7 +337,8 @@ Inbox and calendar colours reuse these six plus grey. No new colour tokens.
 | | |
 |---|---|
 | **Old** | Line icons, 1.8 stroke (11 §K). |
-| **New** | One set of inline SVG symbols, **1.75 stroke**, round caps and joins, no fill, `currentColor`. Used with `<use>` from one same-origin sprite. No icon font. Later chunks add no icon outside the set. |
+| **New** | One set of inline SVG symbols, **1.75 stroke**, round caps and joins, no fill, `currentColor`. Used with `<use>` from one same-origin sprite. No icon font. |
+| **The set** | The sprite in `design-makeover/mockup-r7.html`: **93 symbols**, including `i-mail` and `i-all` for the six-tab bar. Not round 3's 62. R1 may ship only the symbols in use, in round 7's sprite format (`<symbol id="i-…" viewBox="0 0 24 24">`); later chunks add theirs from the same set and none from outside it. |
 | **Sizes** | 16 inline and chips · 20 rows and buttons · 22 tab bar · 24 large. |
 | **Why** | Jay asked for more icons (round 3); one sprite keeps them consistent and inside `script-src 'self'` and `img-src 'self'`. |
 | **Source** | Round 3. |
@@ -466,7 +469,7 @@ Keyboard, replacing the short list in 13 §4 and adding to 13 §10. Shortcuts do
 | | |
 |---|---|
 | **Old** | The Today layout Jay approved in round 2 and froze in round 3. |
-| **New: colours** | The new colours apply to phone Today: the Look's neutrals, the section colour on the date line and small icons, the six-tab bar, and the accent of the chosen Look. Card style follows Jay's Cards setting. |
+| **New: colours** | The new colours apply to phone Today: the Look's neutrals, the section colour on the date line and small icons, the six-tab bar, and the chosen accent. Card style follows Jay's Cards setting. |
 | **New: events** | The next calendar event sits on the existing "Now" label line. Upcoming events join the existing "Later today" list. |
 | **Layout** | **Unchanged.** No element moves except that "Later today" grows by the rows it gains. |
 | **Why** | Jay said to keep Today as it is (round 3), then allowed the new colours with the layout untouched (answer 1) and events inside the existing rows (answer 2). |
@@ -591,6 +594,7 @@ Every option that a round offered and did not build as the main design.
 - `17A_GALAXY_PRESERVATION.md` is unchanged and stays binding. Visual and performance Galaxy changes still wait for the iPhone timings. Data-only Galaxy work is unaffected.
 - The makeover's Galaxy pictures (always dark, project colours on worlds, glass chrome, an accent selection ring, the phone "Focus" view) are **mockups of a possible target, not a build plan**. Nothing in them is approved.
 - Makeover chunks do not touch `galaxy.html`, `ui-galaxy.css` or `galaxy*.js`, and `node scripts/check-galaxy.cjs` must still pass after each one. A chunk that changes shared CSS, the shell or tokens runs the `17A` §L quick check.
+- **Every value the Galaxy page reads stays unchanged** until the Galaxy chunk. `web/static/css/ui-galaxy.css` reads `--gyst-*` variables (background, surface, text, border, blue, radius, shadow), the legacy variables and the body font, so a token change can restyle Galaxy without touching a Galaxy file. R1 and every later chunk therefore **pin the whole `/galaxy` page, its shell included**, to today's values, and prove it with a computed-style comparison of that page before and after, in light and dark, that shows **zero differences**. The `17A` §L quick check alone does not catch this. If the pin can't be made without editing a Galaxy file, the chunk stops and reports to the lead. (Lead, 2026-11-20.)
 - What this file does decide near Galaxy is navigation only: the Tasks · Projects · Galaxy switch (DD-19) and the `G X` shortcut. The switch that sits on the Galaxy screen is part of the Galaxy chunk, not the shell chunks.
 - 13A DD-1 still holds: Galaxy may keep its dark, immersive look in both themes.
 
@@ -617,9 +621,10 @@ Not decided. Nothing below may be built as if it were. (O-1, the accent seeds, w
 | O-6 | **Widths from 1600.** `13` §1 has a wide tier (sidebar 256, larger caps). The makeover draws one tier from 1000 with content capped at 1180 and was checked up to 1440. | Not drawn or checked in any round. |
 | O-7 | **Attention badge.** `11` puts a badge on the Today tab only. Round 6 adds an unread count on the Mail tab and says nothing about the Today badge. | Not addressed in any round. |
 | O-8 | **Time format.** The calendar shows 24-hour times; the Secretary speaks 12-hour times. Round 5 says one setting should decide both. | No answer recorded. |
-| O-9 | **Pointers outside 11 and 13.** These files still name 13A as the design record or describe the old five tabs and Projects areas: `AGENTS.md` (design rule and shared-tools lines), `19A` (precedence line and §12), `05A` (D1, D2, D6) and `17A` (§C.6, §H, §M). | Left untouched on purpose (lead, 2026-11-20). `AGENTS.md` is a rule file and needs Jay's word; `17A` must not change here. |
+| O-9 | **Pointers outside 11 and 13.** These files still name 13A as the design record or describe the old five tabs and Projects areas: `AGENTS.md` (the design hierarchy line and the shared-tools lines), `19A` (precedence line and §12), `05A` (D1, D2, D6) and `17A` (§C.6, §H, §M). | Left untouched on purpose (lead, 2026-11-20). `AGENTS.md` is a rule file and needs Jay's word; `17A` must not change here. |
 | O-10 | **Screen specs.** The screens in DD-28 have no entry in `12`. | Written with each screen's own Issue. |
 | O-11 | **Galaxy visual work.** | Behind the `17A` gate ([Galaxy](#galaxy)). |
+| O-12 | **Violet and the active state.** `AGENTS.md` ("Non-negotiable product rules", Design) and 13A DD-4 say violet is never a state colour. Under DD-6 and DD-13, info and active states use the chosen accent, so with Iris or Orchid chosen an active state is drawn in a violet. | **For Jay.** Changing the wording of a rule file is his call alone. Until he decides, `AGENTS.md` stands as written and this file changes nothing in it. |
 
 ## Token tools for R1
 
@@ -637,7 +642,7 @@ Notes for R1:
 
 - The generated `looks7.css` and `looks7.json` are not kept in the folder. The values in DD-7, DD-8 and DD-13 were read from the generated block inside `design-makeover/mockup-r7.html`, and R1's output must equal them.
 - Port the generator into the repository so the build asserts the pairs; a failing pair fails the build. The mockup's CSS is a reference, not a file to copy. In particular, do not copy its reduced-motion rule that delays focus inside sheets (round 7).
-- Token names here are the mockup's. R1 maps them onto the production `--vn-*` tokens and points `--gyst-*` and the legacy variables at those, as `13` "Implementation risks" already says.
+- Token names here are the mockup's. R1 maps them onto the production `--vn-*` tokens and points `--gyst-*` and the legacy variables at those, as `13` "Implementation risks" already says, **except on the `/galaxy` page**, where every value stays as it is today ([Galaxy](#galaxy)).
 - The mockup switches with `data-theme`, `data-look`, `data-accent` and `data-density` on the root, and `data-card` on the app. Production maps `data-theme` onto its existing theme attribute.
 - Round 7's rendered audit: 40,342 pairs on 78 screens, sheets and states, three Looks plus Tinted cards, light and dark, phone and desktop; none below AA. Lowest text 4.57:1 (white on the Teal button, Lagoon, light); lowest icon 4.02:1 (a project glyph on its tile, Sunrise, light; icons need 3:1). The audit can't see through glass or gradients, and it left out Galaxy.
 

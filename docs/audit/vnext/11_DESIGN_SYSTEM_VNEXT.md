@@ -388,6 +388,8 @@ Session rows reuse the Task Row.
 **Status Chip** (`.chip`): dot + word, 24 high, pill. Variants ok/warn/crit/info/xp/idle.
 `.working` pulses. Don't use chips for healthy states in dense lists (use muted `.state`).
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-6 and DD-13:** no `xp` variant (`--xp` merges into `--accent`); info uses the chosen accent.
+
 **Badge**: count pill (red for attention, soft grey for neutral counts). Only on the
 Today tab/sidebar item and the Attention entry points.
 
