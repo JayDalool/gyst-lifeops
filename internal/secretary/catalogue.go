@@ -1,6 +1,7 @@
 package secretary
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -40,6 +41,13 @@ var builders = []func(*Catalogue) []ToolSpec{healthBuilder, coreBuilder}
 // The Coach takes HealthTools instead, which has none of this and is unchanged.
 var hevyBacked = map[string]bool{"get_training_summary": true, "get_recent_workouts": true, "get_exercise_progress": true, "get_hevy_routines": true}
 
+var hevyValidators = map[string]func(json.RawMessage) error{
+	"get_training_summary":  validateObject,
+	"get_hevy_routines":     validateObject,
+	"get_recent_workouts":   validateCount,
+	"get_exercise_progress": validateWeeks,
+}
+
 func healthBuilder(c *Catalogue) []ToolSpec {
 	specs := healthSpecs(c.deps.Health)
 	for i := range specs {
@@ -48,6 +56,9 @@ func healthBuilder(c *Catalogue) []ToolSpec {
 		}
 		inner := specs[i].Run
 		specs[i].Sources = []string{SourceHevy}
+		// Without a Validate, bad input would reach EnsureFresh and could start
+		// a Hevy fetch (GYST-164). These set it on the Catalogue's copy only.
+		specs[i].Validate = hevyValidators[specs[i].Name]
 		specs[i].Run = func(ctx context.Context, input json.RawMessage) (any, error) {
 			return c.hevyAnswer(ctx, input, inner)
 		}
@@ -84,85 +95,78 @@ func (c *Catalogue) hevyAnswer(ctx context.Context, input json.RawMessage, inner
 	if cache.SyncedAt.IsZero() {
 		return map[string]any{"available": false, "reason": "no_hevy_data", "as_of": nil, "stale": true}, nil
 	}
-	m, ok := v.(map[string]any)
-	if !ok {
-		return v, nil
+	m, err := asObject(v)
+	if err != nil {
+		return nil, errUnavailable
 	}
-	out := make(map[string]any, len(m)+2) // copy: the reader's map is not ours to change
-	for k, val := range m {
-		out[k] = val
-	}
-	out["as_of"] = cache.SyncedAt.In(svc.Location()).Format(minuteLayout)
-	out["stale"] = svc.Now().Sub(cache.SyncedAt) >= freshLimit[SourceHevy]
-	cleanNames(out)
-	return out, nil
+	m["as_of"] = cache.SyncedAt.In(svc.Location()).Format(minuteLayout)
+	m["stale"] = svc.Now().Sub(cache.SyncedAt) >= freshLimit[SourceHevy]
+	cleanNames(m)
+	return m, nil
 }
 
-// cleanNames cleans and caps the free-text names in a Hevy-backed result:
-// workout and routine titles (TitleCap) and exercise names (NameCap). Shapes it
-// does not know are left alone.
+// asObject turns a reader's result into a fresh map[string]any by way of its
+// JSON form, so cleaning works on what the model will see and not on the
+// adapter's Go types (GYST-164 c5). Numbers stay byte-exact (UseNumber); the
+// reader's own value is never changed. A result that is not a JSON object is an
+// error: the answer needs as_of and stale, and raw text would skip the cleaning.
+func asObject(v any) (map[string]any, error) {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var out any
+	if err := dec.Decode(&out); err != nil {
+		return nil, err
+	}
+	m, ok := out.(map[string]any)
+	if !ok {
+		return nil, errors.New("not an object")
+	}
+	return m, nil
+}
+
+// cleanNames cleans and caps the free-text names in a Hevy-backed result, at any
+// depth and whatever Go type produced it: values under "title" (TitleCap), under
+// "name" and "exercise" and the strings of an "exercises" list (NameCap). Every
+// other string only loses its hidden characters, as a backstop for a field the
+// key list does not know.
 func cleanNames(m map[string]any) {
-	title := func(s string) string { t, _ := Clean(s, TitleCap); return t }
-	name := func(s string) string { t, _ := Clean(s, NameCap); return t }
-	rows := func(key string) []map[string]any {
-		src, ok := m[key].([]map[string]any)
-		if !ok {
-			return nil
-		}
-		out := make([]map[string]any, len(src))
-		for i, r := range src {
-			out[i] = make(map[string]any, len(r))
-			for k, v := range r {
-				out[i][k] = v
-			}
-		}
-		m[key] = out
-		return out
-	}
-	for _, w := range rows("workouts") {
-		if s, ok := w["title"].(string); ok {
-			w["title"] = title(s)
-		}
-		for _, ex := range rows2(w, "exercises") {
-			if s, ok := ex["name"].(string); ok {
-				ex["name"] = name(s)
-			}
-		}
-	}
-	for _, r := range rows("routines") {
-		if s, ok := r["title"].(string); ok {
-			r["title"] = title(s)
-		}
-		if names, ok := r["exercises"].([]string); ok {
-			cleaned := make([]string, len(names))
-			for i, n := range names {
-				cleaned[i] = name(n)
-			}
-			r["exercises"] = cleaned
-		}
-	}
-	for _, ex := range rows("exercises") {
-		if s, ok := ex["exercise"].(string); ok {
-			ex["exercise"] = name(s)
-		}
+	for k, v := range m {
+		m[k] = cleanValue(k, v)
 	}
 }
 
-// rows2 copies a nested []map[string]any under key in place.
-func rows2(m map[string]any, key string) []map[string]any {
-	src, ok := m[key].([]map[string]any)
-	if !ok {
-		return nil
-	}
-	out := make([]map[string]any, len(src))
-	for i, r := range src {
-		out[i] = make(map[string]any, len(r))
-		for k, v := range r {
-			out[i][k] = v
+// noCap is "no cap" for Clean: no real string is this long.
+const noCap = 1 << 30
+
+func cleanValue(key string, v any) any {
+	switch x := v.(type) {
+	case string:
+		switch key {
+		case "title":
+			t, _ := Clean(x, TitleCap)
+			return t
+		case "name", "exercise", "exercises":
+			t, _ := Clean(x, NameCap)
+			return t
 		}
+		t, _ := Clean(x, noCap)
+		return t
+	case map[string]any:
+		for k, val := range x {
+			x[k] = cleanValue(k, val)
+		}
+		return x
+	case []any:
+		for i, val := range x {
+			x[i] = cleanValue(key, val) // a list keeps its key: "exercises": ["Squat", ...]
+		}
+		return x
 	}
-	m[key] = out
-	return out
+	return v
 }
 
 // Deps is what a Catalogue reads. Every field is read-only data access.
@@ -175,7 +179,9 @@ type Deps struct {
 	// Syncers fills the freshness slots for sources beyond Hevy ("calendar",
 	// "mail"). Empty slots report connected:false and never sync.
 	Syncers map[string]Syncer
-	// Budget is the freshness budget per EnsureFresh call; 0 means WebBudget.
+	// Budget is the freshness wait budget per Catalogue (one turn), shared by
+	// every EnsureFresh call and counted as time actually spent blocked; 0 means
+	// WebBudget.
 	Budget time.Duration
 }
 
@@ -231,6 +237,11 @@ func register(allow []string, specs []ToolSpec) ([]ToolSpec, error) {
 			if !validSource(src) {
 				return nil, fmt.Errorf("secretary: tool %q names unknown source %q", s.Name, src)
 			}
+		}
+		// A tool with Sources is refreshed before it runs, so unchecked input
+		// could start a sync (GYST-164). Every such tool must validate.
+		if len(s.Sources) > 0 && s.Validate == nil {
+			return nil, fmt.Errorf("secretary: tool %q has Sources but no Validate", s.Name)
 		}
 		seen[s.Name] = true
 	}

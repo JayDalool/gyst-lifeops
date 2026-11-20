@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -248,7 +250,7 @@ func TestDayBriefAsOf(t *testing.T) {
 	stored := e.Svc.Now().Add(-90 * time.Minute)
 	e.SeedHevy(stored)
 	e.ConnectHevy(&secretarytest.FakeHevy{})
-	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, secretarytest.FakeCalendar{N: 2})
+	cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, secretarytest.FakeCalendar{N: 2, SyncedAt: e.Svc.Now().Add(-20 * time.Minute)})
 	_, m := build(t, cat, "today")
 	for _, key := range []string{"now", "prayer", "tasks", "calendar", "health", "training", "mail", "sync"} {
 		sec := m[key].(map[string]any)
@@ -268,6 +270,10 @@ func TestDayBriefAsOf(t *testing.T) {
 	}
 	if m["health"].(map[string]any)["as_of"] != "2026-11-19T11:40" || m["sync"].(map[string]any)["hevy"] != "2026-11-19T10:30" || m["sync"].(map[string]any)["health"] != "2026-11-19T11:40" {
 		t.Fatalf("health/sync: %v / %v", m["health"], m["sync"])
+	}
+	// The calendar's as_of is the reader's own synced-at: 20 minutes is past the 15 minute limit.
+	if c := m["calendar"].(map[string]any); c["as_of"] != "2026-11-19T11:40" || c["stale"] != true || m["sync"].(map[string]any)["calendar"] != "2026-11-19T11:40" {
+		t.Fatalf("calendar: %v", c)
 	}
 	if m["tasks"].(map[string]any)["stale"] != false || m["prayer"].(map[string]any)["stale"] != false {
 		t.Fatal("local data reported stale")
@@ -387,7 +393,7 @@ func TestGetDayBriefTool(t *testing.T) {
 	bad := briefCatalogue(t, e, secretarytest.FakeHealth{Err: context.Canceled}, secretarytest.FakeCalendar{Err: context.Canceled})
 	_, bm := build(t, bad, "today")
 	h, _ := bm["health"].(map[string]any)
-	if _, hasAsOf := h["as_of"]; !hasAsOf || h["available"] != false || h["reason"] != "unavailable" || bm["calendar"].(map[string]any)["events"] != nil || bm["calendar"].(map[string]any)["connected"] != true {
+	if _, hasAsOf := h["as_of"]; !hasAsOf || h["available"] != false || h["reason"] != "unavailable" || bm["calendar"].(map[string]any)["events"] != nil || bm["calendar"].(map[string]any)["connected"] != true || bm["calendar"].(map[string]any)["as_of"] != nil {
 		t.Fatalf("failures: health %v calendar %v", bm["health"], bm["calendar"])
 	}
 }
@@ -409,5 +415,132 @@ func TestGetDayBriefValidatesBeforeRefreshing(t *testing.T) {
 	cat.Wait()
 	if fake.Fetches() != 0 || len(secretarytest.Changed(before, secretarytest.DumpTables(t, e.DB))) != 0 {
 		t.Fatalf("%d fetches or a write on invalid input", fake.Fetches())
+	}
+}
+
+// movingCalendar is a CalendarReader whose stored copy can change between reads.
+type movingCalendar struct {
+	mu     sync.Mutex
+	at     time.Time
+	titles []string
+}
+
+func (m *movingCalendar) set(at time.Time, titles ...string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.at, m.titles = at, titles
+}
+
+func (m *movingCalendar) Events(day secretary.Day) (secretary.CalendarSnapshot, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	snap := secretary.CalendarSnapshot{SyncedAt: m.at}
+	for i, title := range m.titles {
+		start := day.Time().Add(8*time.Hour + time.Duration(i)*time.Hour)
+		snap.Events = append(snap.Events, secretary.CalendarEvent{Start: start, End: start.Add(30 * time.Minute), Busy: true, Title: title})
+	}
+	return snap, nil
+}
+
+// GYST-164 c4: the calendar's as_of, stale and sync.calendar come from the
+// snapshot the events were read from, not from the turn's cached decision. A
+// sync that finishes after the wait budget used to leave the new events under
+// the old as_of with stale true.
+func TestBriefCalendarFreshnessFollowsTheSnapshotRead(t *testing.T) {
+	e := secretarytest.New(t)
+	now := e.Svc.Now()
+	cal := &movingCalendar{}
+	cal.set(now.Add(-2*time.Hour), "Old event")
+	release := make(chan struct{})
+	var once sync.Once
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: secretarytest.FakeHealth{}, Calendar: cal, Budget: 100 * time.Millisecond,
+		Syncers: map[string]secretary.Syncer{secretary.SourceCalendar: {
+			LastSync: func() (time.Time, error) { return now.Add(-2 * time.Hour), nil },
+			Sync:     func(context.Context) error { <-release; return nil },
+		}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	t.Cleanup(func() { once.Do(func() { close(release) }) }) // runs before cat.Wait
+	out, err := secretarytest.Run(t, cat, "get_day_brief", `{}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]map[string]any
+	if err := json.Unmarshal([]byte(out), &m); err != nil {
+		t.Fatal(err)
+	}
+	if m["calendar"]["stale"] != true || m["calendar"]["as_of"] != "2026-11-19T10:00" {
+		t.Fatalf("while the sync is slow: %v", m["calendar"])
+	}
+	// The sync finishes after the budget and the reader's copy moves on.
+	cal.set(now, "New event")
+	once.Do(func() { close(release) })
+	cat.Wait()
+	_, m2 := build(t, cat, "today")
+	c := m2["calendar"].(map[string]any)
+	if c["stale"] != false || c["as_of"] != "2026-11-19T12:00" || m2["sync"].(map[string]any)["calendar"] != "2026-11-19T12:00" {
+		t.Fatalf("after the sync: %v / %v", c, m2["sync"])
+	}
+	if ev := c["events"].([]any); len(ev) != 1 || ev[0].(map[string]any)["title"].(map[string]any)["text"] != "New event" {
+		t.Fatalf("events: %v", c["events"])
+	}
+	// A reader older than the Syncer's own LastSync shows its own time.
+	cal.set(now.Add(-3*time.Hour), "Older")
+	_, m3 := build(t, cat, "today")
+	if c := m3["calendar"].(map[string]any); c["as_of"] != "2026-11-19T09:00" || c["stale"] != true {
+		t.Fatalf("older reader: %v", c)
+	}
+}
+
+// GYST-164 c4: as_of and stale follow the reader's synced-at; a failing or
+// never-synced reader reports null and stale, never a time it did not read.
+func TestDayBriefCalendarAsOf(t *testing.T) {
+	e := secretarytest.New(t)
+	now := e.Svc.Now()
+	for name, tc := range map[string]struct {
+		cal            secretarytest.FakeCalendar
+		asOf           any
+		stale          bool
+		syncedCalendar any
+	}{
+		"20 min old":   {secretarytest.FakeCalendar{N: 1, SyncedAt: now.Add(-20 * time.Minute)}, "2026-11-19T11:40", true, "2026-11-19T11:40"},
+		"5 min old":    {secretarytest.FakeCalendar{N: 1, SyncedAt: now.Add(-5 * time.Minute)}, "2026-11-19T11:55", false, "2026-11-19T11:55"},
+		"never synced": {secretarytest.FakeCalendar{N: 1}, nil, true, nil},
+		"read fails":   {secretarytest.FakeCalendar{Err: context.Canceled, SyncedAt: now}, nil, true, nil},
+	} {
+		cat := briefCatalogue(t, e, secretarytest.FakeHealth{}, tc.cal)
+		_, m := build(t, cat, "today")
+		c := m["calendar"].(map[string]any)
+		if c["as_of"] != tc.asOf || c["stale"] != tc.stale || c["connected"] != true || m["sync"].(map[string]any)["calendar"] != tc.syncedCalendar {
+			t.Errorf("%s: %v / sync %v", name, c, m["sync"])
+		}
+	}
+}
+
+// #188: with a stale calendar Syncer, a stale Hevy copy and a calendar reader,
+// building the brief starts no sync, no fetch and writes nothing.
+func TestBriefNeverSyncsCalendar(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-5 * time.Hour))
+	fake := &secretarytest.FakeHevy{}
+	e.ConnectHevy(fake)
+	var syncs atomic.Int32
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: secretarytest.FakeHealth{}, Budget: time.Second,
+		Calendar: secretarytest.FakeCalendar{N: 2, SyncedAt: e.Svc.Now().Add(-5 * time.Hour)},
+		Syncers: map[string]secretary.Syncer{secretary.SourceCalendar: {
+			LastSync: func() (time.Time, error) { return e.Svc.Now().Add(-5 * time.Hour), nil },
+			Sync:     func(context.Context) error { syncs.Add(1); return nil },
+		}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	before := secretarytest.DumpTables(t, e.DB)
+	build(t, cat, "today")
+	cat.Wait()
+	if syncs.Load() != 0 || fake.Fetches() != 0 || len(secretarytest.Changed(before, secretarytest.DumpTables(t, e.DB))) != 0 {
+		t.Fatalf("%d calendar syncs, %d fetches, or tables changed", syncs.Load(), fake.Fetches())
 	}
 }

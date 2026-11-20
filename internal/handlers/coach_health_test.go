@@ -1,11 +1,18 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/secretary"
+	"lifeops-tracker/internal/secretary/secretarytest"
+	"lifeops-tracker/internal/services"
 )
 
 // The real adapter behind the Secretary's brief (Issue #236): null stays null,
@@ -126,5 +133,141 @@ func TestCoachHealthBriefOverBudgetAndStale(t *testing.T) {
 	}
 	if !b.Stale {
 		t.Fatal("a snapshot nine hours old is stale (HealthSyncStaleAfter is 8 h)")
+	}
+}
+
+// GYST-164 c2: values, stale and as_of come from the one read healthBase made.
+// Before, BriefHealth read the snapshot a second time for as_of, so a sync that
+// landed between the two reads gave old values with a new as_of (RULES 3.2).
+func TestCoachHealthBriefOneRead(t *testing.T) {
+	h, closeDB := goldenHandler(t)
+	defer closeDB()
+	date := h.Service.TodayString()
+	sync := func(steps int) {
+		t.Helper()
+		if _, err := h.Service.SyncHealth(models.HealthSyncRequest{Date: date, Source: "apple_shortcuts", HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(int64(steps))}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	setNow := func(at time.Time) { h.Service.Clock.Now = func() time.Time { return at } }
+	t0 := h.Service.Now()
+	sync(1000)
+
+	// Fresh view, then a later sync lands before BriefHealth runs.
+	old := briefOf(t, h)
+	setNow(t0.Add(9 * time.Hour))
+	sync(2000)
+	b, err := old.BriefHealth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.Steps == nil || *b.Steps != "1,000" || !b.AsOf.Equal(t0) || b.Stale {
+		t.Fatalf("old view: steps %v as_of %v (want %v) stale %v", b.Steps, b.AsOf, t0, b.Stale)
+	}
+	if want := old.now.Sub(b.AsOf) >= services.HealthSyncStaleAfter; b.Stale != want {
+		t.Fatalf("stale %v disagrees with as_of age", b.Stale)
+	}
+	fresh, err := briefOf(t, h).BriefHealth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fresh.Steps == nil || *fresh.Steps != "2,000" || !fresh.AsOf.Equal(t0.Add(9*time.Hour)) || fresh.Stale {
+		t.Fatalf("new view: steps %v as_of %v stale %v", fresh.Steps, fresh.AsOf, fresh.Stale)
+	}
+}
+
+func TestCoachHealthBriefOneReadStaleView(t *testing.T) {
+	h, closeDB := goldenHandler(t)
+	defer closeDB()
+	date := h.Service.TodayString()
+	t0 := h.Service.Now()
+	if _, err := h.Service.SyncHealth(models.HealthSyncRequest{Date: date, Source: "apple_shortcuts", HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(1000)}}); err != nil {
+		t.Fatal(err)
+	}
+	later := t0.Add(9 * time.Hour)
+	h.Service.Clock.Now = func() time.Time { return later }
+	stale := briefOf(t, h) // built while the copy is 9 h old
+	if _, err := h.Service.SyncHealth(models.HealthSyncRequest{Date: date, Source: "apple_shortcuts", HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(2000)}}); err != nil {
+		t.Fatal(err)
+	}
+	b, err := stale.BriefHealth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !b.Stale || !b.AsOf.Equal(t0) {
+		t.Fatalf("stale view: stale %v as_of %v (want true, %v)", b.Stale, b.AsOf, t0)
+	}
+	if want := stale.now.Sub(b.AsOf) >= services.HealthSyncStaleAfter; b.Stale != want {
+		t.Fatalf("stale %v disagrees with as_of age", b.Stale)
+	}
+}
+
+// GYST-164 c5: the Secretary's Hevy tools clean every string of the real
+// adapter's output, so a change to the adapter's Go types cannot leave a name
+// uncleaned; the Coach's own tools still return the raw names. Fictional names.
+func TestSecretaryHevyToolsCleanRealAdapter(t *testing.T) {
+	h, closeDB := goldenHandler(t)
+	defer closeDB()
+	dirty := "Push‮ day​ " + strings.Repeat("x", 200)
+	now := h.Service.Now()
+	f := func(v float64) *float64 { return &v }
+	ex := []models.TrainingExercise{{Name: dirty, PrimaryMuscle: "chest", Sets: []models.TrainingSet{{Kind: "normal", LoadKG: f(60), Reps: f(5)}}}}
+	entries := []models.TrainingEntry{
+		{ID: "a", Kind: "workout", Title: dirty, StartedAt: now.AddDate(0, 0, -1), Exercises: ex},
+		{ID: "b", Kind: "workout", Title: dirty, StartedAt: now.AddDate(0, 0, -5), Exercises: ex},
+		{ID: "r", Kind: "routine", Title: dirty, Exercises: ex},
+	}
+	if err := h.Service.Repo.SaveTraining("hevy", entries, now.Add(-5*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	adapter := briefOf(t, h)
+	cat, err := secretary.New(secretary.Deps{Service: h.Service, Health: adapter, Budget: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	var strs func(v any, fn func(string))
+	strs = func(v any, fn func(string)) {
+		switch x := v.(type) {
+		case string:
+			fn(x)
+		case map[string]any:
+			for _, val := range x {
+				strs(val, fn)
+			}
+		case []any:
+			for _, val := range x {
+				strs(val, fn)
+			}
+		}
+	}
+	for _, name := range []string{"get_training_summary", "get_recent_workouts", "get_exercise_progress", "get_hevy_routines"} {
+		out, err := secretarytest.Run(t, cat, name, `{}`)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		var m map[string]any
+		if err := json.Unmarshal([]byte(out), &m); err != nil {
+			t.Fatal(err)
+		}
+		n := 0
+		strs(m, func(s string) {
+			n++
+			if strings.ContainsAny(s, "‮​") || utf8.RuneCountInString(s) > secretary.TitleCap {
+				t.Errorf("%s: uncleaned or uncapped string %q", name, s)
+			}
+		})
+		if n == 0 {
+			t.Errorf("%s: no strings walked", name)
+		}
+	}
+	for _, tool := range secretary.HealthTools(adapter) {
+		if tool.Name != "get_recent_workouts" {
+			continue
+		}
+		out, err := tool.Run(context.Background(), nil)
+		if err != nil || !strings.Contains(out, "‮") && !strings.Contains(out, `‮`) {
+			t.Errorf("Coach output was cleaned or failed: %v %s", err, out)
+		}
 	}
 }

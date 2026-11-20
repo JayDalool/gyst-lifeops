@@ -26,8 +26,10 @@
 // BuildDayBrief is pure: it reads stored rows and the freshness state with
 // Peek, and never syncs or writes, so a GET may call it. Catalogue.Tools is for
 // POST paths only: each tool it returns first runs EnsureFresh for its Sources,
-// which can start a sync. Build one Catalogue per turn; a source is checked at
-// most once per Catalogue.
+// which can start a sync. Build one Catalogue per turn: a source is checked at
+// most once per Catalogue, and the Catalogue has one wait budget for all of the
+// turn's tools together (Deps.Budget, WebBudget by default), counted as time
+// actually spent blocked, not the model's time between tool calls.
 //
 // # The brief and project privacy
 //
@@ -41,12 +43,15 @@
 //  1. Write a builder, func(*Catalogue) []ToolSpec, and add it to builders in
 //     catalogue.go. A spec that reads a synced source lists it in Sources; its
 //     Run returns a value (encoded as compact JSON) or a fixed-string error. A
-//     tool that takes a date or other input sets Validate, which runs before
-//     the freshness check so bad input starts no sync and writes nothing.
+//     tool that takes input sets Validate, which runs before the freshness
+//     check so bad input starts no sync and writes nothing. Validate is
+//     required for a spec with Sources: register refuses one without it.
 //  2. Add the tool's name to allowlist, in offer order, and to the literal in
 //     TestRegistryEqualsAllowlist. This is the reviewed step.
 //  3. Pass the data source in Deps (for example Deps.Calendar, a
-//     CalendarReader) and, for a source that syncs, a Syncer in Deps.Syncers
+//     CalendarReader, whose Events returns the events and the synced-at of the
+//     copy they came from in one read, so the brief's as_of describes the rows
+//     it shows) and, for a source that syncs, a Syncer in Deps.Syncers
 //     under "calendar" or "mail". Sync must bound itself (its own timeout and
 //     lock) and must not rely on the caller's context: it keeps running after
 //     the time budget, so a timeout never becomes a false failure.

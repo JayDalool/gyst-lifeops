@@ -96,7 +96,7 @@ func TestCatalogueHealthToolsEqualHealthTools(t *testing.T) {
 		if string(a) != string(b) {
 			t.Errorf("%s: schema differs", tool.Name)
 		}
-		for _, in := range []string{`{}`, `{"count":99}`, `{"weeks":26}`} {
+		for _, in := range []string{`{}`, `{"count":3}`, `{"weeks":26}`} {
 			x, xerr := tool.Run(context.Background(), json.RawMessage(in))
 			x = withoutFreshness(x)
 			y, yerr := d.Run(context.Background(), json.RawMessage(in))
@@ -107,6 +107,15 @@ func TestCatalogueHealthToolsEqualHealthTools(t *testing.T) {
 	}
 	if n != 9 {
 		t.Fatalf("%d Health tools in the Catalogue", n)
+	}
+	// GYST-164: out of range is an error on the Secretary path (the model can
+	// retry) and a clamp on the Coach path (unchanged).
+	sec, err := secretarytest.Run(t, catalogue(t, e), "get_recent_workouts", `{"count":99}`)
+	if err == nil || err.Error() != "invalid input" || sec != "" {
+		t.Errorf("Secretary count 99: %q %v", sec, err)
+	}
+	if out, err := direct["get_recent_workouts"].Run(context.Background(), json.RawMessage(`{"count":99}`)); err != nil || out == "" {
+		t.Errorf("Coach count 99: %q %v", out, err)
 	}
 }
 
@@ -541,4 +550,241 @@ func (d dirtyHealth) FoodProducts() (any, error)   { return nil, nil }
 func (d dirtyHealth) DailyChecklist() (any, error) { return nil, nil }
 func (d dirtyHealth) BriefHealth() (secretary.HealthBrief, error) {
 	return secretary.HealthBrief{}, nil
+}
+
+// GYST-164 c1: input is checked before any refresh. Each invalid input gets the
+// fixed error, starts no Hevy fetch, writes nothing and never appears in the
+// error. A fresh Catalogue per input: freshness is decided once per turn.
+func TestHevyToolsValidateBeforeRefreshing(t *testing.T) {
+	invalid := map[string][]string{
+		"get_recent_workouts":   {`{`, `[1]`, `"x"`, `{"count":"three"}`, `{"count":2.5}`, `{"count":3.0}`, `{"count":true}`, `{"count":0}`, `{"count":6}`, `{"count":-4}`, `{"count":99}`, `{"count":1e0}`, `{"count":[3]}`, `{"count":99,"count":null}`, `{"count":3,"count":null}`, `{"count":9,"Count":null}`},
+		"get_exercise_progress": {`{`, `[1]`, `"x"`, `{"weeks":"4"}`, `{"weeks":7}`, `{"weeks":0}`, `{"weeks":12.0}`, `{"weeks":false}`, `{"weeks":7,"weeks":null}`, `{"weeks":26,"weeks":null}`},
+		"get_training_summary":  {`{`, `[1]`, `"x"`, `5`},
+		"get_hevy_routines":     {`{`, `[1]`, `"x"`, `true`},
+	}
+	valid := map[string][]string{
+		"get_recent_workouts":   {``, `null`, `{}`, `{"count":null}`, `{"count":1}`, `{"count":3}`, `{"count":5}`, `{"count":3,"extra":"ignored"}`, `{"count":null,"count":null}`, `{"count":null,"count":3}`, `{"count":99,"count":2}`},
+		"get_exercise_progress": {``, `null`, `{}`, `{"weeks":null}`, `{"weeks":4}`, `{"weeks":12}`, `{"weeks":26}`, `{"weeks":null,"weeks":4}`},
+		"get_training_summary":  {``, `null`, `{}`, `{"anything":1}`},
+		"get_hevy_routines":     {``, `null`, `{}`},
+	}
+	build := func() (*secretarytest.Env, *secretarytest.FakeHevy, *secretary.Catalogue) {
+		e := secretarytest.New(t)
+		e.SeedHevy(e.Svc.Now().Add(-2 * time.Hour))
+		fake := &secretarytest.FakeHevy{}
+		e.ConnectHevy(fake)
+		return e, fake, catalogue(t, e)
+	}
+	for name, inputs := range invalid {
+		for _, in := range inputs {
+			e, fake, cat := build()
+			before := secretarytest.DumpTables(t, e.DB)
+			out, err := secretarytest.Run(t, cat, name, in)
+			cat.Wait()
+			if err == nil || err.Error() != "invalid input" || out != "" {
+				t.Errorf("%s %s: %q %v", name, in, out, err)
+			}
+			if fake.Fetches() != 0 || len(secretarytest.Changed(before, secretarytest.DumpTables(t, e.DB))) != 0 {
+				t.Errorf("%s %s: fetches %d, tables changed", name, in, fake.Fetches())
+			}
+		}
+	}
+	for name, inputs := range valid {
+		for _, in := range inputs {
+			e, fake, cat := build()
+			out, err := secretarytest.Run(t, cat, name, in)
+			cat.Wait()
+			if err != nil || out == "" || fake.Fetches() != 1 {
+				t.Errorf("%s %q: %q %v, fetches %d", name, in, out, err, fake.Fetches())
+			}
+			_ = e
+		}
+	}
+}
+
+// Run gets exactly the number the model sent; a default fills only an absent
+// or null field, and nothing accepted is silently replaced.
+func TestHevyValidatedInputReachesRunUnchanged(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-5 * time.Minute))
+	h := &argHealth{}
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: h, Budget: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cat.Wait)
+	for _, tc := range []struct {
+		name, in string
+		count    int
+		weeks    int
+	}{
+		{"get_recent_workouts", ``, 1, 0}, {"get_recent_workouts", `{"count":null}`, 1, 0}, {"get_recent_workouts", `{"count":1}`, 1, 0},
+		{"get_recent_workouts", `{"count":3}`, 3, 0}, {"get_recent_workouts", `{"count":99,"count":2}`, 2, 0}, {"get_recent_workouts", `{"count":null,"count":4}`, 4, 0}, {"get_recent_workouts", `{"count":5}`, 5, 0},
+		{"get_exercise_progress", `{}`, 0, 12}, {"get_exercise_progress", `{"weeks":4}`, 0, 4}, {"get_exercise_progress", `{"weeks":null,"weeks":26}`, 0, 26}, {"get_exercise_progress", `{"weeks":26}`, 0, 26}, {"get_exercise_progress", `{"weeks":12}`, 0, 12},
+	} {
+		h.count, h.weeks = 0, 0
+		if _, err := secretarytest.Run(t, cat, tc.name, tc.in); err != nil {
+			t.Fatalf("%s %s: %v", tc.name, tc.in, err)
+		}
+		if h.count != tc.count || h.weeks != tc.weeks {
+			t.Errorf("%s %s: Run got count %d weeks %d, want %d %d", tc.name, tc.in, h.count, h.weeks, tc.count, tc.weeks)
+		}
+	}
+}
+
+// argHealth records the clamped arguments the Hevy tools pass to the reader.
+type argHealth struct {
+	secretarytest.FakeHealth
+	count, weeks int
+}
+
+func (a *argHealth) RecentWorkouts(n int) (any, error) {
+	a.count = n
+	return map[string]any{"workouts": []map[string]any{}}, nil
+}
+func (a *argHealth) ExerciseProgress(w int) (any, error) {
+	a.weeks = w
+	return map[string]any{"exercises": []map[string]any{}}, nil
+}
+
+// shapeHealth answers all four Hevy tools with one value, whatever Go type the
+// test builds it from.
+type shapeHealth struct {
+	secretarytest.FakeHealth
+	v any
+}
+
+func (s shapeHealth) TrainingSummary() (any, error)     { return s.v, nil }
+func (s shapeHealth) RecentWorkouts(int) (any, error)   { return s.v, nil }
+func (s shapeHealth) ExerciseProgress(int) (any, error) { return s.v, nil }
+func (s shapeHealth) HevyRoutines() (any, error)        { return s.v, nil }
+
+type shapeEx struct {
+	Name string  `json:"name"`
+	Kg   float64 `json:"kg"`
+}
+type shapeWorkout struct {
+	Title     string    `json:"title"`
+	Note      string    `json:"note"`
+	Exercises []shapeEx `json:"exercises"`
+}
+type shapeRoutine struct {
+	Title     string   `json:"title"`
+	Exercises []string `json:"exercises"`
+}
+type shapeProgress struct {
+	Exercise string `json:"exercise"`
+}
+type shapeResult struct {
+	Workouts  []shapeWorkout  `json:"workouts"`
+	Routines  []shapeRoutine  `json:"routines"`
+	Exercises []shapeProgress `json:"exercises"`
+}
+
+// GYST-164 c5: names are cleaned from the JSON form, so the adapter's Go types
+// do not matter. Any string anywhere loses hidden characters; titles and names
+// keep their caps; a result that is not an object is "data unavailable".
+func TestHevyToolsCleanNamesAnyShape(t *testing.T) {
+	d := "Push‮ day​ " + strings.Repeat("x", 200)
+	shapes := map[string]any{
+		"maps": map[string]any{
+			"workouts":  []map[string]any{{"title": d, "note": d, "exercises": []map[string]any{{"name": d, "kg": 102.5}}}},
+			"routines":  []map[string]any{{"title": d, "exercises": []string{d}}},
+			"exercises": []map[string]any{{"exercise": d}},
+		},
+		"anys": map[string]any{
+			"workouts":  []any{map[string]any{"title": d, "note": d, "exercises": []any{map[string]any{"name": d, "kg": 102.5}}}},
+			"routines":  []any{map[string]any{"title": d, "exercises": []any{d}}},
+			"exercises": []any{map[string]any{"exercise": d}},
+		},
+		"tagged structs": map[string]any{
+			"workouts":  []shapeWorkout{{Title: d, Note: d, Exercises: []shapeEx{{Name: d, Kg: 102.5}}}},
+			"routines":  []shapeRoutine{{Title: d, Exercises: []string{d}}},
+			"exercises": []shapeProgress{{Exercise: d}},
+		},
+		"string maps": map[string]any{
+			"workouts":  []map[string]string{{"title": d, "note": d}},
+			"routines":  []map[string]string{{"title": d}},
+			"exercises": []map[string]string{{"exercise": d}},
+		},
+		"struct pointer": &shapeResult{
+			Workouts:  []shapeWorkout{{Title: d, Note: d, Exercises: []shapeEx{{Name: d, Kg: 102.5}}}},
+			Routines:  []shapeRoutine{{Title: d, Exercises: []string{d}}},
+			Exercises: []shapeProgress{{Exercise: d}},
+		},
+	}
+	var walk func(key string, v any, t *testing.T, shape string)
+	walk = func(key string, v any, t *testing.T, shape string) {
+		switch x := v.(type) {
+		case string:
+			if strings.ContainsAny(x, "‮​") {
+				t.Errorf("%s: %s holds a hidden rune: %q", shape, key, x)
+			}
+			if key == "title" && utf8.RuneCountInString(x) > secretary.TitleCap {
+				t.Errorf("%s: title over cap: %d runes", shape, utf8.RuneCountInString(x))
+			}
+			if (key == "name" || key == "exercise" || key == "exercises") && utf8.RuneCountInString(x) > secretary.NameCap {
+				t.Errorf("%s: %s over cap: %d runes", shape, key, utf8.RuneCountInString(x))
+			}
+		case map[string]any:
+			for k, val := range x {
+				walk(k, val, t, shape)
+			}
+		case []any:
+			for _, val := range x {
+				walk(key, val, t, shape)
+			}
+		}
+	}
+	for shape, v := range shapes {
+		e := secretarytest.New(t)
+		e.SeedHevy(e.Svc.Now().Add(-5 * time.Minute))
+		cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: shapeHealth{v: v}, Budget: time.Second})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(cat.Wait)
+		for _, name := range []string{"get_training_summary", "get_recent_workouts", "get_exercise_progress", "get_hevy_routines"} {
+			out, err := secretarytest.Run(t, cat, name, `{}`)
+			if err != nil {
+				t.Fatalf("%s %s: %v", shape, name, err)
+			}
+			if strings.ContainsAny(out, "‮​") || strings.Contains(out, `‮`) || strings.Contains(out, `​`) {
+				t.Errorf("%s %s: raw output holds a hidden rune", shape, name)
+			}
+			var m map[string]any
+			if err := json.Unmarshal([]byte(out), &m); err != nil {
+				t.Fatal(err)
+			}
+			walk("", m, t, shape+" "+name)
+			if m["as_of"] == nil || m["stale"] == nil {
+				t.Errorf("%s %s: no freshness: %s", shape, name, out)
+			}
+			if shape != "string maps" && name == "get_recent_workouts" {
+				if !strings.Contains(out, `"kg":102.5`) {
+					t.Errorf("%s: number not byte-exact: %s", shape, out)
+				}
+			}
+		}
+	}
+	// The reader's value is not changed by cleaning.
+	src := map[string]any{"workouts": []map[string]any{{"title": d}}}
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-5 * time.Minute))
+	cat, _ := secretary.New(secretary.Deps{Service: e.Svc, Health: shapeHealth{v: src}, Budget: time.Second})
+	t.Cleanup(cat.Wait)
+	if _, err := secretarytest.Run(t, cat, "get_recent_workouts", `{}`); err != nil {
+		t.Fatal(err)
+	}
+	if src["workouts"].([]map[string]any)[0]["title"] != d {
+		t.Error("the reader's value was changed")
+	}
+	// A result that is not an object is unavailable, not passed through raw.
+	for _, bad := range []any{[]string{d}, "raw " + d, 7.0, nil} {
+		cat, _ := secretary.New(secretary.Deps{Service: e.Svc, Health: shapeHealth{v: bad}, Budget: time.Second})
+		t.Cleanup(cat.Wait)
+		if out, err := secretarytest.Run(t, cat, "get_recent_workouts", `{}`); err == nil || err.Error() != "data unavailable" || out != "" {
+			t.Errorf("non-object %T: %q %v", bad, out, err)
+		}
+	}
 }

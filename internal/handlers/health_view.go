@@ -75,6 +75,11 @@ type HealthTodayView struct {
 	LastSynced      string
 	HasLastSynced   bool
 	LastSyncedStale bool
+	// LastSyncedAt is the parsed stamp behind the three fields above; zero when
+	// there is no snapshot or the stamp does not parse. The Secretary's brief
+	// takes its as_of from it so values, stale flag and as_of come from one read
+	// (GYST-164, RULES 3.2). No template reads it.
+	LastSyncedAt time.Time
 
 	// Calories is also the first entry of Macros. It is named explicitly
 	// because the energy card needs it on its own, and reaching in by index
@@ -229,6 +234,7 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 		snapshot = *today.Snapshot
 		if synced, err := time.Parse(time.RFC3339Nano, snapshot.LastSyncedAt); err == nil {
 			view.HasLastSynced = true
+			view.LastSyncedAt = synced
 			view.LastSynced = humaniseSince(now, synced)
 			view.LastSyncedStale = now.Sub(synced) >= services.HealthSyncStaleAfter
 		}

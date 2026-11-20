@@ -333,3 +333,26 @@ func TestStepsPreferWatchThenIPhone(t *testing.T) {
 		})
 	}
 }
+
+// GYST-164 c2: the parsed stamp rides on the view so the Secretary's brief needs
+// no second read. It is zero when there is nothing valid to parse.
+func TestBuildHealthTodayViewLastSyncedAt(t *testing.T) {
+	now := viewNow()
+	at := now.Add(-3 * time.Hour)
+	snap := func(stamp string) models.HealthTodayResponse {
+		return models.HealthTodayResponse{Date: "2026-09-10", Snapshot: &models.DailyHealthSnapshot{Date: "2026-09-10", LastSyncedAt: stamp}}
+	}
+	v := buildHealthTodayView(snap(at.Format(time.RFC3339Nano)), now)
+	if !v.LastSyncedAt.Equal(at) || !v.HasLastSynced || v.LastSyncedStale || v.LastSynced != humaniseSince(now, at) {
+		t.Fatalf("parsed: %+v", v)
+	}
+	old := now.Add(-9 * time.Hour)
+	if v := buildHealthTodayView(snap(old.Format(time.RFC3339Nano)), now); !v.LastSyncedAt.Equal(old) || !v.LastSyncedStale {
+		t.Fatalf("stale: %+v", v)
+	}
+	for name, resp := range map[string]models.HealthTodayResponse{"no snapshot": {Date: "2026-09-10"}, "bad stamp": snap("not a time")} {
+		if v := buildHealthTodayView(resp, now); !v.LastSyncedAt.IsZero() || v.HasLastSynced || v.LastSyncedStale {
+			t.Errorf("%s: %+v", name, v)
+		}
+	}
+}
