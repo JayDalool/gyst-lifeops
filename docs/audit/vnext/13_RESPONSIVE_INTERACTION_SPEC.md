@@ -8,6 +8,8 @@
 
 ## 1. Breakpoints
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-17:** two layout breakpoints, 700 and 1000.
+
 Four layout breakpoints, mobile-first. No device-specific layouts.
 
 | Range | Name | Layout |
@@ -24,6 +26,8 @@ Additional micro-rules:
 
 ## 2. Phone navigation
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-18 and DD-20:** floating pill, Today · Calendar · Mail · Tasks · Health · All, plus +.
+
 - **Bottom tab bar** (Today · Projects · Health · Learn · More): fixed, blurred,
   56 + safe-area-bottom, 44+ targets, labels always visible.
 - **Badge:** Today only; counts Attention `needs_action` + `critical`. The Today badge is the Attention entry.
@@ -34,11 +38,15 @@ Additional micro-rules:
 
 ## 3. Tablet navigation
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-17 and DD-18:** 700–999 keeps the tab bar, centred; the sidebar starts at 1000.
+
 - 600–1023 keeps the bottom tabs (thumb reach on iPad portrait; consistent with phone).
 - Lists stay single-column. Metrics widen to 3 columns. Sheets float centred (max 560) with rounded corners on all sides.
 - **Landscape iPad ≥ 1024** switches to the sidebar automatically (desktop rules).
 
 ## 4. Desktop navigation
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-21:** sidebar contents, the rail and the go-to shortcuts.
 
 - **Sidebar:**
   - GYST brand
@@ -52,6 +60,8 @@ Additional micro-rules:
 
 ## 5. Secondary navigation
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-19 and DD-22:** the Tasks · Projects · Galaxy hub; four Health sections.
+
 | Level | Pattern | Example |
 |---|---|---|
 | Area within a tab | Sticky **segmented control** under the page title | Projects · Development · Galaxy · Roadmaps; Summary · Nutrition · Training · Progress · Plan |
@@ -64,6 +74,8 @@ horizontally only as a fallback.
 
 ## 6. Sheets
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-24:** radius 28; centred from 700.
+
 - **Use for:** capture, re-authentication, previews (Galaxy world, review summary on phone), item options (snooze/dismiss), short edits.
 - **Phone:** bottom sheet, grab handle, 24 radius top, max 88 vh, content scrolls inside, close via ✕ (44 target), scrim tap, swipe down, or Escape.
 - **≥ 600:** centred floating sheet, max width 560, bottom 24.
@@ -71,6 +83,8 @@ horizontally only as a fallback.
 - Focus moves into the sheet and returns to the invoker. The background is inert (`aria-modal`).
 
 ## 7. Inspectors
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-17:** split view from 1000 replaces the inspector.
 
 - **≥ 1280 only**, on list screens that declare one (Development, Reviews, Goals, Settings, Learn optional).
 - Selecting a row fills the inspector **without navigation**. Below 1280 the same row navigates to the detail page (or opens a sheet for Reviews).
@@ -93,6 +107,8 @@ horizontally only as a fallback.
 
 ## 10. Keyboard
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-21:** more shortcuts.
+
 | Key | Action |
 |---|---|
 | ⌘/Ctrl-K | Open/close launcher |
@@ -106,6 +122,8 @@ horizontally only as a fallback.
 A focus ring is visible on every control. The skip link goes to main content.
 
 ## 11. Launcher
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-20 and DD-27:** the All pages launcher and the Secretary's command bar.
 
 - **Modes** (never simultaneous; fixes Stage 3's fused search and capture):
   - **Go** (default): navigation targets.
@@ -126,12 +144,16 @@ A focus ring is visible on every control. The skip link goes to main content.
 
 ## 12. Quick capture
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-25:** the + capture sheet and the task sheet.
+
 - Entry: + on Today, Capture mode, launcher `+` prefix.
 - One field ("Book dentist tomorrow 9am"). Parsed into chips (date/time, project, priority) that the user can tap to change. Parsing is deterministic and local.
 - "Add task" commits; a toast confirms with Undo. The sheet closes and focus returns.
 - Capture creates **GYST tasks** only. Development tasks are created with Do → "New development task" (GitHub issue), which is a separate command.
 
 ## 13. Safe areas
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-18:** the tab bar floats 12 px above the safe area, 60 high.
 
 - Top bar padding-top `env(safe-area-inset-top)`; sticky elements offset by the same.
 - Tab bar height `56 + env(safe-area-inset-bottom)`; side padding respects left/right insets in landscape.
@@ -169,6 +191,8 @@ Nothing else is sticky. Section headers don't stick (they would crowd a phone).
 Healthy is never assumed: missing status renders "Unknown", not green.
 
 ## 18. Motion / reduced motion
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-16:** 120, 220 and 380 ms.
 
 - Press 150 ms, sheets and dialogs 240 ms, ship flight 900 ms, working pulse 1.6 s.
 - Reduced motion: no pulses, no ship flight (it jumps), sheets appear without translation, the chevron doesn't rotate.
@@ -251,6 +275,8 @@ should get the same pass in implementation review.
 | Scope creep from prototypes | Prototypes are fictional; each production screen is its own approved task |
 
 ## Validation checklist (must be browser-validated during implementation)
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-17:** makeover screens are checked at 390, 834, 1194 and 1440.
 
 1. 390, 430, 768, 1024, 1440, 1920 on every migrated screen; no horizontal scroll; 44 px targets.
 2. Real iPhone PWA: safe areas, tab bar, sheet swipe/scroll interplay, keyboard with inputs, pull-to-refresh behaviour.

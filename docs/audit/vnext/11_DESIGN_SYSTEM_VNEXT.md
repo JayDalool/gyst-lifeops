@@ -15,6 +15,8 @@
 
 ## A. Visual identity
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-6 to DD-8:** one accent chosen by Jay, three Looks, six section colours.
+
 GYST is a calm, native-feeling personal command center: cool neutral surfaces,
 grouped lists instead of card walls, one confident blue for action, semantic
 colour only for state, and a single immersive exception, **Galaxy**, where deep
@@ -24,6 +26,8 @@ wordmark, the violet XP chip, world-orbs as project icons. The result should fee
 at home on an iPhone and on a large desktop without looking like an admin console.
 
 ## B. Design principles
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-17:** split view from 1000 replaces the inspector in principle 7.
 
 1. **Glance, then open.** The default view is icon · name · state/value · one
    signal. Everything else is behind tap, sheet, inspector, disclosure or launcher.
@@ -49,6 +53,8 @@ at home on an iPhone and on a large desktop without looking like an admin consol
 
 ## C. Typography
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-9:** Geist, eight sizes on one scale factor, weights 400, 500 and 600.
+
 System stack only (no web fonts): `-apple-system, BlinkMacSystemFont, "SF Pro
 Text"/"SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`.
 Numbers that align use `font-variant-numeric: tabular-nums`.
@@ -72,6 +78,8 @@ Rules:
 
 ## D. Spacing
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-11:** tablet gutter 28; Comfortable and Compact density.
+
 4-point base, seven steps: **4 · 8 · 12 · 16 · 24 · 32 · 48** (`--s1 … --s12`).
 
 | Context | Value |
@@ -86,6 +94,8 @@ Rules:
 
 ## E. Radii
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-10:** `--r-lg` 20, `--r-xl` 28.
+
 | Token | Value | Use |
 |---|---|---|
 | `--r-sm` | 8 | Icon tiles (32), small buttons, tags (6 for tags) |
@@ -97,6 +107,8 @@ Rules:
 This replaces the roughly 12 radius values found in legacy CSS (Stage 3).
 
 ## F. Surfaces
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-7:** the neutrals come from the chosen Look.
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
@@ -112,6 +124,8 @@ separates them. Separators are used *inside* groups only.
 
 ## G. Elevation
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-12:** inner hairline, one floating shadow, blur 20, three card styles.
+
 | Level | Token | Use |
 |---|---|---|
 | 0 | none | Rows, inline content |
@@ -121,6 +135,8 @@ separates them. Separators are used *inside* groups only.
 | Blur | `backdrop-filter` saturate 1.6, blur 14–16 | Sticky top bar, sub-nav, tab bar only |
 
 ## H. Colours
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-6 and DD-7:** the accent set and the Look neutrals; `--xp` merges into `--accent`.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
@@ -135,6 +151,8 @@ separates them. Separators are used *inside* groups only.
 The blue matches production `--gyst-blue` (#2563eb) for continuity.
 
 ## I. Semantic / status colours
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-13:** info uses the chosen accent; state text is set per Look.
 
 | State family | Graphic | Text | Soft bg | Words used |
 |---|---|---|---|---|
@@ -153,6 +171,8 @@ Rules:
 
 ## J. Dark mode
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-5 and DD-7:** one Appearance setting; dark values per Look.
+
 - Default: **follow the system**, with a manual override stored per device. The
   current production toggle keeps working (see decision DD-1).
 - Every token has a dark value. Components never hard-code colours.
@@ -165,6 +185,8 @@ Rules:
 
 ## K. Icons
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-14 and DD-15:** 1.75 stroke, one SVG set; a project is a glyph tile in lists.
+
 - Line icons, 1.8 stroke, round caps (production Lucide subset, extended as needed).
 - Sizes: **16** inline/meta/chips · **20** rows, buttons, top bar · **24** tab bar, sidebar primary.
 - **Icon tile:** 32 (rows) or 40 (heroes), `--r-sm`/`--r-md`, tinted by meaning
@@ -175,6 +197,8 @@ Rules:
 - Every icon-only control has an accessible name.
 
 ## L. Motion
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-16:** 120, 220 and 380 ms.
 
 | Token | Duration | Easing | Use |
 |---|---|---|---|
@@ -203,6 +227,9 @@ Prototype class names are given for reference.
 ### Shell & navigation
 
 **App Shell** (`.app/.main/.content`)
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-17 and DD-21:** breakpoints 700 and 1000, sidebar 248, split view instead of the inspector.
+
 - Purpose: page frame.
 - Anatomy: sidebar or tab bar + top bar + content column (+ inspector).
 - Variants: standard; with inspector (`.has-inspector`); immersive (Galaxy).
@@ -213,6 +240,9 @@ Prototype class names are given for reference.
 - Don't: nest scroll containers; add chrome bars.
 
 **Mobile Tab Bar** (`.tabbar`)
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-18 and DD-20:** floating pill, Today · Calendar · Mail · Tasks · Health · All, plus +.
+
 - Purpose: 5 primary destinations (Today · Projects · Health · Learn · More).
 - Anatomy: icon 24 + label 11; badge on Today only.
 - States: current (accent), default (ink-3), badge (count of needs_action + critical).
@@ -221,6 +251,9 @@ Prototype class names are given for reference.
 - Don't: add tabs, put badges on other tabs, hide labels.
 
 **Desktop Sidebar** (`.sidebar`)
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-21:** 248 wide from 1000, Pinned, six groups, 68 rail.
+
 - Purpose: same hierarchy on wide screens.
 - Anatomy:
   - brand
@@ -250,6 +283,9 @@ Prototype class names are given for reference.
 - Don't: show the title while the large title is visible.
 
 **Secondary navigation** (`.subnav` + `.seg`)
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-19 and DD-22:** the Tasks · Projects · Galaxy hub; four Health sections.
+
 - Purpose: sibling areas within a tab (Projects · Development · Galaxy · Roadmaps; Summary · Nutrition · Training · Progress · Plan).
 - Anatomy: sticky segmented control under the header.
 - States: selected (surface fill + shadow), default.
@@ -261,6 +297,9 @@ Prototype class names are given for reference.
 ### Lists & rows
 
 **Grouped List** (`.group`)
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-24:** radius 20 with an inner hairline.
+
 - Purpose: default container.
 - Anatomy: surface, `--r-lg`, `--e1`, inset separators aligned to the text start.
 - Variants: default; flush separators; `plain` (no surface).
@@ -294,11 +333,17 @@ Missing = "—" in ink-3.
 - Don't: show descriptions or more than one action; treat it as a task (no check circle).
 
 **Project Row**
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-14 and DD-25:** glyph tile in lists; the orb stays in Galaxy.
+
 - Anatomy: world orb (project colour) · name · one signal (next task, reviews waiting, blocked reason) · progress ring (28).
 - Variants: active; blocked (warn state in meta); done (compact, dimmed orb, in a collapsed group).
 - Don't: show the triple progress encoding (bar + % + "x of y") (Stage 3).
 
 **Task Row**
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-19 and DD-25:** project or "No project" on every row; actions in the task sheet.
+
 - Anatomy: check circle (44 hit) · title · meta (project/course · time · type icon).
 - States: to do / done (strike + ink-3, moved into "Done · n").
 - Don't: use text "Done/Skip/Edit" buttons. Skip and edit live in a swipe or long-press menu.
@@ -325,6 +370,9 @@ Session rows reuse the Task Row.
 ### Data display
 
 **Health Metric** (`.metric` in `.metrics`)
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-24:** the stat tile and the hero metric.
+
 - Anatomy: label with icon · value + unit · one sub-line (provenance or composition, e.g. "1,610 resting + 230 active").
 - Variants: with bar; missing ("—" + "Not received"); recorded zero ("0" + "Recorded zero").
 - Phone: 2 columns. Tablet: 3. Desktop: 4.
@@ -339,6 +387,8 @@ Session rows reuse the Task Row.
 
 **Status Chip** (`.chip`): dot + word, 24 high, pill. Variants ok/warn/crit/info/xp/idle.
 `.working` pulses. Don't use chips for healthy states in dense lists (use muted `.state`).
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-6 and DD-13:** no `xp` variant (`--xp` merges into `--accent`); info uses the chosen accent.
 
 **Badge**: count pill (red for attention, soft grey for neutral counts). Only on the
 Today tab/sidebar item and the Attention entry points.
@@ -367,6 +417,8 @@ inside confirmations, dialogs, sheets or detail footers, **never per list row**.
 **Text Input** (`.input`): 44 high, 16 px text, 12 radius. Focus is a 2 px accent
 outline. Error: crit border + message below.
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-24:** inputs are 48 high.
+
 **Search** (`.search`): inset field. On phone it opens the Launcher sheet rather than filtering in place.
 
 ### Overlays
@@ -374,11 +426,18 @@ outline. Error: crit border + message below.
 **Command Palette / Launcher**: see `13` §Launcher. Three modes (Go/Do/Capture),
 grouped results, keyboard hints row.
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-20 and DD-27:** the All pages launcher and the Secretary's command bar.
+
 **Quick Capture**: sheet with one text field plus parsed chips (date, project,
 priority) and an "Add task" button. Opened from + on Today, Capture mode, or the tab
 re-tap long-press (later).
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-25:** the + capture sheet and the task sheet.
+
 **Sheet**
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-24:** radius 28; centred from 700.
+
 - Purpose: short, focused tasks and previews (capture, re-auth, review summary, world preview, item options).
 - Phone: bottom sheet, grab handle, max 88 vh, swipe or ✕ to close.
 - Tablet/desktop: centred floating sheet (max 560).
@@ -457,6 +516,8 @@ beyond 300 ms. No spinners for page loads.
 
 ## Q. Anti-patterns (don't build)
 
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) DD-9:** eight type sizes, not seven.
+
 - Dashboard walls of equal cards; big-number tiles on screens where numbers aren't the point
 - Paragraph descriptions under titles; formula or explanation text on primary surfaces (use info sheets)
 - The same fact repeated on a screen (Focus = Next up = first task)
@@ -472,6 +533,8 @@ beyond 300 ms. No spinners for page loads.
 ---
 
 ## R. Final design review
+
+> **Superseded in part by [`13B`](13B_DESIGN_DECISIONS.md) (all entries):** this review restates the sections above as they were on 2026-09-27.
 
 ### R.A GYST visual identity in one paragraph
 See §A. Quiet native surfaces and grouped lists carry daily use; one blue means
