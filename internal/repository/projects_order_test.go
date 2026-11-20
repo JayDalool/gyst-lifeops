@@ -9,8 +9,8 @@ import (
 
 // GYST-165: created_at has one-second resolution, so projects made in the same
 // second tied and SQLite returned them in either order. Ties now break by id
-// DESC, which keeps the list newest-first.
-func TestListProjectsSameCreatedAtOrdersByIDDesc(t *testing.T) {
+// ASC (creation order, the order imports rely on); newest created_at stays first.
+func TestListProjectsOrdersNewestFirstThenLowerID(t *testing.T) {
 	repo := newTestRepo(t)
 	var ids []int64
 	for _, name := range []string{"Fictional Atlas", "Orbit Alpha", "Orbit Beta"} {
@@ -20,12 +20,19 @@ func TestListProjectsSameCreatedAtOrdersByIDDesc(t *testing.T) {
 		}
 		ids = append(ids, p.ID)
 	}
-	// Pin an identical timestamp, and make the oldest row sort last by rowid
-	// so a missing tiebreak cannot pass by accident of scan order.
+	// Pin an identical timestamp for the first three.
 	if _, err := repo.db.Exec(`UPDATE projects SET created_at = '2030-01-01 00:00:00'`); err != nil {
 		t.Fatal(err)
 	}
-	want := []int64{ids[2], ids[1], ids[0]}
+	// Row 4 is newer by created_at, so it leads; the tied rows follow by id ASC.
+	p := models.Project{Name: "Newest", ProjectKind: "main", Status: "active"}
+	if err := repo.CreateProject(&p); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.db.Exec(`UPDATE projects SET created_at = '2030-01-02 00:00:00' WHERE id = ?`, p.ID); err != nil {
+		t.Fatal(err)
+	}
+	want := []int64{p.ID, ids[0], ids[1], ids[2]}
 	for _, list := range []func() ([]models.ProjectWithProgress, error){
 		func() ([]models.ProjectWithProgress, error) { return repo.ListProjects(false) },
 	} {

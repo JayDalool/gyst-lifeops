@@ -66,7 +66,7 @@ func (r *Repository) listProjectsWhere(where string, args ...any) ([]models.Proj
 			CASE WHEN target_date IS NULL THEN 1 ELSE 0 END,
 			target_date,
 			created_at DESC,
-			id DESC`, projectColumns, where), args...)
+			id`, projectColumns, where), args...)
 	if err != nil {
 		return nil, err
 	}

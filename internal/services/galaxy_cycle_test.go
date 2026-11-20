@@ -37,6 +37,15 @@ func galaxyProject(t *testing.T, svc *Service, name string, parent int64) models
 	return p
 }
 
+// pinCreatedAt gives every project one created_at so list order is decided by
+// the id tiebreak, not by whether the creates crossed a second (GYST-165).
+func pinCreatedAt(t *testing.T, database *sql.DB) {
+	t.Helper()
+	if _, err := database.Exec(`UPDATE projects SET created_at = '2030-01-01 00:00:00'`); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func planetKeys(t *testing.T, p models.GalaxyPlanet) []string {
 	t.Helper()
 	raw, err := json.Marshal(p)
@@ -57,22 +66,21 @@ func planetKeys(t *testing.T, p models.GalaxyPlanet) []string {
 
 // Without a cycle the Galaxy data is exactly what the parent links say.
 func TestGalaxyDataAcyclicUnchanged(t *testing.T) {
-	svc := testService(t)
+	svc, database := serviceWithDB(t)
 	a := galaxyProject(t, svc, "Fictional Atlas", 0)
 	b := galaxyProject(t, svc, "Orbit Alpha", a.ID)
 	c := galaxyProject(t, svc, "Orbit Beta", 0)
 	d := galaxyProject(t, svc, "Orbit Gamma", c.ID)
+	pinCreatedAt(t, database)
 
 	planets, err := svc.GalaxyData()
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Newest first (id DESC on a created_at tie, GYST-165), so c precedes a
-	// whether or not the creates crossed a second boundary.
-	if len(planets) != 2 || planets[0].ID != c.ID || planets[1].ID != a.ID {
+	if len(planets) != 2 || planets[0].ID != a.ID || planets[1].ID != c.ID {
 		t.Fatalf("planets = %+v", planets)
 	}
-	if len(planets[1].Moons) != 1 || planets[1].Moons[0].ID != b.ID || len(planets[0].Moons) != 1 || planets[0].Moons[0].ID != d.ID {
+	if len(planets[0].Moons) != 1 || planets[0].Moons[0].ID != b.ID || len(planets[1].Moons) != 1 || planets[1].Moons[0].ID != d.ID {
 		t.Fatalf("moons wrong: %+v", planets)
 	}
 	for _, planet := range planets {
@@ -98,6 +106,7 @@ func TestGalaxyDataShowsParentCycle(t *testing.T) {
 	a := galaxyProject(t, svc, "Fictional Atlas", 0)
 	b := galaxyProject(t, svc, "Orbit Alpha", a.ID)
 	other := galaxyProject(t, svc, "Orbit Beta", 0)
+	pinCreatedAt(t, database)
 	if _, err := database.Exec(`UPDATE projects SET parent_project_id = ? WHERE id = ?`, b.ID, a.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -105,12 +114,11 @@ func TestGalaxyDataShowsParentCycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Newest first: the cycle root a is older than other (GYST-165).
-	if len(planets) != 2 || planets[0].ID != other.ID || planets[1].ID != a.ID {
+	if len(planets) != 2 || planets[0].ID != a.ID || planets[1].ID != other.ID {
 		t.Fatalf("planets = %+v", planets)
 	}
-	if len(planets[1].Moons) != 1 || planets[1].Moons[0].ID != b.ID {
-		t.Fatalf("cycle moons = %+v", planets[1].Moons)
+	if len(planets[0].Moons) != 1 || planets[0].Moons[0].ID != b.ID {
+		t.Fatalf("cycle moons = %+v", planets[0].Moons)
 	}
 }
 
