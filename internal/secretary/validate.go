@@ -35,18 +35,36 @@ func validateObject(input json.RawMessage) error {
 	return nil
 }
 
+// The count and weeks validators decode each field both as Run does (a plain
+// int: the last duplicate key wins and a null leaves the earlier value alone)
+// and as a pointer (null clears it). A pointer alone would read
+// {"count":99,"count":null} as omitted while Run keeps 99 (GYST-164), so a
+// stale copy could be refreshed on input the tool then clamps. The two readings
+// must agree: if the pointer is set, its value must be in range; if it is nil
+// (omitted, or null last), Run's value must still be zero, so Run uses its
+// default for exactly the inputs that were validated as omitted.
+
 // validateCount accepts count as a JSON integer from 1 to 5.
 func validateCount(input json.RawMessage) error {
 	if noInput(input) {
 		return nil
 	}
-	var in struct {
+	var plain struct {
+		Count int `json:"count"`
+	}
+	var ptr struct {
 		Count *int `json:"count"`
 	}
-	if json.Unmarshal(input, &in) != nil {
+	if json.Unmarshal(input, &plain) != nil || json.Unmarshal(input, &ptr) != nil {
 		return errInvalidInput
 	}
-	if in.Count != nil && (*in.Count < 1 || *in.Count > 5) {
+	if ptr.Count == nil {
+		if plain.Count != 0 {
+			return errInvalidInput
+		}
+		return nil
+	}
+	if *ptr.Count < 1 || *ptr.Count > 5 {
 		return errInvalidInput
 	}
 	return nil
@@ -57,13 +75,22 @@ func validateWeeks(input json.RawMessage) error {
 	if noInput(input) {
 		return nil
 	}
-	var in struct {
+	var plain struct {
+		Weeks int `json:"weeks"`
+	}
+	var ptr struct {
 		Weeks *int `json:"weeks"`
 	}
-	if json.Unmarshal(input, &in) != nil {
+	if json.Unmarshal(input, &plain) != nil || json.Unmarshal(input, &ptr) != nil {
 		return errInvalidInput
 	}
-	if in.Weeks != nil && *in.Weeks != 4 && *in.Weeks != 12 && *in.Weeks != 26 {
+	if ptr.Weeks == nil {
+		if plain.Weeks != 0 {
+			return errInvalidInput
+		}
+		return nil
+	}
+	if w := *ptr.Weeks; w != 4 && w != 12 && w != 26 {
 		return errInvalidInput
 	}
 	return nil

@@ -557,14 +557,14 @@ func (d dirtyHealth) BriefHealth() (secretary.HealthBrief, error) {
 // error. A fresh Catalogue per input: freshness is decided once per turn.
 func TestHevyToolsValidateBeforeRefreshing(t *testing.T) {
 	invalid := map[string][]string{
-		"get_recent_workouts":   {`{`, `[1]`, `"x"`, `{"count":"three"}`, `{"count":2.5}`, `{"count":3.0}`, `{"count":true}`, `{"count":0}`, `{"count":6}`, `{"count":-4}`, `{"count":99}`, `{"count":1e0}`, `{"count":[3]}`},
-		"get_exercise_progress": {`{`, `[1]`, `"x"`, `{"weeks":"4"}`, `{"weeks":7}`, `{"weeks":0}`, `{"weeks":12.0}`, `{"weeks":false}`},
+		"get_recent_workouts":   {`{`, `[1]`, `"x"`, `{"count":"three"}`, `{"count":2.5}`, `{"count":3.0}`, `{"count":true}`, `{"count":0}`, `{"count":6}`, `{"count":-4}`, `{"count":99}`, `{"count":1e0}`, `{"count":[3]}`, `{"count":99,"count":null}`, `{"count":3,"count":null}`, `{"count":9,"Count":null}`},
+		"get_exercise_progress": {`{`, `[1]`, `"x"`, `{"weeks":"4"}`, `{"weeks":7}`, `{"weeks":0}`, `{"weeks":12.0}`, `{"weeks":false}`, `{"weeks":7,"weeks":null}`, `{"weeks":26,"weeks":null}`},
 		"get_training_summary":  {`{`, `[1]`, `"x"`, `5`},
 		"get_hevy_routines":     {`{`, `[1]`, `"x"`, `true`},
 	}
 	valid := map[string][]string{
-		"get_recent_workouts":   {``, `null`, `{}`, `{"count":null}`, `{"count":1}`, `{"count":3}`, `{"count":5}`, `{"count":3,"extra":"ignored"}`},
-		"get_exercise_progress": {``, `null`, `{}`, `{"weeks":null}`, `{"weeks":4}`, `{"weeks":12}`, `{"weeks":26}`},
+		"get_recent_workouts":   {``, `null`, `{}`, `{"count":null}`, `{"count":1}`, `{"count":3}`, `{"count":5}`, `{"count":3,"extra":"ignored"}`, `{"count":null,"count":null}`, `{"count":null,"count":3}`, `{"count":99,"count":2}`},
+		"get_exercise_progress": {``, `null`, `{}`, `{"weeks":null}`, `{"weeks":4}`, `{"weeks":12}`, `{"weeks":26}`, `{"weeks":null,"weeks":4}`},
 		"get_training_summary":  {``, `null`, `{}`, `{"anything":1}`},
 		"get_hevy_routines":     {``, `null`, `{}`},
 	}
@@ -619,8 +619,8 @@ func TestHevyValidatedInputReachesRunUnchanged(t *testing.T) {
 		weeks    int
 	}{
 		{"get_recent_workouts", ``, 1, 0}, {"get_recent_workouts", `{"count":null}`, 1, 0}, {"get_recent_workouts", `{"count":1}`, 1, 0},
-		{"get_recent_workouts", `{"count":3}`, 3, 0}, {"get_recent_workouts", `{"count":5}`, 5, 0},
-		{"get_exercise_progress", `{}`, 0, 12}, {"get_exercise_progress", `{"weeks":4}`, 0, 4}, {"get_exercise_progress", `{"weeks":26}`, 0, 26}, {"get_exercise_progress", `{"weeks":12}`, 0, 12},
+		{"get_recent_workouts", `{"count":3}`, 3, 0}, {"get_recent_workouts", `{"count":99,"count":2}`, 2, 0}, {"get_recent_workouts", `{"count":null,"count":4}`, 4, 0}, {"get_recent_workouts", `{"count":5}`, 5, 0},
+		{"get_exercise_progress", `{}`, 0, 12}, {"get_exercise_progress", `{"weeks":4}`, 0, 4}, {"get_exercise_progress", `{"weeks":null,"weeks":26}`, 0, 26}, {"get_exercise_progress", `{"weeks":26}`, 0, 26}, {"get_exercise_progress", `{"weeks":12}`, 0, 12},
 	} {
 		h.count, h.weeks = 0, 0
 		if _, err := secretarytest.Run(t, cat, tc.name, tc.in); err != nil {

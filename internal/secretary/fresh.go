@@ -201,30 +201,49 @@ func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[stri
 	if len(order) == 0 {
 		return out
 	}
-	// Wall time on purpose (not the application clock, which tests pin): this
-	// is how long a caller is really blocked. The leave runs in a defer so a
-	// cancelled or panicking caller cannot leave the count up and charge the
-	// model's think time to the budget (GYST-164).
-	allow := f.enterWait()
-	defer f.leaveWait()
-	wctx, cancel := context.WithTimeout(ctx, allow)
-	defer cancel()
+	// Only the time spent blocked on unfinished attempts is charged to the
+	// budget, not the result handling after it (the post-sync inspect and the
+	// log line), which can be slow on its own (GYST-164). So the waiting is one
+	// phase and the results a second one, after the waiter has left.
+	// Wall time on purpose (not the application clock, which tests pin).
+	outcomes := map[string]string{}
+	pending := false
 	for _, source := range order {
-		at := waits[source]
-		st, outcome := at.initial, ""
 		select {
-		case <-at.done: // already finished, even if the budget is spent
+		case <-waits[source].done:
 		default:
-			select {
-			case <-at.done:
-			case <-wctx.Done():
-				// The sync goes on in its goroutine; the next turn sees its rows.
-				outcome = "timeout"
-				if ctx.Err() != nil {
-					outcome = "cancelled"
+			pending = true
+		}
+	}
+	if pending {
+		func() {
+			allow := f.enterWait()
+			// A defer so a cancelled or panicking caller cannot leave the count
+			// up and charge the model's think time to the budget.
+			defer f.leaveWait()
+			wctx, cancel := context.WithTimeout(ctx, allow)
+			defer cancel()
+			for _, source := range order {
+				at := waits[source]
+				select {
+				case <-at.done: // already finished, even if the budget is spent
+				default:
+					select {
+					case <-at.done:
+					case <-wctx.Done():
+						// The sync goes on in its goroutine; the next turn sees its rows.
+						outcomes[source] = "timeout"
+						if ctx.Err() != nil {
+							outcomes[source] = "cancelled"
+						}
+					}
 				}
 			}
-		}
+		}()
+	}
+	for _, source := range order {
+		at := waits[source]
+		st, outcome := at.initial, outcomes[source]
 		if outcome == "" {
 			if at.err != nil {
 				outcome = "failed"

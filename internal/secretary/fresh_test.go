@@ -543,3 +543,38 @@ func TestWaitBudgetCancelFreesTheWait(t *testing.T) {
 		t.Fatalf("waited %v; skipped leave accounting charges the pause and leaves about 200 ms", waited)
 	}
 }
+
+// Only time spent blocked is charged: a slow result step after the sync (here
+// the post-sync LastSync read) is not. The first call finishes its sync at once
+// but its inspect takes 400 ms; a later slow source must still get nearly the
+// whole 600 ms.
+func TestWaitBudgetIgnoresResultHandling(t *testing.T) {
+	old := time.Date(2026, 11, 19, 10, 0, 0, 0, time.UTC)
+	var reads atomic.Int64
+	mailGate := newSlow()
+	slots := map[string]secretary.Syncer{
+		secretary.SourceCalendar: {
+			LastSync: func() (time.Time, error) {
+				if reads.Add(1) >= 2 { // the read after the sync
+					time.Sleep(400 * time.Millisecond)
+				}
+				return old, nil
+			},
+			Sync: func(context.Context) error { return nil },
+		},
+		secretary.SourceMail: {
+			LastSync: func() (time.Time, error) { return old, nil },
+			Sync:     func(context.Context) error { <-mailGate.gate; return nil },
+		},
+	}
+	f := secretary.NewFreshener(slots, 600*time.Millisecond, func() time.Time { return time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC) })
+	// LIFO: release the gate, then wait, so a failed assertion cannot hang.
+	t.Cleanup(f.Wait)
+	t.Cleanup(mailGate.release)
+	f.EnsureFresh(context.Background(), secretary.SourceCalendar)
+	start := time.Now()
+	f.EnsureFresh(context.Background(), secretary.SourceMail)
+	if waited := time.Since(start); waited < 450*time.Millisecond {
+		t.Fatalf("waited %v; result handling was charged to the budget (about 200 ms left)", waited)
+	}
+}
