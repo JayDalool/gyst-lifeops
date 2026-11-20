@@ -64,7 +64,7 @@
 .hv3-stat { display: grid; gap: var(--vn-s2); align-content: start; }
 .hv3-card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--vn-s2); margin-top: var(--vn-s3); flex-wrap: wrap; }
 
-.hv3-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--vn-s2); min-height: 44px; padding: 0 var(--vn-s4); border: 0; border-radius: var(--vn-r-md); font: 600 15px/1 var(--vn-font); background: var(--vn-accent); color: #fff; text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform var(--vn-fast) var(--vn-ease); }
+.hv3-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--vn-s2); min-height: 44px; padding: 0 var(--vn-s4); border: 0; border-radius: var(--vn-r-md); font: 600 15px/1 var(--vn-font); background: var(--vn-accent); color: var(--vn-on-accent); text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform var(--vn-fast) var(--vn-ease); }
 .hv3-btn:active { transform: scale(.97); }
 .hv3-btn.secondary { background: var(--vn-accent-soft); color: var(--vn-accent-text); }
 .hv3-btn.small { min-height: 36px; padding: 0 var(--vn-s3); font-size: var(--vn-t-sub); border-radius: var(--vn-r-sm); position: relative; }
@@ -264,9 +264,12 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-earlier { margin-top: var(--vn-s3); }
 .hv3-earlier > ul > li { border-top: 1px solid var(--vn-separator); }
 .hv3-earlier details[open] > summary > .gyst-icon, .hv3-earlier[open] > summary > .gyst-icon { transform: rotate(90deg); }
-/* `.hv3 a` outranks `.hv3-btn`; keep filled link-buttons readable. */
-.hv3 a.hv3-btn:not(.secondary) { color: #fff; }
-[data-gyst-theme="dark"] .hv3 .hv3-btn:not(.secondary) { color: #06101f; }
+/* `.hv3 a` outranks `.hv3-btn`; keep filled link-buttons readable.
+   GYST-168: the label on the accent fill is always --vn-on-accent (13B DD-6), not a literal per theme.
+   The literals were right only where data-gyst-theme was set: with dark taken from the OS setting
+   alone (the Health prototype, any page without theme.js) white stayed on the light-violet fill, 2.36:1. */
+.hv3 a.hv3-btn:not(.secondary) { color: var(--vn-on-accent); }
+[data-gyst-theme="dark"] .hv3 .hv3-btn:not(.secondary) { color: var(--vn-on-accent); }
 
 /* ---------- Checklist & My foods (#59) ---------- */
 .hv3-check-row { display: flex; align-items: center; gap: var(--vn-s3); min-height: 56px; padding: var(--vn-s2) var(--vn-s4); }

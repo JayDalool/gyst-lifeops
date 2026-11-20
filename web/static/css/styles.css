@@ -4830,7 +4830,9 @@ i.map-node-state {
 :root .btn.danger {
   background: transparent;
   color: var(--red-text);
-  border-color: rgba(226, 99, 119, 0.35);
+  /* GYST-168 audit: the old translucent pink edge fell from 1.48 to 1.44:1 on the new canvas. The danger
+     graphic colour is a real 3:1 edge in both themes. */
+  border-color: var(--vn-crit);
 }
 /* GYST-168: it only faded on hover (the shared 0.9 opacity, now gone off Galaxy). An opaque danger tint instead. */
 :root :where(body:not(.galaxy-page)) .btn.danger:hover { background: var(--vn-crit-soft); }

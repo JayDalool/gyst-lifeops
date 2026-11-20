@@ -433,6 +433,7 @@ func TestStateSelectorsNeverResolveToTheAccent(t *testing.T) {
 		{"ui-today.css", ".today-page .tracker-dot.prayer-current"},
 		{"ui-health-v3.css", ".hv3-day.done"},
 		{"ui-health-v3.css", ".hv3-check.done"},
+		{"ui-training.css", ".training-ui .training-day.done"},
 	}
 	parsed := map[string][]cssRule{}
 	for _, s := range states {
@@ -454,6 +455,85 @@ func TestStateSelectorsNeverResolveToTheAccent(t *testing.T) {
 		if !found {
 			t.Errorf("%s: state selector %s not found; fix the list", s.file, s.selector)
 		}
+	}
+}
+
+// 13B DD-6 pairs the accent fill with --vn-on-accent. Every rule that fills something with the accent is
+// either a graphic with no label (listed here) or a control, and a control's label must be
+// --vn-on-accent: not a literal, not inherited, not a link colour. A new accent-filled selector fails
+// until it is added to one side, and so does any rule that recolours the label of a filled control.
+func TestAccentFillsCarryOnAccent(t *testing.T) {
+	graphics := map[string]bool{
+		// Bars, dots and knobs: nothing is written on them.
+		":root .progress span": true, ".goal-row-bar .progress > span": true, ".hv3-bar i": true, ".hv3-weekbars span": true,
+		".hv3-kbars span.today": true, ":root .switch input:checked + i::after": true, ".gyst-switch:checked": true,
+		".training-ui .training-bar i": true,
+		// Galaxy's own state dot; the page is pinned (E1).
+		":root .galaxy-state.state-active, :root .galaxy-state.state-current": true,
+		// Older rules for classes that no template renders any more (dots on the old map).
+		".mission-spark": true, ".node-active .mission-spark": true, ".stop-dot": true, ".stop-row.node-active .stop-dot": true,
+		".tree-dot": true, ".node-active > .tree-dot, .tree-trip-head.node-active .tree-dot": true, ".mission-node .m-dot": true,
+	}
+	accentFill := regexp.MustCompile(`^(var\(--(vn-accent|accent|cyan|blue|purple|gyst-blue|vn-accent-text)(, [^)]*)?\)|color-mix\(in srgb, var\(--vn-accent\) \d+%, var\(--vn-ink\)\))$`)
+	scope := ":where(body:not(.galaxy-page)) "
+	controls := 0
+	for _, file := range []string{"styles.css", "ui-components.css", "ui-shell.css", "ui-health-v3.css", "ui-health.css", "ui-training.css", "ui-courses.css", "ui-projects.css", "ui-today.css"} {
+		rules := parseCSS(readStatic(t, "css/"+file))
+		// The label colour of a selector: its own rule, or the same selector without the off-Galaxy scope.
+		colourOf := func(sel string) (string, bool) {
+			got, ok := "", false
+			for _, r := range rules {
+				if r.Selector == sel {
+					if v, has := r.Decls["color"]; has {
+						got, ok = v, true
+					}
+				}
+			}
+			return got, ok
+		}
+		for _, r := range rules {
+			fill := r.Decls["background"]
+			if fill == "" {
+				fill = r.Decls["background-color"]
+			}
+			if !accentFill.MatchString(fill) {
+				continue
+			}
+			plain := strings.ReplaceAll(r.Selector, scope, "")
+			if graphics[plain] {
+				continue
+			}
+			controls++
+			// A hover or pressed rule changes the fill only; the label comes from the resting rule.
+			base := regexp.MustCompile(`:where\(:hover\)|:hover|:active`).ReplaceAllString(plain, "")
+			colour, ok := colourOf(r.Selector)
+			for _, candidate := range []string{scope + base, ":root " + scope + strings.TrimPrefix(base, ":root "), base} {
+				if !ok {
+					colour, ok = colourOf(candidate)
+				}
+			}
+			if !ok || colour != "var(--vn-on-accent)" {
+				t.Errorf("%s: %s is filled with %s but its label colour is %q; it must be var(--vn-on-accent), or the selector belongs in the graphics list", file, r.Selector, fill, colour)
+			}
+		}
+		// No rule may recolour the label of a filled control with anything else.
+		for _, r := range rules {
+			c, ok := r.Decls["color"]
+			if !ok || c == "var(--vn-on-accent)" {
+				continue
+			}
+			s := strings.ReplaceAll(r.Selector, scope, "")
+			filled := (strings.Contains(s, ".hv3-btn") && !strings.Contains(s, ".hv3-btn.secondary") && !strings.Contains(s, ".hv3-btn.ghost")) ||
+				s == ".gyst-button" || s == ":root .btn" || s == ".login-submit" || s == ".hv3-me" || s == ".gyst-skip"
+			// The base rules that Galaxy still reads keep the literal they had (its accent is pinned).
+			galaxyBase := (s == ".gyst-button" || s == ".gyst-skip") && !strings.Contains(r.Selector, scope)
+			if filled && !galaxyBase {
+				t.Errorf("%s: %s sets color %s on an accent-filled control; it must be var(--vn-on-accent)", file, r.Selector, c)
+			}
+		}
+	}
+	if controls < 8 {
+		t.Errorf("only %d accent-filled control rules found; the test is not reading the stylesheets it should", controls)
 	}
 }
 
