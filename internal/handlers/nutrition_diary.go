@@ -208,21 +208,9 @@ func diaryActor(r *http.Request) services.DiaryActor {
 
 const amountHelp = "Amount must be a number. Use a dot or one comma for decimals, and no thousands separators."
 
-// parseAmount reads a typed amount. A single comma with no dot and one or two
-// digits after it is a decimal comma ("1,5"); any other comma ("1,000",
-// "1,2,3") is refused rather than guessed, so 1,000 never becomes 1.
-func parseAmount(raw string) (float64, bool) {
-	s := strings.TrimSpace(raw)
-	if strings.Contains(s, ",") {
-		before, after, _ := strings.Cut(s, ",")
-		if strings.Contains(s, ".") || strings.Count(s, ",") != 1 || before == "" || len(after) == 0 || len(after) > 2 {
-			return 0, false
-		}
-		s = before + "." + after
-	}
-	v, err := strconv.ParseFloat(s, 64)
-	return v, err == nil
-}
+// parseAmount reads a typed amount with the shared rule, refusing thousands
+// separators so 1,000 never becomes 1.
+func parseAmount(raw string) (float64, bool) { return services.ParseTypedNumber(raw, false) }
 
 // nutritionItems routes /health/nutrition/items[/{id}[/{archive|restore}]].
 func (h *Handler) nutritionItems(w http.ResponseWriter, r *http.Request, rest []string) {
