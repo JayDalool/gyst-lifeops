@@ -646,3 +646,145 @@ func (a *argHealth) ExerciseProgress(w int) (any, error) {
 	a.weeks = w
 	return map[string]any{"exercises": []map[string]any{}}, nil
 }
+
+// shapeHealth answers all four Hevy tools with one value, whatever Go type the
+// test builds it from.
+type shapeHealth struct {
+	secretarytest.FakeHealth
+	v any
+}
+
+func (s shapeHealth) TrainingSummary() (any, error)     { return s.v, nil }
+func (s shapeHealth) RecentWorkouts(int) (any, error)   { return s.v, nil }
+func (s shapeHealth) ExerciseProgress(int) (any, error) { return s.v, nil }
+func (s shapeHealth) HevyRoutines() (any, error)        { return s.v, nil }
+
+type shapeEx struct {
+	Name string  `json:"name"`
+	Kg   float64 `json:"kg"`
+}
+type shapeWorkout struct {
+	Title     string    `json:"title"`
+	Note      string    `json:"note"`
+	Exercises []shapeEx `json:"exercises"`
+}
+type shapeRoutine struct {
+	Title     string   `json:"title"`
+	Exercises []string `json:"exercises"`
+}
+type shapeProgress struct {
+	Exercise string `json:"exercise"`
+}
+type shapeResult struct {
+	Workouts  []shapeWorkout  `json:"workouts"`
+	Routines  []shapeRoutine  `json:"routines"`
+	Exercises []shapeProgress `json:"exercises"`
+}
+
+// GYST-164 c5: names are cleaned from the JSON form, so the adapter's Go types
+// do not matter. Any string anywhere loses hidden characters; titles and names
+// keep their caps; a result that is not an object is "data unavailable".
+func TestHevyToolsCleanNamesAnyShape(t *testing.T) {
+	d := "Push‮ day​ " + strings.Repeat("x", 200)
+	shapes := map[string]any{
+		"maps": map[string]any{
+			"workouts":  []map[string]any{{"title": d, "note": d, "exercises": []map[string]any{{"name": d, "kg": 102.5}}}},
+			"routines":  []map[string]any{{"title": d, "exercises": []string{d}}},
+			"exercises": []map[string]any{{"exercise": d}},
+		},
+		"anys": map[string]any{
+			"workouts":  []any{map[string]any{"title": d, "note": d, "exercises": []any{map[string]any{"name": d, "kg": 102.5}}}},
+			"routines":  []any{map[string]any{"title": d, "exercises": []any{d}}},
+			"exercises": []any{map[string]any{"exercise": d}},
+		},
+		"tagged structs": map[string]any{
+			"workouts":  []shapeWorkout{{Title: d, Note: d, Exercises: []shapeEx{{Name: d, Kg: 102.5}}}},
+			"routines":  []shapeRoutine{{Title: d, Exercises: []string{d}}},
+			"exercises": []shapeProgress{{Exercise: d}},
+		},
+		"string maps": map[string]any{
+			"workouts":  []map[string]string{{"title": d, "note": d}},
+			"routines":  []map[string]string{{"title": d}},
+			"exercises": []map[string]string{{"exercise": d}},
+		},
+		"struct pointer": &shapeResult{
+			Workouts:  []shapeWorkout{{Title: d, Note: d, Exercises: []shapeEx{{Name: d, Kg: 102.5}}}},
+			Routines:  []shapeRoutine{{Title: d, Exercises: []string{d}}},
+			Exercises: []shapeProgress{{Exercise: d}},
+		},
+	}
+	var walk func(key string, v any, t *testing.T, shape string)
+	walk = func(key string, v any, t *testing.T, shape string) {
+		switch x := v.(type) {
+		case string:
+			if strings.ContainsAny(x, "‮​") {
+				t.Errorf("%s: %s holds a hidden rune: %q", shape, key, x)
+			}
+			if key == "title" && utf8.RuneCountInString(x) > secretary.TitleCap {
+				t.Errorf("%s: title over cap: %d runes", shape, utf8.RuneCountInString(x))
+			}
+			if (key == "name" || key == "exercise" || key == "exercises") && utf8.RuneCountInString(x) > secretary.NameCap {
+				t.Errorf("%s: %s over cap: %d runes", shape, key, utf8.RuneCountInString(x))
+			}
+		case map[string]any:
+			for k, val := range x {
+				walk(k, val, t, shape)
+			}
+		case []any:
+			for _, val := range x {
+				walk(key, val, t, shape)
+			}
+		}
+	}
+	for shape, v := range shapes {
+		e := secretarytest.New(t)
+		e.SeedHevy(e.Svc.Now().Add(-5 * time.Minute))
+		cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: shapeHealth{v: v}, Budget: time.Second})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(cat.Wait)
+		for _, name := range []string{"get_training_summary", "get_recent_workouts", "get_exercise_progress", "get_hevy_routines"} {
+			out, err := secretarytest.Run(t, cat, name, `{}`)
+			if err != nil {
+				t.Fatalf("%s %s: %v", shape, name, err)
+			}
+			if strings.ContainsAny(out, "‮​") || strings.Contains(out, `‮`) || strings.Contains(out, `​`) {
+				t.Errorf("%s %s: raw output holds a hidden rune", shape, name)
+			}
+			var m map[string]any
+			if err := json.Unmarshal([]byte(out), &m); err != nil {
+				t.Fatal(err)
+			}
+			walk("", m, t, shape+" "+name)
+			if m["as_of"] == nil || m["stale"] == nil {
+				t.Errorf("%s %s: no freshness: %s", shape, name, out)
+			}
+			if shape != "string maps" && name == "get_recent_workouts" {
+				if !strings.Contains(out, `"kg":102.5`) {
+					t.Errorf("%s: number not byte-exact: %s", shape, out)
+				}
+			}
+		}
+	}
+	// The reader's value is not changed by cleaning.
+	src := map[string]any{"workouts": []map[string]any{{"title": d}}}
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-5 * time.Minute))
+	cat, _ := secretary.New(secretary.Deps{Service: e.Svc, Health: shapeHealth{v: src}, Budget: time.Second})
+	t.Cleanup(cat.Wait)
+	if _, err := secretarytest.Run(t, cat, "get_recent_workouts", `{}`); err != nil {
+		t.Fatal(err)
+	}
+	if src["workouts"].([]map[string]any)[0]["title"] != d {
+		t.Error("the reader's value was changed")
+	}
+	// A result that is not an object is unavailable, not passed through raw.
+	for _, bad := range []any{[]string{d}, "raw " + d, 7.0, nil} {
+		cat, _ := secretary.New(secretary.Deps{Service: e.Svc, Health: shapeHealth{v: bad}, Budget: time.Second})
+		t.Cleanup(cat.Wait)
+		if out, err := secretarytest.Run(t, cat, "get_recent_workouts", `{}`); err == nil || err.Error() != "data unavailable" || out != "" {
+			t.Errorf("non-object %T: %q %v", bad, out, err)
+		}
+	}
+}
