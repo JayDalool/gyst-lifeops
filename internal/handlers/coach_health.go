@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"sort"
 	"time"
 
@@ -187,6 +185,7 @@ func (c coachHealth) BriefHealth() (secretary.HealthBrief, error) {
 		return &v
 	}
 	out := secretary.HealthBrief{
+		AsOf:                   t.LastSyncedAt, // same parse as Stale: one read (GYST-164)
 		Stale:                  t.LastSyncedStale,
 		FoodEatenKcal:          str(t.Calories.Consumed),
 		FoodTargetKcal:         str(t.CalorieTarget),
@@ -223,16 +222,6 @@ func (c coachHealth) BriefHealth() (secretary.HealthBrief, error) {
 	if c.data.Weight.Present {
 		latest := c.data.Weight.Latest
 		out.WeightKg = &latest
-	}
-	snap, err := c.h.Service.GetDailyHealthSnapshot(t.Date)
-	switch {
-	case errors.Is(err, sql.ErrNoRows):
-	case err != nil:
-		return secretary.HealthBrief{}, err
-	default:
-		if at, perr := time.Parse(time.RFC3339Nano, snap.LastSyncedAt); perr == nil {
-			out.AsOf = at
-		}
 	}
 	return out, nil
 }

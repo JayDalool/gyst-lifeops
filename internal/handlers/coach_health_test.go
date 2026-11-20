@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"lifeops-tracker/internal/models"
+	"lifeops-tracker/internal/services"
 )
 
 // The real adapter behind the Secretary's brief (Issue #236): null stays null,
@@ -126,5 +127,71 @@ func TestCoachHealthBriefOverBudgetAndStale(t *testing.T) {
 	}
 	if !b.Stale {
 		t.Fatal("a snapshot nine hours old is stale (HealthSyncStaleAfter is 8 h)")
+	}
+}
+
+// GYST-164 c2: values, stale and as_of come from the one read healthBase made.
+// Before, BriefHealth read the snapshot a second time for as_of, so a sync that
+// landed between the two reads gave old values with a new as_of (RULES 3.2).
+func TestCoachHealthBriefOneRead(t *testing.T) {
+	h, closeDB := goldenHandler(t)
+	defer closeDB()
+	date := h.Service.TodayString()
+	sync := func(steps int) {
+		t.Helper()
+		if _, err := h.Service.SyncHealth(models.HealthSyncRequest{Date: date, Source: "apple_shortcuts", HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(int64(steps))}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	setNow := func(at time.Time) { h.Service.Clock.Now = func() time.Time { return at } }
+	t0 := h.Service.Now()
+	sync(1000)
+
+	// Fresh view, then a later sync lands before BriefHealth runs.
+	old := briefOf(t, h)
+	setNow(t0.Add(9 * time.Hour))
+	sync(2000)
+	b, err := old.BriefHealth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.Steps == nil || *b.Steps != "1,000" || !b.AsOf.Equal(t0) || b.Stale {
+		t.Fatalf("old view: steps %v as_of %v (want %v) stale %v", b.Steps, b.AsOf, t0, b.Stale)
+	}
+	if want := old.now.Sub(b.AsOf) >= services.HealthSyncStaleAfter; b.Stale != want {
+		t.Fatalf("stale %v disagrees with as_of age", b.Stale)
+	}
+	fresh, err := briefOf(t, h).BriefHealth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fresh.Steps == nil || *fresh.Steps != "2,000" || !fresh.AsOf.Equal(t0.Add(9*time.Hour)) || fresh.Stale {
+		t.Fatalf("new view: steps %v as_of %v stale %v", fresh.Steps, fresh.AsOf, fresh.Stale)
+	}
+}
+
+func TestCoachHealthBriefOneReadStaleView(t *testing.T) {
+	h, closeDB := goldenHandler(t)
+	defer closeDB()
+	date := h.Service.TodayString()
+	t0 := h.Service.Now()
+	if _, err := h.Service.SyncHealth(models.HealthSyncRequest{Date: date, Source: "apple_shortcuts", HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(1000)}}); err != nil {
+		t.Fatal(err)
+	}
+	later := t0.Add(9 * time.Hour)
+	h.Service.Clock.Now = func() time.Time { return later }
+	stale := briefOf(t, h) // built while the copy is 9 h old
+	if _, err := h.Service.SyncHealth(models.HealthSyncRequest{Date: date, Source: "apple_shortcuts", HealthMetrics: models.HealthMetrics{StepsWatch: viewInt(2000)}}); err != nil {
+		t.Fatal(err)
+	}
+	b, err := stale.BriefHealth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !b.Stale || !b.AsOf.Equal(t0) {
+		t.Fatalf("stale view: stale %v as_of %v (want true, %v)", b.Stale, b.AsOf, t0)
+	}
+	if want := stale.now.Sub(b.AsOf) >= services.HealthSyncStaleAfter; b.Stale != want {
+		t.Fatalf("stale %v disagrees with as_of age", b.Stale)
 	}
 }
