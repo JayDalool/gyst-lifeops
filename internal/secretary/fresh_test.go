@@ -578,3 +578,49 @@ func TestWaitBudgetIgnoresResultHandling(t *testing.T) {
 		t.Fatalf("waited %v; result handling was charged to the budget (about 200 ms left)", waited)
 	}
 }
+
+// A caller descheduled between registering and waiting must still end at the
+// shared deadline. A relative timer started after the pause would wait its old
+// allowance again: here B is held 500 ms (a blocked hook, not a race) while A
+// has waited since 0 on a 600 ms budget, so B must return near 600 ms, not
+// near 1100 ms.
+func TestWaitBudgetPausedCallerKeepsSharedDeadline(t *testing.T) {
+	slow := map[string]*slowSource{secretary.SourceCalendar: newSlow(), secretary.SourceMail: newSlow()}
+	f := budgetFreshener(t, 600*time.Millisecond, slow)
+	var entered atomic.Int64
+	aIn, bIn, resume := make(chan struct{}), make(chan struct{}), make(chan struct{})
+	t.Cleanup(func() {
+		select {
+		case <-resume:
+		default:
+			close(resume)
+		}
+	})
+	secretary.SetAfterEnterWait(f, func() {
+		switch entered.Add(1) {
+		case 1:
+			close(aIn)
+		case 2:
+			close(bIn)
+			<-resume
+		}
+	})
+	start := time.Now()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() { defer wg.Done(); f.EnsureFresh(context.Background(), secretary.SourceCalendar) }()
+	<-aIn
+	done := make(chan time.Duration)
+	go func() {
+		f.EnsureFresh(context.Background(), secretary.SourceMail)
+		done <- time.Since(start)
+	}()
+	<-bIn
+	time.Sleep(500 * time.Millisecond) // B is paused after registering, A keeps waiting
+	close(resume)
+	took := <-done
+	wg.Wait()
+	if took > 750*time.Millisecond {
+		t.Fatalf("B ended %v after A began; the shared deadline is 600 ms (a relative timer after the pause gives about 1100 ms)", took)
+	}
+}

@@ -77,10 +77,12 @@ type Freshener struct {
 	// call that begins while another waits inherits the same deadline.
 	left    time.Duration
 	waiting int
-	since   time.Time
-	done    map[string]Freshness
-	flight  map[string]*attempt
-	wg      sync.WaitGroup
+	// afterEnter is nil outside tests (see export_test.go).
+	afterEnter func()
+	since      time.Time
+	done       map[string]Freshness
+	flight     map[string]*attempt
+	wg         sync.WaitGroup
 }
 
 // NewFreshener builds one. budget is the whole turn's wait; a zero budget means
@@ -217,11 +219,14 @@ func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[stri
 	}
 	if pending {
 		func() {
-			allow := f.enterWait()
+			deadline := f.enterWait()
+			if f.afterEnter != nil {
+				f.afterEnter() // test hook: pauses a caller between registering and waiting
+			}
 			// A defer so a cancelled or panicking caller cannot leave the count
 			// up and charge the model's think time to the budget.
 			defer f.leaveWait()
-			wctx, cancel := context.WithTimeout(ctx, allow)
+			wctx, cancel := context.WithDeadline(ctx, deadline)
 			defer cancel()
 			for _, source := range order {
 				at := waits[source]
@@ -256,21 +261,22 @@ func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[stri
 	return out
 }
 
-// enterWait registers a blocked caller and returns how long it may wait: what
-// is left of the turn's budget, minus the time already spent by callers that
-// are blocked now. mu is never held while waiting.
-func (f *Freshener) enterWait() time.Duration {
+// enterWait registers a blocked caller and returns the absolute time its wait
+// must end: the turn's remaining budget counted from when the first of the
+// currently blocked callers began, so every overlapping caller shares one
+// deadline. It is absolute, not a duration, because a caller can be descheduled
+// between here and starting its timer; a relative timer started later would
+// outlive the shared deadline and let the turn exceed its budget (GYST-164).
+// mu is never held while waiting.
+func (f *Freshener) enterWait() time.Time {
 	now := time.Now() //gyst:instant wall-clock wait budget, not a calendar day
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	allow := f.left
-	if f.waiting > 0 {
-		allow -= now.Sub(f.since)
-	} else {
+	if f.waiting == 0 {
 		f.since = now
 	}
 	f.waiting++
-	return max(allow, 0)
+	return f.since.Add(f.left)
 }
 
 // leaveWait unregisters a caller. The last one out charges the time the group
