@@ -45,7 +45,7 @@ func TestLegacyVariablesEndAsAliases(t *testing.T) {
 				continue
 			}
 			for _, n := range r.Names {
-				if strings.HasPrefix(n, "--") && !strings.HasPrefix(n, "--vn-") && !strings.HasPrefix(n, "--gyst-") && !strings.HasPrefix(n, "--health-") {
+				if strings.HasPrefix(n, "--") && !strings.HasPrefix(n, "--vn-") && !strings.HasPrefix(n, "--gyst-") && !strings.HasPrefix(n, "--health-") && !strings.HasPrefix(n, "--chart-") {
 					last[n] = i
 					legacy[n] = true
 				}
@@ -541,6 +541,101 @@ func TestAccentFillsCarryOnAccent(t *testing.T) {
 	}
 	if controls < 8 {
 		t.Errorf("only %d accent-filled control rules found; the test is not reading the stylesheets it should", controls)
+	}
+}
+
+// Exception E1: the canvas charts keep the colours they had before the makeover. charts.js reads its
+// palette from <html>, where --text, --cyan and the rest are aliases now, so the renderer has its own
+// names. They must hold master's values in both themes, and charts.js must read them and nothing else.
+func TestChartsKeepTheirColours(t *testing.T) {
+	want := map[string]map[string]string{
+		":root": {"--chart-text": "#e9eef4", "--chart-muted": "#a6b0bb", "--chart-border": "rgba(255, 255, 255, 0.08)",
+			"--chart-cyan": "#53c6e4", "--chart-blue": "#7d9fd8", "--chart-purple": "#9d8fd4"},
+		`:root[data-theme="light"]`: {"--chart-text": "#101923", "--chart-muted": "#4d5f70", "--chart-border": "rgba(20, 38, 56, 0.10)",
+			"--chart-cyan": "#007f96", "--chart-blue": "#345fbd", "--chart-purple": "#7056d8"},
+	}
+	got := map[string]map[string]string{":root": {}, `:root[data-theme="light"]`: {}}
+	for _, r := range parseCSS(readStatic(t, "css/styles.css")) {
+		for sel := range got {
+			if r.Selector == sel && r.Media == "" {
+				for n, v := range r.Decls {
+					if strings.HasPrefix(n, "--chart-") {
+						got[sel][n] = v
+					}
+				}
+			}
+		}
+	}
+	for sel, values := range want {
+		if len(got[sel]) != len(values) {
+			t.Errorf("%s declares %d chart colours, want %d", sel, len(got[sel]), len(values))
+		}
+		for n, v := range values {
+			if got[sel][n] != v {
+				t.Errorf("%s %s = %q, want master's %q", sel, n, got[sel][n], v)
+			}
+		}
+	}
+	js := readStatic(t, "js/charts.js")
+	reads := regexp.MustCompile(`cssVar\("(--[a-z-]+)"\)`).FindAllStringSubmatch(js, -1)
+	if len(reads) != 6 {
+		t.Fatalf("charts.js reads %d custom properties, want 6", len(reads))
+	}
+	for _, m := range reads {
+		if _, ok := want[":root"][m[1]]; !ok {
+			t.Errorf("charts.js reads %s, which follows the Look; it must read a --chart- name", m[1])
+		}
+	}
+}
+
+// Every custom property a script reads from the page, so a new read is looked at: a token read from
+// <html> is not reached by the Galaxy pin on body, and an alias read there follows the Look.
+func TestScriptsReadOnlyKnownCustomProperties(t *testing.T) {
+	want := map[string][]string{
+		// Reads: the six chart colours. Write: --value, a number for the old progress orb.
+		"charts.js": {"--chart-text", "--chart-muted", "--chart-border", "--chart-cyan", "--chart-blue", "--chart-purple", "--value"},
+		// Writes: the two shell clearances, measured in px. Reads: --vn-base, twice, for the checklist progress.
+		"app.js":              {"--gyst-header-clearance", "--gyst-nav-clearance", "--vn-base", "--vn-base"},
+		"completion-toast.js": {"--vn-base"},
+	}
+	entries, err := os.ReadDir("../../web/static/js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	prop := regexp.MustCompile(`"(--[a-z0-9-]+)"`)
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		var got []string
+		for _, m := range prop.FindAllStringSubmatch(readStatic(t, "js/"+e.Name()), -1) {
+			got = append(got, m[1])
+		}
+		if strings.Join(got, " ") != strings.Join(want[e.Name()], " ") {
+			t.Errorf("%s names the custom properties %v, want %v; check what each resolves to on Galaxy and under E1", e.Name(), got, want[e.Name()])
+		}
+	}
+	// The page cross-fade keeps master's 150 ms (the pseudo-elements sit on the root, out of the pin's reach).
+	found := false
+	for _, r := range parseCSS(readStatic(t, "css/ui-components.css")) {
+		if r.Selector == "::view-transition-old(root), ::view-transition-new(root)" {
+			found = true
+			if r.Decls["animation-duration"] != "150ms" {
+				t.Errorf("view-transition duration = %q, want 150ms", r.Decls["animation-duration"])
+			}
+		}
+	}
+	if !found {
+		t.Error("the view-transition rule was not found")
+	}
+	pin := ""
+	for _, r := range parseCSS(readStatic(t, "css/ui-pins.css")) {
+		if r.Selector == ":root:has(> body.galaxy-page)" {
+			pin = r.Decls["--vn-base"] + " " + r.Decls["--vn-fast"]
+		}
+	}
+	if pin != "240ms 150ms" {
+		t.Errorf("Galaxy root timings = %q, want 240ms 150ms", pin)
 	}
 }
 

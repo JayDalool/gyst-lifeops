@@ -143,7 +143,10 @@ a.gyst-row:hover { background: var(--gyst-blue-soft); }
 :root a.gyst-project-card:active { transform: scale(.97); }
 @keyframes gyst-rise { from { opacity: 0; transform: translateY(8px); } }
 @view-transition { navigation: auto; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--vn-fast); animation-timing-function: var(--vn-ease); }
+/* GYST-168: the page cross-fade keeps 150 ms. --vn-fast is 120 ms now, and these pseudo-elements live on the root
+   of the page being opened, so a pin on Galaxy's body cannot reach them and nothing in CSS knows the page being
+   left. A literal keeps the fade into and out of Galaxy as it was; it follows --vn-fast again with the Galaxy chunk. */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 150ms; animation-timing-function: var(--vn-ease); }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 /* VN-023 Overlays (11 §N, 13 §6-§9). Native <dialog class="gyst-overlay">; behaviour in ui-overlay.js. Neutral and accent tokens only. */
 html.gyst-scroll-lock { overflow-y: scroll; }

@@ -3732,6 +3732,27 @@ i.map-node-state {
   --amber-text: var(--vn-warn-text);
   --red-text: var(--vn-crit-text);
 }
+/* GYST-168 exception E1: the canvas charts keep the colours they had. charts.js draws on a canvas and
+   used to read --text, --muted, --border, --cyan, --blue and --purple from <html>; those are aliases
+   now, so both gradient stops would be the accent. The renderer has its own palette instead, with the
+   values those six had before the makeover, keyed on data-theme as they were. It goes with the chunk
+   that rebuilds the charts. */
+:root {
+  --chart-text: #e9eef4;
+  --chart-muted: #a6b0bb;
+  --chart-border: rgba(255, 255, 255, 0.08);
+  --chart-cyan: #53c6e4;
+  --chart-blue: #7d9fd8;
+  --chart-purple: #9d8fd4;
+}
+:root[data-theme="light"] {
+  --chart-text: #101923;
+  --chart-muted: #4d5f70;
+  --chart-border: rgba(20, 38, 56, 0.10);
+  --chart-cyan: #007f96;
+  --chart-blue: #345fbd;
+  --chart-purple: #7056d8;
+}
 
 /* ---- 2. solid background ------------------------------------------------ */
 :root body {

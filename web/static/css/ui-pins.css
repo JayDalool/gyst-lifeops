@@ -183,6 +183,11 @@
   --vn-accent-text: #6ea8ff;
 }
 
+/* What scripts read from <html> on Galaxy: completion-toast.js reads --vn-base for its timing, and nothing
+   on body can pin that. :has() puts the old timings on the root of the Galaxy page only. A browser
+   without :has() ignores the rule and the toast is 20 ms quicker there. */
+:root:has(> body.galaxy-page) { --vn-base: 240ms; --vn-fast: 150ms; }
+
 /* GYST-168 fallback: the same pin when <html> has no data-gyst-theme, or "system".
    layout.html always sets the attribute and theme.js keeps it, so this is a safety net, not a path in use.
    Each family follows what selected it before the makeover: --gyst-* were light without the attribute,

@@ -32,12 +32,14 @@
 
   function palette() {
     return {
-      text: cssVar("--text") || "#eef7ff",
-      muted: cssVar("--muted") || "#92a4b7",
-      border: cssVar("--border") || "rgba(166, 213, 255, 0.16)",
-      cyan: cssVar("--cyan") || "#65e8ff",
-      blue: cssVar("--blue") || "#78a7ff",
-      purple: cssVar("--purple") || "#a98cff"
+      // GYST-168 (exception E1): the charts keep their own colours. --text, --cyan and the others are
+      // aliases of the Look and the accent now; the --chart-* names in styles.css hold the old values.
+      text: cssVar("--chart-text") || "#eef7ff",
+      muted: cssVar("--chart-muted") || "#92a4b7",
+      border: cssVar("--chart-border") || "rgba(166, 213, 255, 0.16)",
+      cyan: cssVar("--chart-cyan") || "#65e8ff",
+      blue: cssVar("--chart-blue") || "#78a7ff",
+      purple: cssVar("--chart-purple") || "#a98cff"
     };
   }
 
