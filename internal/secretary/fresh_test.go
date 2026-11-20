@@ -420,6 +420,9 @@ func TestOneWaitBudgetPerTurn(t *testing.T) {
 	if first["stale"] != true || brief["calendar"].(map[string]any)["stale"] != true {
 		t.Fatalf("stale not reported: %v / %v", first["stale"], brief["calendar"])
 	}
+	for i := 0; slowCal.calls.Load() == 0 && i < 200; i++ { // the goroutine may not have run yet
+		time.Sleep(5 * time.Millisecond)
+	}
 	if slowCal.calls.Load() != 1 {
 		t.Fatalf("calendar sync started %d times", slowCal.calls.Load())
 	}
