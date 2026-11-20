@@ -9,7 +9,7 @@
 //   node scripts/build-accents.cjs --r7 dir           also write looks7.css and looks7.json in round 7's own format
 //
 // Exit 0: every contrast pair holds. Exit 1: a pair fails, or --check found a difference.
-// Exit 2: bad arguments or a seeds file that cannot be read.
+// Exit 2: bad arguments, a seeds file that cannot be read, or an output path that cannot be written.
 //
 // Why a port and not a copy of the values: 13B "Token tools for R1" asks for the generator in the
 // repository so that a value which breaks a contrast pair fails the build. This is a line-for-line port
@@ -461,6 +461,8 @@ function check() {
       ['a seeds file that is not JSON', ['--seeds', write('not.json', '{')]],
       ['a Look naming an unknown accent', ['--seeds', write('noaccent.json', JSON.stringify(noAccent))]],
       ['a colour that is not hex', ['--seeds', write('badhex.json', JSON.stringify(badHex))]],
+      ['an --out path that cannot be written', ['--seeds', path.join(tmp, 'r7.json'), '--out', path.join(tmp, 'no-such-folder', 'x.css')]],
+      ['an --r7 folder that cannot be made', ['--seeds', path.join(tmp, 'r7.json'), '--r7', path.join(tmp, 'r7.json', 'sub')]],
     ]) {
       const r = self(...args);
       expect(r.status === 2, `exit ${r.status} on ${label}, want 2`);
@@ -490,11 +492,19 @@ function main(argv) {
   if (!result) return 1;
   // Other seeds are a trial: they never replace the committed file unless --out names it.
   const out = opts.out || (opts.seeds ? null : CSS_FILE);
-  if (out) fs.writeFileSync(out, accentsCss(seeds, result));
-  if (opts.r7) {
-    fs.mkdirSync(opts.r7, { recursive: true });
-    fs.writeFileSync(path.join(opts.r7, 'looks7.css'), r7Css(result));
-    fs.writeFileSync(path.join(opts.r7, 'looks7.json'), r7Json(result));
+  // GYST-168 (GYST-169 review follow-up): a path that cannot be written is the caller's input, so it
+  // exits 2 like a bad argument. Uncaught, it exited 1, which a caller reads as a failed contrast pair.
+  try {
+    if (out) fs.writeFileSync(out, accentsCss(seeds, result));
+    if (opts.r7) {
+      fs.mkdirSync(opts.r7, { recursive: true });
+      fs.writeFileSync(path.join(opts.r7, 'looks7.css'), r7Css(result));
+      fs.writeFileSync(path.join(opts.r7, 'looks7.json'), r7Json(result));
+    }
+  } catch (e) {
+    if (!e || !e.code) throw e;
+    console.error('build-accents: cannot write ' + (e.path || out || opts.r7) + ': ' + e.code);
+    return 2;
   }
   console.log('build-accents: ' + summary(result) + (out ? '; wrote ' + path.relative(process.cwd(), out) : ''));
   return 0;

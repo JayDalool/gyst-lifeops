@@ -1,3 +1,5 @@
+- [ ] GYST-168 · iPhone app: Geist font, no flash; login dark; Galaxy unchanged · https://gyst.zaylolabs.com/today
+- [ ] GYST-154 · Health plan: "2,000" kcal target saves as 2000 · https://github.com/JayDalool/gyst-lifeops/pull/260
 - [ ] GYST-076 · New/edit project: Roadmap option shows "(default)" · https://gyst.zaylolabs.com/projects/new
 - [ ] #83 · Galaxy worlds unmoved; Projects groups unchanged · https://gyst.zaylolabs.com/galaxy
 - [ ] #187 · iPhone launcher Do: water, complete focus, confirm shows · https://gyst.zaylolabs.com/today

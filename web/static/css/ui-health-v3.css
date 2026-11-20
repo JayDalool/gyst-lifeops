@@ -8,7 +8,7 @@
   .is-health .gyst-primary { display: none; }
   .hv3-tabbar { position: fixed; z-index: 100; inset: auto 0 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 0 max(8px, var(--gyst-safe-right)) var(--gyst-safe-bottom) max(8px, var(--gyst-safe-left)); background: color-mix(in srgb, var(--vn-surface) 90%, transparent); backdrop-filter: saturate(1.6) blur(16px); -webkit-backdrop-filter: saturate(1.6) blur(16px); border-top: 1px solid var(--vn-separator); }
   .hv3-tabbar > a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: var(--gyst-tab-height); color: var(--vn-ink-3); font-size: 11px; font-weight: 500; text-decoration: none; }
-  .hv3-tabbar > a[aria-current="page"] { color: var(--vn-accent); }
+  .hv3-tabbar > a[aria-current="page"] { color: var(--vn-accent-text); }
   .hv3-tabbar .gyst-icon { width: 24px; height: 24px; }
 }
 @media (min-width: 1024px) {
@@ -24,7 +24,7 @@
 .hv3 *, .hv3 *::before, .hv3 *::after { box-sizing: border-box; }
 .hv3 h1, .hv3 h2, .hv3 h3, .hv3 p, .hv3 ul, .hv3 ol, .hv3 dl, .hv3 dd, .hv3 figure { margin: 0; }
 .hv3 ul, .hv3 ol { padding: 0; list-style: none; }
-.hv3 a { color: var(--vn-accent); }
+.hv3 a { color: var(--vn-accent-text); }
 .hv3 .gyst-icon { width: 20px; height: 20px; flex: none; }
 .hv3-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .hv3-absent { color: var(--vn-ink-3); }
@@ -64,9 +64,9 @@
 .hv3-stat { display: grid; gap: var(--vn-s2); align-content: start; }
 .hv3-card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--vn-s2); margin-top: var(--vn-s3); flex-wrap: wrap; }
 
-.hv3-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--vn-s2); min-height: 44px; padding: 0 var(--vn-s4); border: 0; border-radius: var(--vn-r-md); font: 600 15px/1 var(--vn-font); background: var(--vn-accent); color: #fff; text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform var(--vn-fast) var(--vn-ease); }
+.hv3-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--vn-s2); min-height: 44px; padding: 0 var(--vn-s4); border: 0; border-radius: var(--vn-r-md); font: 600 15px/1 var(--vn-font); background: var(--vn-accent); color: var(--vn-on-accent); text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform var(--vn-fast) var(--vn-ease); }
 .hv3-btn:active { transform: scale(.97); }
-.hv3-btn.secondary { background: var(--vn-accent-soft); color: var(--vn-info-text); }
+.hv3-btn.secondary { background: var(--vn-accent-soft); color: var(--vn-accent-text); }
 .hv3-btn.small { min-height: 36px; padding: 0 var(--vn-s3); font-size: var(--vn-t-sub); border-radius: var(--vn-r-sm); position: relative; }
 .hv3-btn.small::after { content: ""; position: absolute; inset: -4px 0; }
 .hv3-btn .gyst-icon { width: 16px; height: 16px; }
@@ -76,7 +76,7 @@
 .hv3-spark { display: block; width: 100%; height: 40px; overflow: visible; }
 .hv3-spark polyline { fill: none; stroke: var(--vn-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 
-.hv3-disclose > summary { display: flex; align-items: center; gap: var(--vn-s2); min-height: 44px; color: var(--vn-accent); font-size: var(--vn-t-sub); font-weight: 600; list-style: none; cursor: pointer; }
+.hv3-disclose > summary { display: flex; align-items: center; gap: var(--vn-s2); min-height: 44px; color: var(--vn-accent-text); font-size: var(--vn-t-sub); font-weight: 600; list-style: none; cursor: pointer; }
 .hv3-disclose > summary::-webkit-details-marker { display: none; }
 .hv3-disclose > summary .gyst-icon { width: 16px; height: 16px; transition: transform var(--vn-fast); }
 .hv3-disclose[open] > summary .gyst-icon[class] { transform: none; }
@@ -133,9 +133,13 @@
 .hv3-days li { display: grid; gap: 6px; justify-items: center; font-size: var(--vn-t-caption); color: var(--vn-ink-3); font-weight: 600; }
 .hv3-day { width: 28px; height: 28px; border-radius: 50%; background: var(--vn-surface-2); display: grid; place-items: center; color: #fff; }
 .hv3-day .gyst-icon { width: 14px; height: 14px; }
-.hv3-day.done { background: var(--vn-accent); }
-.hv3-days .is-today { color: var(--vn-accent); }
-.hv3-days .is-today .hv3-day { box-shadow: 0 0 0 2px var(--vn-surface), 0 0 0 3.5px var(--vn-accent); }
+/* GYST-168: a logged workout is a completed state, and the accent never means good, warning or bad
+   (13A DD-4, 13B DD-6). The success text grade is the fill, so the check on it clears 3:1 in both themes. */
+.hv3-day.done { background: var(--vn-ok-text); color: var(--vn-surface); }
+/* GYST-168 lead rule: a "now, current or today" indicator is a state, so it reads the info tokens; amounts and
+   identity stay on the accent. The same holds for .hv3-kbars span.today and .hv3-kdays span.today below. */
+.hv3-days .is-today { color: var(--vn-info-text); }
+.hv3-days .is-today .hv3-day { box-shadow: 0 0 0 2px var(--vn-surface), 0 0 0 3.5px var(--vn-info); }
 .hv3-carousel { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 72%); gap: var(--vn-s3); overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--vn-s4)); padding: 2px var(--vn-s4) var(--vn-s2); scrollbar-width: none; }
 .hv3-carousel::-webkit-scrollbar { display: none; }
 .hv3-carousel > li { scroll-snap-align: start; }
@@ -171,7 +175,7 @@
 .hv3-card > .hv3-row { padding: 0; min-height: 0; }
 .hv3-row-copy { flex: 1; min-width: 0; display: grid; gap: 2px; }
 .hv3-row > .gyst-icon { width: 16px; height: 16px; color: var(--vn-ink-3); }
-.hv3-tile { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: var(--vn-r-md); background: var(--vn-accent-soft); color: var(--vn-accent); }
+.hv3-tile { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: var(--vn-r-md); background: var(--vn-accent-soft); color: var(--vn-accent-text); }
 .hv3-tile.sm { width: 32px; height: 32px; border-radius: var(--vn-r-sm); }
 .hv3-tile.sm .gyst-icon { width: 18px; height: 18px; }
 .hv3-group { background: var(--vn-surface); border-radius: var(--vn-r-lg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vn-ink) 6%, transparent), var(--vn-e1); overflow: hidden; }
@@ -247,7 +251,7 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-mtile { display: grid; gap: var(--vn-s2); align-content: start; }
 .hv3-kbars { position: relative; display: flex; align-items: flex-end; gap: 8px; height: 112px; margin-top: var(--vn-s3); }
 .hv3-kbars span { flex: 1; border-radius: 6px 6px 2px 2px; background: color-mix(in srgb, var(--vn-accent) 55%, var(--vn-surface-3)); }
-.hv3-kbars span.today { background: var(--vn-accent); }
+.hv3-kbars span.today { background: var(--vn-info); }
 .hv3-kbars span.over { background: var(--vn-warn); }
 .hv3-kbars span.none { background: transparent; border: 1.5px dashed var(--vn-surface-3); }
 /* A partial day (last sync before 20:00) is hatched, and the summary line says so (#69). */
@@ -256,15 +260,18 @@ a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn
 .hv3-tline { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--vn-ink-3); pointer-events: none; }
 .hv3-kdays { display: flex; gap: 8px; margin: 6px 0 var(--vn-s2); }
 .hv3-kdays span { flex: 1; text-align: center; font-size: var(--vn-t-caption); color: var(--vn-ink-3); font-weight: 600; }
-.hv3-kdays span.today { color: var(--vn-accent); }
+.hv3-kdays span.today { color: var(--vn-info-text); }
 .hv3-src { display: flex; align-items: center; gap: var(--vn-s3); padding: var(--vn-s3) var(--vn-s4); border-radius: var(--vn-r-lg); background: var(--vn-surface-2); min-width: 0; }
 /* Earlier workouts (#54 review) */
 .hv3-earlier { margin-top: var(--vn-s3); }
 .hv3-earlier > ul > li { border-top: 1px solid var(--vn-separator); }
 .hv3-earlier details[open] > summary > .gyst-icon, .hv3-earlier[open] > summary > .gyst-icon { transform: rotate(90deg); }
-/* `.hv3 a` outranks `.hv3-btn`; keep filled link-buttons readable. */
-.hv3 a.hv3-btn:not(.secondary) { color: #fff; }
-[data-gyst-theme="dark"] .hv3 .hv3-btn:not(.secondary) { color: #06101f; }
+/* `.hv3 a` outranks `.hv3-btn`; keep filled link-buttons readable.
+   GYST-168: the label on the accent fill is always --vn-on-accent (13B DD-6), not a literal per theme.
+   The literals were right only where data-gyst-theme was set: with dark taken from the OS setting
+   alone (the Health prototype, any page without theme.js) white stayed on the light-violet fill, 2.36:1. */
+.hv3 a.hv3-btn:not(.secondary) { color: var(--vn-on-accent); }
+[data-gyst-theme="dark"] .hv3 .hv3-btn:not(.secondary) { color: var(--vn-on-accent); }
 
 /* ---------- Checklist & My foods (#59) ---------- */
 .hv3-check-row { display: flex; align-items: center; gap: var(--vn-s3); min-height: 56px; padding: var(--vn-s2) var(--vn-s4); }
@@ -280,7 +287,7 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .hv3-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: var(--vn-s3); align-items: end; margin: var(--vn-s3) 0; }
 .hv3-field { display: grid; gap: 6px; min-width: 0; font-size: var(--vn-t-foot); color: var(--vn-ink-2); font-weight: 550; }
 .hv3-field.wide { grid-column: 1 / -1; }
-.hv3-field input, .hv3-field select, .hv3-field textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--vn-separator); border-radius: var(--vn-r-md); background: var(--vn-surface); color: var(--vn-ink); font: 400 16px/1.3 var(--vn-font); }
+.hv3-field input, .hv3-field select, .hv3-field textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--vn-ink-3); border-radius: var(--vn-r-md); background: var(--vn-surface); color: var(--vn-ink); font: 400 16px/1.3 var(--vn-font); }
 .hv3-field textarea { resize: vertical; }
 .hv3-field :focus { outline: 2px solid var(--vn-accent); outline-offset: 0; }
 .hv3-field [aria-invalid="true"] { border-color: var(--vn-crit); }
@@ -292,10 +299,10 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .hv3-coach { max-width: 760px; }
 .hv3-thread { display: grid; gap: var(--vn-s6); min-height: 30vh; align-content: start; }
 .hv3-log { display: grid; gap: var(--vn-s6); }
-.hv3-me { justify-self: end; margin-left: auto; max-width: 82%; padding: 10px var(--vn-s4); border-radius: 20px 20px 6px 20px; background: var(--vn-accent); color: #fff; overflow-wrap: anywhere; white-space: pre-wrap; width: fit-content; }
+.hv3-me { justify-self: end; margin-left: auto; max-width: 82%; padding: 10px var(--vn-s4); border-radius: 20px 20px 6px 20px; background: var(--vn-accent); color: var(--vn-on-accent); overflow-wrap: anywhere; white-space: pre-wrap; width: fit-content; }
 .hv3-turn.user { display: flex; justify-content: flex-end; }
 .hv3-ai { display: flex; gap: var(--vn-s3); align-items: flex-start; min-width: 0; }
-.hv3-av { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--vn-accent-soft); color: var(--vn-accent); }
+.hv3-av { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--vn-accent-soft); color: var(--vn-accent-text); }
 .hv3-av .gyst-icon { width: 16px; height: 16px; }
 .hv3-ai-b { flex: 1; min-width: 0; display: grid; gap: var(--vn-s3); justify-items: start; }
 .hv3-reply { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
@@ -422,13 +429,13 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 .hv3-tile-h { display: flex; align-items: center; justify-content: space-between; gap: var(--vn-s2); min-height: 32px; }
 .hv3-tile-h .hv3-k { font-size: var(--vn-t-foot); font-weight: 650; }
 .hv3-tile-h a { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; min-width: 44px; justify-content: flex-end; color: var(--vn-ink-3); text-decoration: none; }
-.hv3-tile-h a:hover { color: var(--vn-accent); }
+.hv3-tile-h a:hover { color: var(--vn-accent-text); }
 .hv3-tile-v { font: 700 24px/1.1 var(--vn-font-display); letter-spacing: -.02em; color: var(--vn-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .hv3-tile-v small { font: 500 var(--vn-t-foot)/1 var(--vn-font); color: var(--vn-ink-2); letter-spacing: 0; }
 .hv3-tile-card .hv3-bar i { background: var(--health-burn); }
 .hv3-tile-card .hv3-spark { height: 32px; }
 .hv3-tile-card .hv3-spark polyline { stroke: var(--health-burn); }
-.hv3-logw { justify-self: start; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: var(--vn-t-foot); font-weight: 600; color: var(--vn-accent); text-decoration: none; }
+.hv3-logw { justify-self: start; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: var(--vn-t-foot); font-weight: 600; color: var(--vn-accent-text); text-decoration: none; }
 .hv3-logw .gyst-icon { width: 14px; height: 14px; }
 
 /* Daily checklist */

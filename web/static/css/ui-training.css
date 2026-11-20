@@ -40,7 +40,8 @@
 .training-ui .training-days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; list-style:none; padding:0; margin:8px 0 16px; text-align:center; font-size:.75rem; color:var(--gyst-text-secondary); }
 .training-ui .training-days li { display:grid; justify-items:center; gap:4px; }
 .training-ui .training-day { width:26px; height:26px; border-radius:50%; background:var(--gyst-control-bg); }
-.training-ui .training-day.done { background:var(--gyst-blue); }
+/* GYST-168: a logged day is a completed state, so it is not drawn in the accent (as .hv3-day.done). */
+.training-ui .training-day.done { background:var(--vn-ok-text); }
 .training-ui .training-days .is-today { color:var(--gyst-blue); font-weight:700; }
 .training-ui .training-days .is-today .training-day { box-shadow:0 0 0 2px var(--gyst-surface),0 0 0 3.5px var(--gyst-blue); }
 .training-ui .training-week-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0; }
