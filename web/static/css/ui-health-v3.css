@@ -66,7 +66,7 @@
 
 .hv3-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--vn-s2); min-height: 44px; padding: 0 var(--vn-s4); border: 0; border-radius: var(--vn-r-md); font: 600 15px/1 var(--vn-font); background: var(--vn-accent); color: #fff; text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform var(--vn-fast) var(--vn-ease); }
 .hv3-btn:active { transform: scale(.97); }
-.hv3-btn.secondary { background: var(--vn-accent-soft); color: var(--vn-info-text); }
+.hv3-btn.secondary { background: var(--vn-accent-soft); color: var(--vn-accent-text); }
 .hv3-btn.small { min-height: 36px; padding: 0 var(--vn-s3); font-size: var(--vn-t-sub); border-radius: var(--vn-r-sm); position: relative; }
 .hv3-btn.small::after { content: ""; position: absolute; inset: -4px 0; }
 .hv3-btn .gyst-icon { width: 16px; height: 16px; }
@@ -131,9 +131,11 @@
 .hv3-count strong { font: 700 var(--vn-t-display)/1 var(--vn-font-display); letter-spacing: -.03em; color: var(--vn-ink); font-variant-numeric: tabular-nums; margin-right: 4px; }
 .hv3-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--vn-s2); text-align: center; }
 .hv3-days li { display: grid; gap: 6px; justify-items: center; font-size: var(--vn-t-caption); color: var(--vn-ink-3); font-weight: 600; }
-.hv3-day { width: 28px; height: 28px; border-radius: 50%; background: var(--vn-surface-2); display: grid; place-items: center; color: var(--vn-on-accent); }
+.hv3-day { width: 28px; height: 28px; border-radius: 50%; background: var(--vn-surface-2); display: grid; place-items: center; color: #fff; }
 .hv3-day .gyst-icon { width: 14px; height: 14px; }
-.hv3-day.done { background: var(--vn-accent); }
+/* GYST-168: a logged workout is a completed state, and the accent never means good, warning or bad
+   (13A DD-4, 13B DD-6). The success text grade is the fill, so the check on it clears 3:1 in both themes. */
+.hv3-day.done { background: var(--vn-ok-text); color: var(--vn-surface); }
 .hv3-days .is-today { color: var(--vn-accent-text); }
 .hv3-days .is-today .hv3-day { box-shadow: 0 0 0 2px var(--vn-surface), 0 0 0 3.5px var(--vn-accent); }
 .hv3-carousel { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 72%); gap: var(--vn-s3); overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--vn-s4)); padding: 2px var(--vn-s4) var(--vn-s2); scrollbar-width: none; }

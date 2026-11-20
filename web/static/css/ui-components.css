@@ -28,6 +28,12 @@
 .gyst-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--gyst-space-2); min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: var(--gyst-radius-sm); background: #2563eb; color: #fff; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color var(--gyst-duration), transform var(--vn-fast) var(--vn-ease); }
 .gyst-button:not(:disabled):active { transform: scale(.97); }
 .gyst-button:hover { background: #1d4ed8; }
+/* GYST-168: the primary button, the selected segment, the switch and the checkbox were a hard-coded
+   blue (#2563eb). They now take the accent. Galaxy is pinned and its accent tokens hold other values
+   there, so the old literals stay as the base rule and the accent is applied everywhere else through
+   :where(), which adds no specificity: the later --secondary and --danger rules still win as before. */
+:where(body:not(.galaxy-page)) .gyst-button { background: var(--vn-accent); color: var(--vn-on-accent); }
+:where(body:not(.galaxy-page)) .gyst-button:hover { background: var(--vn-accent-text); }
 .gyst-button--secondary { background: var(--gyst-surface); color: var(--gyst-blue); border-color: var(--gyst-blue); }
 .gyst-button--secondary:hover { background: var(--gyst-blue-soft); }
 .gyst-button--danger { background: #b91c1c; color: #fff; }
@@ -51,6 +57,7 @@ a.gyst-row:hover { background: var(--gyst-blue-soft); }
 .gyst-segments { display: flex; flex-wrap: wrap; gap: 4px; border-radius: var(--gyst-radius-sm); padding: 4px; background: var(--gyst-control-bg); }
 .gyst-segment { flex: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; padding: 8px 12px; border: 0; border-radius: 8px; color: var(--gyst-control-text); background: transparent; text-decoration: none; font-size: .875rem; cursor: pointer; }
 .gyst-segment[aria-current="page"], .gyst-segment[aria-pressed="true"] { background: #2563eb; color: #fff; }
+:where(body:not(.galaxy-page)) .gyst-segment[aria-current="page"], :where(body:not(.galaxy-page)) .gyst-segment[aria-pressed="true"] { background: var(--vn-accent); color: var(--vn-on-accent); }
 .gyst-subnav .gyst-segment[aria-current="page"] { background: var(--gyst-surface); color: var(--gyst-blue); box-shadow: var(--gyst-shadow-card); }
 .gyst-field { display: grid; gap: 8px; min-width: 0; }
 .gyst-input { display: block; width: 100%; min-height: 44px; padding: 10px 12px; color: var(--gyst-text); background: var(--gyst-surface); border: 1px solid var(--gyst-control-border); border-radius: var(--gyst-radius-sm); }
@@ -59,10 +66,13 @@ a.gyst-row:hover { background: var(--gyst-blue-soft); }
 .gyst-field-error { color: var(--gyst-danger-text); font-size: .875rem; }
 .gyst-choice { display: flex; gap: 12px; align-items: center; min-height: 44px; cursor: pointer; }
 .gyst-choice input { width: 20px; height: 20px; margin: 0; accent-color: #2563eb; flex-shrink: 0; }
+:where(body:not(.galaxy-page)) .gyst-choice input { accent-color: var(--vn-accent); }
 .gyst-switch { appearance: none; width: 44px !important; height: 26px !important; border: 1px solid var(--gyst-control-border); border-radius: 999px; background: var(--gyst-control-bg); position: relative; }
 .gyst-switch::before { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: var(--gyst-control-border); border-radius: 50%; transition: transform var(--gyst-duration); }
 .gyst-switch:checked { background: #2563eb; border-color: #2563eb; }
 .gyst-switch:checked::before { background: #fff; transform: translateX(18px); }
+:where(body:not(.galaxy-page)) .gyst-switch:checked { background: var(--vn-accent); border-color: var(--vn-accent); }
+:where(body:not(.galaxy-page)) .gyst-switch:checked::before { background: var(--vn-on-accent); }
 .gyst-number { font-size: 2.125rem; line-height: 1.18; font-weight: 700; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
 .gyst-unit { font-size: .875rem; font-weight: 400; color: var(--gyst-text-secondary); letter-spacing: normal; }
 .gyst-progress { appearance: none; display: block; width: 100%; height: 8px; border: 0; border-radius: 999px; overflow: hidden; background: var(--gyst-control-bg); accent-color: var(--gyst-positive-text); }

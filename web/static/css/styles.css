@@ -4081,7 +4081,8 @@ i.map-node-state {
   color: var(--muted);
 }
 :root .status.done    { color: var(--green-text); }
-:root .status.current { color: var(--accent-text); }
+/* GYST-168 E4: "current" is a state, so it reads the info token and stays blue; --accent-text is Iris now. */
+:root .status.current { color: var(--vn-info-text); }
 :root .status.soon    { color: var(--amber-text); }
 :root .status.late    { color: var(--red-text); }
 :root .status.locked  { color: var(--quiet); }

@@ -337,9 +337,10 @@ GYST_UI_GALLERY_OUT=/tmp/gyst-ui0-review go test ./internal/handlers -run TestEx
 ```
 
 The resulting `index.html` embeds the CSS and the older inline SVGs. The makeover
-icons load from `static/icons.svg`, which the export writes beside it, so serve
+icons load from `static/icons.svg` and the font from
+`static/fonts/Geist-Variable.woff2`; the export writes both beside it, so serve
 the folder over HTTP to see them (for example `python3 -m http.server` in that
-folder); a page opened from a file cannot load the sprite.
+folder); a page opened from a file cannot load either.
 No CDN, frontend build or runtime gallery route is required. The existing
 `render_test.go` already exercises the real shared renderer, so it needed no
 helper change. Additional isolation/escaping/presence tests live in

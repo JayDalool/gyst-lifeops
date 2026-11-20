@@ -267,8 +267,25 @@ func TestMakeoverColourSwaps(t *testing.T) {
 		{"styles.css", ".medal-chip", "color", "var(--vn-on-accent)"},
 		{"styles.css", ".login-submit", "color", "var(--vn-on-accent)"},
 		{"ui-health-v3.css", ".hv3-me", "color", "var(--vn-on-accent)"},
-		// The check icon on a logged day: white on the dark accent was 2.36:1.
-		{"ui-health-v3.css", ".hv3-day", "color", "var(--vn-on-accent)"},
+		// A logged workout is a completed state: success fill, never the accent (13A DD-4, 13B DD-6).
+		{"ui-health-v3.css", ".hv3-day.done", "background", "var(--vn-ok-text)"},
+		{"ui-health-v3.css", ".hv3-day.done", "color", "var(--vn-surface)"},
+		// "Current" is a state too, so it stays on the info token (E4).
+		{"styles.css", ":root .status.current", "color", "var(--vn-info-text)"},
+		{"ui-health-v3.css", ".hv3-btn.secondary", "color", "var(--vn-accent-text)"},
+		// Primary controls take the accent everywhere but on the pinned Galaxy page.
+		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-button", "background", "var(--vn-accent)"},
+		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-button", "color", "var(--vn-on-accent)"},
+		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-button:hover", "background", "var(--vn-accent-text)"},
+		{"ui-components.css", `:where(body:not(.galaxy-page)) .gyst-segment[aria-pressed="true"]`, "background", "var(--vn-accent)"},
+		{"ui-components.css", `:where(body:not(.galaxy-page)) .gyst-segment[aria-current="page"]`, "color", "var(--vn-on-accent)"},
+		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-switch:checked", "background", "var(--vn-accent)"},
+		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-choice input", "accent-color", "var(--vn-accent)"},
+		{"ui-shell.css", ":where(body:not(.galaxy-page)) .gyst-skip", "background", "var(--vn-accent)"},
+		{"ui-projects.css", `.projects-ui input[type="checkbox"]`, "accent-color", "var(--vn-accent)"},
+		// Galaxy reads these base rules, so they keep the literal it had.
+		{"ui-components.css", ".gyst-button:hover", "background", "#1d4ed8"},
+		{"ui-components.css", ".gyst-switch:checked", "background", "#2563eb"},
 		{"styles.css", ".login-input", "border", "1px solid var(--vn-ink-3)"},
 		// Demanded by the contrast audit: a field edge at 3:1 and a readable placeholder.
 		{"ui-health-v3.css", ".hv3-field input", "border", "1px solid var(--vn-ink-3)"},

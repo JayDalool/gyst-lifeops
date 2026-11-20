@@ -117,6 +117,18 @@ func TestExportUIGallery(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "static", "icons.svg"), sprite, 0644); err != nil {
 		t.Fatal(err)
 	}
+	// GYST-168: the embedded ui-tokens.css asks for the font at this path, so the export carries it
+	// too; without it the preview silently falls back to the system face.
+	font, err := os.ReadFile("../../web/static/fonts/Geist-Variable.woff2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "static", "fonts"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "static", "fonts", "Geist-Variable.woff2"), font, 0644); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // stateGallery holds the fictional VN-022 state component examples.
