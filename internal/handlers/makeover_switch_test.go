@@ -284,6 +284,10 @@ func TestMakeoverColourSwaps(t *testing.T) {
 		{"styles.css", ":root .map .node.current i", "background", "var(--vn-info)"},
 		{"styles.css", ":root .map .node.current i", "border-color", "var(--vn-info)"},
 		{"styles.css", ":root .map .node.current::after", "border", "1.5px solid var(--vn-info)"},
+		// The legacy button's hover is the same opaque fill; the old 0.9 opacity is reset off Galaxy.
+		{"styles.css", ":root :where(body:not(.galaxy-page)) .btn:where(:hover)", "background", "color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink))"},
+		{"styles.css", ":root :where(body:not(.galaxy-page)) .btn:hover", "opacity", "1"},
+		{"styles.css", ":root .btn:hover", "opacity", "0.9"}, // Galaxy still reads this one
 		// The current prayer on Today is a state too: border here, outline in ui-today.css (its second
 		// colour-only edit, by the lead's ruling), so the tile is one colour.
 		{"styles.css", ":root .tracker-dot.prayer-current", "border-color", "var(--vn-info)"},
@@ -347,6 +351,103 @@ func TestPrimaryButtonHoverIsDistinctAndReadable(t *testing.T) {
 		rest, over := contrastRatio(t, label, accent), contrastRatio(t, label, hover)
 		if over < 4.5 || over < rest {
 			t.Errorf("%s: label %s on hover %s is %.2f:1 (resting %.2f:1); it needs 4.5:1 and must not drop", theme, label, hover, over, rest)
+		}
+	}
+}
+
+// accentNames are the custom properties that resolve to the accent family after GYST-168: the accent
+// tokens themselves and every older name aliased onto them.
+var accentNames = map[string]bool{
+	"--vn-accent": true, "--vn-accent-text": true, "--vn-accent-soft": true, "--vn-on-accent": true,
+	"--vn-xp": true, "--vn-xp-soft": true,
+	"--accent": true, "--accent-text": true, "--accent-soft": true, "--cyan": true, "--blue": true, "--purple": true,
+	"--gyst-blue": true, "--gyst-blue-soft": true, "--gyst-purple": true,
+}
+
+// The accent never means a state (13A DD-4, 13B DD-6, AGENTS.md; E4 keeps info blue). Every selector
+// here marks a state: current, active, done, info. Its colour is followed through the alias blocks
+// and must never reach an accent name. A new state selector belongs in this list.
+func TestStateSelectorsNeverResolveToTheAccent(t *testing.T) {
+	// Where an older name is defined: the legacy alias block, the --gyst-* aliases, the static tokens.
+	defs := map[string]string{}
+	for _, r := range parseCSS(readStatic(t, "css/styles.css")) {
+		if r.Selector == legacyAliasSelector {
+			for n, v := range r.Decls {
+				defs[n] = v
+			}
+		}
+	}
+	for _, r := range parseCSS(readStatic(t, "css/"+tokensCSS)) {
+		if r.Selector == gystAliasSelector || r.Selector == selLight {
+			for n, v := range r.Decls {
+				defs[n] = v
+			}
+		}
+	}
+	// The alias table itself must still say what this test assumes.
+	for n := range accentNames {
+		if strings.HasPrefix(n, "--vn-accent") || n == "--vn-on-accent" {
+			continue
+		}
+		if v, ok := defs[n]; !ok || !strings.Contains(v, "var(--vn-accent") {
+			t.Errorf("%s = %q no longer points at the accent; update accentNames", n, v)
+		}
+	}
+	ref := regexp.MustCompile(`var\((--[a-z0-9-]+)`)
+	var reaches func(value string, depth int) string
+	reaches = func(value string, depth int) string {
+		for _, m := range ref.FindAllStringSubmatch(value, -1) {
+			if accentNames[m[1]] {
+				return m[1]
+			}
+			if next, ok := defs[m[1]]; ok && depth < 8 {
+				if hit := reaches(next, depth+1); hit != "" {
+					return m[1] + " -> " + hit
+				}
+			}
+		}
+		return ""
+	}
+	type state struct{ file, selector string }
+	states := []state{
+		{"ui-components.css", ".gyst-badge--blue"},
+		{"ui-components.css", `.gyst-chip[data-state="info"]`},
+		{"ui-components.css", `[data-state="info"] > .gyst-dot`},
+		{"ui-components.css", `.gyst-sev-tile[data-state="info"]`},
+		{"ui-components.css", `.gyst-banner[data-state="info"]`},
+		{"styles.css", ":root .status.current"},
+		{"styles.css", ":root .status.done"},
+		{"styles.css", ".status-pending"},
+		{"styles.css", ":root .phase-strip i.current"},
+		{"styles.css", ":root .phase-strip i.done"},
+		{"styles.css", ":root .map .node.current i"},
+		{"styles.css", ":root .map .node.current::after"},
+		{"styles.css", ":root .map .node.done i"},
+		{"styles.css", ":root .map .route-done"},
+		{"styles.css", ":root .tracker-dot.prayer-current"},
+		{"ui-today.css", ".today-page .tracker-dot.prayer-current"},
+		{"ui-health-v3.css", ".hv3-day.done"},
+		{"ui-health-v3.css", ".hv3-check.done"},
+	}
+	parsed := map[string][]cssRule{}
+	for _, s := range states {
+		if parsed[s.file] == nil {
+			parsed[s.file] = parseCSS(readStatic(t, "css/"+s.file))
+		}
+		found := false
+		for _, r := range parsed[s.file] {
+			if r.Selector != s.selector && !r.has(s.selector) {
+				continue
+			}
+			found = true
+			for _, prop := range []string{"color", "background", "border", "border-color", "outline", "stroke", "fill", "box-shadow"} {
+				if hit := reaches(r.Decls[prop], 0); hit != "" {
+					t.Errorf("%s: state selector %s { %s: %s } resolves to the accent through %s", s.file, s.selector, prop, r.Decls[prop], hit)
+				}
+			}
+		}
+		if !found {
+			t.Errorf("%s: state selector %s not found; fix the list", s.file, s.selector)
 		}
 	}
 }

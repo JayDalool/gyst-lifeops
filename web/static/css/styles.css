@@ -1145,7 +1145,9 @@ button.action-card {
 
 .status-pending {
   border-color: rgba(101, 232, 255, 0.28);
-  color: var(--cyan);
+  /* GYST-168: pending is a state, so it is not drawn in the accent (--cyan is the accent now). It is
+     quiet, like .status.pending further down. */
+  color: var(--quiet);
 }
 
 .project-grid,
@@ -4056,7 +4058,13 @@ i.map-node-state {
    text grade behind --accent. Galaxy keeps its pinned --accent: the rule is scoped off it with :where(),
    which adds no specificity, so .ghost and .quiet below still win. */
 :root :where(body:not(.galaxy-page)) .btn { background: var(--vn-accent); }
+/* Hover is an opaque fill, as on .gyst-button. The old 0.9 opacity let the white card show through the
+   accent and took the label to 3.87:1 in light. The fill rule adds no specificity (:where on :hover too),
+   so every variant and scoped button keeps its own background; the opacity reset sits after the old rule.
+   Galaxy keeps the old hover. */
+:root :where(body:not(.galaxy-page)) .btn:where(:hover) { background: color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink)); }
 :root .btn:hover { opacity: 0.9; }
+:root :where(body:not(.galaxy-page)) .btn:hover { opacity: 1; }
 :root .btn:not(:disabled):active { transform: scale(.97); }
 :root .btn.ghost {
   background: transparent;
@@ -4365,7 +4373,8 @@ i.map-node-state {
 }
 :root .map .route-done {
   fill: none;
-  stroke: var(--accent);
+  /* GYST-168: the travelled route is a completed state, drawn like the done stops, not in the accent. */
+  stroke: var(--green);
   stroke-width: 1.5;
   opacity: 0.85;
 }
