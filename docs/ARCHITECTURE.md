@@ -67,6 +67,10 @@ SQLite
 - `internal/services/` owns recurrence, course, roadmap, calendar, quest, and
   dashboard behavior.
 - `internal/repository/` owns SQLite queries and mutations.
+- `internal/secretary/` owns the Secretary's read-only tool catalogue (an
+  explicit allowlist), the 4 KB day brief, freshness checks and the untrusted-text
+  envelope (Issue #236). It calls no AI provider, route or environment; the
+  Health Coach only takes its nine Health tools.
 - `migrations/` is the source of truth for schema evolution.
 - `seeds/example.sql` initializes an empty development database when seeding is
   enabled.

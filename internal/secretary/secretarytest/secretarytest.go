@@ -82,24 +82,47 @@ func buildTemplate() ([]byte, error) {
 // Now in the application zone.
 func New(t *testing.T) *Env {
 	t.Helper()
-	template.once.Do(func() { template.data, template.err = buildTemplate() })
-	if template.err != nil {
-		t.Fatalf("build the template database: %v", template.err)
-	}
-	path := filepath.Join(t.TempDir(), "lifeops.db")
-	if err := os.WriteFile(path, template.data, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	database, err := db.Open(path)
+	env, closeDB, err := open(filepath.Join(t.TempDir(), "lifeops.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { database.Close() })
+	t.Cleanup(closeDB)
+	env.T = t
+	return env
+}
+
+// Demo is New for Example functions, which have no *testing.T. It panics if
+// the database cannot be built, and the returned function closes it. The seed
+// helpers need a test, so an Example uses only the fakes.
+func Demo() (*Env, func()) {
+	dir, err := os.MkdirTemp("", "secretary-demo-")
+	if err != nil {
+		panic(err)
+	}
+	env, closeDB, err := open(filepath.Join(dir, "lifeops.db"))
+	if err != nil {
+		panic(err)
+	}
+	return env, func() { closeDB(); os.RemoveAll(dir) }
+}
+
+func open(path string) (*Env, func(), error) {
+	template.once.Do(func() { template.data, template.err = buildTemplate() })
+	if template.err != nil {
+		return nil, nil, fmt.Errorf("build the template database: %w", template.err)
+	}
+	if err := os.WriteFile(path, template.data, 0o600); err != nil {
+		return nil, nil, err
+	}
+	database, err := db.Open(path)
+	if err != nil {
+		return nil, nil, err
+	}
 	svc := services.New(repository.New(database))
 	loc := svc.Location()
 	now := Now(loc)
 	svc.Clock = clock.Clock{Now: func() time.Time { return now }, Loc: loc}
-	return &Env{T: t, DB: database, Svc: svc}
+	return &Env{DB: database, Svc: svc}, func() { database.Close() }, nil
 }
 
 // SetNow moves the pinned clock.
@@ -257,13 +280,30 @@ type Toolset interface{ Tools() []healthcoach.Tool }
 // Run calls one tool by name and fails the test if it is missing.
 func Run(t *testing.T, set Toolset, name, input string) (string, error) {
 	t.Helper()
+	out, err, found := call(set, name, input)
+	if !found {
+		t.Fatalf("tool %q is not offered", name)
+	}
+	return out, err
+}
+
+// RunTool is Run for Example functions: a missing tool is an error.
+func RunTool(set Toolset, name, input string) (string, error) {
+	out, err, found := call(set, name, input)
+	if !found {
+		return "", fmt.Errorf("tool %q is not offered", name)
+	}
+	return out, err
+}
+
+func call(set Toolset, name, input string) (string, error, bool) {
 	for _, tool := range set.Tools() {
 		if tool.Name == name {
-			return tool.Run(context.Background(), json.RawMessage(input))
+			out, err := tool.Run(context.Background(), json.RawMessage(input))
+			return out, err, true
 		}
 	}
-	t.Fatalf("tool %q is not offered", name)
-	return "", nil
+	return "", nil, false
 }
 
 func (e *Env) exec(q string, args ...any) {
