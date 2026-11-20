@@ -29,7 +29,7 @@ Source short names:
 | # | Topic | Decision | Supersedes | Source |
 |---|---|---|---|---|
 | DD-5 | Appearance setting | One setting holds Theme, Look, Accent, Cards, Density, Text size and Navigation | 13A DD-1 (extended); 11 §J | Direction; round 6; answer 4 |
-| DD-6 | Accent | One accent, chosen by Jay from seven; violet is no longer the fixed identity colour | 13A DD-4 (revised); 11 §A, §H | Direction; round 7 |
+| DD-6 | Accent | One accent, chosen by Jay from seven; violet is no longer the fixed identity colour | 13A DD-4 (revised); 11 §A, §H | Direction; round 7; lead, 2026-11-20 (fixed values) |
 | DD-7 | Looks | Three: Aurora (blue, default), Lagoon (green), Sunrise (orange) | 11 §F, §H | Answer 4; round 7 |
 | DD-8 | Section colours | Six, one per launcher group | new | Round 6 |
 | DD-9 | Typography | Geist, eight sizes on one scale factor, three weights | 11 §C | Direction |
@@ -90,7 +90,7 @@ Still true from DD-1: one setting for the whole app, no per-area appearance sett
 | **Why** | One colour for "act" is easier to read than blue for action and violet for identity, and Jay wanted to pick it. |
 | **Source** | Direction, "Changes to recorded decisions"; round 7 (the seven accents stay). |
 
-Each accent has four variants per theme. These are the audited values and R1 must reproduce them exactly:
+Each accent has four variants per theme. These are the audited values, and they are **binding as fixed values**. R1 ships them as written. The generator does not derive them from hue seeds; it asserts the contrast pairs below and fails the build on a value that breaks one. Direction described each accent as a stored seed (a hue and a strength), but no round recorded seed numbers, so re-deriving the hues is not required. Decided by the lead on 2026-11-20; it follows the round 7 drawings Jay approved.
 
 | Accent | Light `--accent` | Light `--accent-text` | Light `--accent-soft` | Dark `--accent` and `--accent-text` | Dark `--accent-soft` |
 |---|---|---|---|---|---|
@@ -606,19 +606,18 @@ Every option that a round offered and did not build as the main design.
 
 ## Open
 
-Not decided. Nothing below may be built as if it were.
+Not decided. Nothing below may be built as if it were. (O-1, the accent seeds, was settled on 2026-11-20 and is now part of DD-6.)
 
 | # | Open item | Why it is open |
 |---|---|---|
-| O-1 | **Accent seeds.** Direction says each accent is stored as one seed (a hue and a strength) and derived by a build script. No round recorded the seed numbers, and no accent generator exists in the token tools; only the derived values in DD-6 do. | R1 must write a generator that reproduces the DD-6 table exactly, or ship the table as fixed values with the contrast assertions. Either way the DD-6 values are binding. |
-| O-2 | **Aurora's starting accent.** Aurora is "the blue Look" and starts with Iris, an indigo, not with the accent named Blue. | Drawn and audited this way in rounds 6 and 7. Jay can switch accents in Settings; whether the default should be Blue is his call. |
+| O-2 | **Aurora's starting accent.** Aurora is "the blue Look" and starts with Iris, an indigo, not with the accent named Blue. | **For Jay.** He asked for one blue, one green and one orange Look. Aurora is blue by its neutrals and its Plan colour, but it starts on Iris. It stays Iris for now, as drawn in the round 7 mockups he approved (lead, 2026-11-20). He picks the accent in Settings either way. |
 | O-3 | **Listening mode on iPhone.** Whether an installed web app can keep the microphone open and spot the word while on screen is untested. | Waits for the iPhone listening test in the build order. DD-27 records the design only. |
 | O-4 | **Real devices.** Every round was checked in headless Chromium only. Glass, safe areas, the six-tab bar under a thumb, the font in the installed app and iOS text-size following are unverified. | Jay's checks after the shell chunks. If iOS text size can't be made reliable, ship S · M · L only and say so. |
 | O-5 | **Pages the makeover did not draw.** Development, Reviews, Agents, System, Automations and Attention from `11` and `12` have no place yet in the six groups, and the "Operate" sidebar group is not in the mockups. | No round covered them. `05A` D2 and D6 still describe where they belong. |
 | O-6 | **Widths from 1600.** `13` §1 has a wide tier (sidebar 256, larger caps). The makeover draws one tier from 1000 with content capped at 1180 and was checked up to 1440. | Not drawn or checked in any round. |
 | O-7 | **Attention badge.** `11` puts a badge on the Today tab only. Round 6 adds an unread count on the Mail tab and says nothing about the Today badge. | Not addressed in any round. |
 | O-8 | **Time format.** The calendar shows 24-hour times; the Secretary speaks 12-hour times. Round 5 says one setting should decide both. | No answer recorded. |
-| O-9 | **Pointers outside 11 and 13.** `AGENTS.md` and `19A` name 13A as the design record, and `05A` D1, D2 and D6 and `17A` §C.6 and §M describe the old five tabs and Projects areas. | This change is limited to 13B, 11 and 13. Whether those files get a pointer is for the lead and Jay. |
+| O-9 | **Pointers outside 11 and 13.** These files still name 13A as the design record or describe the old five tabs and Projects areas: `AGENTS.md` (design rule and shared-tools lines), `19A` (precedence line and §12), `05A` (D1, D2, D6) and `17A` (§C.6, §H, §M). | Left untouched on purpose (lead, 2026-11-20). `AGENTS.md` is a rule file and needs Jay's word; `17A` must not change here. |
 | O-10 | **Screen specs.** The screens in DD-28 have no entry in `12`. | Written with each screen's own Issue. |
 | O-11 | **Galaxy visual work.** | Behind the `17A` gate ([Galaxy](#galaxy)). |
 
@@ -628,7 +627,7 @@ The tools are on the owner's server under `artifacts/gyst/design-makeover/tools-
 
 | File | What it does |
 |---|---|
-| `gen_looks7.py` | Derives the three Looks from the seeds in DD-7 and asserts every pair. Writes `looks7.css` (the tokens) and `looks7.json` (values and the lowest ratios) beside itself. It carries the seven accents as fixed values and checks them on each Look; it does not derive them (O-1). |
+| `gen_looks7.py` | Derives the three Looks from the seeds in DD-7 and asserts every pair. Writes `looks7.css` (the tokens) and `looks7.json` (values and the lowest ratios) beside itself. It carries the seven accents as fixed values and checks them on each Look; it does not derive them (DD-6). |
 | `audit7.cjs` | Renders the mockup and measures every visible text node and icon against what is behind it. |
 | `proof7.cjs` | Compares phone Today between rounds, element by element. |
 | `kbd7.cjs` | The scripted keyboard pass. |
