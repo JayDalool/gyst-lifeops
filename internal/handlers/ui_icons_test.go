@@ -72,28 +72,8 @@ func TestUIGalleryShowsIconSet(t *testing.T) {
 	}
 }
 
-// GYST-169 ships ui-accents.css without switching any screen to it: GYST-168 links it together with
-// the token aliases. Until then a link, import or precache entry would change what pages look like.
-func TestUIAccentsIsLinkedNowhere(t *testing.T) {
-	for _, dir := range []string{"../../web/templates", "../../web/static/css", "../../web/static/js", "../../web/static"} {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, e := range entries {
-			if e.IsDir() || e.Name() == "ui-accents.css" {
-				continue
-			}
-			raw, err := os.ReadFile(dir + "/" + e.Name())
-			if err != nil {
-				t.Fatal(err)
-			}
-			if bytes.Contains(raw, []byte("ui-accents")) {
-				t.Errorf("%s/%s refers to ui-accents.css", dir, e.Name())
-			}
-		}
-	}
-}
+// TestUIAccentsIsLinkedNowhere stood here while GYST-169 shipped ui-accents.css unlinked. GYST-168 links
+// it (layout.html, login.html, the precache list); TestMakeoverAssetVersions now asserts that.
 
 // Issue #259, lead note: the sign-in page stays dark through a static data-gyst-theme="dark" and no
 // JS, so the dark values must sit on that plain selector, not only on :root or a chosen Look.

@@ -211,6 +211,8 @@ func vnResolve(t *testing.T, name string, dark bool) string {
 
 func vnLuminance(t *testing.T, hex string) float64 {
 	t.Helper()
+	// The generated Look colours (ui-accents.css) are written in upper case (GYST-168).
+	hex = strings.ToLower(hex)
 	if !regexp.MustCompile(`^#[0-9a-f]{6}$`).MatchString(hex) {
 		t.Fatalf("not a hex colour: %q", hex)
 	}

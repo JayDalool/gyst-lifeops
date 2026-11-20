@@ -1,0 +1,523 @@
+package handlers
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"math"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+// GYST-168, "the switch": the static half of its required tests. The browser
+// half (computed styles, contrast audit, Galaxy zero diff, offline font) is
+// run by the tools kept with the ticket's evidence.
+
+const legacyAliasSelector = `:root, :root[data-theme="light"]`
+const gystAliasSelector = `:root, [data-gyst-theme="light"], [data-gyst-theme="dark"]`
+
+// The legacy variables in styles.css are declared three times: two older
+// blocks near the top and the alias block. The alias block must be the last
+// word for :root and for :root[data-theme="light"], whose (0,2,0) specificity
+// would otherwise beat a lone :root block in light mode.
+func TestLegacyVariablesEndAsAliases(t *testing.T) {
+	rules := parseCSS(readStatic(t, "css/styles.css"))
+	alias := -1
+	for i, r := range rules {
+		if r.Selector == legacyAliasSelector && r.Media == "" {
+			if alias >= 0 {
+				t.Fatal("styles.css has two legacy alias blocks")
+			}
+			alias = i
+		}
+	}
+	if alias < 0 {
+		t.Fatalf("styles.css has no %q alias block", legacyAliasSelector)
+	}
+	legacy := map[string]bool{}
+	for _, scope := range []string{":root", `:root[data-theme="light"]`} {
+		last := map[string]int{}
+		for i, r := range rules {
+			if !r.has(scope) {
+				continue
+			}
+			for _, n := range r.Names {
+				if strings.HasPrefix(n, "--") && !strings.HasPrefix(n, "--vn-") && !strings.HasPrefix(n, "--gyst-") && !strings.HasPrefix(n, "--health-") {
+					last[n] = i
+					legacy[n] = true
+				}
+			}
+		}
+		if len(last) == 0 {
+			t.Fatalf("no legacy variable found for %s", scope)
+		}
+		for n, i := range last {
+			if i != alias {
+				t.Errorf("%s: the last declaration of %s is in %q (%s), not the alias block", scope, n, rules[i].Selector, rules[i].Media)
+			}
+		}
+	}
+	for n := range legacy {
+		v, ok := rules[alias].Decls[n]
+		if !ok {
+			t.Errorf("legacy variable %s is missing from the alias block", n)
+			continue
+		}
+		// Shadows and glows are switched off; everything else follows a token.
+		if !strings.Contains(v, "var(--vn-") && !strings.HasPrefix(v, "0 0 0 ") {
+			t.Errorf("legacy variable %s = %q does not follow a --vn- token", n, v)
+		}
+	}
+	for _, n := range []string{"--bg", "--panel", "--text", "--muted", "--quiet", "--border", "--accent", "--cyan", "--green", "--red"} {
+		if !legacy[n] {
+			t.Errorf("expected legacy variable %s was not seen; the test is reading the wrong rules", n)
+		}
+	}
+}
+
+// Each theme-dependent --gyst-* name is an alias, declared once, on all three
+// theme scopes, so a nested theme scope resolves it against its own tokens.
+func TestGystAliasesOnAllThemeScopes(t *testing.T) {
+	rules := parseCSS(readStatic(t, "css/"+tokensCSS))
+	count := map[string]int{}
+	var alias *cssRule
+	for i, r := range rules {
+		for _, n := range r.Names {
+			if strings.HasPrefix(n, "--gyst-") {
+				count[n]++
+				if strings.Contains(r.Decls[n], "var(--vn-") && r.Selector != gystAliasSelector {
+					t.Errorf("%s is an alias but sits on %q, not on all three theme scopes", n, r.Selector)
+				}
+			}
+		}
+		if r.Selector == gystAliasSelector {
+			alias = &rules[i]
+		}
+	}
+	if alias == nil {
+		t.Fatalf("ui-tokens.css has no %q block", gystAliasSelector)
+	}
+	for n, c := range count {
+		if c != 1 {
+			t.Errorf("%s is declared %d times, want once", n, c)
+		}
+	}
+	for n, want := range map[string]string{
+		"--gyst-bg": "var(--vn-canvas)", "--gyst-surface": "var(--vn-surface)", "--gyst-text": "var(--vn-ink)",
+		"--gyst-text-secondary": "var(--vn-ink-2)", "--gyst-control-text": "var(--vn-ink-2)", "--gyst-border": "var(--vn-separator)",
+		"--gyst-control-border": "var(--vn-ink-3)", "--gyst-blue": "var(--vn-accent-text)", "--gyst-purple": "var(--vn-accent-text)",
+		"--gyst-blue-soft": "var(--vn-accent-soft)", "--gyst-control-bg": "var(--vn-surface-2)",
+		"--gyst-green": "var(--vn-ok)", "--gyst-orange": "var(--vn-warn)", "--gyst-red": "var(--vn-crit)",
+		"--gyst-positive-text": "var(--vn-ok-text)", "--gyst-warning-text": "var(--vn-warn-text)", "--gyst-danger-text": "var(--vn-crit-text)",
+		"--gyst-font": "var(--vn-font)", "--gyst-radius-sm": "var(--vn-r-md)", "--gyst-radius-md": "var(--vn-r-lg)", "--gyst-radius-xl": "var(--vn-r-xl)",
+		"--gyst-shadow-card": "0 0 0 transparent", "--gyst-shadow-raised": "var(--vn-e-float)", "--gyst-shadow-floating": "var(--vn-e-float)",
+		"--gyst-duration": "var(--vn-base)",
+	} {
+		if got := alias.Decls[n]; got != want {
+			t.Errorf("%s = %q, want %q", n, got, want)
+		}
+	}
+}
+
+// The sign-in page is dark through a static attribute and no script, so the
+// generated file must carry the default Look's dark values on a plain
+// [data-gyst-theme="dark"] selector, with no :root. The accent is read from
+// the Aurora block rather than repeated here: Aurora's starting accent is one
+// seed in scripts/build-accents.cjs.
+func TestAccentsDarkValuesOnPlainSelector(t *testing.T) {
+	_, _, dark := themeBlocks(t, accentsCSS)
+	var aurora *cssRule
+	rules := parseCSS(readStatic(t, "css/"+accentsCSS))
+	for i, r := range rules {
+		if r.Media == "" && r.has(`:root[data-look="aurora"][data-gyst-theme="dark"]`) {
+			aurora = &rules[i]
+		}
+	}
+	if aurora == nil {
+		t.Fatal("ui-accents.css has no Aurora dark block")
+	}
+	if len(dark.Decls) != len(aurora.Decls) {
+		t.Errorf("the plain dark block has %d tokens, Aurora dark has %d", len(dark.Decls), len(aurora.Decls))
+	}
+	for n, v := range aurora.Decls {
+		if dark.Decls[n] != v {
+			t.Errorf("plain [data-gyst-theme=\"dark\"] %s = %q, Aurora dark is %q", n, dark.Decls[n], v)
+		}
+	}
+	if dark.Decls["--vn-canvas"] != "#09080F" {
+		t.Errorf("dark canvas = %q, want #09080F (also the sign-in theme-color)", dark.Decls["--vn-canvas"])
+	}
+	for _, n := range []string{"--vn-accent", "--vn-accent-text", "--vn-accent-soft", "--vn-on-accent"} {
+		if dark.Decls[n] == "" {
+			t.Errorf("the plain dark block lacks %s", n)
+		}
+	}
+}
+
+func hexLuminance(t *testing.T, hex string) float64 {
+	t.Helper()
+	if !regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`).MatchString(hex) {
+		t.Fatalf("%q is not a #RRGGBB colour", hex)
+	}
+	ch := func(i int) float64 {
+		n, _ := strconv.ParseUint(hex[i:i+2], 16, 8)
+		v := float64(n) / 255
+		if v <= 0.04045 {
+			return v / 12.92
+		}
+		return math.Pow((v+0.055)/1.055, 2.4)
+	}
+	return 0.2126*ch(1) + 0.7152*ch(3) + 0.0722*ch(5)
+}
+
+func contrastRatio(t *testing.T, a, b string) float64 {
+	t.Helper()
+	la, lb := hexLuminance(t, a), hexLuminance(t, b)
+	return (math.Max(la, lb) + 0.05) / (math.Min(la, lb) + 0.05)
+}
+
+// No template renders .medal-disc or .medal-chip, so a browser audit cannot
+// see them. Their text is --vn-on-accent on a gradient of --cyan, --green and
+// --blue; after aliasing, every stop must give that text 4.5:1 in both themes.
+func TestMedalTextContrastOnEveryGradientStop(t *testing.T) {
+	styles := readStatic(t, "css/styles.css")
+	for _, sel := range []string{".medal-disc", ".medal-chip"} {
+		found := false
+		for _, r := range parseCSS(styles) {
+			if r.Selector == sel && r.Decls["background"] != "" {
+				found = true
+				if r.Decls["color"] != "var(--vn-on-accent)" {
+					t.Errorf("%s color = %q, want var(--vn-on-accent)", sel, r.Decls["color"])
+				}
+				for _, ref := range regexp.MustCompile(`var\((--[a-z-]+)\)`).FindAllStringSubmatch(r.Decls["background"], -1) {
+					if ref[1] != "--cyan" && ref[1] != "--green" && ref[1] != "--blue" {
+						t.Errorf("%s gradient uses %s, which this test does not cover", sel, ref[1])
+					}
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("%s rule with a background not found", sel)
+		}
+	}
+	var alias cssRule
+	for _, r := range parseCSS(styles) {
+		if r.Selector == legacyAliasSelector {
+			alias = r
+		}
+	}
+	light, _, dark := themeBlocks(t, accentsCSS)
+	for theme, block := range map[string]cssRule{"light": light, "dark": dark} {
+		text := block.Decls["--vn-on-accent"]
+		for _, stop := range []string{"--cyan", "--green", "--blue"} {
+			ref := regexp.MustCompile(`^var\((--vn-[a-z0-9-]+)\)$`).FindStringSubmatch(alias.Decls[stop])
+			if ref == nil {
+				t.Fatalf("%s = %q is not a single token", stop, alias.Decls[stop])
+			}
+			fill := block.Decls[ref[1]]
+			if ratio := contrastRatio(t, text, fill); ratio < 4.5 {
+				t.Errorf("%s: --vn-on-accent %s on %s (%s, %s) is %.2f:1, needs 4.5:1", theme, text, stop, ref[1], fill, ratio)
+			}
+		}
+	}
+}
+
+// The colour-only swaps of GYST-168: each rule that used the accent fill as
+// text, or a literal on an aliased fill, now reads the token made for it.
+func TestMakeoverColourSwaps(t *testing.T) {
+	type swap struct{ file, selector, prop, want string }
+	swaps := []swap{
+		{"ui-health-v3.css", `.hv3-tabbar > a[aria-current="page"]`, "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3 a", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-disclose > summary", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-days .is-today", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-tile", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-kdays span.today", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-av", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-tile-h a:hover", "color", "var(--vn-accent-text)"},
+		{"ui-health-v3.css", ".hv3-logw", "color", "var(--vn-accent-text)"},
+		{"styles.css", `.completion-toast button[type="submit"]`, "color", "var(--vn-accent-text)"},
+		{"styles.css", ":root .btn", "color", "var(--vn-on-accent)"},
+		{"styles.css", ".medal-disc", "color", "var(--vn-on-accent)"},
+		{"styles.css", ".medal-chip", "color", "var(--vn-on-accent)"},
+		{"styles.css", ".login-submit", "color", "var(--vn-on-accent)"},
+		{"ui-health-v3.css", ".hv3-me", "color", "var(--vn-on-accent)"},
+		// The check icon on a logged day: white on the dark accent was 2.36:1.
+		{"ui-health-v3.css", ".hv3-day", "color", "var(--vn-on-accent)"},
+		{"styles.css", ".login-input", "border", "1px solid var(--vn-ink-3)"},
+		// Demanded by the contrast audit: a field edge at 3:1 and a readable placeholder.
+		{"ui-health-v3.css", ".hv3-field input", "border", "1px solid var(--vn-ink-3)"},
+		{"styles.css", "body:not(.galaxy-page) :is(input, textarea)::placeholder", "color", "var(--vn-ink-3)"},
+		{"styles.css", "body", "font-family", "var(--vn-font)"},
+		{"styles.css", "body:not(.galaxy-page)", "-webkit-font-smoothing", "antialiased"},
+	}
+	parsed := map[string][]cssRule{}
+	for _, s := range swaps {
+		if parsed[s.file] == nil {
+			parsed[s.file] = parseCSS(readStatic(t, "css/"+s.file))
+		}
+		got, seen := "", false
+		for _, r := range parsed[s.file] {
+			// The whole selector is tried first: a list split on commas would cut :is(a, b) in two.
+			if v, ok := r.Decls[s.prop]; ok && (r.Selector == s.selector || r.has(s.selector)) {
+				got, seen = v, true // the last one wins, as in the cascade
+			}
+		}
+		if !seen {
+			t.Errorf("%s: no %s declaration on %s", s.file, s.prop, s.selector)
+		} else if got != s.want {
+			t.Errorf("%s: %s { %s: %s }, want %s", s.file, s.selector, s.prop, got, s.want)
+		}
+	}
+}
+
+const geistURL = "/static/fonts/Geist-Variable.woff2?v=1.3.0"
+
+func sha256File(t *testing.T, rel string) string {
+	t.Helper()
+	b, err := os.ReadFile("../../web/static/" + rel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
+
+func shellAssets(t *testing.T) (cache string, assets []string) {
+	t.Helper()
+	worker := readStatic(t, "service-worker.js")
+	m := regexp.MustCompile(`const CACHE = "([^"]+)";`).FindStringSubmatch(worker)
+	if m == nil {
+		t.Fatal("service-worker.js has no CACHE name")
+	}
+	line := strings.Split(strings.Split(worker, "const SHELL = ")[1], ";\n")[0]
+	if err := json.Unmarshal([]byte(line), &assets); err != nil {
+		t.Fatal(err)
+	}
+	return m[1], assets
+}
+
+func readTemplate(t *testing.T, name string) string {
+	t.Helper()
+	b, err := os.ReadFile("../../web/templates/" + name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+// The font is the unmodified GeistVF.woff2 of vercel/geist-font release 1.3.0
+// with that release's licence beside it, and one URL names it everywhere: a
+// different string in any one place fetches it twice or misses the offline copy.
+func TestGeistFontSelfHosted(t *testing.T) {
+	if got := sha256File(t, "fonts/Geist-Variable.woff2"); got != "28258d0621216948416a859d32487ab6ad1c9effa0d08795698e70be3c917630" {
+		t.Errorf("Geist-Variable.woff2 sha256 = %s; it is not the 1.3.0 release file", got)
+	}
+	if got := sha256File(t, "licenses/geist.txt"); got != "f38cbd54a72dd027dc854a9bbac9eb5bb8b9b1d6e4b43f037435336ab62a63fc" {
+		t.Errorf("geist.txt sha256 = %s; it is not the 1.3.0 LICENSE.TXT", got)
+	}
+	tokens := readStatic(t, "css/"+tokensCSS)
+	var face *cssRule
+	rules := parseCSS(tokens)
+	for i, r := range rules {
+		if r.Selector == "@font-face" {
+			if face != nil {
+				t.Fatal("more than one @font-face")
+			}
+			face = &rules[i]
+		}
+	}
+	if face == nil {
+		t.Fatal("ui-tokens.css has no @font-face")
+	}
+	for prop, want := range map[string]string{
+		"font-family": `"Geist"`, "font-weight": "100 900", "font-style": "normal", "font-display": "swap",
+		"src": `url("` + geistURL + `") format("woff2")`,
+	} {
+		if face.Decls[prop] != want {
+			t.Errorf("@font-face %s = %q, want %q", prop, face.Decls[prop], want)
+		}
+	}
+	preload := `<link rel="preload" href="` + geistURL + `" as="font" type="font/woff2" crossorigin>`
+	layout, login := readTemplate(t, "layout.html"), readTemplate(t, "login.html")
+	// Galaxy keeps its own font, so its page must not preload (or fetch) Geist.
+	if !strings.Contains(layout, `{{if ne .Page "galaxy"}}`+preload+`{{end}}`) {
+		t.Error("layout.html must preload the font on every page except Galaxy")
+	}
+	if strings.Count(layout, "Geist-Variable") != 1 {
+		t.Error("layout.html names the font more than once")
+	}
+	if !strings.Contains(login, preload) {
+		t.Error("login.html must preload the font")
+	}
+	_, assets := shellAssets(t)
+	found := false
+	for _, a := range assets {
+		found = found || a == geistURL
+	}
+	if !found {
+		t.Error("the font URL is not in the service worker SHELL, so it would not be available offline")
+	}
+	// No remote asset anywhere: the CSP allows only this origin.
+	for name, body := range map[string]string{"ui-tokens.css": tokens, "ui-pins.css": readStatic(t, "css/ui-pins.css"), "layout.html": layout, "login.html": login} {
+		if regexp.MustCompile(`(?i)(?:url\(|href=|src=)["']?(?:https?:)?//`).MatchString(body) {
+			t.Errorf("%s refers to an off-origin asset", name)
+		}
+	}
+}
+
+// The sign-in page stays dark on any OS setting through a static attribute:
+// no data-theme keeps the legacy side dark, data-gyst-theme="dark" selects the
+// dark tokens. It has no script and its form is untouched.
+func TestLoginPageStaysDarkWithoutScript(t *testing.T) {
+	login := readTemplate(t, "login.html")
+	if strings.Contains(strings.ToLower(login), "<script") {
+		t.Error("login.html must not contain a script")
+	}
+	if !strings.Contains(login, `<html lang="en" data-gyst-theme="dark">`) {
+		t.Error(`login.html must set data-gyst-theme="dark" statically and no data-theme`)
+	}
+	order := []string{
+		`<meta name="theme-color" content="#09080F">`,
+		`<link rel="stylesheet" href="/static/css/styles.css?v=`,
+		`<link rel="stylesheet" href="/static/css/ui-tokens.css?v=`,
+		`<link rel="stylesheet" href="/static/css/ui-accents.css?v=`,
+		`<form class="login-card" method="post" action="/login" autocomplete="on">`,
+		`name="password"`, `type="password"`, `autocomplete="current-password"`,
+		`{{if .Next}}<input type="hidden" name="next" value="{{.Next}}">{{end}}`,
+		`<button class="login-submit" type="submit">Sign in</button>`,
+	}
+	at := 0
+	for _, part := range order {
+		i := strings.Index(login[at:], part)
+		if i < 0 {
+			t.Fatalf("login.html lacks %s (or it is out of order)", part)
+		}
+		at += i
+	}
+}
+
+// Every changed asset has one ?v= string, used identically wherever it is
+// named; the cache name moves so installed apps drop the old shell.
+func TestMakeoverAssetVersions(t *testing.T) {
+	layout, login := readTemplate(t, "layout.html"), readTemplate(t, "login.html")
+	cache, assets := shellAssets(t)
+	if cache == "lifeops-shell-v81-icons" || !strings.HasPrefix(cache, "lifeops-shell-") {
+		t.Errorf("CACHE = %q: it must differ from the last release and keep the lifeops-shell- prefix the activate handler prunes by", cache)
+	}
+	inShell := map[string]bool{}
+	for _, a := range assets {
+		inShell[a] = true
+	}
+	for _, a := range []string{
+		"/static/css/styles.css?v=aurora-1", "/static/css/ui-tokens.css?v=aurora-1", "/static/css/ui-accents.css?v=aurora-1",
+		"/static/css/ui-pins.css?v=aurora-1", "/static/css/ui-health-v3.css?v=hv3-11", "/static/js/theme.js?v=aurora-1",
+		"/static/css/ui-galaxy.css?v=galaxywin-1", geistURL,
+	} {
+		if !strings.Contains(layout, `"`+a+`"`) {
+			t.Errorf("layout.html does not load %s", a)
+		}
+		if !inShell[a] {
+			t.Errorf("SHELL lacks %s", a)
+		}
+	}
+	// One version per file: the path may not appear in the layout or the shell with any other ?v=.
+	seen := map[string]string{}
+	for _, m := range regexp.MustCompile(`/static/[A-Za-z0-9_./-]+\?v=[A-Za-z0-9_.-]+`).FindAllString(layout+login+strings.Join(assets, " "), -1) {
+		path, _, _ := strings.Cut(m, "?")
+		if prev, ok := seen[path]; ok && prev != m {
+			t.Errorf("%s is named with two versions: %s and %s", path, prev, m)
+		}
+		seen[path] = m
+	}
+	// Token files load in this order; the pins must come after the tokens they restate.
+	at := 0
+	for _, css := range []string{"styles.css", "ui-tokens.css", "ui-accents.css", "ui-pins.css", "ui-components.css"} {
+		i := strings.Index(layout[at:], "/static/css/"+css+"?v=")
+		if i < 0 {
+			t.Fatalf("layout.html: %s is missing or out of order", css)
+		}
+		at += i
+	}
+}
+
+// ui-pins.css holds the protected Galaxy page and Health v3's type sizes at
+// their pre-makeover values. The browser proof is the zero computed-style
+// diff; this guards the selectors and the values that proof depends on.
+func TestPinsForGalaxyAndHealth(t *testing.T) {
+	rules := parseCSS(readStatic(t, "css/ui-pins.css"))
+	merged := func(sel string) map[string]string {
+		out := map[string]string{}
+		for _, r := range rules {
+			if r.has(sel) {
+				for n, v := range r.Decls {
+					out[n] = v
+				}
+			}
+		}
+		return out
+	}
+	hv3 := merged(".hv3")
+	for n, want := range map[string]string{"--vn-t-display": "34px", "--vn-t-display-lh": "40px", "--vn-t-title": "28px", "--vn-t-title-lh": "32px", "--vn-t-body-lh": "23px"} {
+		if hv3[n] != want {
+			t.Errorf(".hv3 %s = %q, want %q", n, hv3[n], want)
+		}
+	}
+	want := map[string]map[string]string{
+		"light": {"--vn-on-accent": "#08262e", "--vn-accent-text": "#2563eb", "--vn-accent": "#2563eb", "--gyst-bg": "#f8fafc", "--bg": "#f4f6f8", "--text": "#101923", "--vn-canvas": "#f4f6fa"},
+		"dark":  {"--vn-on-accent": "#08262e", "--vn-accent-text": "#6ea8ff", "--vn-accent": "#6ea8ff", "--gyst-bg": "#0f172a", "--bg": "#0f1216", "--text": "#e9eef4", "--vn-canvas": "#0b111c"},
+	}
+	for theme, values := range want {
+		pin := merged(`:root[data-gyst-theme="` + theme + `"] body.galaxy-page`)
+		for n, v := range values {
+			if pin[n] != v {
+				t.Errorf("Galaxy %s pin %s = %q, want %q", theme, n, pin[n], v)
+			}
+		}
+		for n, v := range map[string]string{
+			"font-family":    `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`,
+			"--vn-t-display": "34px", "--vn-r-lg": "16px", "--vn-fast": "150ms", "--vn-base": "240ms", "--gyst-radius-xl": "24px",
+		} {
+			if pin[n] != v {
+				t.Errorf("Galaxy %s pin %s = %q, want %q", theme, n, pin[n], v)
+			}
+		}
+		// A pin that follows a token would move with the makeover; every value is a literal.
+		for n, v := range pin {
+			if strings.Contains(v, "var(") {
+				t.Errorf("Galaxy %s pin %s = %q must be a literal", theme, n, v)
+			}
+		}
+	}
+	// Every legacy variable and every aliased --gyst-* name must be pinned in both themes.
+	var names []string
+	for _, r := range parseCSS(readStatic(t, "css/styles.css")) {
+		if r.Selector == legacyAliasSelector {
+			for _, n := range r.Names {
+				if !strings.HasPrefix(r.Decls[n], "0 0 0 rgba") { // the glows were already zero
+					names = append(names, n)
+				}
+			}
+		}
+	}
+	for _, r := range parseCSS(readStatic(t, "css/"+tokensCSS)) {
+		if r.Selector == gystAliasSelector {
+			for _, n := range r.Names {
+				if n != "--gyst-radius-sm" { // 12px before and after
+					names = append(names, n)
+				}
+			}
+		}
+	}
+	for _, theme := range []string{"light", "dark"} {
+		pin := merged(`:root[data-gyst-theme="` + theme + `"] body.galaxy-page`)
+		for _, n := range names {
+			if pin[n] == "" {
+				t.Errorf("Galaxy %s pin lacks %s, which the makeover changes", theme, n)
+			}
+		}
+	}
+}

@@ -19,8 +19,8 @@ func galleryHTML(t *testing.T) []byte {
 		return template.CSS(b)
 	}
 	data := struct {
-		Tokens, Components template.CSS
-		Colors             []struct {
+		Tokens, Accents, Components template.CSS
+		Colors                      []struct {
 			Name  string
 			Value template.CSS
 		}
@@ -43,7 +43,7 @@ func galleryHTML(t *testing.T) []byte {
 		SC              stateGallery
 		Overlay         overlayGallery
 		OverlayJS       template.JS
-	}{Tokens: read("ui-tokens.css"), Components: read("ui-components.css"), VN: vnGalleryData(), SC: stateGalleryData(), Overlay: overlayGalleryData()}
+	}{Tokens: read("ui-tokens.css"), Accents: read("ui-accents.css"), Components: read("ui-components.css"), VN: vnGalleryData(), SC: stateGalleryData(), Overlay: overlayGalleryData()}
 	js, err := os.ReadFile("../../web/static/js/ui-overlay.js")
 	if err != nil {
 		t.Fatal(err)

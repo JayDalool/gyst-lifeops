@@ -35,6 +35,11 @@ navigation remains consistent with the app.
 
 ## Tokens proposed for UI-0
 
+> **GYST-168 (2026-11-20):** the values below are the UI-0 proposal and are kept as history. The
+> shipped values are in `13B_DESIGN_DECISIONS.md`, `web/static/css/ui-tokens.css` and the generated
+> `ui-accents.css`: the `--gyst-*` colours, radii, shadows and duration are now aliases of the
+> `--vn-*` tokens, and `--vn-fast` and `--vn-base` are 120 ms and 220 ms.
+
 These values transcribe the component board where legible. Supplemental values
 are implementation proposals requiring visual review, not sampled pixel claims.
 
@@ -331,7 +336,10 @@ a database:
 GYST_UI_GALLERY_OUT=/tmp/gyst-ui0-review go test ./internal/handlers -run TestExportUIGallery -count=1
 ```
 
-The resulting `index.html` embeds CSS and SVGs and can be opened independently.
+The resulting `index.html` embeds the CSS and the older inline SVGs. The makeover
+icons load from `static/icons.svg`, which the export writes beside it, so serve
+the folder over HTTP to see them (for example `python3 -m http.server` in that
+folder); a page opened from a file cannot load the sprite.
 No CDN, frontend build or runtime gallery route is required. The existing
 `render_test.go` already exercises the real shared renderer, so it needed no
 helper change. Additional isolation/escaping/presence tests live in

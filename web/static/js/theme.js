@@ -17,7 +17,8 @@
     else delete root.dataset.theme;
     root.dataset.gystTheme = theme;
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = theme === "dark" ? "#0f172a" : "#f8fafc";
+    // The Aurora canvas (--vn-canvas in ui-accents.css). A meta tag cannot read a custom property.
+    if (meta) meta.content = theme === "dark" ? "#09080F" : "#F1EFF9";
     if (persist) { try { localStorage.setItem(key, mode); } catch (_) {} }
     document.querySelectorAll("[data-theme-choice]").forEach(function (choice) { choice.setAttribute("aria-pressed", String(choice.dataset.themeChoice === mode)); });
     document.dispatchEvent(new Event("gyst:themechange"));

@@ -17,7 +17,7 @@ func TestSettingsAppearanceIsSystemLightDark(t *testing.T) {
 		`<button class="gyst-segment" type="button" data-theme-choice="system" aria-pressed="true">System</button>`,
 		`<button class="gyst-segment" type="button" data-theme-choice="light" aria-pressed="false">Light</button>`,
 		`<button class="gyst-segment" type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>`,
-		`/static/js/theme.js?v=appearance-1`,
+		`/static/js/theme.js?v=aurora-1`,
 	} {
 		if !strings.Contains(page, want) {
 			t.Errorf("GET /settings is missing %s", want)
