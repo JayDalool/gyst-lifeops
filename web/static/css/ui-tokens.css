@@ -160,6 +160,18 @@
   --gyst-shadow-floating: var(--vn-e-float);
   --gyst-duration: var(--vn-base);
 }
+/* GYST-168 legacy-alias compatibility value, NOT a 13B token: in dark, --gyst-border is stronger than
+   the separator. Before the makeover it was #344155, 1.54 to 1.73:1 against its surfaces; 13B's dark
+   separator (white at 9%) is 1.21 to 1.26:1 there, and the outlines of buttons and tracker tiles on
+   Today, Health, Learn and the checklist read this name. No pair may end lower than on master, and
+   ui-today.css is not edited in this ticket, so the alias itself carries the value: ink mixed into the
+   surface at 20% gives 1.78:1 on the surface and 1.90:1 on the canvas. It is built from the Look's own
+   tokens, so it follows any Look. It goes when the last screen that reads --gyst-border is rebuilt.
+   A nested light scope still gets the separator from the block above. */
+[data-gyst-theme="dark"] { --gyst-border: color-mix(in srgb, var(--vn-ink) 20%, var(--vn-surface)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-gyst-theme="light"]) { --gyst-border: color-mix(in srgb, var(--vn-ink) 20%, var(--vn-surface)); }
+}
 /* Theme-independent --gyst-* values, unchanged. */
 :root {
   --gyst-galaxy-bg: #03050b;

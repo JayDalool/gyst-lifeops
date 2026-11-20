@@ -88,7 +88,8 @@ func TestGystAliasesOnAllThemeScopes(t *testing.T) {
 		for _, n := range r.Names {
 			if strings.HasPrefix(n, "--gyst-") {
 				count[n]++
-				if strings.Contains(r.Decls[n], "var(--vn-") && r.Selector != gystAliasSelector {
+				// --gyst-border's dark compatibility rules are checked on their own below.
+				if n != "--gyst-border" && strings.Contains(r.Decls[n], "var(--vn-") && r.Selector != gystAliasSelector {
 					t.Errorf("%s is an alias but sits on %q, not on all three theme scopes", n, r.Selector)
 				}
 			}
@@ -100,9 +101,30 @@ func TestGystAliasesOnAllThemeScopes(t *testing.T) {
 	if alias == nil {
 		t.Fatalf("ui-tokens.css has no %q block", gystAliasSelector)
 	}
+	// One exception, a legacy-alias compatibility value and not a 13B token: in dark, --gyst-border is
+	// stronger than the separator so that the control outlines reading it are not fainter than on
+	// master. It is restated on the two dark selectors right after the alias block.
+	const darkBorder = "color-mix(in srgb, var(--vn-ink) 20%, var(--vn-surface))"
+	darkRules := 0
+	for _, r := range rules {
+		if v, ok := r.Decls["--gyst-border"]; ok && r.Selector != gystAliasSelector {
+			darkRules++
+			dark := (r.Selector == selDark && r.Media == "") || (r.Selector == selSystemDark && r.Media == "@media (prefers-color-scheme: dark)")
+			if !dark || v != darkBorder || len(r.Decls) != 1 {
+				t.Errorf("unexpected --gyst-border rule %q (%s): %v", r.Selector, r.Media, r.Decls)
+			}
+		}
+	}
+	if darkRules != 2 {
+		t.Errorf("--gyst-border has %d dark compatibility rules, want 2 (the toggle and the OS setting)", darkRules)
+	}
 	for n, c := range count {
-		if c != 1 {
-			t.Errorf("%s is declared %d times, want once", n, c)
+		want := 1
+		if n == "--gyst-border" {
+			want = 3
+		}
+		if c != want {
+			t.Errorf("%s is declared %d times, want %d", n, c, want)
 		}
 	}
 	for n, want := range map[string]string{
@@ -148,7 +170,7 @@ func TestAccentsDarkValuesOnPlainSelector(t *testing.T) {
 		}
 	}
 	if dark.Decls["--vn-canvas"] != "#09080F" {
-		t.Errorf("dark canvas = %q, want #09080F (also the sign-in theme-color)", dark.Decls["--vn-canvas"])
+		t.Errorf("dark canvas = %q, want #09080F", dark.Decls["--vn-canvas"])
 	}
 	for _, n := range []string{"--vn-accent", "--vn-accent-text", "--vn-accent-soft", "--vn-on-accent"} {
 		if dark.Decls[n] == "" {
@@ -381,7 +403,8 @@ func TestLoginPageStaysDarkWithoutScript(t *testing.T) {
 		t.Error(`login.html must set data-gyst-theme="dark" statically and no data-theme`)
 	}
 	order := []string{
-		`<meta name="theme-color" content="#09080F">`,
+		// Exception E3: the browser bar colour is left as it was; it moves with the shell chunk (R2).
+		`<meta name="theme-color" content="#080d16">`,
 		`<link rel="stylesheet" href="/static/css/styles.css?v=`,
 		`<link rel="stylesheet" href="/static/css/ui-tokens.css?v=`,
 		`<link rel="stylesheet" href="/static/css/ui-accents.css?v=`,
@@ -414,7 +437,7 @@ func TestMakeoverAssetVersions(t *testing.T) {
 	}
 	for _, a := range []string{
 		"/static/css/styles.css?v=aurora-1", "/static/css/ui-tokens.css?v=aurora-1", "/static/css/ui-accents.css?v=aurora-1",
-		"/static/css/ui-pins.css?v=aurora-1", "/static/css/ui-health-v3.css?v=hv3-11", "/static/js/theme.js?v=aurora-1",
+		"/static/css/ui-pins.css?v=aurora-1", "/static/css/ui-health-v3.css?v=hv3-11",
 		"/static/css/ui-galaxy.css?v=galaxywin-1", geistURL,
 	} {
 		if !strings.Contains(layout, `"`+a+`"`) {

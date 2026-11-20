@@ -61,7 +61,7 @@ function themeChecks() {
   function expectTheme(state,theme,mode) {
     assert.equal(state.root.dataset.gystTheme,theme);
     assert.equal(state.root.dataset.theme,theme==='light'?'light':undefined,'legacy dark relies on absent data-theme');
-    assert.equal(state.meta.content,theme==='dark'?'#09080F':'#F1EFF9','the browser bar takes the Aurora canvas (GYST-168)');
+    assert.equal(state.meta.content,theme==='dark'?'#0f172a':'#f8fafc');
     if(mode)for(const c of state.choices)assert.equal(c.attrs['aria-pressed'],String(c.dataset.themeChoice===mode));
   }
   const choice=(state,value)=>state.choices.find(c=>c.dataset.themeChoice===value).listeners.click();

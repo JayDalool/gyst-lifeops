@@ -216,7 +216,9 @@ func themeBlocks(t *testing.T, file string) (light, system, dark cssRule) {
 	find := func(sel string, inMedia bool) cssRule {
 		var found []cssRule
 		for _, r := range parseCSS(readStatic(t, "css/"+file)) {
-			if r.Selector == sel && (r.Media != "") == inMedia {
+			// The token block is the one that declares --vn- names. The same selector also carries
+			// the dark --gyst-border compatibility value (GYST-168), which is not a token.
+			if r.Selector == sel && (r.Media != "") == inMedia && len(r.Names) > 0 && strings.HasPrefix(r.Names[0], "--vn-") {
 				found = append(found, r)
 			}
 		}
