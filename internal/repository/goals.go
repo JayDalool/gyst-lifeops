@@ -26,7 +26,8 @@ func (r *Repository) ListGoals(includeArchived bool) ([]models.GoalWithProgress,
 			CASE type WHEN 'yearly' THEN 0 WHEN 'monthly' THEN 1 ELSE 2 END,
 			CASE WHEN end_date IS NULL THEN 1 ELSE 0 END,
 			end_date,
-			created_at DESC`, goalColumns, where))
+			created_at DESC,
+			id ASC`, goalColumns, where))
 	if err != nil {
 		return nil, err
 	}

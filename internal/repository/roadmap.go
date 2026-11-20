@@ -288,7 +288,8 @@ func (r *Repository) ListRoadmapProjects(includeArchived bool) ([]models.Roadmap
 			CASE p.project_kind WHEN 'main' THEN 0 WHEN 'subproject' THEN 1 ELSE 2 END,
 			CASE WHEN p.target_date IS NULL THEN 1 ELSE 0 END,
 			p.target_date,
-			p.created_at DESC`, roadmapProjectColumns, where))
+			p.created_at DESC,
+			p.id ASC`, roadmapProjectColumns, where))
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +465,7 @@ func (r *Repository) ListRoadmapWeeklyReviews(limit int) ([]models.RoadmapWeekly
 	}
 	rows, err := r.db.Query(`SELECT id, week_start, finished, blocked, next_steps, created_at, updated_at
 		FROM roadmap_weekly_reviews
-		ORDER BY week_start DESC, created_at DESC
+		ORDER BY week_start DESC, created_at DESC, id DESC
 		LIMIT ?`, limit)
 	if err != nil {
 		return nil, err

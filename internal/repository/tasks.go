@@ -27,7 +27,8 @@ func (r *Repository) ListTasks(includeArchived bool) ([]models.Task, error) {
 			CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
 			CASE WHEN due_date IS NULL THEN 1 ELSE 0 END,
 			due_date,
-			created_at DESC`, taskColumns, where))
+			created_at DESC,
+			id ASC`, taskColumns, where))
 	if err != nil {
 		return nil, err
 	}
