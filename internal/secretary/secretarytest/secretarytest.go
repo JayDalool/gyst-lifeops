@@ -7,6 +7,7 @@ package secretarytest
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,6 +20,7 @@ import (
 
 	"lifeops-tracker/internal/clock"
 	"lifeops-tracker/internal/db"
+	"lifeops-tracker/internal/healthcoach"
 	"lifeops-tracker/internal/models"
 	"lifeops-tracker/internal/repository"
 	"lifeops-tracker/internal/services"
@@ -242,3 +244,158 @@ func (e *Env) SeedHevy(syncedAt time.Time) {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+// Sentinels are strings planted in fields a Secretary tool must never return
+// (descriptions, notes, URLs). A test that finds one in a tool's output has
+// found a leak.
+var Sentinels = []string{"SENTINEL-DESC", "SENTINEL-NOTES", "SENTINEL-UNLOCK", "SENTINEL-URL", "SENTINEL-SUMMARY"}
+
+// Toolset is anything that offers tools; *secretary.Catalogue is one.
+type Toolset interface{ Tools() []healthcoach.Tool }
+
+// Run calls one tool by name and fails the test if it is missing.
+func Run(t *testing.T, set Toolset, name, input string) (string, error) {
+	t.Helper()
+	for _, tool := range set.Tools() {
+		if tool.Name == name {
+			return tool.Run(context.Background(), json.RawMessage(input))
+		}
+	}
+	t.Fatalf("tool %q is not offered", name)
+	return "", nil
+}
+
+func (e *Env) exec(q string, args ...any) {
+	e.T.Helper()
+	if _, err := e.DB.Exec(q, args...); err != nil {
+		e.T.Fatal(err)
+	}
+}
+
+// SeedTasks adds fictional tasks around the pinned day (Thursday 2026-11-19):
+// one late, three due today (one repeating, with a reminder time), two later
+// this week, one next week, one without a date, and one already done. Every
+// description holds a sentinel.
+func (e *Env) SeedTasks() {
+	e.T.Helper()
+	mk := func(title, due, prio, repeat, remind, status string) {
+		task := models.Task{Title: title, Description: "SENTINEL-DESC " + title, Category: "personal", Priority: prio, Status: status, DueDate: due, RepeatType: repeat, ReminderTime: remind}
+		if err := e.Svc.Repo.CreateTask(&task); err != nil {
+			e.T.Fatal(err)
+		}
+	}
+	mk("Renew library card", "2026-11-17", "high", "none", "", "pending")
+	mk("Water the plants", "2026-11-10", "medium", "daily", "09:00", "pending")
+	mk("Draft the <b>report</b> & send", "2026-11-19", "high", "none", "", "pending")
+	mk("Pay the water bill", "2026-11-19", "low", "none", "", "completed")
+	mk("Call the dentist", "2026-11-21", "medium", "none", "", "pending")
+	mk("Book a table", "2026-11-24", "low", "none", "", "pending")
+	mk("Plan the garden", "2026-12-05", "low", "none", "", "pending")
+	mk("Sort the photos", "", "low", "none", "", "pending")
+}
+
+// Projects are the ids SeedProjects made.
+type Projects struct {
+	Public, OwnPrivate, OwnLocal, ChildOfLocal, InLocalRoadmap, Both, Planned, Archived int64
+}
+
+// SeedProjects adds fictional projects: public, private by its own flag,
+// local-only by its own flag, a child of a local-only parent, one in a
+// local-only roadmap, one with both flags, a planned one and an archived one.
+func (e *Env) SeedProjects() Projects {
+	e.T.Helper()
+	// Migration 006 makes the default roadmap private; make it public so each
+	// project's privacy comes from what this seed sets.
+	e.exec(`UPDATE roadmaps SET privacy = 'public'`)
+	mk := func(name, status string, parent int64, roadmap int64) int64 {
+		p := models.Project{Name: name, Description: "SENTINEL-DESC " + name, Notes: "SENTINEL-NOTES", UnlockNotes: "SENTINEL-UNLOCK", Status: status, ParentProjectID: parent, RoadmapID: roadmap, TargetDate: "2026-12-31"}
+		if err := e.Svc.Repo.CreateProject(&p); err != nil {
+			e.T.Fatal(err)
+		}
+		for i := 0; i < 3; i++ {
+			item := models.ProjectItem{ProjectID: p.ID, Title: fmt.Sprintf("%s step %d", name, i+1), Description: "SENTINEL-DESC"}
+			if err := e.Svc.Repo.CreateProjectItem(&item); err != nil {
+				e.T.Fatal(err)
+			}
+		}
+		return p.ID
+	}
+	flags := func(id int64, private, local bool) {
+		e.exec(`INSERT OR IGNORE INTO roadmap_project_meta (project_id) VALUES (?)`, id)
+		e.exec(`UPDATE roadmap_project_meta SET is_private = ?, local_only = ? WHERE project_id = ?`, private, local, id)
+	}
+	local := models.Roadmap{Name: "Quiet roadmap", Privacy: "local_only", Status: "active"}
+	if err := e.Svc.Repo.CreateRoadmap(&local); err != nil {
+		e.T.Fatal(err)
+	}
+	var p Projects
+	p.Public = mk("Garden shed", "active", 0, 0)
+	p.OwnPrivate = mk("Reading list", "active", 0, 0)
+	flags(p.OwnPrivate, true, false)
+	p.OwnLocal = mk("Boat log", "active", 0, 0)
+	flags(p.OwnLocal, false, true)
+	p.ChildOfLocal = mk("Boat log: sails", "active", p.OwnLocal, 0)
+	p.InLocalRoadmap = mk("Letters", "active", 0, local.ID)
+	p.Both = mk("Both flags", "active", 0, 0)
+	flags(p.Both, true, true)
+	p.Planned = mk("Someday kitchen", "upcoming", 0, 0)
+	p.Archived = mk("Old project", "archived", 0, 0)
+	// One finished step so open_items differs from the total.
+	e.exec(`UPDATE project_items SET status = 'completed' WHERE project_id = ? AND title LIKE '% step 1'`, p.Public)
+	return p
+}
+
+// SeedCourses adds a fictional course with blocks: two today (one timed), one
+// overdue, one tomorrow, one skipped today. Notes and URLs hold sentinels.
+func (e *Env) SeedCourses() {
+	e.T.Helper()
+	c := models.Course{Name: "Intro to Pottery", Provider: "Example School", URL: "https://example.invalid/SENTINEL-URL", Status: "active", Notes: "SENTINEL-NOTES"}
+	if err := e.Svc.Repo.CreateCourse(&c); err != nil {
+		e.T.Fatal(err)
+	}
+	mk := func(title, due, start, end, status string, catchup bool) {
+		b := models.LearningBlock{CourseID: c.ID, Title: title, BlockType: "lesson", Status: status, DueDate: due, StartTime: start, EndTime: end, URL: "https://example.invalid/SENTINEL-URL", Notes: "SENTINEL-NOTES", IsCatchup: catchup}
+		if err := e.Svc.Repo.CreateLearningBlock(&b); err != nil {
+			e.T.Fatal(err)
+		}
+	}
+	mk("Wheel basics", Today, "18:30", "19:30", "pending", false)
+	mk("Glazing reading", Today, "", "", "pending", true)
+	mk("Clay types quiz", "2026-11-17", "", "", "pending", false)
+	mk("Firing schedules", "2026-11-20", "10:00", "11:00", "pending", false)
+	mk("Skipped session", Today, "", "", "skipped", false)
+}
+
+// FakeHealth is a secretary.HealthReader with fictional, fixed answers. Err
+// makes every call fail, to show that the cause never reaches the model.
+type FakeHealth struct{ Err error }
+
+func (f FakeHealth) val(name string) (any, error) {
+	if f.Err != nil {
+		return nil, f.Err
+	}
+	return map[string]any{"tool": name, "calories_kcal": map[string]any{"eaten": 1450, "target": 2300}}, nil
+}
+
+// The nine Coach tools, each answering with its own name.
+func (f FakeHealth) Today() (any, error)           { return f.val("today") }
+func (f FakeHealth) Plan() (any, error)            { return f.val("plan") }
+func (f FakeHealth) WeightTrend() (any, error)     { return f.val("weight") }
+func (f FakeHealth) TrainingSummary() (any, error) { return f.val("summary") }
+func (f FakeHealth) RecentWorkouts(n int) (any, error) {
+	v, err := f.val("recent")
+	if m, ok := v.(map[string]any); ok {
+		m["count"] = n
+	}
+	return v, err
+}
+func (f FakeHealth) ExerciseProgress(w int) (any, error) {
+	v, err := f.val("progress")
+	if m, ok := v.(map[string]any); ok {
+		m["weeks"] = w
+	}
+	return v, err
+}
+func (f FakeHealth) HevyRoutines() (any, error)   { return f.val("routines") }
+func (f FakeHealth) FoodProducts() (any, error)   { return f.val("foods") }
+func (f FakeHealth) DailyChecklist() (any, error) { return f.val("checklist") }
