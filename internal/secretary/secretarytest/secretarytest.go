@@ -472,12 +472,15 @@ type FakeCalendar struct {
 	// Title makes the title of event i; nil gives "Fictional meeting i".
 	Title func(i int) string
 	Err   error
+	// SyncedAt is when the copy these events come from was refreshed; the zero
+	// time means never synced.
+	SyncedAt time.Time
 }
 
 // Events implements secretary.CalendarReader.
-func (f FakeCalendar) Events(day secretary.Day) ([]secretary.CalendarEvent, error) {
+func (f FakeCalendar) Events(day secretary.Day) (secretary.CalendarSnapshot, error) {
 	if f.Err != nil {
-		return nil, f.Err
+		return secretary.CalendarSnapshot{}, f.Err
 	}
 	out := make([]secretary.CalendarEvent, 0, f.N)
 	for i := 0; i < f.N; i++ {
@@ -488,5 +491,5 @@ func (f FakeCalendar) Events(day secretary.Day) ([]secretary.CalendarEvent, erro
 		}
 		out = append(out, secretary.CalendarEvent{Start: start, End: start.Add(25 * time.Minute), Busy: i%2 == 0, Title: title})
 	}
-	return out, nil
+	return secretary.CalendarSnapshot{Events: out, SyncedAt: f.SyncedAt}, nil
 }

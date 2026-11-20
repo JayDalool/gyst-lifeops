@@ -21,7 +21,7 @@ func Example() {
 	cat, _ := secretary.New(secretary.Deps{
 		Service:  e.Svc,
 		Health:   secretarytest.FakeHealth{},
-		Calendar: secretarytest.FakeCalendar{N: 2},
+		Calendar: secretarytest.FakeCalendar{N: 2, SyncedAt: fresh},
 		Syncers: map[string]secretary.Syncer{secretary.SourceCalendar: {
 			LastSync: func() (time.Time, error) { return fresh, nil },
 			Sync:     func(context.Context) error { return nil },

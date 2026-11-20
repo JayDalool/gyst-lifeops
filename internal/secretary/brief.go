@@ -69,9 +69,18 @@ type CalendarEvent struct {
 	Title      string
 }
 
+// CalendarSnapshot is what one calendar read returns: the events and when the
+// stored copy they came from was last refreshed (zero means never). They come
+// from one read, so the brief's as_of describes the rows it shows (GYST-164).
+type CalendarSnapshot struct {
+	Events   []CalendarEvent
+	SyncedAt time.Time
+}
+
 // CalendarReader is filled by the calendar chunks (C-1, C-4). Nil until then.
+// An implementation must return the events and their synced-at from one read.
 type CalendarReader interface {
-	Events(day Day) ([]CalendarEvent, error)
+	Events(day Day) (CalendarSnapshot, error)
 }
 
 type dayBrief struct {
@@ -103,8 +112,9 @@ func (c *Catalogue) BuildDayBrief(day Day) ([]byte, error) {
 	b.Now = mustJSON(map[string]any{"as_of": asOf(now), "stale": false, "date": day.Date, "weekday": day.Weekday})
 	b.Prayer = c.briefPrayer(day, asOf)
 	b.Tasks = c.briefTasks(day, asOf(now))
-	cal, mail := c.fresh.Peek(SourceCalendar), c.fresh.Peek(SourceMail)
-	b.Calendar = c.briefCalendar(day, cal, asOf)
+	mail := c.fresh.Peek(SourceMail)
+	var calendarAt time.Time
+	b.Calendar, calendarAt = c.briefCalendar(day, asOf)
 	var health HealthBrief
 	healthOK := false
 	if day.Offset == 0 {
@@ -117,7 +127,7 @@ func (c *Catalogue) BuildDayBrief(day Day) ([]byte, error) {
 	var trainedAt time.Time
 	b.Training, trainedAt = c.briefTraining(asOf)
 	b.Mail = mustJSON(map[string]any{"as_of": asOf(mail.AsOf), "stale": mail.Stale, "connected": mail.Connected, "unread": nil})
-	b.Sync = mustJSON(map[string]any{"hevy": asOf(trainedAt), "calendar": asOf(cal.AsOf), "mail": asOf(mail.AsOf), "health": asOf(health.AsOf), "as_of": asOf(now), "stale": false})
+	b.Sync = mustJSON(map[string]any{"hevy": asOf(trainedAt), "calendar": asOf(calendarAt), "mail": asOf(mail.AsOf), "health": asOf(health.AsOf), "as_of": asOf(now), "stale": false})
 	caps := map[string]int{"now": capNow, "prayer": capPrayer, "tasks": capTasks, "calendar": capCalendar, "health": capHealth, "training": capTraining, "mail": capMail, "sync": capSync}
 	return finalize(b, caps, BriefBudget)
 }
@@ -253,15 +263,20 @@ func (c *Catalogue) briefTasks(day Day, nowAsOf any) json.RawMessage {
 	})
 }
 
-func (c *Catalogue) briefCalendar(day Day, f Freshness, asOf func(time.Time) any) json.RawMessage {
+// briefCalendar takes as_of and stale from the snapshot it reads the events
+// from, not from the turn's cached freshness decision, which can predate a
+// refresh that finished after the budget (GYST-164, as briefTraining does). It
+// also returns that snapshot's time. It never syncs (Issue #188).
+func (c *Catalogue) briefCalendar(day Day, asOf func(time.Time) any) (json.RawMessage, time.Time) {
 	reader := c.deps.Calendar
 	if reader == nil {
-		return mustJSON(map[string]any{"as_of": nil, "stale": true, "connected": false, "events": nil, "total": nil, "more": nil})
+		return mustJSON(map[string]any{"as_of": nil, "stale": true, "connected": false, "events": nil, "total": nil, "more": nil}), time.Time{}
 	}
-	events, err := reader.Events(day)
+	snap, err := reader.Events(day)
 	if err != nil {
-		return mustJSON(map[string]any{"as_of": asOf(f.AsOf), "stale": true, "connected": true, "events": nil, "total": nil, "more": nil})
+		return mustJSON(map[string]any{"as_of": nil, "stale": true, "connected": true, "events": nil, "total": nil, "more": nil}), time.Time{}
 	}
+	stale := snap.SyncedAt.IsZero() || c.deps.Service.Now().Sub(snap.SyncedAt) >= freshLimit[SourceCalendar]
 	loc := c.deps.Service.Location()
 	type item struct {
 		Start string   `json:"start"`
@@ -269,17 +284,18 @@ func (c *Catalogue) briefCalendar(day Day, f Freshness, asOf func(time.Time) any
 		Busy  bool     `json:"busy"`
 		Title Envelope `json:"title"`
 	}
-	items := make([]item, 0, len(events))
-	for _, e := range events {
+	items := make([]item, 0, len(snap.Events))
+	for _, e := range snap.Events {
 		env, _ := Wrap("calendar", e.Title, TitleCap)
 		items = append(items, item{e.Start.In(loc).Format(minuteLayout), e.End.In(loc).Format(minuteLayout), e.Busy, env})
 	}
-	return fitList("calendar", capCalendar, items, func(listed []item, more int) any {
+	raw := fitList("calendar", capCalendar, items, func(listed []item, more int) any {
 		if listed == nil {
 			listed = []item{}
 		}
-		return map[string]any{"as_of": asOf(f.AsOf), "stale": f.Stale, "connected": true, "events": listed, "total": len(items), "more": more}
+		return map[string]any{"as_of": asOf(snap.SyncedAt), "stale": stale, "connected": true, "events": listed, "total": len(items), "more": more}
 	})
+	return raw, snap.SyncedAt
 }
 
 func briefHealth(h HealthBrief, ok, today bool, asOf func(time.Time) any) json.RawMessage {
