@@ -4463,7 +4463,8 @@ i.map-node-state {
   width: 22px;
   height: 22px;
   margin: -11px 0 0 -11px;
-  color: var(--accent);
+  /* GYST-168 E4: the ship marks the current position, the same state as the current stop and its ring. */
+  color: var(--vn-info);
   pointer-events: none;
   will-change: transform;
 }

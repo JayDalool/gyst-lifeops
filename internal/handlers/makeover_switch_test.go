@@ -429,6 +429,7 @@ func TestStateSelectorsNeverResolveToTheAccent(t *testing.T) {
 		{"styles.css", ":root .map .node.current::after"},
 		{"styles.css", ":root .map .node.done i"},
 		{"styles.css", ":root .map .route-done"},
+		{"styles.css", ":root .map .marker"},
 		{"styles.css", ":root .tracker-dot.prayer-current"},
 		{"ui-today.css", ".today-page .tracker-dot.prayer-current"},
 		{"ui-health-v3.css", ".hv3-day.done"},
@@ -755,6 +756,36 @@ func TestPinsForGalaxyAndHealth(t *testing.T) {
 				t.Errorf("Galaxy %s pin %s = %q must be a literal", theme, n, v)
 			}
 		}
+	}
+	// The fallback for a page whose <html> has no data-gyst-theme (or "system"): layout.html always
+	// sets it, so this is a safety net. Each family follows what selected it before the makeover.
+	noAttr := `:root:not([data-gyst-theme]) body.galaxy-page`
+	base := merged(noAttr)
+	for n, v := range map[string]string{"--gyst-bg": "#f8fafc", "--vn-t-display": "34px", "--vn-on-accent": "#08262e",
+		"font-family": `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`} {
+		if base[n] != v {
+			t.Errorf("Galaxy no-attribute pin %s = %q, want %q", n, base[n], v)
+		}
+	}
+	if got := merged(`:root:not([data-gyst-theme])[data-theme="light"] body.galaxy-page`)["--bg"]; got != "#f4f6f8" {
+		t.Errorf("Galaxy no-attribute pin, legacy light --bg = %q", got)
+	}
+	if got := merged(`:root:not([data-gyst-theme]):not([data-theme]) body.galaxy-page`)["--bg"]; got != "#0f1216" {
+		t.Errorf("Galaxy no-attribute pin, legacy dark --bg = %q", got)
+	}
+	lightOS, darkOS := "", ""
+	for _, r := range rules {
+		if !r.has(noAttr) {
+			continue
+		}
+		if v, ok := r.Decls["--vn-canvas"]; ok && r.Media == "" {
+			lightOS = v
+		} else if ok && r.Media == "@media (prefers-color-scheme: dark)" {
+			darkOS = v
+		}
+	}
+	if lightOS != "#f4f6fa" || darkOS != "#0b111c" {
+		t.Errorf("Galaxy no-attribute pin --vn-canvas = %q, and %q under the OS dark setting", lightOS, darkOS)
 	}
 	// Every legacy variable and every aliased --gyst-* name must be pinned in both themes.
 	var names []string
