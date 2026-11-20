@@ -35,7 +35,7 @@
 .today-page .tracker-dot { width: 100%; min-height: 64px; padding: 8px; color: var(--gyst-text); border: 1px solid var(--gyst-border); border-radius: var(--gyst-radius-sm); background: var(--gyst-bg); }
 .today-page .tracker-dot.status-done { color: var(--gyst-positive-text); background: var(--gyst-control-bg); }
 .today-page .tracker-dot.status-skipped { color: var(--gyst-warning-text); }
-.today-page .tracker-dot.prayer-current { outline: 2px solid var(--gyst-blue); outline-offset: 1px; }
+.today-page .tracker-dot.prayer-current { outline: 2px solid var(--vn-info); outline-offset: 1px; }
 .today-page .list { list-style: none; padding: 0; }
 .today-page .list li { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-block: 12px; border-bottom: 1px solid var(--gyst-border); }
 .today-page .list li:last-child { border: 0; }

@@ -284,6 +284,10 @@ func TestMakeoverColourSwaps(t *testing.T) {
 		{"styles.css", ":root .map .node.current i", "background", "var(--vn-info)"},
 		{"styles.css", ":root .map .node.current i", "border-color", "var(--vn-info)"},
 		{"styles.css", ":root .map .node.current::after", "border", "1.5px solid var(--vn-info)"},
+		// The current prayer on Today is a state too: border here, outline in ui-today.css (its second
+		// colour-only edit, by the lead's ruling), so the tile is one colour.
+		{"styles.css", ":root .tracker-dot.prayer-current", "border-color", "var(--vn-info)"},
+		{"ui-today.css", ".today-page .tracker-dot.prayer-current", "outline", "2px solid var(--vn-info)"},
 		{"ui-components.css", `:where(body:not(.galaxy-page)) .gyst-segment[aria-pressed="true"]`, "background", "var(--vn-accent)"},
 		{"ui-components.css", `:where(body:not(.galaxy-page)) .gyst-segment[aria-current="page"]`, "color", "var(--vn-on-accent)"},
 		{"ui-components.css", ":where(body:not(.galaxy-page)) .gyst-switch:checked", "background", "var(--vn-accent)"},

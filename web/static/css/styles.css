@@ -4108,7 +4108,8 @@ i.map-node-state {
 :root .prayer-alert-actions { display: flex; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
 :root .prayer-alert-panel .meta { max-width: 360px; text-align: right; }
 :root .tracker-dot small { margin-left: 4px; color: var(--quiet); font-size: 11px; }
-:root .tracker-dot.prayer-current { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77,191,208,.12); }
+/* GYST-168 E4: the current prayer is a state, so its tile is marked in the info colour (with the outline in ui-today.css). */
+:root .tracker-dot.prayer-current { border-color: var(--vn-info); box-shadow: 0 0 0 2px rgba(77,191,208,.12); }
 :root .prayer-adjustments { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 
 /* ---- Galaxy: the canvas owns the viewport; the list below is the accessible map. --- */
