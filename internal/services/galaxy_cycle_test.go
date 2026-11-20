@@ -67,10 +67,12 @@ func TestGalaxyDataAcyclicUnchanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(planets) != 2 || planets[0].ID != a.ID || planets[1].ID != c.ID {
+	// Newest first (id DESC on a created_at tie, GYST-165), so c precedes a
+	// whether or not the creates crossed a second boundary.
+	if len(planets) != 2 || planets[0].ID != c.ID || planets[1].ID != a.ID {
 		t.Fatalf("planets = %+v", planets)
 	}
-	if len(planets[0].Moons) != 1 || planets[0].Moons[0].ID != b.ID || len(planets[1].Moons) != 1 || planets[1].Moons[0].ID != d.ID {
+	if len(planets[1].Moons) != 1 || planets[1].Moons[0].ID != b.ID || len(planets[0].Moons) != 1 || planets[0].Moons[0].ID != d.ID {
 		t.Fatalf("moons wrong: %+v", planets)
 	}
 	for _, planet := range planets {
@@ -103,11 +105,12 @@ func TestGalaxyDataShowsParentCycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(planets) != 2 || planets[0].ID != a.ID || planets[1].ID != other.ID {
+	// Newest first: the cycle root a is older than other (GYST-165).
+	if len(planets) != 2 || planets[0].ID != other.ID || planets[1].ID != a.ID {
 		t.Fatalf("planets = %+v", planets)
 	}
-	if len(planets[0].Moons) != 1 || planets[0].Moons[0].ID != b.ID {
-		t.Fatalf("cycle moons = %+v", planets[0].Moons)
+	if len(planets[1].Moons) != 1 || planets[1].Moons[0].ID != b.ID {
+		t.Fatalf("cycle moons = %+v", planets[1].Moons)
 	}
 }
 
