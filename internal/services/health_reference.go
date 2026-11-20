@@ -61,12 +61,11 @@ func ParseHealthReference(f HealthReferenceForm) (models.HealthReferenceTarget, 
 		{"Carbs", f.Carbs, 10000, &t.CarbsG}, {"Fat", f.Fat, 10000, &t.FatG}, {"Fiber", f.Fiber, 10000, &t.FiberG},
 	}
 	for _, field := range fields {
-		raw := strings.ReplaceAll(strings.TrimSpace(field.raw), ",", ".")
-		if raw == "" {
+		if strings.TrimSpace(field.raw) == "" {
 			continue
 		}
-		v, err := strconv.ParseFloat(raw, 64)
-		if err != nil || math.IsNaN(v) || math.IsInf(v, 0) || v < 0 || v > field.max {
+		v, ok := ParseTypedNumber(field.raw, true)
+		if !ok || math.IsNaN(v) || math.IsInf(v, 0) || v < 0 || v > field.max {
 			return t, healthInvalid(field.label + " must be a number from 0 to " + strconv.FormatFloat(field.max, 'f', -1, 64))
 		}
 		v = math.Round(v*10) / 10

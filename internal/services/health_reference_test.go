@@ -99,3 +99,56 @@ func TestHealthReferenceTargetLifecycleLeavesCyclesUnchanged(t *testing.T) {
 		t.Fatalf("health_cycles changed:\n%+v\n%+v", before, after)
 	}
 }
+
+// GYST-154: a thousands comma was read as a decimal point ("2,000" became 2).
+func TestParseHealthReferenceThousandsComma(t *testing.T) {
+	set := map[string]func(*HealthReferenceForm, string){
+		"kcal": func(f *HealthReferenceForm, v string) { f.Kcal = v }, "protein": func(f *HealthReferenceForm, v string) { f.Protein = v },
+		"carbs": func(f *HealthReferenceForm, v string) { f.Carbs = v }, "fat": func(f *HealthReferenceForm, v string) { f.Fat = v },
+		"fiber": func(f *HealthReferenceForm, v string) { f.Fiber = v },
+	}
+	get := func(t models.HealthReferenceTarget, name string) *float64 {
+		return map[string]*float64{"kcal": t.Kcal, "protein": t.ProteinG, "carbs": t.CarbsG, "fat": t.FatG, "fiber": t.FiberG}[name]
+	}
+	for name, setter := range set {
+		for raw, want := range map[string]float64{"2,000": 2000, "1,500": 1500, "2.5": 2.5, "2": 2, " 2 ": 2, "2,5": 2.5, "1,000.5": 1000.5} {
+			f := refForm()
+			f.Kcal, f.Protein = "", ""
+			setter(&f, raw)
+			got, err := ParseHealthReference(f)
+			if v := get(got, name); err != nil || v == nil || *v != want {
+				t.Errorf("%s %q: got %v %v, want %v", name, raw, v, err, want)
+			}
+		}
+		for _, raw := range []string{"2,00,0", "abc", "2,0000", "1,5,0", "2.000,00", "1.000,5", "0,125", ",500"} {
+			f := refForm()
+			setter(&f, raw)
+			_, err := ParseHealthReference(f)
+			var invalid *HealthValidationError
+			if !errors.As(err, &invalid) || !strings.Contains(err.Error(), "must be a number") {
+				t.Errorf("%s %q: want plain refusal, got %v", name, raw, err)
+			}
+		}
+	}
+}
+
+func TestParseTypedNumberMatchesDiaryRuleWithoutThousands(t *testing.T) {
+	for _, raw := range []string{"1,000", "2,000", "1,234"} {
+		if _, ok := ParseTypedNumber(raw, false); ok {
+			t.Errorf("%q must stay refused for the diary", raw)
+		}
+	}
+}
+
+func TestParseTypedNumberThousandsShapes(t *testing.T) {
+	for raw, want := range map[string]float64{"12,345,678": 12345678, "1,000.5": 1000.5, "999,999": 999999} {
+		if got, ok := ParseTypedNumber(raw, true); !ok || got != want {
+			t.Errorf("%q: got %v %v, want %v", raw, got, ok, want)
+		}
+	}
+	for _, raw := range []string{"2.000,00", "1.000,5", "0,125", ",500", "1,000."} {
+		if got, ok := ParseTypedNumber(raw, true); ok {
+			t.Errorf("%q: got %v, want refused", raw, got)
+		}
+	}
+}
