@@ -351,3 +351,192 @@ func TestEnsureFreshOneRefreshPerSource(t *testing.T) {
 		}
 	})
 }
+
+// GYST-164 c3: one wait budget per Catalogue turn. Helpers for slow sources
+// whose Sync ignores its context, as the real Hevy client's sync must.
+type slowSource struct {
+	gate  chan struct{}
+	calls atomic.Int64
+}
+
+func newSlow() *slowSource { return &slowSource{gate: make(chan struct{})} }
+
+func (s *slowSource) release() {
+	select {
+	case <-s.gate:
+	default:
+		close(s.gate)
+	}
+}
+
+func budgetFreshener(t *testing.T, budget time.Duration, slow map[string]*slowSource) *secretary.Freshener {
+	t.Helper()
+	old := time.Date(2026, 11, 19, 10, 0, 0, 0, time.UTC)
+	slots := map[string]secretary.Syncer{}
+	for name, s := range slow {
+		slots[name] = secretary.Syncer{
+			LastSync: func() (time.Time, error) { return old, nil },
+			Sync:     func(context.Context) error { s.calls.Add(1); <-s.gate; return nil },
+		}
+	}
+	f := secretary.NewFreshener(slots, budget, func() time.Time { return time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC) })
+	t.Cleanup(func() {
+		for _, s := range slow {
+			s.release()
+		}
+		f.Wait()
+	})
+	return f
+}
+
+// Two slow sources reached by two different tools in one turn wait the budget
+// once, not once per call. The sync still runs on, so no failure is recorded.
+func TestOneWaitBudgetPerTurn(t *testing.T) {
+	e := secretarytest.New(t)
+	e.SeedHevy(e.Svc.Now().Add(-2 * time.Hour))
+	slowHevy := secretarytest.SlowHevy(false)
+	e.ConnectHevy(slowHevy)
+	slowCal := newSlow()
+	cat, err := secretary.New(secretary.Deps{Service: e.Svc, Health: secretarytest.FakeHealth{}, Budget: 500 * time.Millisecond,
+		Syncers: map[string]secretary.Syncer{secretary.SourceCalendar: {
+			LastSync: func() (time.Time, error) { return e.Svc.Now().Add(-2 * time.Hour), nil },
+			Sync:     func(context.Context) error { slowCal.calls.Add(1); <-slowCal.gate; return nil },
+		}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Cleanups run last-in first-out: release the gates, then wait, so a failed
+	// assertion cannot hang the test on a blocked sync.
+	t.Cleanup(cat.Wait)
+	t.Cleanup(slowHevy.Release)
+	t.Cleanup(slowCal.release)
+	before := secretarytest.DumpTables(t, e.DB)
+	start := time.Now()
+	first := run(t, cat, "get_recent_workouts", `{}`)
+	brief := run(t, cat, "get_day_brief", `{}`)
+	if took := time.Since(start); took > 800*time.Millisecond || took < 400*time.Millisecond {
+		t.Fatalf("two tools took %v; one 500 ms budget for the turn gives about 500 ms (per-call deadlines would give about 1 s)", took)
+	}
+	if first["stale"] != true || brief["calendar"].(map[string]any)["stale"] != true {
+		t.Fatalf("stale not reported: %v / %v", first["stale"], brief["calendar"])
+	}
+	if slowCal.calls.Load() != 1 {
+		t.Fatalf("calendar sync started %d times", slowCal.calls.Load())
+	}
+	slowHevy.Release()
+	slowCal.release()
+	cat.Wait()
+	if hevyErr(t, e) != "" {
+		t.Fatalf("a spent budget recorded a Hevy failure: %q", hevyErr(t, e))
+	}
+	if changed := secretarytest.Changed(before, secretarytest.DumpTables(t, e.DB)); len(changed) != 1 || changed[0] != "training_snapshots" {
+		t.Fatalf("changed %v", changed)
+	}
+}
+
+// Three slow sources in three sequential calls share one budget; once it is
+// spent a new stale source still starts its sync but is not waited for.
+func TestWaitBudgetSharedAcrossSources(t *testing.T) {
+	slow := map[string]*slowSource{secretary.SourceCalendar: newSlow(), secretary.SourceMail: newSlow(), secretary.SourceHevy: newSlow()}
+	f := budgetFreshener(t, 300*time.Millisecond, slow)
+	start := time.Now()
+	var got []secretary.Freshness
+	for _, src := range []string{secretary.SourceCalendar, secretary.SourceMail, secretary.SourceHevy} {
+		got = append(got, f.EnsureFresh(context.Background(), src)[src])
+	}
+	took := time.Since(start)
+	if took > 600*time.Millisecond || took < 250*time.Millisecond {
+		t.Fatalf("three calls took %v; want about the 300 ms budget once", took)
+	}
+	for i, g := range got {
+		if !g.Stale {
+			t.Errorf("call %d not stale: %+v", i, g)
+		}
+	}
+	for src, s := range slow {
+		for i := 0; s.calls.Load() == 0 && i < 200; i++ { // the goroutine may not have run yet
+			time.Sleep(5 * time.Millisecond)
+		}
+		if s.calls.Load() != 1 {
+			t.Errorf("%s: %d syncs, want one even after the budget was spent", src, s.calls.Load())
+		}
+	}
+}
+
+// Overlapping callers share one deadline: A blocks at 0 and B at 300 ms with a
+// 600 ms budget, so B is done about 600 ms after A began, not 900 ms.
+func TestWaitBudgetOverlappingCallsShareOneDeadline(t *testing.T) {
+	slow := map[string]*slowSource{secretary.SourceCalendar: newSlow(), secretary.SourceMail: newSlow()}
+	f := budgetFreshener(t, 600*time.Millisecond, slow)
+	start := time.Now()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() { defer wg.Done(); f.EnsureFresh(context.Background(), secretary.SourceCalendar) }()
+	time.Sleep(300 * time.Millisecond)
+	f.EnsureFresh(context.Background(), secretary.SourceMail)
+	wg.Wait()
+	if took := time.Since(start); took > 750*time.Millisecond {
+		t.Fatalf("B finished %v after A began; one shared 600 ms deadline gives about 600 ms (a per-caller deadline about 900 ms)", took)
+	}
+}
+
+// Overlap is charged once: A blocked 0-500 ms and B 100-600 ms leave about
+// 400 ms of a 1 s budget. Double counting would leave about 0, a budget reset
+// per call 1 s.
+func TestWaitBudgetOverlapCountedOnce(t *testing.T) {
+	slow := map[string]*slowSource{secretary.SourceCalendar: newSlow(), secretary.SourceMail: newSlow(), secretary.SourceHevy: newSlow()}
+	f := budgetFreshener(t, time.Second, slow)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); f.EnsureFresh(context.Background(), secretary.SourceCalendar) }()
+	go func() {
+		defer wg.Done()
+		time.Sleep(100 * time.Millisecond)
+		f.EnsureFresh(context.Background(), secretary.SourceMail)
+	}()
+	time.Sleep(500 * time.Millisecond)
+	slow[secretary.SourceCalendar].release()
+	time.Sleep(100 * time.Millisecond)
+	slow[secretary.SourceMail].release()
+	wg.Wait()
+	start := time.Now()
+	f.EnsureFresh(context.Background(), secretary.SourceHevy)
+	if left := time.Since(start); left < 250*time.Millisecond || left > 550*time.Millisecond {
+		t.Fatalf("budget left %v, want about 400 ms", left)
+	}
+}
+
+// Time the model spends between tool calls is free: a fast sync, a pause, then
+// a slow source with a 300 ms budget still waits most of it.
+func TestWaitBudgetIgnoresThinkTime(t *testing.T) {
+	slow := map[string]*slowSource{secretary.SourceCalendar: newSlow(), secretary.SourceMail: newSlow()}
+	slow[secretary.SourceCalendar].release() // finishes at once
+	f := budgetFreshener(t, 300*time.Millisecond, slow)
+	f.EnsureFresh(context.Background(), secretary.SourceCalendar)
+	time.Sleep(300 * time.Millisecond)
+	start := time.Now()
+	f.EnsureFresh(context.Background(), secretary.SourceMail)
+	if waited := time.Since(start); waited < 200*time.Millisecond {
+		t.Fatalf("waited %v after a think pause; a deadline fixed at New would give about 0", waited)
+	}
+}
+
+// A caller cancelled while waiting returns promptly and its leave is counted:
+// a pause afterwards is not charged to the budget.
+func TestWaitBudgetCancelFreesTheWait(t *testing.T) {
+	slow := map[string]*slowSource{secretary.SourceCalendar: newSlow(), secretary.SourceMail: newSlow()}
+	f := budgetFreshener(t, 600*time.Millisecond, slow)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() { time.Sleep(100 * time.Millisecond); cancel() }()
+	start := time.Now()
+	f.EnsureFresh(ctx, secretary.SourceCalendar)
+	if took := time.Since(start); took > 300*time.Millisecond {
+		t.Fatalf("cancelled caller took %v", took)
+	}
+	time.Sleep(300 * time.Millisecond)
+	start = time.Now()
+	f.EnsureFresh(context.Background(), secretary.SourceMail)
+	if waited := time.Since(start); waited < 400*time.Millisecond {
+		t.Fatalf("waited %v; skipped leave accounting charges the pause and leaves about 200 ms", waited)
+	}
+}

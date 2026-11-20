@@ -16,7 +16,9 @@ import (
 //
 // Siri was dropped (19A S2, round 7 D1, D4, D5), so there is one budget only.
 
-// WebBudget is how long one EnsureFresh call waits for syncs in total.
+// WebBudget is how long one Catalogue (one turn) waits for syncs in total, over
+// every EnsureFresh call it makes (GYST-164): the time actually spent blocked,
+// not the time the model spends thinking between tool calls.
 const WebBudget = 10 * time.Second
 
 // Source names. Mail and calendar have no provider yet (chunks C-1 and C-4
@@ -65,22 +67,29 @@ type Freshness struct {
 // Freshener runs the freshness checks of one Catalogue (one per turn). A source
 // is checked at most once per Freshener.
 type Freshener struct {
-	slots  map[string]Syncer
-	budget time.Duration
-	now    func() time.Time
+	slots map[string]Syncer
+	now   func() time.Time
 
-	mu     sync.Mutex
-	done   map[string]Freshness
-	flight map[string]*attempt
-	wg     sync.WaitGroup
+	mu sync.Mutex
+	// left is the turn's unspent wait budget. waiting counts the EnsureFresh
+	// calls blocked right now and since is when the first of them began, so
+	// time that several calls spend blocked together is charged once, and a
+	// call that begins while another waits inherits the same deadline.
+	left    time.Duration
+	waiting int
+	since   time.Time
+	done    map[string]Freshness
+	flight  map[string]*attempt
+	wg      sync.WaitGroup
 }
 
-// NewFreshener builds one. A zero budget means WebBudget.
+// NewFreshener builds one. budget is the whole turn's wait; a zero budget means
+// WebBudget.
 func NewFreshener(slots map[string]Syncer, budget time.Duration, now func() time.Time) *Freshener {
 	if budget <= 0 {
 		budget = WebBudget
 	}
-	return &Freshener{slots: slots, budget: budget, now: now, done: map[string]Freshness{}, flight: map[string]*attempt{}}
+	return &Freshener{slots: slots, left: budget, now: now, done: map[string]Freshness{}, flight: map[string]*attempt{}}
 }
 
 // Wait blocks until every sync started by EnsureFresh has finished. Tests call
@@ -133,10 +142,11 @@ type attempt struct {
 }
 
 // EnsureFresh checks each source once for this Freshener and returns the state
-// after at most one budget. It logs only the source, the outcome and the
+// once the turn's wait budget is spent at the latest. A source that is still
+// syncing when the budget runs out keeps syncing in the background and is
+// reported stale (outcome "timeout"). It logs only the source, the outcome and the
 // duration (09 B.8): never a title, a name or an error text.
 func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[string]Freshness {
-	deadline := time.Now().Add(f.budget) //gyst:instant wall-clock budget for a wait, not a calendar day
 	out := map[string]Freshness{}
 	waits := map[string]*attempt{}
 	var order []string
@@ -188,7 +198,16 @@ func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[stri
 		}
 		out[source] = at.initial
 	}
-	wctx, cancel := context.WithDeadline(ctx, deadline)
+	if len(order) == 0 {
+		return out
+	}
+	// Wall time on purpose (not the application clock, which tests pin): this
+	// is how long a caller is really blocked. The leave runs in a defer so a
+	// cancelled or panicking caller cannot leave the count up and charge the
+	// model's think time to the budget (GYST-164).
+	allow := f.enterWait()
+	defer f.leaveWait()
+	wctx, cancel := context.WithTimeout(ctx, allow)
 	defer cancel()
 	for _, source := range order {
 		at := waits[source]
@@ -216,6 +235,35 @@ func (f *Freshener) EnsureFresh(ctx context.Context, sources ...string) map[stri
 		out[source] = f.record(source, st, outcome, at.start)
 	}
 	return out
+}
+
+// enterWait registers a blocked caller and returns how long it may wait: what
+// is left of the turn's budget, minus the time already spent by callers that
+// are blocked now. mu is never held while waiting.
+func (f *Freshener) enterWait() time.Duration {
+	now := time.Now() //gyst:instant wall-clock wait budget, not a calendar day
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	allow := f.left
+	if f.waiting > 0 {
+		allow -= now.Sub(f.since)
+	} else {
+		f.since = now
+	}
+	f.waiting++
+	return max(allow, 0)
+}
+
+// leaveWait unregisters a caller. The last one out charges the time the group
+// was blocked, once, however many callers overlapped.
+func (f *Freshener) leaveWait() {
+	now := time.Now() //gyst:instant wall-clock wait budget, not a calendar day
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.waiting--
+	if f.waiting == 0 {
+		f.left = max(f.left-now.Sub(f.since), 0)
+	}
 }
 
 func outcomeOf(st Freshness) string {

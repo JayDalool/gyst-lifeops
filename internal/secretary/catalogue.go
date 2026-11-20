@@ -179,7 +179,9 @@ type Deps struct {
 	// Syncers fills the freshness slots for sources beyond Hevy ("calendar",
 	// "mail"). Empty slots report connected:false and never sync.
 	Syncers map[string]Syncer
-	// Budget is the freshness budget per EnsureFresh call; 0 means WebBudget.
+	// Budget is the freshness wait budget per Catalogue (one turn), shared by
+	// every EnsureFresh call and counted as time actually spent blocked; 0 means
+	// WebBudget.
 	Budget time.Duration
 }
 
