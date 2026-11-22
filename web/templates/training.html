@@ -21,9 +21,12 @@
   {{if not .Connected}}<details class="hv3-disclose"><summary>{{template "gyst.icon" "info"}}Connect Hevy</summary><p>Get your API key from <a href="https://hevy.com/settings?developer" target="_blank" rel="noopener noreferrer">Hevy developer settings</a> (Hevy Pro required). Add it to the server’s private <code>HEVY_API_KEY</code> setting and restart GYST. Keep the key private.</p><p>Once connected, GYST imports automatically every 37 minutes. Keep logging workouts in Hevy.</p></details>{{end}}
 </section>
 {{else}}
+{{/* GYST-174 (design review F2, lead decision 2026-11-22): this strip now sits right under the section switcher,
+     which has a Progress tab of its own. The second view is called Trends so no two tabs share a name. Its
+     address stays ?view=progress. */}}
 <nav class="hv3-seg" aria-label="Workout view">
   <a href="/health/training"{{if eq .View "overview"}} aria-current="page"{{end}}>Overview</a>
-  <a href="/health/training?view=progress&amp;period={{.Period}}"{{if eq .View "progress"}} aria-current="page"{{end}}>Progress</a>
+  <a href="/health/training?view=progress&amp;period={{.Period}}"{{if eq .View "progress"}} aria-current="page"{{end}}>Trends</a>
 </nav>
 
 {{if eq .View "overview"}}
@@ -91,7 +94,7 @@
 </div>
 {{else}}
 <div class="hv3-wk">
-  <nav class="hv3-seg hv3-span" aria-label="Progress period">
+  <nav class="hv3-seg hv3-span" aria-label="Trends period">
     <a href="/health/training?view=progress&amp;period=4"{{if eq .Period 4}} aria-current="page"{{end}}>4 wk</a>
     <a href="/health/training?view=progress&amp;period=12"{{if eq .Period 12}} aria-current="page"{{end}}>12 wk</a>
     <a href="/health/training?view=progress&amp;period=26"{{if eq .Period 26}} aria-current="page"{{end}}>6 mo</a>

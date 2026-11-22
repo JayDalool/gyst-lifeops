@@ -151,6 +151,41 @@ func TestHealthProgressSwitcherSitsUnderTheTitle(t *testing.T) {
 	}
 }
 
+// Design review F2, lead decision 2026-11-22: with Hevy sessions Training draws its own view strip
+// (Overview and a second view) right under the switcher. That second view was also called
+// Progress, so two tabs with one name opened different things. It is Trends now; its address
+// (?view=progress) and what it shows are unchanged.
+func TestTrainingViewStripDoesNotRepeatASectionName(t *testing.T) {
+	h := testHandler(t)
+	day := time.Date(2026, 10, 7, 15, 0, 0, 0, h.Service.Location())
+	h.Service.Clock.Now = func() time.Time { return day }
+	if err := h.Service.Repo.SaveTraining("hevy", []models.TrainingEntry{{ID: "w1", Kind: "workout", Title: "Test push", StartedAt: day.Add(-3 * time.Hour)}}, day.UTC()); err != nil {
+		t.Fatal(err)
+	}
+	for path, open := range map[string]string{"/health/training": "Overview", "/health/training?view=progress&period=12": "Trends"} {
+		body := cfgGet(t, h, path)
+		strip := markupBetween(body, `<nav class="hv3-seg" aria-label="Workout view">`, "</nav>")
+		for _, want := range []string{`<a href="/health/training"`, `>Overview</a>`, `<a href="/health/training?view=progress&amp;period=12"`, `>Trends</a>`, `aria-current="page">` + open + `</a>`} {
+			if !strings.Contains(strip, want) {
+				t.Errorf("%s: Training's view strip lacks %s: %s", path, want, strip)
+			}
+		}
+		for _, s := range healthSections {
+			if strings.Contains(strip, ">"+s.label+"<") {
+				t.Errorf("%s: Training's view strip repeats the section name %s", path, s.label)
+			}
+		}
+		// On the whole page one link is called Progress: the switcher's tab.
+		main := body[strings.Index(body, "<main "):]
+		if n := strings.Count(main, ">Progress</a>") + strings.Count(main, "<span>Progress</span>"); n != 1 {
+			t.Errorf("%s: %d links are called Progress, want the switcher's tab only", path, n)
+		}
+	}
+	if trends := cfgGet(t, h, "/health/training?view=progress&period=12"); !strings.Contains(trends, `aria-label="Trends period"`) || strings.Contains(trends, `aria-label="Progress period"`) {
+		t.Error("the period strip must be named for the Trends view")
+	}
+}
+
 // c4 (technical review condition b): a page outside the four sections reports no section. Nothing
 // defaults to Summary or More, so no switcher tab and no sidebar item is marked for it.
 func TestHealthPagesOutsideTheSectionsMarkNothing(t *testing.T) {
