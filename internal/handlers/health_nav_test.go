@@ -288,12 +288,12 @@ func TestHealthNavStyles(t *testing.T) {
 
 	state := regexp.MustCompile(`^--(vn-(info|ok|warn|crit|idle)|gyst-(green|orange|red|positive|warning|danger))`)
 	ref := regexp.MustCompile(`var\((--[a-z0-9-]+)`)
+	// Today the file holds only the switcher, so the whole file is held to the rule.
 	base, rules := "", 0
 	for _, r := range parseCSS(readStatic(t, "css/ui-nav.css")) {
-		if !strings.Contains(r.Selector, "gyst-switcher") {
-			continue
+		if strings.Contains(r.Selector, "gyst-switcher") {
+			rules++
 		}
-		rules++
 		if r.has("nav.gyst-switcher > a") {
 			if v, ok := r.Decls["min-height"]; ok && r.Media == "" {
 				base = v
