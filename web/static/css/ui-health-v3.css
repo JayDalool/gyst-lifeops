@@ -177,6 +177,12 @@
 .hv3-group { background: var(--vn-surface); border-radius: var(--vn-r-lg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vn-ink) 6%, transparent), var(--vn-e1); overflow: hidden; }
 .hv3-group > li + li { border-top: 1px solid var(--vn-separator); }
 a.hv3-row:hover, summary.hv3-row:hover { background: color-mix(in srgb, var(--vn-ink) 3%, transparent); }
+/* GYST-174 (design review F1): the group clips what is drawn outside a row, so a ring 2 px outside
+   it showed only as a line above or below. These rows are now the only way to Plan, More and Coach.
+   The first and last row take the group's corners, or its curve would cut the ring's corners off. */
+.hv3-group a.hv3-row:focus-visible { outline-offset: -2px; }
+.hv3-group > li:first-child > a.hv3-row:focus-visible { border-top-left-radius: var(--vn-r-lg); border-top-right-radius: var(--vn-r-lg); }
+.hv3-group > li:last-child > a.hv3-row:focus-visible { border-bottom-left-radius: var(--vn-r-lg); border-bottom-right-radius: var(--vn-r-lg); }
 .hv3-group summary { list-style: none; cursor: pointer; }
 .hv3-group summary::-webkit-details-marker { display: none; }
 .hv3-group details[open] > summary > .gyst-icon { transform: rotate(90deg); }
@@ -290,6 +296,11 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 /* GYST-174: Plan is now a page pushed from Summary and keeps the older header until R8. Its link
    back to Health was grey text, 20 px high; it reads and taps like More's and Coach's back link. */
 .health-plan-ui .kicker > a { display: inline-flex; align-items: center; min-height: 44px; color: var(--vn-accent-text); }
+/* GYST-174 (design review F3): Progress keeps the older header until R8, but its switcher must sit
+   where the other three sections' does, or it jumps under the thumb when the section changes. So
+   this header takes .hv3-ph's measures: 8 px above, a 1.15 title line, 24 px down to the switcher. */
+.health-ui > .health-section-head { padding-top: var(--vn-s2); margin-bottom: var(--vn-s1); }
+.health-ui > .health-section-head .gyst-page-title { line-height: 1.15; }
 /* `.hv3 a` outranks `.hv3-row`; row links read as rows, not blue text. */
 .hv3 a.hv3-row { color: var(--vn-ink); }
 

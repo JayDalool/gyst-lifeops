@@ -5,7 +5,8 @@
 <div class="gyst-scope hv3" data-day-page="{{.Today.Date}}" data-day-tz="{{appTimezone}}" data-day-ends="{{appDayEnds .Today.Date}}">
 <header class="hv3-ph">
   <div class="hv3-ph-copy">
-    <p class="hv3-eyebrow">Health · {{niceDate .Today.Date}}</p>
+    {{/* GYST-174 (design review F4): the date alone, as round 7 draws it. The title says Health; "Health · date" above it said the word twice. */}}
+    <p class="hv3-eyebrow">{{niceDate .Today.Date}}</p>
     <h1>Health</h1>
   </div>
 </header>
@@ -170,13 +171,13 @@
   </section>
 
   {{/* GYST-174 (13B DD-22): Plan, More and Coach are not sections. They open from these rows and
-       link back here. More and Coach stay rows until their own chunks (R7, R9). Round 7 has no
-       drawing for the Coach's speech bubble, so that row keeps today's icon. */}}
+       link back here. More and Coach stay rows until their own chunks (R7, R9). The tile icons are
+       round 7's (DD-15): target for Plan and the speech bubble, sec, for the Coach row. */}}
   <nav class="hv3-section hv3-span" aria-label="More in Health">
     <ul class="hv3-group">
       <li><a class="hv3-row" href="/health/plan"><span class="hv3-tile sm">{{template "vn.icon" "target"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Plan</span><span class="hv3-s">{{if .Today.CycleTitle}}{{.Today.CycleTitle}}{{if .Today.CalorieTarget.Present}} · {{.Today.CalorieTarget.Value}} kcal a day{{end}}{{else}}No plan yet{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
       <li><a class="hv3-row" href="/health/more"><span class="hv3-tile sm">{{template "vn.icon" "more"}}</span><span class="hv3-row-copy"><span class="hv3-strong">More</span><span class="hv3-s">Checklist, foods, data sources, goals</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
-      {{if coachEnabled}}<li><a class="hv3-row" href="/health/coach"><span class="hv3-tile sm">{{template "gyst.icon" "message-circle"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Coach</span><span class="hv3-s">Ask about food, training or progress</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>{{end}}
+      {{if coachEnabled}}<li><a class="hv3-row" href="/health/coach"><span class="hv3-tile sm">{{template "vn.icon" "sec"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Coach</span><span class="hv3-s">Ask about food, training or progress</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>{{end}}
     </ul>
   </nav>
 </div>

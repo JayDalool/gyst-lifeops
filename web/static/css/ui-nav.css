@@ -7,12 +7,20 @@
    the Health section colour. It reads no accent, info or state token (lead rule from R1: "current"
    state marks are info, and this is not one). The 3 px inset, 2 px gap and 520 px cap are round 7's.
    The selector is nav.gyst-switcher > a so that `.hv3 a` cannot recolour the tabs. */
-nav.gyst-switcher { display: flex; gap: 2px; box-sizing: border-box; width: 100%; max-width: 520px; min-width: 0; margin: 0; padding: 3px; border-radius: var(--vn-r-md); background: var(--vn-surface-2); }
+nav.gyst-switcher { display: flex; flex-wrap: wrap; gap: 2px; box-sizing: border-box; width: 100%; max-width: 520px; min-width: 0; margin: 0; padding: 3px; border-radius: var(--vn-r-md); background: var(--vn-surface-2); container-type: inline-size; font-size: var(--vn-t-foot); }
 /* Below 700 px the icon sits over the word. Side by side, as round 7 draws it, "Nutrition" has
    2 px to spare at 390 with Geist and overflows under 382; the font also loads with swap, so the
    system font is drawn first. Stacked, every word keeps room from 320 px up in either font.
-   min-width: 0 lets a tab shrink instead of widening the page grid. 4 + 16 + 2 + 18 + 4 = 44 px. */
-nav.gyst-switcher > a { flex: 1 1 0; min-width: 0; min-height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 2px; border-radius: calc(var(--vn-r-md) - 3px); color: var(--vn-ink-2); font: 500 var(--vn-t-foot)/var(--vn-t-foot-lh) var(--vn-font); text-decoration: none; white-space: nowrap; }
+   min-width: 0 lets a tab shrink instead of widening the page grid. 4 + 16 + 2 + 18 + 4 = 44 px.
+   A label may wrap, and break inside the word as a last resort, so it never leaves its own tab. */
+nav.gyst-switcher > a { flex: 1 1 0; min-width: 0; min-height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 2px; border-radius: calc(var(--vn-r-md) - 3px); color: var(--vn-ink-2); font: 500 var(--vn-t-foot)/var(--vn-t-foot-lh) var(--vn-font); text-align: center; text-decoration: none; overflow-wrap: anywhere; }
+/* Large text (11 section P: layouts survive 200% text; GYST-174 code review). The four words stop
+   fitting side by side once the track has less room than 21.5 times its own text size, so the tabs
+   go two by two and grow taller. At the default size that is 279.5 px, under the 282 px of room
+   the track has on a 320 px phone, so the default keeps one row; above it the widest word measured
+   (DejaVu Sans) still fits its tab. The track carries the tabs' font size so the query can count
+   in it. A browser without container queries keeps one row and wraps the words. */
+@container (max-width: 21.5em) { nav.gyst-switcher > a { flex-basis: calc(50% - 2px); } }
 nav.gyst-switcher > a:hover { color: var(--vn-ink); }
 nav.gyst-switcher > a[aria-current="page"] { background: var(--vn-surface); color: var(--vn-ink); box-shadow: 0 0 0 1px var(--vn-hairline); }
 nav.gyst-switcher .vn-icon { width: 16px; height: 16px; }

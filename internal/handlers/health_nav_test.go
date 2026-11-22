@@ -134,6 +134,23 @@ func TestHealthKeepsMainTabBarAndHasOneSwitcher(t *testing.T) {
 	}
 }
 
+// c2 (design review F3): "under the title" is under the title. On Progress the caption and the
+// Manage health plan button used to sit between the title and the switcher, which put it 66 px
+// lower than on the other three sections at phone width; the control jumped when Jay changed
+// section. They now follow the switcher. The browser check measures the offsets.
+func TestHealthProgressSwitcherSitsUnderTheTitle(t *testing.T) {
+	body := cfgGet(t, testHandler(t), "/health/progress")
+	main := body[strings.Index(body, "<main "):]
+	header := markupBetween(main, "<header ", "</header>")
+	if !strings.HasSuffix(header, `<div><p class="kicker">Health</p><h1 class="gyst-page-title">Progress</h1></div>`) {
+		t.Errorf("Progress: the page header must hold the eyebrow and the title only: %s", header)
+	}
+	sw, button, caption := strings.Index(main, `<nav class="gyst-switcher"`), strings.Index(main, `href="/health/plan">Manage health plan</a>`), strings.Index(main, "Your recorded measurements over time.")
+	if sw < 0 || button < sw || caption < sw {
+		t.Errorf("Progress: the caption and the Manage health plan button must follow the switcher (switcher %d, caption %d, button %d)", sw, caption, button)
+	}
+}
+
 // c4 (technical review condition b): a page outside the four sections reports no section. Nothing
 // defaults to Summary or More, so no switcher tab and no sidebar item is marked for it.
 func TestHealthPagesOutsideTheSectionsMarkNothing(t *testing.T) {
@@ -196,6 +213,13 @@ func TestHealthSummaryRowsAndBackLinks(t *testing.T) {
 	if coach := row(body, "/health/coach"); !strings.Contains(coach, ">Coach<") {
 		t.Errorf("Summary with a provider: Coach row = %q", coach)
 	}
+	// 13B DD-15 (design review F6): a row's tile icon comes from round 7's sprite, as round 7 draws it.
+	for href, icon := range map[string]string{"/health/plan": "target", "/health/more": "more", "/health/coach": "sec"} {
+		want := `<span class="hv3-tile sm"><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-2#i-` + icon + `"/></svg></span>`
+		if !strings.Contains(row(body, href), want) {
+			t.Errorf("Summary: the %s row's tile must draw the sprite's %s", href, icon)
+		}
+	}
 	cycle := models.HealthCycle{Title: "Autumn cut", PrimaryGoal: "Weight loss", StartDate: "2026-10-01", EndDate: "2027-03-31", DailyCalorieTarget: 2250, ProteinTargetG: 180}
 	if err := h.Service.CreateHealthCycle(&cycle); err != nil {
 		t.Fatal(err)
@@ -228,14 +252,19 @@ func TestHealthSummaryRowsAndBackLinks(t *testing.T) {
 	}
 }
 
-// c5 (technical review condition d): the eyebrows are not edited. For the same data they read as
-// they do on master: Health and the date, the date, and the Hevy state.
+// c5 (technical review condition d): Nutrition's and Training's eyebrows are not edited. For the
+// same data they read as they do on master: the date, and the Hevy state. Summary's shows the
+// date alone, as round 7 draws it: its title now says Health, and "Health · date" over "Health"
+// said the word twice (design review F4; the lead lifted condition d for that word).
 func TestHealthEyebrowsKeepTheirText(t *testing.T) {
 	h := testHandler(t)
 	day := time.Date(2026, 10, 7, 15, 0, 0, 0, h.Service.Location())
 	h.Service.Clock.Now = func() time.Time { return day }
+	if body := cfgGet(t, h, "/health"); strings.Contains(markupBetween(body[strings.Index(body, "<main "):], "<header ", "</header>"), "Health ·") {
+		t.Error("Summary's eyebrow repeats the title's word")
+	}
 	for path, want := range map[string]string{
-		"/health":           `<p class="hv3-eyebrow">Health · Oct 7, 2026</p>`,
+		"/health":           `<p class="hv3-eyebrow">Oct 7, 2026</p>`,
 		"/health/nutrition": `<p class="hv3-eyebrow">Oct 7, 2026</p>`,
 		"/health/training":  `<p class="hv3-eyebrow">Hevy · Not connected</p>`,
 	} {
@@ -285,6 +314,16 @@ func TestHealthNavStyles(t *testing.T) {
 	if !hidden {
 		t.Error("ui-health-v3.css must keep .gyst-health-sub { display: none } outside any media query")
 	}
+	// Design review F1: .hv3-group clips what is drawn outside a row, so a row's focus ring is drawn inside it.
+	ring := false
+	for _, r := range parseCSS(readStatic(t, "css/ui-health-v3.css")) {
+		if r.has(".hv3-group a.hv3-row:focus-visible") && r.Decls["outline-offset"] == "-2px" {
+			ring = true
+		}
+	}
+	if !ring {
+		t.Error("ui-health-v3.css must draw the focus ring of a row in a group inside the row (outline-offset: -2px)")
+	}
 
 	state := regexp.MustCompile(`^--(vn-(info|ok|warn|crit|idle)|gyst-(green|orange|red|positive|warning|danger))`)
 	ref := regexp.MustCompile(`var\((--[a-z0-9-]+)`)
@@ -293,6 +332,10 @@ func TestHealthNavStyles(t *testing.T) {
 	for _, r := range parseCSS(readStatic(t, "css/ui-nav.css")) {
 		if strings.Contains(r.Selector, "gyst-switcher") {
 			rules++
+			// 11 section P: layouts survive 200% text. A label that cannot wrap spills into the next tab.
+			if r.Decls["white-space"] == "nowrap" {
+				t.Errorf("ui-nav.css: %s sets white-space: nowrap; at 200%% text size the label must be able to wrap", r.Selector)
+			}
 		}
 		if r.has("nav.gyst-switcher > a") {
 			if v, ok := r.Decls["min-height"]; ok && r.Media == "" {

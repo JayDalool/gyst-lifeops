@@ -174,7 +174,7 @@ func parseCSS(css string) []cssRule {
 			}
 			inner := body[open+1 : end-1]
 			body = body[end:]
-			if strings.HasPrefix(prelude, "@media") || strings.HasPrefix(prelude, "@supports") {
+			if strings.HasPrefix(prelude, "@media") || strings.HasPrefix(prelude, "@supports") || strings.HasPrefix(prelude, "@container") {
 				walk(inner, prelude)
 				continue
 			}
