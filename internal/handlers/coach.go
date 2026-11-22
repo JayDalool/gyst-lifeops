@@ -279,7 +279,6 @@ func (h *Handler) renderCoach(w http.ResponseWriter, status int, question, errTe
 	if !ok {
 		return
 	}
-	base.HealthTab = "coach"
 	data := healthCoachData{HealthData: base, Configured: coachProvider != nil, Question: question, Error: errText, Prompts: coachPrompts}
 	msgs, err := h.Service.Repo.ListCoachMessages(coachShownTurns)
 	if err != nil {
@@ -405,8 +404,6 @@ type healthProfileData struct {
 	Saved  bool
 	Error  string
 }
-
-func (healthProfileData) HealthTabName() string { return "more" }
 
 // healthProfile edits the few facts the coach uses. Values are stored as typed.
 func (h *Handler) healthProfile(w http.ResponseWriter, r *http.Request) {

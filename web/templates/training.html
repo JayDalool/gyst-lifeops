@@ -5,10 +5,11 @@
 <header class="hv3-ph">
   <div class="hv3-ph-copy">
     <p class="hv3-eyebrow">{{if .Connected}}Hevy{{if .HasData}} · synced {{.LastSync}}{{end}}{{else}}Hevy · Not connected{{end}}</p>
-    <h1>Workout</h1>
+    <h1>Training</h1>
   </div>
   {{if .Connected}}<form method="post" action="/health/training/sync"><button class="hv3-btn secondary small" type="submit">{{template "gyst.icon" "refresh-cw"}}Sync now</button></form>{{end}}
 </header>
+{{template "health.switcher" (healthTab .)}}
 {{if .Error}}<p class="hv3-banner warn" role="status">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}. Your last successful import is kept.</span></p>{{end}}
 {{if and .HasData .Stale}}<p class="hv3-banner warn" role="status">{{template "gyst.icon" "refresh-cw"}}<span>Hevy update overdue</span><span class="hv3-chip warn">Stale</span></p>{{end}}
 

@@ -3,6 +3,7 @@
      daily total, one source per day; absent values read "—", never 0. */}}
 <div class="gyst-scope hv3">
 <header class="hv3-ph"><div class="hv3-ph-copy"><p class="hv3-eyebrow">{{niceDate .Today.Date}}</p><h1>Nutrition</h1></div></header>
+{{template "health.switcher" (healthTab .)}}
 
 {{if not .Today.HasCycle}}
 <p class="hv3-banner">{{template "gyst.icon" "info"}}<span>No health plan yet, so intake isn't compared against targets.</span><a href="/health/plan">Set targets</a></p>

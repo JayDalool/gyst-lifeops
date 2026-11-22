@@ -1,7 +1,8 @@
 {{define "content"}}
 <div class="gyst-scope health-ui">
- <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Progress</h1><p class="gyst-caption">Your recorded measurements over time.</p></div><a class="btn" href="/health/plan">Manage health plan</a></header>
- <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training">Training</a><a href="/health/progress" aria-current="page">Progress</a><a href="/health/plan">Plan</a></nav>
+ {{/* GYST-174: Progress is a section, so its one way to Summary is the switcher's first tab; the word above the title is plain text. */}}
+ <header class="gyst-header"><div><p class="kicker">Health</p><h1 class="gyst-page-title">Progress</h1><p class="gyst-caption">Your recorded measurements over time.</p></div><a class="btn" href="/health/plan">Manage health plan</a></header>
+ {{template "health.switcher" (healthTab .)}}
  <section class="card weight-log" id="log" aria-labelledby="log-title">
   <h2 id="log-title">Log weight</h2>
   {{if .Logged}}<div class="weight-logged" role="status"><p>Logged <strong>{{.Logged.Value}} kg</strong></p><form method="post" action="/health/weight/{{.Logged.ID}}/undo"><button class="btn quiet" type="submit">Undo</button></form></div>{{end}}

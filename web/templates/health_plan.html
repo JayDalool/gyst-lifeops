@@ -1,7 +1,6 @@
 {{define "content"}}
 <div class="gyst-scope health-ui health-plan-ui">
   <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Health plan</h1><p class="gyst-caption">Your goals, dates and targets in one place.</p></div><a class="btn" href="/health/plan?new=1">New cycle</a></header>
-  <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training">Training</a><a href="/health/progress">Progress</a><a href="/health/plan" aria-current="page">Plan</a></nav>
   {{if .Saved}}<p class="card health-plan-success" role="status">Health cycle saved.</p>{{end}}
   {{if .Error}}<div class="card health-plan-error" role="alert" id="plan-error"><h2>Check your plan</h2><p>{{.Error}}</p><p class="meta">Your entries are kept below so you can correct them and save again.</p></div>{{end}}
   <div class="health-plan-layout">

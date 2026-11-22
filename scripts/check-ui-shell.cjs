@@ -208,7 +208,8 @@ function parseCSS(text, media = null, out = []) {
 // [selector, media|null, checks height, checks width]
 const TARGETS = [
   ['.gyst-primary > a', null, true, false], ['.gyst-primary > a', '(max-width: 1023px)', true, false],
-  ['.gyst-health-sub > a', '(min-width: 1024px)', true, false], ['.hv3-tabbar > a', '(max-width: 1023px)', true, false],
+  // GYST-174: the Health-only tab bar is gone; the section switcher's tabs (ui-nav.css) are checked instead.
+  ['.gyst-health-sub > a', '(min-width: 1024px)', true, false], ['nav.gyst-switcher > a', null, true, false],
   ['.gyst-projects-sub > a', '(min-width: 1024px)', true, false],
   ['.gyst-brand', null, true, false], ['.gyst-skip', null, true, false],
   ['.gyst-button', null, true, false], ['.gyst-button--icon', null, false, true],
@@ -268,7 +269,7 @@ function controlSelector(c) {
   if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('gyst-primary')) return '.gyst-primary > a';
   if (c.tag === 'a' && parent.classes.includes('gyst-health-sub')) return '.gyst-health-sub > a';
   if (c.tag === 'a' && parent.classes.includes('gyst-projects-sub')) return '.gyst-projects-sub > a';
-  if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('hv3-tabbar')) return '.hv3-tabbar > a';
+  if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('gyst-switcher')) return 'nav.gyst-switcher > a';
   if (within('dialog', 'gyst-command')) {
     if (c.tag === 'a' && within('div', 'command-results')) return ':root .gyst-command .command-results a';
     if (c.tag === 'button' && has('btn')) return ':root .gyst-command .btn';
@@ -300,7 +301,7 @@ function coverageCheck(templates, targets = TARGETS) {
   }
 }
 function tapTargetChecks() {
-  const files = ['ui-tokens.css', 'ui-components.css', 'ui-shell.css', 'ui-health-v3.css', 'ui-galaxy.css'].map(f => fs.readFileSync(CSS_DIR + f, 'utf8'));
+  const files = ['ui-tokens.css', 'ui-components.css', 'ui-shell.css', 'ui-nav.css', 'ui-health-v3.css', 'ui-galaxy.css'].map(f => fs.readFileSync(CSS_DIR + f, 'utf8'));
   checkTargets(files);
   // The check must reject undersized and unresolvable targets.
   const one = (css, sel, h = true, w = false) => () => checkTargets([css], [[sel, null, h, w]]);
@@ -319,6 +320,32 @@ function tapTargetChecks() {
   const templates = {'ui_shell.html': fs.readFileSync('web/templates/ui_shell.html', 'utf8'), 'layout.html': fs.readFileSync('web/templates/layout.html', 'utf8'), 'archive.html': fs.readFileSync('web/templates/archive.html', 'utf8'), 'monthly.html': fs.readFileSync('web/templates/monthly.html', 'utf8'), 'reminders.html': fs.readFileSync('web/templates/reminders.html', 'utf8'), 'analytics.html': fs.readFileSync('web/templates/analytics.html', 'utf8')};
   coverageCheck(templates);
   assert.throws(() => coverageCheck({'ui_shell.html': templates['ui_shell.html'] + '<body><button type="button">Oops</button>'}), /<button> has no checked tap-target selector/);
+  healthNavChecks();
+}
+// GYST-174 (13B DD-22): Health keeps the main tab bar and has one section switcher.
+function healthNavChecks() {
+  const read = f => fs.readFileSync(f, 'utf8');
+  // The switcher's four links are covered by the tap-target check above.
+  const sw = /\{\{define "health\.switcher"\}\}([\s\S]*?<\/nav>)\{\{end\}\}/.exec(read('web/templates/health_components.html'));
+  assert(sw, 'health_components.html must define "health.switcher"');
+  const links = templateControls(sw[1]);
+  assert.equal(links.length, 4, 'the Health switcher has four links');
+  for (const c of links) assert.equal(controlSelector(c), 'nav.gyst-switcher > a');
+  assert.throws(() => checkTargets(['nav.gyst-switcher > a{min-height:44px}@media (min-width:700px){nav.gyst-switcher > a{min-height:40px}}'], [['nav.gyst-switcher > a', null, true, false]]), /gyst-switcher.*40px/);
+  // The Health stylesheet no longer hides the main tab bar or draws its own. It still hides the
+  // sidebar group below 1024 px: that group sits inside the phone tab bar's five-column grid and
+  // would wrap the bar as a sixth item (technical review, condition a).
+  const rules = parseCSS(read(CSS_DIR + 'ui-health-v3.css'));
+  for (const r of rules) for (const sel of r.selectors) assert(!/\.hv3-tabbar|\.is-health \.gyst-primary/.test(sel), 'ui-health-v3.css still has a Health-only tab bar rule: ' + sel);
+  const hides = css => parseCSS(css).some(r => r.media === null && r.selectors.includes('.gyst-health-sub') && r.decls.display === 'none');
+  assert(hides(read(CSS_DIR + 'ui-health-v3.css')), 'ui-health-v3.css must keep .gyst-health-sub { display: none } outside any media query');
+  assert(!hides('@media (max-width: 1023px) { .gyst-health-sub { display: none; } }') && !hides('.gyst-health-sub { display: grid; }'), 'the sidebar-group check must be able to fail');
+  assert(!read('web/templates/ui_shell.html').includes('hv3-tabbar'), 'ui_shell.html still renders the Health-only tab bar');
+  // ui-nav.css is never sent for Galaxy, and has one version.
+  const layout = read('web/templates/layout.html');
+  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-1">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
+  assert.equal(layout.split('ui-nav.css').length - 1, 1, 'layout.html names ui-nav.css once');
+  assert(worker.includes('"/static/css/ui-nav.css?v=nav-1"'), 'the service worker list lacks ui-nav.css');
 }
 function overlayChecks() {
   const src = fs.readFileSync('web/static/js/ui-overlay.js', 'utf8');

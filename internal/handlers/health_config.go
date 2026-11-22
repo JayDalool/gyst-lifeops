@@ -85,8 +85,6 @@ type healthChecklistData struct {
 	Name, Kind string
 }
 
-func (healthChecklistData) HealthTabName() string { return "more" }
-
 func (h *Handler) healthChecklist(w http.ResponseWriter, r *http.Request) {
 	if !postGuard(w, r, "GET, POST") {
 		return
@@ -184,8 +182,6 @@ type healthFoodsData struct {
 	Error  string
 	FoodID int64 // set on the edit page
 }
-
-func (healthFoodsData) HealthTabName() string { return "more" }
 
 func foodFormFrom(r *http.Request) services.HealthFoodForm {
 	return services.HealthFoodForm{Name: r.PostFormValue("name"), Serving: r.PostFormValue("serving"), Kcal: r.PostFormValue("kcal"), Protein: r.PostFormValue("protein"),

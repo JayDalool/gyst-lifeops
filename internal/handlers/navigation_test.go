@@ -125,8 +125,9 @@ func TestHealthFoundation(t *testing.T) {
 			}
 		}
 		// Health v3 (#53): Health's own sections, the four-number energy card,
-		// and the rest of the old page reachable from More.
-		for _, text := range []string{"Health sections", `href="/health/training"`, `href="/health/nutrition"`, `href="/health/more"`, "No food logged yet", "Burned so far", "Balance so far", "Macros", "Steps", "Weight", "viewport-fit=cover"} {
+		// and the rest of the old page reachable from More. GYST-174: four
+		// sections, with Plan and More opened from rows on Summary.
+		for _, text := range []string{"Health sections", `href="/health/training"`, `href="/health/nutrition"`, `href="/health/progress"`, `href="/health/plan"`, `href="/health/more"`, "No food logged yet", "Burned so far", "Balance so far", "Macros", "Steps", "Weight", "viewport-fit=cover"} {
 			if !strings.Contains(body, text) {
 				t.Errorf("health missing %q", text)
 			}

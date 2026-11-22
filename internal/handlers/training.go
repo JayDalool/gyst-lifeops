@@ -262,7 +262,7 @@ func (h *Handler) training(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	data := trainingData{HealthData: HealthData{Page: "health", Mission: mission, HealthTab: "workout"}, Connected: h.Service.Training != nil, HasData: !cache.SyncedAt.IsZero(), Error: cache.Error, Mode: q.Get("mode"), Routine: q.Get("routine"), View: "overview", Period: 12}
+	data := trainingData{HealthData: HealthData{Page: "health", Mission: mission, HealthTab: "training"}, Connected: h.Service.Training != nil, HasData: !cache.SyncedAt.IsZero(), Error: cache.Error, Mode: q.Get("mode"), Routine: q.Get("routine"), View: "overview", Period: 12}
 	// The muscle map now opens on logged work; routine targets are one choice away.
 	if data.Mode != "7" && data.Mode != "planned" {
 		data.Mode = "30"

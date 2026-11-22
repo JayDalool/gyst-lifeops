@@ -2043,7 +2043,7 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	data.HealthTab = "today"
+	data.HealthTab = "summary"
 	fromML, notice, errText := waterQuery(r.URL.Query())
 	data.Water.animateFrom(fromML)
 	data.Water.Notice, data.Water.Error = notice, errText

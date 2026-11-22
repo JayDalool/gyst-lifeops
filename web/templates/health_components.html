@@ -1,3 +1,14 @@
+{{/* Health section switcher (GYST-174, 13B DD-22): the one way to move between Health's four
+     sections, shown once, right under the page header, on those four pages only. It is called
+     with the page's own section, (healthTab .), so the handler decides which tab is open. A page
+     pushed from a row (Plan, More, Coach) gets a back link instead. Styles: ui-nav.css. */}}
+{{define "health.switcher"}}<nav class="gyst-switcher" aria-label="Health sections">
+  <a href="/health"{{if eq . "summary"}} aria-current="page"{{end}}>{{template "vn.icon" "heart"}}<span>Summary</span></a>
+  <a href="/health/nutrition"{{if eq . "nutrition"}} aria-current="page"{{end}}>{{template "vn.icon" "fork"}}<span>Nutrition</span></a>
+  <a href="/health/progress"{{if eq . "progress"}} aria-current="page"{{end}}>{{template "vn.icon" "trend"}}<span>Progress</span></a>
+  <a href="/health/training"{{if eq . "training"}} aria-current="page"{{end}}>{{template "vn.icon" "gym"}}<span>Training</span></a>
+</nav>{{end}}
+
 {{define "health.gymWeek"}}
 <div class="day-group page-body" aria-label="Gym week">
   <p class="group-label">This week&rsquo;s gym days &middot; <span class="num" data-mission="gym">{{.Mission.GymWeekCompletion}}%</span></p>

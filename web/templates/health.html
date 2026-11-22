@@ -6,9 +6,10 @@
 <header class="hv3-ph">
   <div class="hv3-ph-copy">
     <p class="hv3-eyebrow">Health · {{niceDate .Today.Date}}</p>
-    <h1>Today</h1>
+    <h1>Health</h1>
   </div>
 </header>
+{{template "health.switcher" (healthTab .)}}
 
 {{if not .Today.HasCycle}}
 <p class="hv3-banner">{{template "gyst.icon" "info"}}<span>No health plan yet, so there's no budget to compare against.</span><a href="/health/plan">Set up plan</a></p>
@@ -167,6 +168,17 @@
       <a href="/health/checklist" aria-label="Set up checklist">{{template "gyst.icon" "chevron-right"}}</a></div>
     {{end}}
   </section>
+
+  {{/* GYST-174 (13B DD-22): Plan, More and Coach are not sections. They open from these rows and
+       link back here. More and Coach stay rows until their own chunks (R7, R9). Round 7 has no
+       drawing for the Coach's speech bubble, so that row keeps today's icon. */}}
+  <nav class="hv3-section hv3-span" aria-label="More in Health">
+    <ul class="hv3-group">
+      <li><a class="hv3-row" href="/health/plan"><span class="hv3-tile sm">{{template "vn.icon" "target"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Plan</span><span class="hv3-s">{{if .Today.CycleTitle}}{{.Today.CycleTitle}}{{if .Today.CalorieTarget.Present}} · {{.Today.CalorieTarget.Value}} kcal a day{{end}}{{else}}No plan yet{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+      <li><a class="hv3-row" href="/health/more"><span class="hv3-tile sm">{{template "vn.icon" "more"}}</span><span class="hv3-row-copy"><span class="hv3-strong">More</span><span class="hv3-s">Checklist, foods, data sources, goals</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+      {{if coachEnabled}}<li><a class="hv3-row" href="/health/coach"><span class="hv3-tile sm">{{template "gyst.icon" "message-circle"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Coach</span><span class="hv3-s">Ask about food, training or progress</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>{{end}}
+    </ul>
+  </nav>
 </div>
 
 <p class="hv3-foot">{{if .Today.HasLastSynced}}Apple Health · updated {{.Today.LastSynced}}{{else if .Today.HasSnapshot}}Apple Health · synced today{{else}}Apple Health · nothing synced today. Run GYST Sync All on your iPhone.{{end}}</p>
