@@ -19,8 +19,8 @@ func galleryHTML(t *testing.T) []byte {
 		return template.CSS(b)
 	}
 	data := struct {
-		Tokens, Components template.CSS
-		Colors             []struct {
+		Tokens, Accents, Components template.CSS
+		Colors                      []struct {
 			Name  string
 			Value template.CSS
 		}
@@ -43,7 +43,7 @@ func galleryHTML(t *testing.T) []byte {
 		SC              stateGallery
 		Overlay         overlayGallery
 		OverlayJS       template.JS
-	}{Tokens: read("ui-tokens.css"), Components: read("ui-components.css"), VN: vnGalleryData(), SC: stateGalleryData(), Overlay: overlayGalleryData()}
+	}{Tokens: read("ui-tokens.css"), Accents: read("ui-accents.css"), Components: read("ui-components.css"), VN: vnGalleryData(), SC: stateGalleryData(), Overlay: overlayGalleryData()}
 	js, err := os.ReadFile("../../web/static/js/ui-overlay.js")
 	if err != nil {
 		t.Fatal(err)
@@ -115,6 +115,18 @@ func TestExportUIGallery(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "static", "icons.svg"), sprite, 0644); err != nil {
+		t.Fatal(err)
+	}
+	// GYST-168: the embedded ui-tokens.css asks for the font at this path, so the export carries it
+	// too; without it the preview silently falls back to the system face.
+	font, err := os.ReadFile("../../web/static/fonts/Geist-Variable.woff2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "static", "fonts"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "static", "fonts", "Geist-Variable.woff2"), font, 0644); err != nil {
 		t.Fatal(err)
 	}
 }

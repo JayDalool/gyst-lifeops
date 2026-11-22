@@ -9,6 +9,9 @@
 :root .courses-ui :is(.meta,.kicker,.task-meta,.group-label) { font-size: .875rem; line-height: 1.5; color: var(--gyst-text-secondary); }
 :root .courses-ui .btn { display: inline-flex; justify-content: center; align-items: center; min-height: 44px; padding: 10px 14px; border: 1px solid var(--gyst-border); border-radius: 12px; background: var(--gyst-surface); color: var(--gyst-blue); white-space: normal; }
 :root .courses-ui .btn.danger { color: var(--gyst-danger-text); }
+/* GYST-168: these buttons only faded on hover (the shared 0.9 opacity, now gone). An opaque tint instead. */
+:root .courses-ui .btn:hover { background: var(--gyst-blue-soft); }
+:root .courses-ui .btn.danger:hover { background: var(--vn-crit-soft); }
 :root .courses-ui :is(a,button,input,textarea,select):focus-visible { outline: 2px solid var(--gyst-blue); outline-offset: 3px; }
 :root .courses-ui .course-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; }
 :root .courses-ui .course { display: grid; align-content: start; gap: 16px; }

@@ -444,6 +444,11 @@ function launcherChecks() {
   // The shell no longer carries the old palette, and the new script ships with the page and the worker.
   assert(!/initCommandPalette/.test(fs.readFileSync('web/static/js/app.js', 'utf8')), 'old palette removed from app.js');
   assert(/launcher\.js\?v=/.test(fs.readFileSync('web/static/service-worker.js', 'utf8')), 'launcher.js is precached');
+  // GYST-168: the origin sends no-store and the worker never runtime-caches such a response, so the font is
+  // available offline only if install precaches it, under the exact URL the @font-face asks for.
+  const fontUrl = /url\("([^"]+\.woff2[^"]*)"\)/.exec(fs.readFileSync('web/static/css/ui-tokens.css', 'utf8'))[1];
+  const shell = JSON.parse(/const SHELL = (\[.*?\]);/s.exec(fs.readFileSync('web/static/service-worker.js', 'utf8'))[1]);
+  assert(shell.includes(fontUrl), 'the font URL in @font-face is in the service worker SHELL: ' + fontUrl);
 }
 // Launcher v2 race checks: drives the real launcher.js in a fake DOM with fake timers and a fetch the test answers by hand.
 async function launcherRaceChecks() {

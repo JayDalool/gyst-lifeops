@@ -38,6 +38,8 @@
 :root .health-ui .health-activity dd { font-size: 1.5rem; line-height: 1.4; color: var(--gyst-text); }
 :root .health-ui .health-activity .is-absent { font-size: 1rem; font-weight: 400; }
 :root .health-ui .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 14px; white-space: normal; color: var(--gyst-blue); background: var(--gyst-surface); border: 1px solid var(--gyst-border); border-radius: 12px; }
+/* GYST-168: these buttons only faded on hover (the shared 0.9 opacity, now gone). An opaque tint, as on Projects and Today. */
+:root .health-ui .btn:hover { background: var(--gyst-blue-soft); }
 :root .health-ui .gym-strip { display: grid; grid-template-columns: repeat(auto-fit,minmax(60px,1fr)); gap: 8px; }
 :root .health-ui .gym-strip form { margin: 0; min-width: 0; }
 :root .health-ui .gym-day { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 64px; height: auto; gap: 4px; padding: 8px; border-radius: 12px; color: var(--gyst-text); background: var(--gyst-bg); }

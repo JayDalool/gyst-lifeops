@@ -64,9 +64,15 @@ body {
     radial-gradient(circle at 78% 12%, rgba(101, 231, 160, 0.1), transparent 30vw),
     linear-gradient(135deg, var(--bg), var(--bg-2));
   color: var(--text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--vn-font);
   line-height: 1.5;
 }
+/* GYST-168: Geist is drawn for grayscale smoothing. Galaxy keeps the default with its own font (ui-pins.css). */
+body:not(.galaxy-page) { -webkit-font-smoothing: antialiased; }
+/* GYST-168 contrast audit: the browser's grey placeholder fell from 3.91 to 3.83:1 (light) and from 4.2
+   to 3.75:1 (dark) on the new field fill. --vn-ink-3 is at least 4.5:1 on every surface. Not on Galaxy,
+   whose pinned ink-3 is lighter than that grey. */
+body:not(.galaxy-page) :is(input, textarea)::placeholder { color: var(--vn-ink-3); }
 
 a {
   color: inherit;
@@ -1139,7 +1145,9 @@ button.action-card {
 
 .status-pending {
   border-color: rgba(101, 232, 255, 0.28);
-  color: var(--cyan);
+  /* GYST-168: pending is a state, so it is not drawn in the accent (--cyan is the accent now). It is
+     quiet, like .status.pending further down. */
+  color: var(--quiet);
 }
 
 .project-grid,
@@ -2013,7 +2021,7 @@ th {
   height: 46px;
   place-items: center;
   border-radius: 999px;
-  color: #06080d;
+  color: var(--vn-on-accent);
   background: conic-gradient(from 210deg, var(--cyan), var(--green), var(--blue), var(--cyan));
   box-shadow: 0 0 14px rgba(101, 232, 255, 0.4);
 }
@@ -3212,7 +3220,7 @@ i.map-node-state {
   place-items: center;
   width: 38px;
   height: 38px;
-  color: #06080d;
+  color: var(--vn-on-accent);
   clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
   background: linear-gradient(135deg, var(--cyan), var(--green));
   box-shadow: 0 0 12px rgba(101, 232, 255, 0.35);
@@ -3686,65 +3694,64 @@ i.map-node-state {
    ========================================================================== */
 
 /* ---- 1. tokens --------------------------------------------------------- */
-:root {
-  --bg: #0f1216;
-  --bg-2: #0f1216;
-  --panel: #161b22;                       /* opaque — no glass */
-  --panel-strong: #1a212a;
-  --panel-soft: rgba(255, 255, 255, 0.045);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text: #e9eef4;
-  --muted: #a6b0bb;
-  --quiet: #8b96a2;
-  --cyan: #53c6e4;
-  --blue: #7d9fd8;
-  --purple: #9d8fd4;
-  --green: #57c98b;
-  --orange: #d9a054;
-  --red: #e26377;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+/* GYST-168: every legacy variable is an alias of a --vn- token (ui-tokens.css, ui-accents.css), so
+   screens that have not been rebuilt take the Look, the accent and dark mode without a rule edit.
+   The selector lists :root[data-theme="light"] as well as :root on purpose: the first light block
+   near the top of this file has specificity (0,2,0) and would beat a lone :root here in light mode.
+   Listed, this block equals it and comes later, so it wins in light and dark.
+   Dark needs no second block: the --vn- tokens change with the theme.
+   Galaxy keeps its pre-makeover values through ui-pins.css. */
+:root, :root[data-theme="light"] {
+  --bg: var(--vn-canvas);
+  --bg-2: var(--vn-canvas);
+  --panel: var(--vn-surface);             /* opaque — no glass */
+  --panel-strong: var(--vn-elevated);
+  --panel-soft: color-mix(in srgb, var(--vn-ink) 5.5%, transparent);
+  --border: var(--vn-separator);
+  --border-strong: color-mix(in srgb, var(--vn-ink) 20%, transparent);
+  --text: var(--vn-ink);
+  --muted: var(--vn-ink-2);
+  --quiet: var(--vn-ink-3);
+  /* The old hues are used as text, strokes and fills alike, so each takes a text grade:
+     as text it reaches 4.5:1, and as a fill it carries --vn-on-accent. */
+  --cyan: var(--vn-accent-text);
+  --blue: var(--vn-accent-text);
+  --purple: var(--vn-accent-text);
+  --green: var(--vn-ok-text);
+  --orange: var(--vn-warn-text);
+  --red: var(--vn-crit-text);
+  --shadow: 0 0 0 transparent;
   --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);    /* glows off wherever tokens are used */
   --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
   /* v2-only tokens (no v1 equivalent) */
-  --inset: #0b0e12;
-  --accent: #53c6e4;
-  --accent-text: #7dd4ec;
-  --accent-soft: rgba(83, 198, 228, 0.12);
-  --green-text: #7cd6a4;
-  --amber-text: #e0b077;
-  --red-text: #ea8a99;
+  --inset: var(--vn-surface-2);
+  --accent: var(--vn-accent-text);
+  --accent-text: var(--vn-accent-text);
+  --accent-soft: var(--vn-accent-soft);
+  --green-text: var(--vn-ok-text);
+  --amber-text: var(--vn-warn-text);
+  --red-text: var(--vn-crit-text);
 }
-
-/* Restate every production token for the light theme so none fall through to
-   the dark values above. */
+/* GYST-168 exception E1: the canvas charts keep the colours they had. charts.js draws on a canvas and
+   used to read --text, --muted, --border, --cyan, --blue and --purple from <html>; those are aliases
+   now, so both gradient stops would be the accent. The renderer has its own palette instead, with the
+   values those six had before the makeover, keyed on data-theme as they were. It goes with the chunk
+   that rebuilds the charts. */
+:root {
+  --chart-text: #e9eef4;
+  --chart-muted: #a6b0bb;
+  --chart-border: rgba(255, 255, 255, 0.08);
+  --chart-cyan: #53c6e4;
+  --chart-blue: #7d9fd8;
+  --chart-purple: #9d8fd4;
+}
 :root[data-theme="light"] {
-  --bg: #f4f6f8;
-  --bg-2: #f4f6f8;
-  --panel: #ffffff;
-  --panel-strong: #ffffff;
-  --panel-soft: rgba(20, 38, 56, 0.055);
-  --border: rgba(20, 38, 56, 0.10);
-  --border-strong: rgba(20, 38, 56, 0.20);
-  --text: #101923;
-  --muted: #4d5f70;
-  --quiet: #728294;
-  --cyan: #007f96;
-  --blue: #345fbd;
-  --purple: #7056d8;
-  --green: #168250;
-  --orange: #b45d18;
-  --red: #bd2f45;
-  --shadow: 0 1px 2px rgba(20, 38, 56, 0.08);
-  --glow-cyan: 0 0 0 rgba(0, 0, 0, 0);
-  --glow-purple: 0 0 0 rgba(0, 0, 0, 0);
-  --inset: #e8edf1;
-  --accent: #007f96;
-  --accent-text: #006e82;
-  --accent-soft: rgba(0, 127, 150, 0.10);
-  --green-text: #168250;
-  --amber-text: #b45d18;
-  --red-text: #bd2f45;
+  --chart-text: #101923;
+  --chart-muted: #4d5f70;
+  --chart-border: rgba(20, 38, 56, 0.10);
+  --chart-cyan: #007f96;
+  --chart-blue: #345fbd;
+  --chart-purple: #7056d8;
 }
 
 /* ---- 2. solid background ------------------------------------------------ */
@@ -4064,11 +4071,21 @@ i.map-node-state {
   font-weight: 550;
   cursor: pointer;
   background: var(--accent);
-  color: #08262e;
+  color: var(--vn-on-accent);
   text-decoration: none;
   transition: opacity var(--vn-fast) var(--vn-ease), transform var(--vn-fast) var(--vn-ease), color var(--vn-fast) var(--vn-ease);
 }
+/* GYST-168: one primary fill. The legacy button takes the accent itself, like .gyst-button, not the
+   text grade behind --accent. Galaxy keeps its pinned --accent: the rule is scoped off it with :where(),
+   which adds no specificity, so .ghost and .quiet below still win. */
+:root :where(body:not(.galaxy-page)) .btn { background: var(--vn-accent); }
+/* Hover is an opaque fill, as on .gyst-button. The old 0.9 opacity let the white card show through the
+   accent and took the label to 3.87:1 in light. The fill rule adds no specificity (:where on :hover too),
+   so every variant and scoped button keeps its own background; the opacity reset sits after the old rule.
+   Galaxy keeps the old hover. */
+:root :where(body:not(.galaxy-page)) .btn:where(:hover) { background: color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink)); }
 :root .btn:hover { opacity: 0.9; }
+:root :where(body:not(.galaxy-page)) .btn:hover { opacity: 1; }
 :root .btn:not(:disabled):active { transform: scale(.97); }
 :root .btn.ghost {
   background: transparent;
@@ -4097,7 +4114,8 @@ i.map-node-state {
   color: var(--muted);
 }
 :root .status.done    { color: var(--green-text); }
-:root .status.current { color: var(--accent-text); }
+/* GYST-168 E4: "current" is a state, so it reads the info token and stays blue; --accent-text is Iris now. */
+:root .status.current { color: var(--vn-info-text); }
 :root .status.soon    { color: var(--amber-text); }
 :root .status.late    { color: var(--red-text); }
 :root .status.locked  { color: var(--quiet); }
@@ -4119,7 +4137,8 @@ i.map-node-state {
 :root .prayer-alert-actions { display: flex; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
 :root .prayer-alert-panel .meta { max-width: 360px; text-align: right; }
 :root .tracker-dot small { margin-left: 4px; color: var(--quiet); font-size: 11px; }
-:root .tracker-dot.prayer-current { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77,191,208,.12); }
+/* GYST-168 E4: the current prayer is a state, so its tile is marked in the info colour (with the outline in ui-today.css). */
+:root .tracker-dot.prayer-current { border-color: var(--vn-info); box-shadow: 0 0 0 2px rgba(77,191,208,.12); }
 :root .prayer-adjustments { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 
 /* ---- Galaxy: the canvas owns the viewport; the list below is the accessible map. --- */
@@ -4375,7 +4394,8 @@ i.map-node-state {
 }
 :root .map .route-done {
   fill: none;
-  stroke: var(--accent);
+  /* GYST-168: the travelled route is a completed state, drawn like the done stops, not in the accent. */
+  stroke: var(--green);
   stroke-width: 1.5;
   opacity: 0.85;
 }
@@ -4422,15 +4442,16 @@ i.map-node-state {
 :root .map .node.current i {
   width: 16px;
   height: 16px;
-  background: var(--accent);
-  border-color: var(--accent);
+  /* GYST-168 E4: the current stop is a state, so it is drawn in the info colour, not the accent. */
+  background: var(--vn-info);
+  border-color: var(--vn-info);
 }
 :root .map .node.current::after {   /* the one allowed ambient animation */
   content: "";
   position: absolute;
   inset: 8px;
   border-radius: 50%;
-  border: 1.5px solid var(--accent);
+  border: 1.5px solid var(--vn-info);
   opacity: 0.5;
   animation: v2-ring 3s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
 }
@@ -4463,7 +4484,8 @@ i.map-node-state {
   width: 22px;
   height: 22px;
   margin: -11px 0 0 -11px;
-  color: var(--accent);
+  /* GYST-168 E4: the ship marks the current position, the same state as the current stop and its ring. */
+  color: var(--vn-info);
   pointer-events: none;
   will-change: transform;
 }
@@ -4780,7 +4802,8 @@ i.map-node-state {
   background: var(--panel-soft);
 }
 :root .phase-strip i.done { background: var(--green); }
-:root .phase-strip i.current { background: var(--accent); }
+/* GYST-168 E4: the active phase is a state. */
+:root .phase-strip i.current { background: var(--vn-info); }
 :root .body-text { color: var(--muted); font-size: 14.5px; }
 
 /* ---- forms ------------------------------------------------------------------- */
@@ -4829,8 +4852,12 @@ i.map-node-state {
 :root .btn.danger {
   background: transparent;
   color: var(--red-text);
-  border-color: rgba(226, 99, 119, 0.35);
+  /* GYST-168 audit: the old translucent pink edge fell from 1.48 to 1.44:1 on the new canvas. The danger
+     graphic colour is a real 3:1 edge in both themes. */
+  border-color: var(--vn-crit);
 }
+/* GYST-168: it only faded on hover (the shared 0.9 opacity, now gone off Galaxy). An opaque danger tint instead. */
+:root :where(body:not(.galaxy-page)) .btn.danger:hover { background: var(--vn-crit-soft); }
 :root .details-summary {
   cursor: pointer;
   font-size: 15px;
@@ -4963,7 +4990,7 @@ i.map-node-state {
   border: 0;
   border-radius: var(--vn-r-sm);
   background: transparent;
-  color: var(--vn-accent);
+  color: var(--vn-accent-text);
   font: inherit;
   font-weight: 800;
   cursor: pointer;
@@ -5105,7 +5132,7 @@ i.map-node-state {
   font: inherit;
   color: inherit;
   background: rgba(255, 255, 255, .06);
-  border: 1px solid var(--line, rgba(255, 255, 255, .14));
+  border: 1px solid var(--vn-ink-3);
 }
 .login-input:focus-visible { outline: 2px solid var(--accent, #4c8dff); outline-offset: 2px; }
 .login-submit {
@@ -5115,7 +5142,7 @@ i.map-node-state {
   border-radius: 12px;
   font: inherit;
   font-weight: 600;
-  color: #fff;
+  color: var(--vn-on-accent);
   background: var(--accent, #4c8dff);
   cursor: pointer;
 }
