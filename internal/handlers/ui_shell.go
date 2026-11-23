@@ -83,10 +83,15 @@ func moreSections() []moreSection {
 		}},
 		{Title: "Projects & learning", Rows: []UIRow{
 			{Label: "Projects", URL: "/projects", Icon: "folder-heart"},
+			// GYST-178 (c4, Codex P2): with Projects and Learn no longer tabs, these create forms would be three taps away.
+			{Label: "New project", URL: "/projects/new", Icon: "plus"},
 			{Label: "Courses", URL: "/courses", Icon: "book-open"},
+			{Label: "Add course", URL: "/courses/new", Icon: "plus"},
 			{Label: "Galaxy", Detail: "Explore your projects as worlds", URL: "/galaxy", Icon: "folder-heart"},
 			{Label: "Roadmaps", URL: "/roadmap", Icon: "folder-heart"},
+			{Label: "New roadmap", URL: "/roadmaps/new", Icon: "plus"},
 			{Label: "Goals", URL: "/goals", Icon: "heart"},
+			{Label: "New goal", URL: "/goals/new", Icon: "plus"},
 		}},
 		{Title: "Health", Rows: []UIRow{
 			{Label: "Health summary", URL: "/health", Icon: "heart"},

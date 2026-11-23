@@ -118,12 +118,12 @@ func TestPlusUsesLauncherAttributes(t *testing.T) {
 	}
 }
 
-// c4: every page is at most two taps away: All opens the More list, and the list reaches the two
+// c4: every page is at most two taps away: All opens the More list, and the list reaches the pages that were three taps away
 // pages that used to be three taps from outside Health.
 func TestMoreListReachesFoodsAndProfile(t *testing.T) {
 	h := testHandler(t)
 	body := cfgGet(t, h, "/more")
-	for _, href := range []string{"/health/foods", "/health/profile", "/checklist", "/settings", "/projects", "/galaxy", "/roadmap", "/goals", "/courses", "/health/nutrition", "/health/training", "/health/progress", "/health/plan", "/analytics", "/plan-import", "/archive", "/apps", "/reminders", "/monthly"} {
+	for _, href := range []string{"/health/foods", "/health/profile", "/projects/new", "/courses/new", "/roadmaps/new", "/goals/new", "/checklist", "/settings", "/projects", "/galaxy", "/roadmap", "/goals", "/courses", "/health/nutrition", "/health/training", "/health/progress", "/health/plan", "/analytics", "/plan-import", "/archive", "/apps", "/reminders", "/monthly"} {
 		if !strings.Contains(body, `href="`+href+`"`) {
 			t.Errorf("/more does not link %s", href)
 		}
