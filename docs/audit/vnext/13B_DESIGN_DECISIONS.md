@@ -272,7 +272,7 @@ Why: larger, softer containers against the hairline edges. Source: Direction.
 | **Old** | `--e1` hairline shadow on lists, `--e2` and `--e3` for popovers and sheets. Blur 14–16 with saturate 1.6 on three sticky bars (11 §G). |
 | **New: edges** | Cards and lists have **no shadow**, only a 1 px inner hairline (`inset 0 0 0 1px var(--hairline)`). |
 | **New: floating** | One floating shadow, `--e-float`, for the tab bar, +, toasts and the command bar. Light: `0 10px 30px` #0B0D12 at 12% plus `0 1px 2px` at 6%. Dark: `0 16px 40px` black at 55%. |
-| **New: glass** | Tab bar, sticky top bar and the Listening pill only. `--glass` (DD-7) with `backdrop-filter: saturate(1.8) blur(20px)`. Under `prefers-reduced-transparency: reduce` it is solid `--elevated` with no filter. |
+| **New: glass** | Tab bar, sticky top bar and the Listening pill only. `--glass` (DD-7) with `backdrop-filter: saturate(1.8) blur(20px)`. Under `prefers-reduced-transparency: reduce` it is solid `--elevated` with no filter. The tab bar's dark value is stronger than `--glass`: see DD-18, Labels on glass. |
 | **New: card styles** | A setting with three values. **Hairline** (default): as above. **Lifted:** adds `0 1px 2px` #0B0D12 at 5% and `0 10px 28px` at 8%. **Tinted:** the card's surface mixed with 5% of its section colour, and a hairline of the section colour at 22%. |
 | **Why** | Depth from tone and a hairline reads calmer than shadows; only things that float get a shadow. |
 | **Source** | Direction (hairline, blur 20); round 6 (card styles), audited again in round 7. |
@@ -388,6 +388,9 @@ Rules:
 | **New: order** | **Today · Calendar · Mail · Tasks · Health · All**, then a separate **+**. |
 | **New: shape** | A floating glass pill (DD-12), 60 high, 4 px inner padding, 12 px from the left, right and bottom edges plus the safe area. Under 700 it fills the width; from 700 it is centred, max 480. |
 | **Tabs** | Six. Each is 49 × 52 px at 390 wide (measured), min 44 wide. Icon 22, label 10.5 px, weight 500. The current tab takes its section's colour: text `--s-<name>-t` on `--s-<name>-s`. |
+| **Labels on glass** | Inactive labels and icons use `--ink-2`, not the `--ink-3` round 7 draws. The light bar keeps `--glass` (white at 74%). The dark bar alone uses the Look's `--surface` at 85%, not `--glass` (70%); the other glass surfaces do not change. Rule: a tab label is 4.5:1 or better against the bar as painted, over any content. Measured in the browser for Aurora, all seven accents, both themes: over a filled accent button the lowest is 5.19 in light and 5.43 in dark (Graphite); the lowest over anything is 4.58 in light (pure black) and 5.05 in dark (pure white). As drawn it fell to 3.55 and 2.38 (computed). **All** has no section; when current it takes System's pair. Lead, 2026-11-22; GYST-178. |
+| **Shipped first** | **Today · Tasks · Health · All**, then **+**. Calendar and Mail take their places when they are built; no tab is taken away later. Until the capture sheet (DD-25) ships, + opens quick add. Jay, 2026-11-22. |
+| **Width (GYST-178)** | The pill fills the width left of the + up to 567 px and stops at 480 from 568 px, so four tabs never spread wider than that; the row above says full width under 700. The bar and + use fixed pixel sizes and ignore Text size (DD-9); the page keeps 24 px clear of the bar at any size (tested at 2x). |
 | **+** | A 56 px round button in the accent, 8 px to the right of the pill, with `--e-float`. Tap opens the capture sheet (DD-25). Holding it talks to the Secretary (DD-27). |
 | **Mail count** | The Mail tab shows its unread count. |
 | **All** | Always the last tab. It opens the launcher (DD-20) and can't be removed, so every page is always reachable. |

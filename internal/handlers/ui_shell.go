@@ -19,6 +19,22 @@ func primarySection(page string) string {
 	}
 }
 
+// phoneTab names the tab of the phone tab bar a page belongs to (GYST-178, 13B DD-18). Only
+// today, tasks and health have a tab of their own; All is the fallback because it is always
+// last and reaches every other page through the More list. Galaxy never renders the bar.
+func phoneTab(page string) string {
+	switch page {
+	case "today", "dashboard":
+		return "today"
+	case "tasks":
+		return "tasks"
+	case "health":
+		return "health"
+	default:
+		return "all"
+	}
+}
+
 // projectsArea names the Projects sub-navigation item a page belongs to
 // (GYST-VN-039). Detail pages and forms belong to their list's area.
 func projectsArea(page string) string {
@@ -67,10 +83,15 @@ func moreSections() []moreSection {
 		}},
 		{Title: "Projects & learning", Rows: []UIRow{
 			{Label: "Projects", URL: "/projects", Icon: "folder-heart"},
+			// GYST-178 (c4, Codex P2): with Projects and Learn no longer tabs, these create forms would be three taps away.
+			{Label: "New project", URL: "/projects/new", Icon: "plus"},
 			{Label: "Courses", URL: "/courses", Icon: "book-open"},
+			{Label: "Add course", URL: "/courses/new", Icon: "plus"},
 			{Label: "Galaxy", Detail: "Explore your projects as worlds", URL: "/galaxy", Icon: "folder-heart"},
 			{Label: "Roadmaps", URL: "/roadmap", Icon: "folder-heart"},
+			{Label: "New roadmap", URL: "/roadmaps/new", Icon: "plus"},
 			{Label: "Goals", URL: "/goals", Icon: "heart"},
+			{Label: "New goal", URL: "/goals/new", Icon: "plus"},
 		}},
 		{Title: "Health", Rows: []UIRow{
 			{Label: "Health summary", URL: "/health", Icon: "heart"},
@@ -78,6 +99,9 @@ func moreSections() []moreSection {
 			{Label: "Training", URL: "/health/training", Icon: "heart"},
 			{Label: "Progress", URL: "/health/progress", Icon: "heart"},
 			{Label: "Health plan", URL: "/health/plan", Icon: "heart"},
+			// GYST-178 (c4): without these two rows both pages are three taps from outside Health.
+			{Label: "My foods & products", Detail: "What you usually have, per serving", URL: "/health/foods", Icon: "apple"},
+			{Label: "Profile for the coach", Detail: "Age, height, goal weight, food rules", URL: "/health/profile", Icon: "heart"},
 		}},
 		{Title: "Review & tools", Rows: []UIRow{
 			{Label: "Analytics", URL: "/analytics", Icon: "book-open"},

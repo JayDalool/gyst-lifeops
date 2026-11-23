@@ -2690,6 +2690,7 @@ func (h *Handler) renderStatus(w http.ResponseWriter, status int, page string, d
 	}
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
 		"primarySection": primarySection,
+		"phoneTab":       phoneTab,
 		"projectsArea":   projectsArea,
 		"projectCard":    projectCard,
 		"join":           strings.Join,

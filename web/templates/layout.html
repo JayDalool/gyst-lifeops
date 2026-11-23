@@ -8,8 +8,8 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 	<link rel="manifest" href="/manifest.webmanifest">
-	<meta name="theme-color" content="#f8fafc">
-  <script src="/static/js/theme.js?v=appearance-1"></script>
+	<meta name="theme-color" content="{{if eq .Page "galaxy"}}#f8fafc{{else}}#F1EFF9{{end}}"{{if ne .Page "galaxy"}} data-light="#F1EFF9" data-dark="#09080F"{{end}}>
+  <script src="/static/js/theme.js?v=appearance-2"></script>
   {{/* GYST-168: Galaxy keeps its own font (ui-pins.css), so it does not fetch Geist. The URL must match the @font-face and the service worker's SHELL exactly. */}}
   {{if ne .Page "galaxy"}}<link rel="preload" href="/static/fonts/Geist-Variable.woff2?v=1.3.0" as="font" type="font/woff2" crossorigin>{{end}}
   <link rel="stylesheet" href="/static/css/styles.css?v=aurora-1">
@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="/static/css/ui-pins.css?v=aurora-1">
   <link rel="stylesheet" href="/static/css/ui-components.css?v=icons-1.aurora-1">
   {{- /* GYST-174: the navigation stylesheet shares the next line and is never sent for /galaxy, and the dash trims this line away, so that protected page is sent the bytes it had before. */}}
-  <link rel="stylesheet" href="/static/css/ui-shell.css?v=projects-nav-1.launcher-5.aurora-1">{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-3">{{end}}
+  <link rel="stylesheet" href="/static/css/ui-shell.css?v=projects-nav-1.launcher-5.aurora-1">{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-6">{{end}}
   {{if eq .Page "today"}}<link rel="stylesheet" href="/static/css/ui-today.css?v=now-1.aurora-1">{{end}}
   {{if eq .Page "projects"}}<link rel="stylesheet" href="/static/css/ui-projects.css?v=projects-nav-1.aurora-1">{{end}}
   {{if eq .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-galaxy.css?v=galaxywin-1">{{end}}
@@ -26,7 +26,7 @@
   {{if eq .Page "courses"}}<link rel="stylesheet" href="/static/css/ui-courses.css?v=ui-10.aurora-1">{{end}}
   <script defer src="/static/js/charts.js?v=ui-2.aurora-1"></script>
 	<script defer src="/static/js/app.js?v=launcher-5.now-1.dayends-1"></script>
-  <script defer src="/static/js/launcher.js?v=launcher-5"></script>
+  <script defer src="/static/js/launcher.js?v=launcher-5"></script>{{if ne .Page "galaxy"}}<script defer src="/static/js/nav.js?v=nav-3"></script>{{end}}
   <script defer src="/static/js/completion-toast.js?v=toast-1"></script>
   {{if eq .Page "today"}}<script defer src="/static/js/ui-overlay.js?v=now-1"></script>{{end}}
 </head>

@@ -1,5 +1,7 @@
-/* Makeover navigation (GYST-174, Issue #265). Linked on every page except /galaxy, which is
-   protected and keeps exactly the stylesheets it had (AGENTS.md, 17A). Only --vn-* tokens. */
+/* Makeover navigation (GYST-174, Issue #265; GYST-178, Issue #268). It holds the Health section
+   switcher, the phone tab bar with its + and the phone top row. Linked on every page except /galaxy,
+   which is protected and keeps exactly the stylesheets it had (AGENTS.md, 17A). Only --vn-* tokens
+   and the shell's --gyst-safe-* insets. */
 
 /* ---------- Health section switcher (13B DD-22) ----------
    One track of four equal tabs, right under the page header on Summary, Nutrition, Progress and
@@ -45,3 +47,68 @@ nav.gyst-switcher > a[aria-current="page"] .vn-icon { color: var(--vn-s-health-t
 :root nav.gyst-switcher > a:focus-visible { outline-offset: -2px; border-radius: calc(var(--vn-r-md) - 3px); }
 /* From 700 px (13B DD-17) there is room for the icon beside the word, as drawn. */
 @media (min-width: 700px) { nav.gyst-switcher > a { flex-direction: row; gap: 4px; padding: 0 4px; } }
+
+/* ---------- Phone tab bar, + and top row (GYST-178, 13B DD-18 and DD-12) ----------
+   Below 1024 px the floating pill (Today, Tasks, Health, All) and the round + replace the old five-tab
+   bar. From 1024 nothing here applies, so the sidebar and top bar stay as they were until R3. The old nav
+   stays in the page: it is the sidebar from 1024 and Galaxy's bar. Every value was run in the browser
+   as a probe on master before it was written here (evidence/gyst-178-before).
+   The bar is not given a view-transition-name, a transform or an animation: a named group is captured
+   without its backdrop, so the glass would flash on every page change. */
+.gyst-tabs { display: none; }
+/* Light glass is the token as it is. The dark bar mixes the Look's own surface at 85%, because --glass
+   (70%) let a label fall to 2.38:1 over a bright accent button; a label is 4.5:1 or better as painted. */
+:root { --vn-bar-glass: var(--vn-glass); }
+@media (prefers-color-scheme: dark) { :root:not([data-gyst-theme="light"]) { --vn-bar-glass: color-mix(in srgb, var(--vn-surface) 85%, transparent); } }
+:root[data-gyst-theme="dark"] { --vn-bar-glass: color-mix(in srgb, var(--vn-surface) 85%, transparent); }
+@media not all and (min-width: 1024px) {
+  /* The phone queries below are the exact complement of ui-shell.css's desktop query (min-width: 1024px), so at a fractional width between 1023 and 1024 (browser zoom) exactly one of the bar and the sidebar shows (Codex P3). */
+  /* Clearance is written here, not by script: app.js sets --gyst-nav-clearance from .gyst-primary, which is
+     hidden below, so it writes 0px and main, the toast and the scroll padding would fall under the bar.
+     The sizes are fixed pixels, so they ignore Text size (--vn-ts); the bar's labels are 10.5 px at any size,
+     and the page keeps 24 px clear of the bar (tested at --vn-ts 2). */
+  :root { --vn-bar-h: 60px; --vn-bar-inset: 12px; --vn-bar-clear: calc(var(--vn-bar-h) + var(--vn-bar-inset) + var(--gyst-safe-bottom)); scroll-padding-bottom: calc(var(--vn-bar-clear) + 24px); }
+  /* Scoped to off-Galaxy pages so that Galaxy keeps its fixed five-tab bar even if a later change loads this file there (GYST-177 edits the line that gates it). */
+  body:not(.galaxy-page) nav.gyst-primary { display: none; }
+  /* The wrapper is fixed with left and right set, so it cannot widen the page; only its children take pointer events. */
+  .gyst-tabs { position: fixed; z-index: 100; left: calc(var(--vn-bar-inset) + var(--gyst-safe-left)); right: calc(var(--vn-bar-inset) + var(--gyst-safe-right)); bottom: calc(var(--vn-bar-inset) + var(--gyst-safe-bottom)); display: flex; align-items: center; justify-content: center; gap: 8px; pointer-events: none; }
+  /* The pill stops at 480 px from 568 px (a deviation from DD-18's full width under 700, recorded in the PR): a 700 px pill spreads four tabs too far apart. */
+  nav.gyst-tabbar { pointer-events: auto; flex: 1 1 auto; min-width: 0; max-width: 480px; height: var(--vn-bar-h); box-sizing: border-box; display: flex; padding: 4px; border-radius: var(--vn-r-pill); background: var(--vn-elevated); box-shadow: inset 0 0 0 1px var(--vn-hairline), var(--vn-e-float); }
+  /* Labels use --ink-2, not the --ink-3 round 7 draws, to stay at 4.5:1 over any content (13B DD-18, Labels on glass). */
+  nav.gyst-tabbar > a { flex: 1 1 0; min-width: 44px; min-height: 52px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 2px; border-radius: var(--vn-r-pill); color: var(--vn-ink-2); font: 500 10.5px/12px var(--vn-font); letter-spacing: -.01em; text-align: center; text-decoration: none; overflow-wrap: anywhere; -webkit-tap-highlight-color: transparent; }
+  nav.gyst-tabbar .vn-icon { width: 22px; height: 22px; }
+  nav.gyst-tabbar > a:not([aria-current="page"]):active { color: var(--vn-ink); background: var(--vn-surface-2); }
+  /* The current tab is a selection, drawn in its section's colour pair (All has none: System's grey), never the accent and never a state colour. */
+  nav.gyst-tabbar > a[aria-current="page"] { color: var(--vn-s-system-t); background: var(--vn-s-system-s); }
+  nav.gyst-tabbar > a[data-sec="plan"][aria-current="page"] { color: var(--vn-s-plan-t); background: var(--vn-s-plan-s); }
+  nav.gyst-tabbar > a[data-sec="health"][aria-current="page"] { color: var(--vn-s-health-t); background: var(--vn-s-health-s); }
+  :root nav.gyst-tabbar > a:focus-visible { outline-offset: -2px; border-radius: var(--vn-r-pill); }
+  .gyst-plus { pointer-events: auto; flex: none; width: 56px; height: 56px; box-sizing: border-box; display: grid; place-items: center; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--vn-accent); color: var(--vn-on-accent); box-shadow: var(--vn-e-float); cursor: pointer; transition: transform var(--vn-fast) var(--vn-ease), background-color var(--vn-fast) var(--vn-ease); -webkit-tap-highlight-color: transparent; }
+  .gyst-plus .vn-icon { width: 24px; height: 24px; }
+  .gyst-plus:active { transform: scale(.94); }
+  /* With the on-screen keyboard up the bar would cover the field (a fixed bar rides up with the keyboard on iOS), so it hides. nav.js sets data-gyst-kb="open" only when the visual viewport is much shorter than the layout viewport and a text field has focus; without visualViewport it never does, so the bar stays in the focus order. Focus alone must not hide it: a hardware keyboard needs it, and it returns when the keyboard closes. */
+  :root[data-gyst-kb="open"] .gyst-tabs { display: none; }
+  /* Room for the bar under the last content, the toast and the Coach composer; 8 px under the top row, which is now 44 px high. */
+  :root .wrap.gyst-main { padding-top: 8px; padding-bottom: calc(var(--vn-bar-clear) + 24px); }
+  :root .lifeops-toast { bottom: calc(var(--vn-bar-clear) + 12px); }
+  :root .hv3-composer { bottom: calc(var(--vn-bar-clear) + var(--vn-s2)); }
+  /* Top row: no white strip; the GYST mark with its accent dot (round 7's), a round search button. Still in the flow and not sticky, so the sticky Health switcher keeps top: safe-area. */
+  .gyst-topbar { background: transparent; border-bottom: 0; padding-top: calc(var(--gyst-safe-top) + 8px); }
+  .gyst-topbar-inner { min-height: 44px; }
+  .gyst-brand { gap: 8px; font: 600 17px/22px var(--vn-font); letter-spacing: -.02em; color: var(--vn-ink); }
+  .gyst-brand::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--vn-accent); }
+  /* Without this the search button's white fill would show as a white square on the canvas. */
+  .gyst-topbar-actions .gyst-button--icon { border-radius: 50%; background: transparent; color: var(--vn-ink-2); }
+}
+@media (not (min-width: 1024px)) and (hover: hover) {
+  nav.gyst-tabbar > a:not([aria-current="page"]):hover { color: var(--vn-ink); }
+  .gyst-plus:hover { background: color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink)); }
+  .gyst-topbar-actions .gyst-button--icon:hover { background: var(--vn-surface-2); color: var(--vn-ink); }
+}
+/* Glass only where the browser can draw it; otherwise the solid elevated surface above stays. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) and (color: color-mix(in srgb, red 50%, blue)) {
+  nav.gyst-tabbar { background: var(--vn-bar-glass); -webkit-backdrop-filter: saturate(1.8) blur(20px); backdrop-filter: saturate(1.8) blur(20px); }
+}
+@media (prefers-reduced-transparency: reduce) { nav.gyst-tabbar { background: var(--vn-elevated); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-reduced-motion: reduce) { .gyst-plus { transition: none; } .gyst-plus:active { transform: none; } }
+:root[data-motion="reduced"] .gyst-plus:active { transform: none; }

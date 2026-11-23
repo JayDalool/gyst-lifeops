@@ -42,6 +42,7 @@ const IDS = [
   'alert',   // circle-alert, triangle-alert
   'offline', // wifi-off
   'ship',    // rocket
+  'tasks',   // GYST-178: the Tasks tab of the phone tab bar (13B DD-18)
   'sec',     // GYST-174: the Coach row on Health, as round 7 draws it (today's message-circle elsewhere)
   'scale',   // weight
   'trend',   // GYST-174: the Progress tab of the Health switcher (no Lucide twin in use)
@@ -53,6 +54,7 @@ const IDS = [
   'ext',     // external-link
   'lock',    // lock
   'undo',    // undo-2
+  'all',     // GYST-178: the All tab of the phone tab bar, a 3x3 grid of dots (13B DD-18)
   'bars',    // chart-column
 ];
 
