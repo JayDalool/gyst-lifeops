@@ -61,7 +61,8 @@ nav.gyst-switcher > a[aria-current="page"] .vn-icon { color: var(--vn-s-health-t
 :root { --vn-bar-glass: var(--vn-glass); }
 @media (prefers-color-scheme: dark) { :root:not([data-gyst-theme="light"]) { --vn-bar-glass: color-mix(in srgb, var(--vn-surface) 85%, transparent); } }
 :root[data-gyst-theme="dark"] { --vn-bar-glass: color-mix(in srgb, var(--vn-surface) 85%, transparent); }
-@media (max-width: 1023px) {
+@media not all and (min-width: 1024px) {
+  /* The phone queries below are the exact complement of ui-shell.css's desktop query (min-width: 1024px), so at a fractional width between 1023 and 1024 (browser zoom) exactly one of the bar and the sidebar shows (Codex P3). */
   /* Clearance is written here, not by script: app.js sets --gyst-nav-clearance from .gyst-primary, which is
      hidden below, so it writes 0px and main, the toast and the scroll padding would fall under the bar.
      The sizes are fixed pixels, so they ignore Text size (--vn-ts); the bar's labels are 10.5 px at any size,
@@ -99,7 +100,7 @@ nav.gyst-switcher > a[aria-current="page"] .vn-icon { color: var(--vn-s-health-t
   /* Without this the search button's white fill would show as a white square on the canvas. */
   .gyst-topbar-actions .gyst-button--icon { border-radius: 50%; background: transparent; color: var(--vn-ink-2); }
 }
-@media (max-width: 1023px) and (hover: hover) {
+@media (not (min-width: 1024px)) and (hover: hover) {
   nav.gyst-tabbar > a:not([aria-current="page"]):hover { color: var(--vn-ink); }
   .gyst-plus:hover { background: color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink)); }
   .gyst-topbar-actions .gyst-button--icon:hover { background: var(--vn-surface-2); color: var(--vn-ink); }

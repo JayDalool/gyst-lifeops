@@ -257,7 +257,7 @@ const TARGETS = [
   ['.hv3 .hv3-pills > a', null, true, true],
   ['.gyst-projects-sub > a', '(min-width: 1024px)', true, false],
   // GYST-178: the phone tab bar's tabs and the + (ui-nav.css), 44 px or more each way.
-  ['nav.gyst-tabbar > a', '(max-width: 1023px)', true, true], ['.gyst-plus', '(max-width: 1023px)', true, true],
+  ['nav.gyst-tabbar > a', 'not all and (min-width: 1024px)', true, true], ['.gyst-plus', 'not all and (min-width: 1024px)', true, true],
   ['.gyst-brand', null, true, false], ['.gyst-skip', null, true, false],
   ['.gyst-button', null, true, false], ['.gyst-button--icon', null, false, true],
   ['.gyst-row', null, true, false], ['.gyst-segment', null, true, false], ['.gyst-input', null, true, false], ['.gyst-choice', null, true, false],
@@ -392,9 +392,9 @@ function healthNavChecks() {
   assert(!read('web/templates/ui_shell.html').includes('hv3-tabbar'), 'ui_shell.html still renders the Health-only tab bar');
   // ui-nav.css is never sent for Galaxy, and has one version.
   const layout = read('web/templates/layout.html');
-  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-5">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
+  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-6">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
   assert.equal(layout.split('ui-nav.css').length - 1, 1, 'layout.html names ui-nav.css once');
-  assert(worker.includes('"/static/css/ui-nav.css?v=nav-5"'), 'the service worker list lacks ui-nav.css');
+  assert(worker.includes('"/static/css/ui-nav.css?v=nav-6"'), 'the service worker list lacks ui-nav.css');
 }
 function overlayChecks() {
   const src = fs.readFileSync('web/static/js/ui-overlay.js', 'utf8');

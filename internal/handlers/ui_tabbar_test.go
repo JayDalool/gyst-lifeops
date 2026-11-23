@@ -179,3 +179,21 @@ func TestGalaxyAndLauncherFilesUntouched(t *testing.T) {
 		t.Error("the old bar must be hidden only off Galaxy, so a later change to the stylesheet's link cannot hide Galaxy's bar")
 	}
 }
+
+// Codex P3: between 1023 and 1024 px (browser zoom) neither max-width: 1023px nor min-width: 1024px matches, so a phone
+// rule written as max-width would leave both the bar and the old in-flow nav. Every phone query in ui-nav.css is the exact
+// complement of ui-shell.css's desktop query instead.
+func TestPhoneQueriesAreTheComplementOfTheDesktopQuery(t *testing.T) {
+	if !strings.Contains(readStatic(t, "css/ui-shell.css"), "@media (min-width: 1024px)") {
+		t.Fatal("ui-shell.css no longer has the desktop query this test pairs with")
+	}
+	css := readStatic(t, "css/ui-nav.css")
+	for _, m := range regexp.MustCompile(`@media [^{]*`).FindAllString(css, -1) {
+		if strings.Contains(m, "max-width: 1023") {
+			t.Errorf("ui-nav.css has %q; use the complement of (min-width: 1024px)", strings.TrimSpace(m))
+		}
+	}
+	if !strings.Contains(css, "@media not all and (min-width: 1024px) {") || !strings.Contains(css, "@media (not (min-width: 1024px)) and (hover: hover) {") {
+		t.Error("ui-nav.css lost its phone queries")
+	}
+}
