@@ -18,6 +18,11 @@ nav.gyst-switcher { display: flex; flex-wrap: wrap; gap: 2px; box-sizing: border
    the token. At 1 it is the safe-area inset; above 1 it is hundreds of pixels off screen, so the track scrolls
    away (the same for any enlarged size, a stricter rule than 200%). */
 nav.gyst-switcher { position: sticky; top: calc(var(--gyst-safe-top) - 4000px * (var(--vn-ts) - 1)); z-index: 90; box-shadow: 0 0 0 var(--vn-s2) var(--vn-canvas); }
+/* Deep links (Codex P2): #log and #add-food scroll their target to the top, under the sticky track.
+   The page reserves the track's room: the inset, 50 px of track, the 8 px ring and 8 px of air. It reads
+   --vn-ts exactly as `top` does, so it is 0 (negative clamps) where the track scrolls away. On the root, so
+   every id and focus scroll on the four pages is covered; :has() keeps it off every other page. */
+:root:has(nav.gyst-switcher) { scroll-padding-top: calc(var(--gyst-safe-top) + 66px - 4000px * (var(--vn-ts) - 1)); }
 /* Below 700 px the icon sits over the word. Side by side, as round 7 draws it, "Nutrition" has
    2 px to spare at 390 with Geist and overflows under 382; the font also loads with swap, so the
    system font is drawn first. Stacked, every word keeps room from 320 px up in either font.

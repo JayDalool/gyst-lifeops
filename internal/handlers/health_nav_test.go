@@ -464,7 +464,7 @@ func TestHealthNavStyles(t *testing.T) {
 
 	// Never on Galaxy: its page must not gain a stylesheet.
 	layout := readTemplate(t, "layout.html")
-	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-2">{{end}}`
+	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-3">{{end}}`
 	if !strings.Contains(layout, link) || strings.Count(layout, "ui-nav.css") != 1 {
 		t.Errorf("layout.html must link ui-nav.css once, as %s", link)
 	}
@@ -472,7 +472,7 @@ func TestHealthNavStyles(t *testing.T) {
 		t.Error("/galaxy links ui-nav.css")
 	}
 	for _, path := range []string{"/health", "/today"} {
-		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-2">`) {
+		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-3">`) {
 			t.Errorf("%s does not link ui-nav.css", path)
 		}
 	}
@@ -493,7 +493,7 @@ func TestHealthNavAssets(t *testing.T) {
 		count[path]++
 		count[a]++
 	}
-	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-2"} {
+	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-3"} {
 		path, _, _ := strings.Cut(a, "?")
 		if count[a] != 1 || count[path] != 1 {
 			t.Errorf("SHELL must hold %s exactly once and under no other version", a)
@@ -544,5 +544,23 @@ func TestHealthSwitcherIsSticky(t *testing.T) {
 	}
 	if !strings.Contains(d["box-shadow"], "var(--vn-canvas)") {
 		t.Errorf("box-shadow = %q, want a ring in the page canvas token so nothing shows through", d["box-shadow"])
+	}
+}
+
+// GYST-174 (Codex P2): in-page links (#log, #add-food) must not land under the sticky track, and
+// the clearance goes away with the stickiness (same --vn-ts offset).
+func TestHealthSwitcherClearsInPageLinks(t *testing.T) {
+	found := false
+	for _, r := range parseCSS(readStatic(t, "css/ui-nav.css")) {
+		if r.Selector == ":root:has(nav.gyst-switcher)" {
+			found = true
+			v := r.Decls["scroll-padding-top"]
+			if !strings.Contains(v, "var(--gyst-safe-top)") || !strings.Contains(v, "var(--vn-ts)") || !strings.Contains(v, "66px") {
+				t.Errorf("scroll-padding-top = %q, want inset + 66 px, scaled away by --vn-ts", v)
+			}
+		}
+	}
+	if !found {
+		t.Error("ui-nav.css: no scroll-padding-top rule for pages with the switcher")
 	}
 }
