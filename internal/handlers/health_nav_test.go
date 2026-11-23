@@ -306,7 +306,7 @@ func TestHealthSummaryRowsAndBackLinks(t *testing.T) {
 	if !strings.Contains(body, "<h1>Health</h1>") {
 		t.Error("Summary's title must be Health")
 	}
-	if plan := row(body, "/health/plan"); !strings.Contains(plan, ">Plan<") || !strings.Contains(plan, "No plan yet") {
+	if plan := row(body, "/health/plan"); !strings.Contains(plan, ">Plan<") || !strings.Contains(plan, "No active plan today") {
 		t.Errorf("Summary without a cycle: Plan row = %q", plan)
 	}
 	if more := row(body, "/health/more"); !strings.Contains(more, ">More<") {
@@ -326,7 +326,7 @@ func TestHealthSummaryRowsAndBackLinks(t *testing.T) {
 	if err := h.Service.CreateHealthCycle(&cycle); err != nil {
 		t.Fatal(err)
 	}
-	if plan := row(cfgGet(t, h, "/health"), "/health/plan"); !strings.Contains(plan, "Autumn cut") || !strings.Contains(plan, "2,250 kcal a day") || strings.Contains(plan, "No plan yet") {
+	if plan := row(cfgGet(t, h, "/health"), "/health/plan"); !strings.Contains(plan, "Autumn cut") || !strings.Contains(plan, "2,250 kcal a day") || strings.Contains(plan, "No active plan today") {
 		t.Errorf("Summary with a cycle: Plan row = %q", plan)
 	}
 	// No provider: no Coach row, and the other two stay.

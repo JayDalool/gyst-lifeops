@@ -175,7 +175,7 @@
        round 7's (DD-15): target for Plan and the speech bubble, sec, for the Coach row. */}}
   <nav class="hv3-section hv3-span" aria-label="More in Health">
     <ul class="hv3-group">
-      <li><a class="hv3-row" href="/health/plan"><span class="hv3-tile sm">{{template "vn.icon" "target"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Plan</span><span class="hv3-s">{{if .Today.CycleTitle}}{{.Today.CycleTitle}}{{if .Today.CalorieTarget.Present}} · {{.Today.CalorieTarget.Value}} kcal a day{{end}}{{else}}No plan yet{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
+      <li><a class="hv3-row" href="/health/plan"><span class="hv3-tile sm">{{template "vn.icon" "target"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Plan</span><span class="hv3-s">{{if .Today.CycleTitle}}{{.Today.CycleTitle}}{{if .Today.CalorieTarget.Present}} · {{.Today.CalorieTarget.Value}} kcal a day{{end}}{{else}}No active plan today{{end}}</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
       <li><a class="hv3-row" href="/health/more"><span class="hv3-tile sm">{{template "vn.icon" "more"}}</span><span class="hv3-row-copy"><span class="hv3-strong">More</span><span class="hv3-s">Checklist, foods, data sources, goals</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>
       {{if coachEnabled}}<li><a class="hv3-row" href="/health/coach"><span class="hv3-tile sm">{{template "vn.icon" "sec"}}</span><span class="hv3-row-copy"><span class="hv3-strong">Coach</span><span class="hv3-s">Ask about food, training or progress</span></span>{{template "gyst.icon" "chevron-right"}}</a></li>{{end}}
     </ul>
