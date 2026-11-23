@@ -121,6 +121,16 @@
 .hv3-seg > a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; border-radius: 10px; color: var(--vn-ink-2); font-size: var(--vn-t-sub); font-weight: 600; text-decoration: none; position: relative; }
 .hv3-seg > a::after { content: ""; position: absolute; inset: -2px 0; }
 .hv3-seg > a[aria-current="page"] { background: var(--vn-surface); color: var(--vn-ink); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vn-ink) 6%, transparent), var(--vn-e1); }
+/* GYST-174 (code review; 11, Secondary navigation): Training's two views sit one level under the
+   Health switcher, and two segmented controls are never stacked, so they are filter pills. These
+   three rules restate the Projects filters' pills (.projects-roadmaps in ui-projects.css, which
+   Health pages do not load), declaration for declaration; a test holds the two together until the
+   Projects chunk gives them one home. The open view is a selection, so it takes the accent. */
+.hv3-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.hv3 .hv3-pills > a { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--gyst-border); border-radius: var(--gyst-radius-pill); color: var(--gyst-text-secondary); background: var(--gyst-surface); font-size: .875rem; text-decoration: none; overflow-wrap: anywhere; }
+.hv3 .hv3-pills > a[aria-current="page"] { color: var(--gyst-blue); background: var(--gyst-blue-soft); border-color: var(--gyst-blue); }
+/* `.hv3 :focus-visible` squares a focused element's corners to 8 px; a pill keeps its shape. */
+.hv3 .hv3-pills > a:focus-visible { border-radius: var(--gyst-radius-pill); }
 .hv3-wk { display: grid; gap: var(--hv3-gap); min-width: 0; }
 @media (min-width: 1024px) { .hv3-wk { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .hv3-wk .hv3-span { grid-column: 1 / -1; } }
 .hv3-week { display: grid; gap: var(--vn-s3); }
@@ -296,11 +306,15 @@ button.hv3-check::after { content: ""; position: absolute; inset: -8px; }
 /* GYST-174: Plan is now a page pushed from Summary and keeps the older header until R8. Its link
    back to Health was grey text, 20 px high; it reads and taps like More's and Coach's back link. */
 .health-plan-ui .kicker > a { display: inline-flex; align-items: center; min-height: 44px; color: var(--vn-accent-text); }
-/* GYST-174 (design review F3): Progress keeps the older header until R8, but its switcher must sit
-   where the other three sections' does, or it jumps under the thumb when the section changes. So
-   this header takes .hv3-ph's measures: 8 px above, a 1.15 title line, 24 px down to the switcher. */
-.health-ui > .health-section-head { padding-top: var(--vn-s2); margin-bottom: var(--vn-s1); }
-.health-ui > .health-section-head .gyst-page-title { line-height: 1.15; }
+/* GYST-174 (design review F3, code review): Progress keeps the older page until R8, but its switcher
+   must sit where the other three sections' does, or it jumps under the thumb when the section
+   changes. Down the page: its header takes .hv3-ph's measures, 8 px above, a 1.15 title line and
+   24 px to the switcher. Across the page: below 1024 px it takes .hv3's centred 760 px column
+   (from 1024 px the shell already gives both the same width). The whole page takes the column,
+   not only the header and switcher, so they stay in line with the cards under them. */
+.health-ui.health-section > .gyst-header { padding-top: var(--vn-s2); margin-bottom: var(--vn-s1); }
+.health-ui.health-section > .gyst-header .gyst-page-title { line-height: 1.15; }
+@media (max-width: 1023px) { .health-ui.health-section { max-width: 760px; margin-inline: auto; } }
 /* `.hv3 a` outranks `.hv3-row`; row links read as rows, not blue text. */
 .hv3 a.hv3-row { color: var(--vn-ink); }
 

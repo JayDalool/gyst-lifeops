@@ -210,6 +210,8 @@ const TARGETS = [
   ['.gyst-primary > a', null, true, false], ['.gyst-primary > a', '(max-width: 1023px)', true, false],
   // GYST-174: the Health-only tab bar is gone; the section switcher's tabs (ui-nav.css) are checked instead.
   ['.gyst-health-sub > a', '(min-width: 1024px)', true, false], ['nav.gyst-switcher > a', null, true, false],
+  // GYST-174: Training's two views are filter pills under the switcher (ui-health-v3.css), 44 px each way.
+  ['.hv3 .hv3-pills > a', null, true, true],
   ['.gyst-projects-sub > a', '(min-width: 1024px)', true, false],
   ['.gyst-brand', null, true, false], ['.gyst-skip', null, true, false],
   ['.gyst-button', null, true, false], ['.gyst-button--icon', null, false, true],

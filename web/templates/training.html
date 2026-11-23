@@ -21,10 +21,11 @@
   {{if not .Connected}}<details class="hv3-disclose"><summary>{{template "gyst.icon" "info"}}Connect Hevy</summary><p>Get your API key from <a href="https://hevy.com/settings?developer" target="_blank" rel="noopener noreferrer">Hevy developer settings</a> (Hevy Pro required). Add it to the server’s private <code>HEVY_API_KEY</code> setting and restart GYST. Keep the key private.</p><p>Once connected, GYST imports automatically every 37 minutes. Keep logging workouts in Hevy.</p></details>{{end}}
 </section>
 {{else}}
-{{/* GYST-174 (design review F2, lead decision 2026-11-22): this strip now sits right under the section switcher,
-     which has a Progress tab of its own. The second view is called Trends so no two tabs share a name. Its
-     address stays ?view=progress. */}}
-<nav class="hv3-seg" aria-label="Workout view">
+{{/* GYST-174 (design review F2, lead decision 2026-11-22; code review): these two views sit right under the section
+     switcher, which has a Progress tab of its own. The second view is called Trends so no two tabs share a name,
+     and the pair is drawn as filter pills: 11 (Secondary navigation) says never to stack two segmented controls.
+     The addresses stay as they were (?view=progress). */}}
+<nav class="hv3-pills" aria-label="Workout view">
   <a href="/health/training"{{if eq .View "overview"}} aria-current="page"{{end}}>Overview</a>
   <a href="/health/training?view=progress&amp;period={{.Period}}"{{if eq .View "progress"}} aria-current="page"{{end}}>Trends</a>
 </nav>

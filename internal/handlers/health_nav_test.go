@@ -149,13 +149,33 @@ func TestHealthProgressSwitcherSitsUnderTheTitle(t *testing.T) {
 	if sw < 0 || button < sw || caption < sw {
 		t.Errorf("Progress: the caption and the Manage health plan button must follow the switcher (switcher %d, caption %d, button %d)", sw, caption, button)
 	}
+	// Code review at 1040532: sideways too. Below 1024 px the other three sections centre a 760 px
+	// column; Progress filled the content area, so from about 793 px wide its switcher sat up to
+	// 54 px further left. Progress takes the same measure, read from .hv3 so the two cannot drift.
+	if !strings.Contains(main, `<div class="gyst-scope health-ui health-section">`) {
+		t.Error("Progress: the page must carry the section measure (health-section)")
+	}
+	measure, section := "", cssRule{}
+	for _, r := range parseCSS(readStatic(t, "css/ui-health-v3.css")) {
+		if r.Media == "" && r.Selector == ".hv3" {
+			measure = r.Decls["max-width"]
+		}
+		if r.Media == "@media (max-width: 1023px)" && r.has(".health-ui.health-section") {
+			section = r
+		}
+	}
+	if measure == "" || section.Decls["max-width"] != measure || section.Decls["margin-inline"] != "auto" {
+		t.Errorf("ui-health-v3.css: below 1024 px .health-ui.health-section must be centred at .hv3's width (%q), got %v", measure, section.Decls)
+	}
 }
 
-// Design review F2, lead decision 2026-11-22: with Hevy sessions Training draws its own view strip
-// (Overview and a second view) right under the switcher. That second view was also called
-// Progress, so two tabs with one name opened different things. It is Trends now; its address
-// (?view=progress) and what it shows are unchanged.
-func TestTrainingViewStripDoesNotRepeatASectionName(t *testing.T) {
+// Design review F2 and code review at 1040532. With Hevy sessions Training has two views of its
+// own, right under the section switcher. They were a second segmented control, and the second
+// view was also called Progress. The design system (11, Secondary navigation) says never to stack
+// two segmented controls and to use filter pills for the level below, so they are drawn as the
+// Projects filters are, and the second view is Trends (lead decision 2026-11-22). The addresses
+// (?view=progress), the open state and what the views show are unchanged.
+func TestTrainingViewsAreFilterPills(t *testing.T) {
 	h := testHandler(t)
 	day := time.Date(2026, 10, 7, 15, 0, 0, 0, h.Service.Location())
 	h.Service.Clock.Now = func() time.Time { return day }
@@ -164,15 +184,18 @@ func TestTrainingViewStripDoesNotRepeatASectionName(t *testing.T) {
 	}
 	for path, open := range map[string]string{"/health/training": "Overview", "/health/training?view=progress&period=12": "Trends"} {
 		body := cfgGet(t, h, path)
-		strip := markupBetween(body, `<nav class="hv3-seg" aria-label="Workout view">`, "</nav>")
+		strip := markupBetween(body, `<nav class="hv3-pills" aria-label="Workout view">`, "</nav>")
 		for _, want := range []string{`<a href="/health/training"`, `>Overview</a>`, `<a href="/health/training?view=progress&amp;period=12"`, `>Trends</a>`, `aria-current="page">` + open + `</a>`} {
 			if !strings.Contains(strip, want) {
-				t.Errorf("%s: Training's view strip lacks %s: %s", path, want, strip)
+				t.Errorf("%s: Training's view pills lack %s: %s", path, want, strip)
 			}
+		}
+		if strings.Count(strip, "<a ") != 2 || strings.Count(strip, "aria-current") != 1 || strings.Contains(body, `<nav class="hv3-seg" aria-label="Workout view">`) {
+			t.Errorf("%s: Training's views must be two filter pills with one open, not a segmented control: %s", path, strip)
 		}
 		for _, s := range healthSections {
 			if strings.Contains(strip, ">"+s.label+"<") {
-				t.Errorf("%s: Training's view strip repeats the section name %s", path, s.label)
+				t.Errorf("%s: Training's view pills repeat the section name %s", path, s.label)
 			}
 		}
 		// On the whole page one link is called Progress: the switcher's tab.
@@ -183,6 +206,50 @@ func TestTrainingViewStripDoesNotRepeatASectionName(t *testing.T) {
 	}
 	if trends := cfgGet(t, h, "/health/training?view=progress&period=12"); !strings.Contains(trends, `aria-label="Trends period"`) || strings.Contains(trends, `aria-label="Progress period"`) {
 		t.Error("the period strip must be named for the Trends view")
+	}
+
+	// The pills are the Projects filters' component. Health does not load ui-projects.css, so the
+	// rules are restated in ui-health-v3.css; they must say exactly what Projects' say, 44 px
+	// targets included. The open pill is a selection: every colour it sets is an accent name
+	// (lead rule from R1), never an info or state token.
+	rule := func(file, selector string) map[string]string {
+		for _, r := range parseCSS(readStatic(t, "css/"+file)) {
+			if r.Media == "" && r.Selector == selector {
+				return r.Decls
+			}
+		}
+		t.Errorf("%s has no rule %s", file, selector)
+		return nil
+	}
+	same := func(a, b map[string]string) bool {
+		if len(a) != len(b) || len(a) == 0 {
+			return false
+		}
+		for k, v := range a {
+			if b[k] != v {
+				return false
+			}
+		}
+		return true
+	}
+	for mine, theirs := range map[string]string{
+		".hv3-pills":          ".projects-ui .projects-roadmaps",
+		".hv3 .hv3-pills > a": ".projects-roadmaps a",
+		`.hv3 .hv3-pills > a[aria-current="page"]`: `.projects-roadmaps a[aria-current="page"]`,
+	} {
+		if a, b := rule("ui-health-v3.css", mine), rule("ui-projects.css", theirs); !same(a, b) {
+			t.Errorf("%s must restate the Projects filter pills (%s): %v, want %v", mine, theirs, a, b)
+		}
+	}
+	pill, open := rule("ui-health-v3.css", ".hv3 .hv3-pills > a"), rule("ui-health-v3.css", `.hv3 .hv3-pills > a[aria-current="page"]`)
+	if pill["min-height"] != "44px" || pill["min-width"] != "44px" {
+		t.Errorf("a view pill must be a 44 px target, got min-height %q, min-width %q", pill["min-height"], pill["min-width"])
+	}
+	ref := regexp.MustCompile(`var\((--[a-z0-9-]+)`)
+	for _, prop := range []string{"color", "background", "border-color"} {
+		if m := ref.FindStringSubmatch(open[prop]); m == nil || !accentNames[m[1]] {
+			t.Errorf("the open view pill's %s is %q; a selection takes the accent", prop, open[prop])
+		}
 	}
 }
 
