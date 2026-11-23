@@ -99,6 +99,39 @@ function themeChecks() {
   }
   }
 }
+// GYST-178 (Codex P2 on PR 270): the phone tab bar hides only while the on-screen keyboard is up. The decision is one
+// pure function in nav.js: layout height, visual viewport height and the focused control's kind in, open/closed out.
+function keyboardChecks() {
+  const ctx = {}; ctx.globalThis = ctx;
+  vm.runInNewContext(fs.readFileSync('web/static/js/nav.js', 'utf8'), ctx);
+  const {kbState, focusKind} = ctx.GYSTNav;
+  assert.equal(kbState(844, 844, 'text'), 'closed', 'no height change');
+  assert.equal(kbState(844, 508, 'text'), 'open', 'keyboard up, text field focused');
+  assert.equal(kbState(844, 844 - 120, 'text'), 'closed', '120 px is not more than 120');
+  assert.equal(kbState(844, 844 - 121, 'text'), 'open');
+  assert.equal(kbState(844, 800, 'text'), 'closed', 'an address bar change is small');
+  assert.equal(kbState(844, 508, 'other'), 'closed', 'a non-text focus never hides the bar');
+  assert.equal(kbState(844, 844, 'text'), 'closed', 'hardware keyboard: focus but no height change');
+  assert.equal(kbState(844, undefined, 'text'), 'closed', 'no visualViewport');
+  assert.equal(kbState(844, 0, 'text'), 'closed');
+  for (const type of ['text', 'search', 'email', 'url', 'tel', 'password', 'number', '']) assert.equal(focusKind({tagName: 'INPUT', type}), 'text', type);
+  for (const type of ['checkbox', 'radio', 'range', 'file', 'color', 'button', 'submit', 'date']) assert.equal(focusKind({tagName: 'INPUT', type}), 'other', type);
+  assert.equal(focusKind({tagName: 'TEXTAREA'}), 'text'); assert.equal(focusKind({tagName: 'SELECT'}), 'other');
+  assert.equal(focusKind({tagName: 'DIV', isContentEditable: true}), 'text'); assert.equal(focusKind({tagName: 'DIV'}), 'other'); assert.equal(focusKind(null), 'other');
+  // Wiring: without visualViewport the state is never set; with it, resize and focus drive the attribute.
+  const make = vv => {
+    const attrs = {}, docL = {}, vvL = {}, timers = [];
+    const doc = {activeElement: null, documentElement: {setAttribute: (k, v) => attrs[k] = v, removeAttribute: k => delete attrs[k]}, addEventListener: (n, f) => docL[n] = f, querySelector: () => null};
+    const win = {document: doc, innerHeight: 844, setTimeout: f => timers.push(f), visualViewport: vv && {height: vv.height, addEventListener: (n, f) => vvL[n] = f}};
+    win.globalThis = win; vm.runInNewContext(fs.readFileSync('web/static/js/nav.js', 'utf8'), win);
+    return {attrs, doc, win, docL, vvL, timers};
+  };
+  const none = make(null); none.doc.activeElement = {tagName: 'INPUT', type: 'text'}; assert.equal(none.attrs['data-gyst-kb'], undefined, 'no visualViewport: never hide');
+  const k = make({height: 844}); assert.equal(k.attrs['data-gyst-kb'], undefined);
+  k.doc.activeElement = {tagName: 'INPUT', type: 'text'}; k.win.visualViewport.height = 500; k.vvL.resize(); assert.equal(k.attrs['data-gyst-kb'], 'open');
+  k.win.visualViewport.height = 844; k.vvL.resize(); assert.equal(k.attrs['data-gyst-kb'], undefined, 'keyboard closed with the field still focused: the bar returns');
+  k.win.visualViewport.height = 500; k.doc.activeElement = {tagName: 'INPUT', type: 'checkbox'}; k.docL.focusin(); assert.equal(k.attrs['data-gyst-kb'], undefined, 'focus moved to a checkbox');
+}
 function motionChecks() {
   const code=fs.readFileSync('web/static/js/theme.js','utf8');
   for(const [value,denied,expected] of [['reduced',false,'reduced'],['',false,undefined],[null,false,undefined],['reduced',true,undefined]]) {
@@ -354,9 +387,9 @@ function healthNavChecks() {
   assert(!read('web/templates/ui_shell.html').includes('hv3-tabbar'), 'ui_shell.html still renders the Health-only tab bar');
   // ui-nav.css is never sent for Galaxy, and has one version.
   const layout = read('web/templates/layout.html');
-  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-4">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
+  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-5">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
   assert.equal(layout.split('ui-nav.css').length - 1, 1, 'layout.html names ui-nav.css once');
-  assert(worker.includes('"/static/css/ui-nav.css?v=nav-4"'), 'the service worker list lacks ui-nav.css');
+  assert(worker.includes('"/static/css/ui-nav.css?v=nav-5"'), 'the service worker list lacks ui-nav.css');
 }
 function overlayChecks() {
   const src = fs.readFileSync('web/static/js/ui-overlay.js', 'utf8');
@@ -686,4 +719,4 @@ function dayReloadChecks() {
     assert.equal(p.resume('2026-11-02T07:00:00Z'), 1, 'fallback did not reload on the browser\'s next day');
   }
 }
-(async()=>{await workerChecks();tapTargetChecks();themeChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();dayReloadChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers, launcher and day reload passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{await workerChecks();tapTargetChecks();themeChecks();keyboardChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();dayReloadChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers, launcher and day reload passed');})().catch(error=>{console.error(error);process.exitCode=1;});

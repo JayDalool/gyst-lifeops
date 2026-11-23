@@ -473,7 +473,7 @@ func TestHealthNavStyles(t *testing.T) {
 
 	// Never on Galaxy: its page must not gain a stylesheet.
 	layout := readTemplate(t, "layout.html")
-	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-4">{{end}}`
+	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-5">{{end}}`
 	if !strings.Contains(layout, link) || strings.Count(layout, "ui-nav.css") != 1 {
 		t.Errorf("layout.html must link ui-nav.css once, as %s", link)
 	}
@@ -481,7 +481,7 @@ func TestHealthNavStyles(t *testing.T) {
 		t.Error("/galaxy links ui-nav.css")
 	}
 	for _, path := range []string{"/health", "/today"} {
-		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-4">`) {
+		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-5">`) {
 			t.Errorf("%s does not link ui-nav.css", path)
 		}
 	}
@@ -502,7 +502,7 @@ func TestHealthNavAssets(t *testing.T) {
 		count[path]++
 		count[a]++
 	}
-	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-4"} {
+	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-5"} {
 		path, _, _ := strings.Cut(a, "?")
 		if count[a] != 1 || count[path] != 1 {
 			t.Errorf("SHELL must hold %s exactly once and under no other version", a)

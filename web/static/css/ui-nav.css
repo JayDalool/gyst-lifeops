@@ -85,8 +85,8 @@ nav.gyst-switcher > a[aria-current="page"] .vn-icon { color: var(--vn-s-health-t
   .gyst-plus { pointer-events: auto; flex: none; width: 56px; height: 56px; box-sizing: border-box; display: grid; place-items: center; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--vn-accent); color: var(--vn-on-accent); box-shadow: var(--vn-e-float); cursor: pointer; transition: transform var(--vn-fast) var(--vn-ease), background-color var(--vn-fast) var(--vn-ease); -webkit-tap-highlight-color: transparent; }
   .gyst-plus .vn-icon { width: 24px; height: 24px; }
   .gyst-plus:active { transform: scale(.94); }
-  /* With the on-screen keyboard open the bar would cover the field (and a fixed bar rides up with the keyboard on iOS), so it hides while a text field in main has focus. Checkboxes, radios, selects and buttons keep it. */
-  body:has(.gyst-main :is(textarea, input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [type="hidden"])):focus) .gyst-tabs { display: none; }
+  /* With the on-screen keyboard up the bar would cover the field (a fixed bar rides up with the keyboard on iOS), so it hides. nav.js sets data-gyst-kb="open" only when the visual viewport is much shorter than the layout viewport and a text field has focus; without visualViewport it never does, so the bar stays in the focus order. Focus alone must not hide it: a hardware keyboard needs it, and it returns when the keyboard closes. */
+  :root[data-gyst-kb="open"] .gyst-tabs { display: none; }
   /* Room for the bar under the last content, the toast and the Coach composer; 8 px under the top row, which is now 44 px high. */
   :root .wrap.gyst-main { padding-top: 8px; padding-bottom: calc(var(--vn-bar-clear) + 24px); }
   :root .lifeops-toast { bottom: calc(var(--vn-bar-clear) + 12px); }
