@@ -45,12 +45,14 @@ async function workerChecks() {
 // Appearance (#42, DD-1): stored system/light/dark, missing or unreadable → system, System follows the OS live.
 function themeChecks() {
   const code=fs.readFileSync('web/static/js/theme.js','utf8');
+  // GYST-178: a layout page names its two browser bar colours in the meta's data-light/data-dark; Galaxy names none and keeps the literals.
+  let named=false;
   function run(initial,denied,osDark,legacyMedia) {
     const state={stored:initial,events:{},changes:0,mediaChange:null};
     const choices=['system','light','dark'].map(value=>({dataset:{themeChoice:value},attrs:{},listeners:{},setAttribute(k,v){this.attrs[k]=v;},addEventListener(n,fn){this.listeners[n]=fn;}}));
     const media={matches:osDark};
     if(legacyMedia)media.addListener=fn=>state.mediaChange=fn;else media.addEventListener=(name,fn)=>{assert.equal(name,'change');state.mediaChange=fn;};
-    state.root={dataset:{}};state.meta={content:''};state.choices=choices;state.media=media;
+    state.root={dataset:{}};state.named=named;state.meta={content:'',getAttribute:k=>named?({'data-light':'#F1EFF9','data-dark':'#09080F'})[k]:null};state.choices=choices;state.media=media;
     vm.runInNewContext(code,{
       document:{documentElement:state.root,querySelector:()=>state.meta,querySelectorAll:sel=>sel==='[data-theme-choice]'?choices:[],dispatchEvent:event=>{assert.equal(event.type,'gyst:themechange');state.changes++;},addEventListener:(name,fn)=>state.events[name]=fn},
       localStorage:{getItem:key=>{if(denied)throw Error('denied');return key==='lifeops-theme'?state.stored:null;},setItem:(key,value)=>{if(denied)throw Error('denied');state.stored=value;}},
@@ -61,11 +63,13 @@ function themeChecks() {
   function expectTheme(state,theme,mode) {
     assert.equal(state.root.dataset.gystTheme,theme);
     assert.equal(state.root.dataset.theme,theme==='light'?'light':undefined,'legacy dark relies on absent data-theme');
-    assert.equal(state.meta.content,theme==='dark'?'#0f172a':'#f8fafc');
+    assert.equal(state.meta.content,state.named?(theme==='dark'?'#09080F':'#F1EFF9'):(theme==='dark'?'#0f172a':'#f8fafc'));
     if(mode)for(const c of state.choices)assert.equal(c.attrs['aria-pressed'],String(c.dataset.themeChoice===mode));
   }
   const choice=(state,value)=>state.choices.find(c=>c.dataset.themeChoice===value).listeners.click();
   const flipOS=state=>{state.media.matches=!state.media.matches;state.mediaChange();};
+  for(const namedColours of [false,true]) {
+  named=namedColours;
   for(const initial of [null,'light','dark','system','invalid']) {
     for(const denied of [false,true]) {
       for(const osDark of [false,true]) {
@@ -93,13 +97,14 @@ function themeChecks() {
       }
     }
   }
+  }
 }
 function motionChecks() {
   const code=fs.readFileSync('web/static/js/theme.js','utf8');
   for(const [value,denied,expected] of [['reduced',false,'reduced'],['',false,undefined],[null,false,undefined],['reduced',true,undefined]]) {
     const root={dataset:{}};
     vm.runInNewContext(code,{
-      document:{documentElement:root,querySelector:()=>({}),querySelectorAll:()=>[],dispatchEvent:()=>{},addEventListener:()=>{}},
+      document:{documentElement:root,querySelector:()=>({getAttribute:()=>null}),querySelectorAll:()=>[],dispatchEvent:()=>{},addEventListener:()=>{}},
       localStorage:{getItem:key=>{if(denied)throw Error('denied');return key==='lifeops-motion'?value:null;},setItem:()=>{}},
       window:{addEventListener:()=>{}},Event:class{}
     });
@@ -213,6 +218,8 @@ const TARGETS = [
   // GYST-174: Training's two views are filter pills under the switcher (ui-health-v3.css), 44 px each way.
   ['.hv3 .hv3-pills > a', null, true, true],
   ['.gyst-projects-sub > a', '(min-width: 1024px)', true, false],
+  // GYST-178: the phone tab bar's tabs and the + (ui-nav.css), 44 px or more each way.
+  ['nav.gyst-tabbar > a', '(max-width: 1023px)', true, true], ['.gyst-plus', '(max-width: 1023px)', true, true],
   ['.gyst-brand', null, true, false], ['.gyst-skip', null, true, false],
   ['.gyst-button', null, true, false], ['.gyst-button--icon', null, false, true],
   ['.gyst-row', null, true, false], ['.gyst-segment', null, true, false], ['.gyst-input', null, true, false], ['.gyst-choice', null, true, false],
@@ -271,6 +278,8 @@ function controlSelector(c) {
   if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('gyst-primary')) return '.gyst-primary > a';
   if (c.tag === 'a' && parent.classes.includes('gyst-health-sub')) return '.gyst-health-sub > a';
   if (c.tag === 'a' && parent.classes.includes('gyst-projects-sub')) return '.gyst-projects-sub > a';
+  if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('gyst-tabbar')) return 'nav.gyst-tabbar > a';
+  if (c.tag === 'button' && has('gyst-plus')) return '.gyst-plus';
   if (c.tag === 'a' && parent.tag === 'nav' && parent.classes.includes('gyst-switcher')) return 'nav.gyst-switcher > a';
   if (within('dialog', 'gyst-command')) {
     if (c.tag === 'a' && within('div', 'command-results')) return ':root .gyst-command .command-results a';
@@ -345,9 +354,9 @@ function healthNavChecks() {
   assert(!read('web/templates/ui_shell.html').includes('hv3-tabbar'), 'ui_shell.html still renders the Health-only tab bar');
   // ui-nav.css is never sent for Galaxy, and has one version.
   const layout = read('web/templates/layout.html');
-  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-3">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
+  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-4">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
   assert.equal(layout.split('ui-nav.css').length - 1, 1, 'layout.html names ui-nav.css once');
-  assert(worker.includes('"/static/css/ui-nav.css?v=nav-3"'), 'the service worker list lacks ui-nav.css');
+  assert(worker.includes('"/static/css/ui-nav.css?v=nav-4"'), 'the service worker list lacks ui-nav.css');
 }
 function overlayChecks() {
   const src = fs.readFileSync('web/static/js/ui-overlay.js', 'utf8');

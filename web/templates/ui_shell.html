@@ -30,5 +30,13 @@
   <a href="/learn" {{if eq $section "learn"}}aria-current="page"{{end}}>{{template "gyst.icon" "book-open"}}<span>Learn</span></a>
   <a href="/more" {{if eq $section "more"}}aria-current="page"{{end}}>{{template "gyst.icon" "ellipsis"}}<span>More</span></a>
 </nav>
-{{/* GYST-174: the Health-only tab bar stood here; the main tab bar now stays on every Health screen. This line keeps the shell's bytes the same for every other page, /galaxy included. */}}
+{{if ne .Page "galaxy"}}{{/* GYST-178, 13B DD-18: the phone tab bar. Below 1024 it replaces .gyst-primary, which stays in the page as the sidebar from 1024 and as Galaxy's bar. Skipped on /galaxy so that page is sent the bytes it had. It stands after the old nav and before <main>, so the keyboard meets the top row, the four tabs and the + before the content. */}}{{$tab := phoneTab .Page}}<div class="gyst-scope gyst-tabs">
+  <nav aria-label="Primary" class="gyst-tabbar">
+    <a href="/today" data-sec="plan"{{if eq $tab "today"}} aria-current="page"{{end}}>{{template "vn.icon" "home"}}<span>Today</span></a>
+    <a href="/tasks" data-sec="plan"{{if eq $tab "tasks"}} aria-current="page"{{end}}>{{template "vn.icon" "tasks"}}<span>Tasks</span></a>
+    <a href="/health" data-sec="health"{{if eq $tab "health"}} aria-current="page"{{end}}>{{template "vn.icon" "heart"}}<span>Health</span></a>
+    <a href="/more"{{if eq $tab "all"}} aria-current="page"{{end}}>{{template "vn.icon" "all"}}<span>All</span></a>
+  </nav>
+  <button type="button" class="gyst-plus" data-command-open data-nav-add aria-label="Add a task">{{template "vn.icon" "plus"}}</button>
+</div>{{end}}
 {{end}}

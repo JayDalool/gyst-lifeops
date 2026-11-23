@@ -118,7 +118,7 @@ func TestHealthKeepsMainTabBarAndHasOneSwitcher(t *testing.T) {
 			if s.path == path {
 				want += ` aria-current="page"`
 			}
-			want += `><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-2#i-` + s.icon + `"/></svg><span>` + s.label + `</span></a>`
+			want += `><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-3#i-` + s.icon + `"/></svg><span>` + s.label + `</span></a>`
 			if !strings.Contains(sw, want) {
 				t.Errorf("%s: switcher lacks %s", name, want)
 			}
@@ -318,7 +318,7 @@ func TestHealthSummaryRowsAndBackLinks(t *testing.T) {
 	}
 	// 13B DD-15 (design review F6): a row's tile icon comes from round 7's sprite, as round 7 draws it.
 	for href, icon := range map[string]string{"/health/plan": "target", "/health/more": "more", "/health/coach": "sec"} {
-		want := `<span class="hv3-tile sm"><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-2#i-` + icon + `"/></svg></span>`
+		want := `<span class="hv3-tile sm"><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-3#i-` + icon + `"/></svg></span>`
 		if !strings.Contains(row(body, href), want) {
 			t.Errorf("Summary: the %s row's tile must draw the sprite's %s", href, icon)
 		}
@@ -431,7 +431,7 @@ func TestHealthNavStyles(t *testing.T) {
 	state := regexp.MustCompile(`^--(vn-(info|ok|warn|crit|idle)|gyst-(green|orange|red|positive|warning|danger))`)
 	ref := regexp.MustCompile(`var\((--[a-z0-9-]+)`)
 	// Today the file holds only the switcher, so the whole file is held to the rule.
-	base, rules := "", 0
+	base, rules, tabbarRules := "", 0, 0
 	for _, r := range parseCSS(readStatic(t, "css/ui-nav.css")) {
 		if strings.Contains(r.Selector, "gyst-switcher") {
 			rules++
@@ -447,9 +447,15 @@ func TestHealthNavStyles(t *testing.T) {
 				t.Errorf("ui-nav.css: %s %s sets min-height %s on a switcher tab", r.Media, r.Selector, v)
 			}
 		}
+		// GYST-178: the + and the mark's dot are the only accent-filled things in the file; the switcher and
+		// the phone tab bar are selections and read no accent or state token. Nothing reads a state token.
+		accentOK := r.Selector == ".gyst-plus" || strings.HasPrefix(r.Selector, ".gyst-plus:") || r.Selector == ".gyst-brand::before"
+		if strings.Contains(r.Selector, "gyst-tabbar") {
+			tabbarRules++
+		}
 		for prop, value := range r.Decls {
 			for _, m := range ref.FindAllStringSubmatch(value, -1) {
-				if accentNames[m[1]] || state.MatchString(m[1]) {
+				if state.MatchString(m[1]) || (accentNames[m[1]] && !accentOK) {
 					t.Errorf("ui-nav.css: %s { %s: %s } reads %s; the current tab is a selection on the neutral surface", r.Selector, prop, value, m[1])
 				}
 			}
@@ -461,10 +467,13 @@ func TestHealthNavStyles(t *testing.T) {
 	if rules == 0 {
 		t.Fatal("ui-nav.css has no switcher rules")
 	}
+	if tabbarRules == 0 {
+		t.Fatal("ui-nav.css has no phone tab bar rules")
+	}
 
 	// Never on Galaxy: its page must not gain a stylesheet.
 	layout := readTemplate(t, "layout.html")
-	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-3">{{end}}`
+	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-4">{{end}}`
 	if !strings.Contains(layout, link) || strings.Count(layout, "ui-nav.css") != 1 {
 		t.Errorf("layout.html must link ui-nav.css once, as %s", link)
 	}
@@ -472,7 +481,7 @@ func TestHealthNavStyles(t *testing.T) {
 		t.Error("/galaxy links ui-nav.css")
 	}
 	for _, path := range []string{"/health", "/today"} {
-		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-3">`) {
+		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-4">`) {
 			t.Errorf("%s does not link ui-nav.css", path)
 		}
 	}
@@ -482,8 +491,8 @@ func TestHealthNavStyles(t *testing.T) {
 // exact URL the helper emits; the new stylesheet is listed; the worker changes nowhere else.
 func TestHealthNavAssets(t *testing.T) {
 	m := regexp.MustCompile(`<use href="(/static/icons\.svg\?v=[\w.-]+)#i-\{\{\.\}\}"/>`).FindStringSubmatch(readTemplate(t, "ui_icons.html"))
-	if m == nil || m[1] != "/static/icons.svg?v=r7-2" {
-		t.Fatalf("vn.icon emits %v, want /static/icons.svg?v=r7-2", m)
+	if m == nil || m[1] != "/static/icons.svg?v=r7-3" {
+		t.Fatalf("vn.icon emits %v, want /static/icons.svg?v=r7-3", m)
 	}
 	layout := readTemplate(t, "layout.html")
 	cache, assets := shellAssets(t)
@@ -493,7 +502,7 @@ func TestHealthNavAssets(t *testing.T) {
 		count[path]++
 		count[a]++
 	}
-	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-3"} {
+	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-4"} {
 		path, _, _ := strings.Cut(a, "?")
 		if count[a] != 1 || count[path] != 1 {
 			t.Errorf("SHELL must hold %s exactly once and under no other version", a)

@@ -17,7 +17,8 @@
     else delete root.dataset.theme;
     root.dataset.gystTheme = theme;
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = theme === "dark" ? "#0f172a" : "#f8fafc";
+    // GYST-178: the page names its two browser bar colours in data-light/data-dark (layout.html); Galaxy names none and keeps these literals (13B Galaxy).
+    if (meta) meta.content = theme === "dark" ? (meta.getAttribute("data-dark") || "#0f172a") : (meta.getAttribute("data-light") || "#f8fafc");
     if (persist) { try { localStorage.setItem(key, mode); } catch (_) {} }
     document.querySelectorAll("[data-theme-choice]").forEach(function (choice) { choice.setAttribute("aria-pressed", String(choice.dataset.themeChoice === mode)); });
     document.dispatchEvent(new Event("gyst:themechange"));

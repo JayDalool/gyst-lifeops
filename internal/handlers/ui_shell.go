@@ -19,6 +19,22 @@ func primarySection(page string) string {
 	}
 }
 
+// phoneTab names the tab of the phone tab bar a page belongs to (GYST-178, 13B DD-18). Only
+// today, tasks and health have a tab of their own; All is the fallback because it is always
+// last and reaches every other page through the More list. Galaxy never renders the bar.
+func phoneTab(page string) string {
+	switch page {
+	case "today", "dashboard":
+		return "today"
+	case "tasks":
+		return "tasks"
+	case "health":
+		return "health"
+	default:
+		return "all"
+	}
+}
+
 // projectsArea names the Projects sub-navigation item a page belongs to
 // (GYST-VN-039). Detail pages and forms belong to their list's area.
 func projectsArea(page string) string {
@@ -78,6 +94,9 @@ func moreSections() []moreSection {
 			{Label: "Training", URL: "/health/training", Icon: "heart"},
 			{Label: "Progress", URL: "/health/progress", Icon: "heart"},
 			{Label: "Health plan", URL: "/health/plan", Icon: "heart"},
+			// GYST-178 (c4): without these two rows both pages are three taps from outside Health.
+			{Label: "My foods & products", Detail: "What you usually have, per serving", URL: "/health/foods", Icon: "apple"},
+			{Label: "Profile for the coach", Detail: "Age, height, goal weight, food rules", URL: "/health/profile", Icon: "heart"},
 		}},
 		{Title: "Review & tools", Rows: []UIRow{
 			{Label: "Analytics", URL: "/analytics", Icon: "book-open"},

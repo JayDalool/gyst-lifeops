@@ -474,6 +474,8 @@ func TestAccentFillsCarryOnAccent(t *testing.T) {
 		":root .progress span": true, ".goal-row-bar .progress > span": true, ".hv3-bar i": true, ".hv3-weekbars span": true,
 		":root .switch input:checked + i::after": true, ".gyst-switch:checked": true,
 		".training-ui .training-bar i": true,
+		// GYST-178: the dot of the GYST mark in the phone top row.
+		".gyst-brand::before": true,
 		// Galaxy's own state dot; the page is pinned (E1).
 		":root .galaxy-state.state-active, :root .galaxy-state.state-current": true,
 		// Older rules for classes that no template renders any more (dots on the old map).
@@ -483,7 +485,7 @@ func TestAccentFillsCarryOnAccent(t *testing.T) {
 	accentFill := regexp.MustCompile(`^(var\(--(vn-accent|accent|cyan|blue|purple|gyst-blue|vn-accent-text)(, [^)]*)?\)|color-mix\(in srgb, var\(--vn-accent\) \d+%, var\(--vn-ink\)\))$`)
 	scope := ":where(body:not(.galaxy-page)) "
 	controls := 0
-	for _, file := range []string{"styles.css", "ui-components.css", "ui-shell.css", "ui-health-v3.css", "ui-health.css", "ui-training.css", "ui-courses.css", "ui-projects.css", "ui-today.css"} {
+	for _, file := range []string{"styles.css", "ui-components.css", "ui-shell.css", "ui-nav.css", "ui-health-v3.css", "ui-health.css", "ui-training.css", "ui-courses.css", "ui-projects.css", "ui-today.css"} {
 		rules := parseCSS(readStatic(t, "css/"+file))
 		// The label colour of a selector: its own rule, or the same selector without the off-Galaxy scope.
 		colourOf := func(sel string) (string, bool) {
