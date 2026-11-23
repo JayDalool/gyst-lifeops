@@ -1,7 +1,12 @@
 {{define "content"}}
-<div class="gyst-scope health-ui">
- <header class="gyst-header"><div><p class="kicker"><a href="/health">Health</a></p><h1 class="gyst-page-title">Progress</h1><p class="gyst-caption">Your recorded measurements over time.</p></div><a class="btn" href="/health/plan">Manage health plan</a></header>
- <nav class="health-links" aria-label="Health sections"><a href="/health">Summary</a><a href="/health/nutrition">Nutrition</a><a href="/health/training">Training</a><a href="/health/progress" aria-current="page">Progress</a><a href="/health/plan">Plan</a></nav>
+<div class="gyst-scope health-ui health-section">
+ {{/* GYST-174: Progress is a section, so its one way to Summary is the switcher's first tab; the word above the title is plain text.
+      The caption and the Manage health plan button follow the switcher (design review F3): between the title and the switcher
+      they put it 66 px lower than on the other three sections at phone width, so it jumped when the section changed.
+      health-section gives this older page the other sections' header measures and column width (ui-health-v3.css). */}}
+ <header class="gyst-header"><div><p class="kicker">Health</p><h1 class="gyst-page-title">Progress</h1></div></header>
+ {{template "health.switcher" (healthTab .)}}
+ <div class="gyst-cluster"><p class="gyst-caption">Your recorded measurements over time.</p><a class="btn" href="/health/plan">Manage health plan</a></div>
  <section class="card weight-log" id="log" aria-labelledby="log-title">
   <h2 id="log-title">Log weight</h2>
   {{if .Logged}}<div class="weight-logged" role="status"><p>Logged <strong>{{.Logged.Value}} kg</strong></p><form method="post" action="/health/weight/{{.Logged.ID}}/undo"><button class="btn quiet" type="submit">Undo</button></form></div>{{end}}

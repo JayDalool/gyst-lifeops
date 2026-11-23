@@ -24,6 +24,12 @@ func TestPWAShellAssetsMatchTemplates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// GYST-174: the icon sprite is the one shell file no <link> or <script> names. Pages load it
+	// through the vn.icon helper, so its precache URL must be the one that helper emits.
+	icons, err := os.ReadFile("../../web/templates/ui_icons.html")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, asset := range assets {
 		if !strings.HasPrefix(asset, "/static/") || strings.Contains(asset, "three.") || strings.Contains(asset, "galaxy.js") {
 			t.Fatalf("private/expensive precache entry: %s", asset)
@@ -32,7 +38,7 @@ func TestPWAShellAssetsMatchTemplates(t *testing.T) {
 		if _, err = os.Stat(filepath.Join("../../web/static", path)); err != nil {
 			t.Fatalf("missing shell asset %s", asset)
 		}
-		if !strings.Contains(string(layout), asset) {
+		if !strings.Contains(string(layout), asset) && !strings.Contains(string(icons), `<use href="`+asset+`#i-`) {
 			t.Fatalf("stale precache version %s", asset)
 		}
 	}

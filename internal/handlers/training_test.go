@@ -14,7 +14,7 @@ func TestTrainingRoute(t *testing.T) {
 	if r.Code != http.StatusOK {
 		t.Fatalf("GET: %d %s", r.Code, r.Body.String())
 	}
-	for _, want := range []string{"Workout history unavailable", "Hevy · Not connected", "gym-day check-ins", `action="/trackers/gym/toggle"`, `href="/health/training" aria-current="page"`} {
+	for _, want := range []string{"<h1>Training</h1>", "Workout history unavailable", "Hevy · Not connected", "gym-day check-ins", `action="/trackers/gym/toggle"`, `href="/health/training" aria-current="page"`} {
 		if !strings.Contains(r.Body.String(), want) {
 			t.Errorf("missing %q", want)
 		}

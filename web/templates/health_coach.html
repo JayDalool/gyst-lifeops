@@ -3,7 +3,7 @@
      Buttons come only from the server's allowlist, never from model text. */}}
 <div class="gyst-scope hv3 hv3-coach">
 <header class="hv3-ph">
-  <div class="hv3-ph-copy"><h1>Health Coach</h1><p class="hv3-eyebrow">Your nutrition &amp; training assistant</p></div>
+  <div class="hv3-ph-copy"><p class="hv3-eyebrow"><a href="/health">Health</a></p><h1>Health Coach</h1><p class="hv3-eyebrow">Your nutrition &amp; training assistant</p></div>
   {{if .Turns}}<form method="post" action="/health/coach/clear"><button class="hv3-btn secondary small" type="submit">Clear chat</button></form>{{end}}
 </header>
 {{if not .Configured}}

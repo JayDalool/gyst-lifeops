@@ -155,7 +155,7 @@ func TestTodayPageRedesign(t *testing.T) {
 
 	body := cfgGet(t, h, "/health")
 	for _, want := range []string{
-		"<h1>Today</h1>", "Calories today", `class="hv3-cstate over"`, "Over budget", "150</strong><span>kcal over budget",
+		"<h1>Health</h1>", "Calories today", `class="hv3-cstate over"`, "Over budget", "150</strong><span>kcal over budget",
 		"Eaten", "of 2,250 target", "Burned so far", "2,000", "1,700 resting + 300 active", "Balance so far", "&#43;400", "Observed, not final",
 		"A little movement would help", "5,800 steps to your 10,000 goal",
 		`hv3-mac protein`, `hv3-mac carbs`, `hv3-mac fat`, `hv3-mac fiber`, "15 g over", "Target met",

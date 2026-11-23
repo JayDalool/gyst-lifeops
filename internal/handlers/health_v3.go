@@ -11,27 +11,23 @@ import (
 	"lifeops-tracker/internal/models"
 )
 
-// Health v3 (Issue #53, design approved in #45): Health has its own sections
-// (Today, Workout, Nutrition, More). Each Health page's data reports which one
-// it is so the shell can mark it; pages that don't say are under More.
+// Health navigation (GYST-174, 13B DD-22): Health has four sections, "summary",
+// "nutrition", "progress" and "training". A section page's data reports which
+// one it is, so the switcher and the sidebar can mark it. Every other Health
+// page (Plan, More, Coach, checklist, foods, profile) is pushed from a row and
+// reports "": nothing defaults to a section, or More and Coach would show
+// Summary as the open one.
 type healthTabber interface{ HealthTabName() string }
 
-func (d HealthData) HealthTabName() string {
-	if d.HealthTab == "" {
-		return "today"
-	}
-	return d.HealthTab
-}
+func (d HealthData) HealthTabName() string       { return d.HealthTab }
 func (nutritionData) HealthTabName() string      { return "nutrition" }
-func (healthProgressData) HealthTabName() string { return "more" }
-func (healthPlanData) HealthTabName() string     { return "more" }
-func (healthMoreData) HealthTabName() string     { return "more" }
+func (healthProgressData) HealthTabName() string { return "progress" }
 
 func healthTab(data any) string {
 	if t, ok := data.(healthTabber); ok {
 		return t.HealthTabName()
 	}
-	return "more"
+	return ""
 }
 
 // healthWeightView is the compact weight card: latest reading, change since
@@ -164,7 +160,6 @@ func (h *Handler) healthMore(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	data.HealthTab = "more"
 	more := healthMoreData{HealthData: data, HevyConnected: h.Service.Training != nil}
 	if cache, err := h.Service.Repo.TrainingCache("hevy"); err == nil && !cache.SyncedAt.IsZero() {
 		more.HevySynced = humaniseSince(h.Service.Now(), cache.SyncedAt)

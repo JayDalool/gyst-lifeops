@@ -92,8 +92,12 @@ func TestHealthMoreRoute(t *testing.T) {
 	h := testHandler(t)
 	r := httptest.NewRecorder()
 	h.ServeHTTP(r, httptest.NewRequest(http.MethodGet, "/health/more", nil))
-	if r.Code != 200 || !strings.Contains(r.Body.String(), `href="/health/more" aria-current="page"`) || !strings.Contains(r.Body.String(), "Data sources") {
+	// GYST-174: More is a page pushed from Summary, not a section. It links back and marks nothing.
+	if r.Code != 200 || !strings.Contains(r.Body.String(), `<p class="hv3-eyebrow"><a href="/health">Health</a></p><h1>More</h1>`) || !strings.Contains(r.Body.String(), "Data sources") {
 		t.Fatalf("GET: %d", r.Code)
+	}
+	if strings.Contains(healthSubMarkup(t, r.Body.String()), "aria-current") {
+		t.Fatal("More marked a Health section as current")
 	}
 	r = httptest.NewRecorder()
 	h.ServeHTTP(r, httptest.NewRequest(http.MethodPost, "/health/more", nil))

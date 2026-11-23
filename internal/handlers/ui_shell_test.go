@@ -32,9 +32,9 @@ func TestUIShellFiveLinksAndNestedSelection(t *testing.T) {
 		}
 		nav := primaryMarkup(t, rec.Body.String())
 		// Inside Health and Projects the sidebar also lists the area's own
-		// sections in a labelled group (#53, approved design C5; #124). The
-		// five primary destinations and their single current item are checked
-		// without it.
+		// sections in a labelled group (#53, approved design C5; #124; Health's
+		// four since GYST-174, none current on /health/plan). The five primary
+		// destinations and their single current item are checked without it.
 		for _, group := range []string{`<div class="gyst-health-sub"`, `<div class="gyst-projects-sub"`} {
 			if i := strings.Index(nav, group); i >= 0 {
 				end := strings.Index(nav[i:], "</div>")

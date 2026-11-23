@@ -252,7 +252,6 @@ func TestMedalTextContrastOnEveryGradientStop(t *testing.T) {
 func TestMakeoverColourSwaps(t *testing.T) {
 	type swap struct{ file, selector, prop, want string }
 	swaps := []swap{
-		{"ui-health-v3.css", `.hv3-tabbar > a[aria-current="page"]`, "color", "var(--vn-accent-text)"},
 		{"ui-health-v3.css", ".hv3 a", "color", "var(--vn-accent-text)"},
 		{"ui-health-v3.css", ".hv3-disclose > summary", "color", "var(--vn-accent-text)"},
 		{"ui-health-v3.css", ".hv3-days .is-today", "color", "var(--vn-info-text)"}, // "today" is a state (lead rule)
@@ -771,7 +770,7 @@ func TestLoginPageStaysDarkWithoutScript(t *testing.T) {
 func TestMakeoverAssetVersions(t *testing.T) {
 	layout, login := readTemplate(t, "layout.html"), readTemplate(t, "login.html")
 	cache, assets := shellAssets(t)
-	if cache == "lifeops-shell-v81-icons" || !strings.HasPrefix(cache, "lifeops-shell-") {
+	if cache == "lifeops-shell-v82-aurora" || !strings.HasPrefix(cache, "lifeops-shell-") {
 		t.Errorf("CACHE = %q: it must differ from the last release and keep the lifeops-shell- prefix the activate handler prunes by", cache)
 	}
 	inShell := map[string]bool{}
@@ -780,7 +779,7 @@ func TestMakeoverAssetVersions(t *testing.T) {
 	}
 	for _, a := range []string{
 		"/static/css/styles.css?v=aurora-1", "/static/css/ui-tokens.css?v=aurora-1", "/static/css/ui-accents.css?v=aurora-1",
-		"/static/css/ui-pins.css?v=aurora-1", "/static/css/ui-health-v3.css?v=hv3-11",
+		"/static/css/ui-pins.css?v=aurora-1", "/static/css/ui-health-v3.css?v=hv3-12",
 		"/static/css/ui-galaxy.css?v=galaxywin-1", geistURL,
 	} {
 		if !strings.Contains(layout, `"`+a+`"`) {

@@ -14,10 +14,10 @@ const ROOT = path.join(__dirname, '..');
 const SPRITE = path.join(ROOT, 'web/static/icons.svg');
 const TEMPLATES = path.join(ROOT, 'web/templates');
 
-// The symbols R1 ships, in round 7's order: the round 7 drawing for each icon the app uses today
-// (the name on the right is today's Lucide name in ui_icons.html). 13B DD-15 lets R1 ship only the
-// symbols in use; a later chunk adds its own from the same round 7 set, here and in the sprite.
-// Today's waves, bike, message-circle, arrow-left and circle-dashed have no round 7 drawing.
+// The symbols shipped so far, in round 7's order: the round 7 drawing for each icon the app uses
+// (the name on the right is the Lucide name in ui_icons.html, where one exists). 13B DD-15 lets a
+// chunk ship only the symbols in use; each adds its own from the same round 7 set, here and in the
+// sprite. Today's waves, bike, arrow-left and circle-dashed have no round 7 drawing.
 const IDS = [
   'search',  // search
   'check',   // check
@@ -42,8 +42,11 @@ const IDS = [
   'alert',   // circle-alert, triangle-alert
   'offline', // wifi-off
   'ship',    // rocket
+  'sec',     // GYST-174: the Coach row on Health, as round 7 draws it (today's message-circle elsewhere)
   'scale',   // weight
+  'trend',   // GYST-174: the Progress tab of the Health switcher (no Lucide twin in use)
   'fork',    // utensils
+  'target',  // GYST-174: the Plan row on Health (no Lucide twin in use)
   'apple',   // apple
   'inbox',   // inbox
   'info',    // info
