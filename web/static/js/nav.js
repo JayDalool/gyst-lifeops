@@ -23,18 +23,21 @@
     return el.isContentEditable ? "text" : "other";
   }
 
-  // The decision: viewport heights and the focused control's kind in, "open" or "closed" out.
-  // A missing visual viewport height (no support) is always "closed".
-  function kbState(layoutHeight, visualHeight, kind) {
+  // The decision: viewport heights, the visual viewport's scale and the focused control's kind in, "open" or
+  // "closed" out. Pinch zoom shrinks visualViewport.height by the scale too (Codex P2), so the height is
+  // multiplied back before it is compared; a missing or non-finite scale counts as 1. A missing visual
+  // viewport height (no support) is always "closed".
+  function kbState(layoutHeight, visualHeight, scale, kind) {
     if (typeof layoutHeight !== "number" || typeof visualHeight !== "number" || !(visualHeight > 0)) return "closed";
-    return layoutHeight - visualHeight > KEYBOARD_MIN && kind === "text" ? "open" : "closed";
+    var zoom = typeof scale === "number" && isFinite(scale) && scale > 0 ? scale : 1;
+    return layoutHeight - visualHeight * zoom > KEYBOARD_MIN && kind === "text" ? "open" : "closed";
   }
   root.GYSTNav = { kbState: kbState, focusKind: focusKind };
   if (!root.document) return;
 
   var doc = root.document, vv = root.visualViewport;
   function update() {
-    var state = vv ? kbState(root.innerHeight, vv.height, focusKind(doc.activeElement)) : "closed";
+    var state = vv ? kbState(root.innerHeight, vv.height, vv.scale, focusKind(doc.activeElement)) : "closed";
     if (state === "open") doc.documentElement.setAttribute("data-gyst-kb", "open");
     else doc.documentElement.removeAttribute("data-gyst-kb");
   }
