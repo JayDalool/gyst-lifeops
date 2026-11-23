@@ -345,9 +345,9 @@ function healthNavChecks() {
   assert(!read('web/templates/ui_shell.html').includes('hv3-tabbar'), 'ui_shell.html still renders the Health-only tab bar');
   // ui-nav.css is never sent for Galaxy, and has one version.
   const layout = read('web/templates/layout.html');
-  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-1">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
+  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-2">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
   assert.equal(layout.split('ui-nav.css').length - 1, 1, 'layout.html names ui-nav.css once');
-  assert(worker.includes('"/static/css/ui-nav.css?v=nav-1"'), 'the service worker list lacks ui-nav.css');
+  assert(worker.includes('"/static/css/ui-nav.css?v=nav-2"'), 'the service worker list lacks ui-nav.css');
 }
 function overlayChecks() {
   const src = fs.readFileSync('web/static/js/ui-overlay.js', 'utf8');

@@ -8,6 +8,16 @@
    state marks are info, and this is not one). The 3 px inset, 2 px gap and 520 px cap are round 7's.
    The selector is nav.gyst-switcher > a so that `.hv3 a` cannot recolour the tabs. */
 nav.gyst-switcher { display: flex; flex-wrap: wrap; gap: 2px; box-sizing: border-box; width: 100%; max-width: 520px; min-width: 0; margin: 0; padding: 3px; border-radius: var(--vn-r-md); background: var(--vn-surface-2); container-type: inline-size; font-size: var(--vn-t-foot); }
+/* Sticky (GYST-174, Codex P2; 11 section "Secondary navigation": sticky segmented control under the
+   header). On a long page the way to another section stays in reach. The top bar is not sticky, so the
+   safe-area inset is the only thing to clear, as for the Projects switcher (ui-shell.css). z-index 90 is
+   under the bottom bar (100), the top bar (110), sheets and toasts. The track is opaque, and a canvas-coloured
+   8 px ring hides what scrolls past its rounded corners. From 1024 px the shell still shows the switcher
+   the same way, so no width gate. At large text the tabs go two by two and a sticky block would eat the screen:
+   CSS cannot read that state from the track itself and a media query cannot read --vn-ts, so the offset reads
+   the token. At 1 it is the safe-area inset; above 1 it is hundreds of pixels off screen, so the track scrolls
+   away (the same for any enlarged size, a stricter rule than 200%). */
+nav.gyst-switcher { position: sticky; top: calc(var(--gyst-safe-top) - 4000px * (var(--vn-ts) - 1)); z-index: 90; box-shadow: 0 0 0 var(--vn-s2) var(--vn-canvas); }
 /* Below 700 px the icon sits over the word. Side by side, as round 7 draws it, "Nutrition" has
    2 px to spare at 390 with Geist and overflows under 382; the font also loads with swap, so the
    system font is drawn first. Stacked, every word keeps room from 320 px up in either font.

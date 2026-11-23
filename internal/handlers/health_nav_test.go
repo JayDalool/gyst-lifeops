@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -463,7 +464,7 @@ func TestHealthNavStyles(t *testing.T) {
 
 	// Never on Galaxy: its page must not gain a stylesheet.
 	layout := readTemplate(t, "layout.html")
-	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-1">{{end}}`
+	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-2">{{end}}`
 	if !strings.Contains(layout, link) || strings.Count(layout, "ui-nav.css") != 1 {
 		t.Errorf("layout.html must link ui-nav.css once, as %s", link)
 	}
@@ -471,7 +472,7 @@ func TestHealthNavStyles(t *testing.T) {
 		t.Error("/galaxy links ui-nav.css")
 	}
 	for _, path := range []string{"/health", "/today"} {
-		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-1">`) {
+		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-2">`) {
 			t.Errorf("%s does not link ui-nav.css", path)
 		}
 	}
@@ -492,7 +493,7 @@ func TestHealthNavAssets(t *testing.T) {
 		count[path]++
 		count[a]++
 	}
-	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-1"} {
+	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-2"} {
 		path, _, _ := strings.Cut(a, "?")
 		if count[a] != 1 || count[path] != 1 {
 			t.Errorf("SHELL must hold %s exactly once and under no other version", a)
@@ -516,5 +517,32 @@ func TestHealthNavAssets(t *testing.T) {
 	sum := sha256.Sum256([]byte(strings.Join(rest, "\n")))
 	if got := hex.EncodeToString(sum[:]); got != "6d3cf41526bbc0ce188ae0730e211d41ee1a17d66022ae546e3d1945ebe25d24" {
 		t.Errorf("service-worker.js changed outside CACHE and SHELL (sha256 %s)", got)
+	}
+}
+
+// GYST-174 (Codex P2, 11 "Secondary navigation"): the switcher stays in reach while a long page
+// scrolls. It sticks below the safe-area inset, under the bottom bar's layer (100), on an opaque
+// track with a canvas ring, and the offset reads --vn-ts so that enlarged text scrolls it away.
+func TestHealthSwitcherIsSticky(t *testing.T) {
+	var d map[string]string
+	for _, r := range parseCSS(readStatic(t, "css/ui-nav.css")) {
+		if r.Media == "" && r.Selector == "nav.gyst-switcher" && r.Decls["position"] != "" {
+			d = r.Decls
+		}
+	}
+	if d == nil {
+		t.Fatal("ui-nav.css: nav.gyst-switcher has no position rule")
+	}
+	if d["position"] != "sticky" {
+		t.Errorf("position = %q, want sticky", d["position"])
+	}
+	if z, err := strconv.Atoi(d["z-index"]); err != nil || z >= 100 {
+		t.Errorf("z-index = %q, want a number under the bottom bar's 100", d["z-index"])
+	}
+	if !strings.Contains(d["top"], "var(--gyst-safe-top)") || !strings.Contains(d["top"], "var(--vn-ts)") {
+		t.Errorf("top = %q, want the safe-area inset adjusted by --vn-ts", d["top"])
+	}
+	if !strings.Contains(d["box-shadow"], "var(--vn-canvas)") {
+		t.Errorf("box-shadow = %q, want a ring in the page canvas token so nothing shows through", d["box-shadow"])
 	}
 }
