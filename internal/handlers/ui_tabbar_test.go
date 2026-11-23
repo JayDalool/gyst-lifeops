@@ -111,7 +111,7 @@ func TestPlusUsesLauncherAttributes(t *testing.T) {
 		t.Error("nav.js must not call a launcher function")
 	}
 	layout := readTemplate(t, "layout.html")
-	nav := `{{if ne .Page "galaxy"}}<script defer src="/static/js/nav.js?v=nav-2"></script>{{end}}`
+	nav := `{{if ne .Page "galaxy"}}<script defer src="/static/js/nav.js?v=nav-3"></script>{{end}}`
 	i, j := strings.Index(layout, "launcher.js"), strings.Index(layout, nav)
 	if j < 0 || i < 0 || j < i || strings.Count(layout, "nav.js") != 1 {
 		t.Error("layout.html must load nav.js once, after launcher.js, and not on /galaxy")

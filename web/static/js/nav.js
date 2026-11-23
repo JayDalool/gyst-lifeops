@@ -32,26 +32,50 @@
     var zoom = typeof scale === "number" && isFinite(scale) && scale > 0 ? scale : 1;
     return layoutHeight - visualHeight * zoom > KEYBOARD_MIN && kind === "text" ? "open" : "closed";
   }
-  root.GYSTNav = { kbState: kbState, focusKind: focusKind };
+
+  // Safety net for quick add (Codex P2): when the keyboard state goes from open to closed and focus is on the document
+  // itself (the hidden + could not take it), and quick add was opened from the +, focus goes back to the +.
+  // Never while any control has focus, so a field the keyboard is still serving keeps it.
+  function refocusPlus(prev, next, activeIsDocument, fromPlus) {
+    return prev === "open" && next === "closed" && activeIsDocument === true && fromPlus === true;
+  }
+  root.GYSTNav = { kbState: kbState, focusKind: focusKind, refocusPlus: refocusPlus };
   if (!root.document) return;
 
   var doc = root.document, vv = root.visualViewport;
-  function update() {
-    var state = vv ? kbState(root.innerHeight, vv.height, vv.scale, focusKind(doc.activeElement)) : "closed";
+  var plusButton = null; // the + that opened quick add, while that focus has not moved elsewhere
+  var current = "closed";
+  function inside(el, tag) { for (; el; el = el.parentNode) if (el.tagName && String(el.tagName).toLowerCase() === tag) return true; return false; }
+  function setState(state) {
     if (state === "open") doc.documentElement.setAttribute("data-gyst-kb", "open");
     else doc.documentElement.removeAttribute("data-gyst-kb");
+    current = state;
+  }
+  function update() {
+    var prev = current;
+    setState(vv ? kbState(root.innerHeight, vv.height, vv.scale, focusKind(doc.activeElement)) : "closed");
+    var active = doc.activeElement;
+    if (refocusPlus(prev, current, !active || active === doc.body || active === doc.documentElement, !!plusButton) && plusButton.isConnected && plusButton.focus) plusButton.focus();
   }
   if (vv) {
     vv.addEventListener("resize", update);
     // Focus can move while the keyboard stays up; the new focus is read after the move settles.
-    doc.addEventListener("focusin", update);
+    doc.addEventListener("focusin", function (event) {
+      if (plusButton && event.target !== plusButton && !inside(event.target, "dialog")) plusButton = null;
+      update();
+    });
     doc.addEventListener("focusout", function () { root.setTimeout(update, 0); });
+    // The launcher restores focus to its trigger in the dialog's own close handler. The bar is display: none while the
+    // keyboard state is open, and a hidden button cannot take focus, so the state is cleared first. close does not bubble,
+    // but a capture listener on the document runs before the dialog's own listeners.
+    doc.addEventListener("close", function () { setState("closed"); }, true);
     update();
   }
 
   doc.addEventListener("click", function (event) {
     var plus = event.target && event.target.closest ? event.target.closest("[data-nav-add]") : null;
     if (!plus) return;
+    plusButton = plus;
     var capture = doc.querySelector('[data-launcher-mode="capture"]');
     if (capture) capture.click();
   });

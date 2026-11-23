@@ -104,7 +104,7 @@ function themeChecks() {
 function keyboardChecks() {
   const ctx = {}; ctx.globalThis = ctx;
   vm.runInNewContext(fs.readFileSync('web/static/js/nav.js', 'utf8'), ctx);
-  const {kbState, focusKind} = ctx.GYSTNav;
+  const {kbState, focusKind, refocusPlus} = ctx.GYSTNav;
   assert.equal(kbState(844, 844, 1, 'text'), 'closed', 'no height change');
   assert.equal(kbState(844, 508, 1, 'text'), 'open', 'keyboard up, text field focused');
   assert.equal(kbState(844, 844 - 120, 1, 'text'), 'closed', '120 px is not more than 120');
@@ -123,10 +123,15 @@ function keyboardChecks() {
   for (const type of ['checkbox', 'radio', 'range', 'file', 'color', 'button', 'submit', 'date']) assert.equal(focusKind({tagName: 'INPUT', type}), 'other', type);
   assert.equal(focusKind({tagName: 'TEXTAREA'}), 'text'); assert.equal(focusKind({tagName: 'SELECT'}), 'other');
   assert.equal(focusKind({tagName: 'DIV', isContentEditable: true}), 'text'); assert.equal(focusKind({tagName: 'DIV'}), 'other'); assert.equal(focusKind(null), 'other');
+  // Safety net: only open -> closed, with focus on the document, and only when quick add was opened from the +.
+  assert.equal(refocusPlus('open', 'closed', true, true), true);
+  assert.equal(refocusPlus('open', 'closed', false, true), false, 'a control has focus: never move it');
+  assert.equal(refocusPlus('open', 'closed', true, false), false, 'quick add was not opened from the +');
+  assert.equal(refocusPlus('closed', 'closed', true, true), false); assert.equal(refocusPlus('closed', 'open', true, true), false); assert.equal(refocusPlus('open', 'open', true, true), false);
   // Wiring: without visualViewport the state is never set; with it, resize and focus drive the attribute.
   const make = vv => {
     const attrs = {}, docL = {}, vvL = {}, timers = [];
-    const doc = {activeElement: null, documentElement: {setAttribute: (k, v) => attrs[k] = v, removeAttribute: k => delete attrs[k]}, addEventListener: (n, f) => docL[n] = f, querySelector: () => null};
+    const doc = {activeElement: null, body: {}, documentElement: {setAttribute: (k, v) => attrs[k] = v, removeAttribute: k => delete attrs[k]}, addEventListener: (n, f) => docL[n] = f, querySelector: () => null};
     const win = {document: doc, innerHeight: 844, setTimeout: f => timers.push(f), visualViewport: vv && {height: vv.height, addEventListener: (n, f) => vvL[n] = f}};
     win.globalThis = win; vm.runInNewContext(fs.readFileSync('web/static/js/nav.js', 'utf8'), win);
     return {attrs, doc, win, docL, vvL, timers};
@@ -135,7 +140,17 @@ function keyboardChecks() {
   const k = make({height: 844}); assert.equal(k.attrs['data-gyst-kb'], undefined);
   k.doc.activeElement = {tagName: 'INPUT', type: 'text'}; k.win.visualViewport.height = 500; k.vvL.resize(); assert.equal(k.attrs['data-gyst-kb'], 'open');
   k.win.visualViewport.height = 844; k.vvL.resize(); assert.equal(k.attrs['data-gyst-kb'], undefined, 'keyboard closed with the field still focused: the bar returns');
-  k.win.visualViewport.height = 500; k.doc.activeElement = {tagName: 'INPUT', type: 'checkbox'}; k.docL.focusin(); assert.equal(k.attrs['data-gyst-kb'], undefined, 'focus moved to a checkbox');
+  // Quick add closes while the keyboard is up: the capture-phase close hook clears the state before the launcher restores focus.
+  k.win.visualViewport.height = 500; k.doc.activeElement = {tagName: 'INPUT', type: 'text'}; k.vvL.resize(); assert.equal(k.attrs['data-gyst-kb'], 'open');
+  k.docL.close(); assert.equal(k.attrs['data-gyst-kb'], undefined, 'close clears the state at once');
+  // Safety net wiring: opened from the +, keyboard state open, focus falls to the document, then the keyboard closes.
+  const plusEl = {tagName: 'BUTTON', isConnected: true, parentNode: null, focused: 0, focus() { this.focused++; k.doc.activeElement = this; }};
+  k.doc.activeElement = {tagName: 'INPUT', type: 'text'}; k.win.visualViewport.height = 500; k.vvL.resize(); assert.equal(k.attrs['data-gyst-kb'], 'open');
+  k.docL.click({target: {closest: () => plusEl}}); k.doc.activeElement = k.doc.body; k.win.visualViewport.height = 844; k.vvL.resize();
+  assert.equal(plusEl.focused, 1, 'open to closed with focus on the document: the + takes focus');
+  k.win.visualViewport.height = 500; k.doc.activeElement = {tagName: 'INPUT', type: 'text'}; k.vvL.resize(); k.win.visualViewport.height = 844; k.vvL.resize();
+  assert.equal(plusEl.focused, 1, 'a field still has focus: nothing moves');
+  k.win.visualViewport.height = 500; k.doc.activeElement = {tagName: 'INPUT', type: 'checkbox'}; k.docL.focusin({target: k.doc.activeElement}); assert.equal(k.attrs['data-gyst-kb'], undefined, 'focus moved to a checkbox');
 }
 function motionChecks() {
   const code=fs.readFileSync('web/static/js/theme.js','utf8');
