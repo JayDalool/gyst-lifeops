@@ -31,3 +31,13 @@ Refs #<!-- issue number (use Refs, not Closes/Fixes) -->
 
 ## Screenshots
 <!-- Optional; fictional/demo data only, never private data. -->
+
+## Review card
+<!-- Big changes only (`merge-gate classify <pr>` says big): Jay reads this on the Repo Board's For you tab. Plain words. -->
+**Why:**
+**What changes for you:**
+**Scenarios checked:**
+-
+**If it goes wrong:**
+**Demo:**
+**Live:** https://gyst.zaylolabs.com
