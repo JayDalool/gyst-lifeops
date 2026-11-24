@@ -383,7 +383,7 @@ func TestLauncherAssetVersionsAgree(t *testing.T) {
 			}
 		}
 	}
-	// Later tickets move the cache again (GYST-179: v87), so this asks only that it is past v85.
+	// Later tickets move the cache again (GYST-179: v88), so this asks only that it is past v85.
 	if m := regexp.MustCompile(`const CACHE = "lifeops-shell-v(\d+)`).FindStringSubmatch(worker); m == nil || func() bool { n, _ := strconv.Atoi(m[1]); return n < 86 }() {
 		t.Errorf("the cache name did not move past v85: %v", m)
 	}

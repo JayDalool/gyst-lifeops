@@ -782,7 +782,7 @@ func TestMakeoverAssetVersions(t *testing.T) {
 	for _, a := range []string{
 		"/static/css/styles.css?v=aurora-1", "/static/css/ui-tokens.css?v=aurora-1", "/static/css/ui-accents.css?v=aurora-1",
 		"/static/css/ui-pins.css?v=aurora-1", "/static/css/ui-health-v3.css?v=hv3-13",
-		"/static/css/ui-galaxy.css?v=galaxywin-1", geistURL,
+		"/static/css/ui-galaxy.css?v=galaxywin-4", geistURL,
 	} {
 		if !strings.Contains(layout, `"`+a+`"`) {
 			t.Errorf("layout.html does not load %s", a)
