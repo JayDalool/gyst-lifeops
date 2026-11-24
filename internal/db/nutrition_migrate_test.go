@@ -1,6 +1,7 @@
 package db
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -124,6 +125,87 @@ func TestNutritionItemsReferenceTheLoggedVersion(t *testing.T) {
 	} {
 		if err == nil {
 			t.Errorf("%s accepted", name)
+		}
+	}
+}
+
+// GYST-179: the AI's own nutrient figures sit beside the saved ones. Two passes,
+// as a deploy does it: a database at the previous schema holds a row written
+// the old way, then the new migration runs on it. The row must survive with the
+// new columns NULL, and the new columns must hold the item columns' ranges.
+func TestMealItemAIEstimateMacroColumns(t *testing.T) {
+	const newest = "20261123100000_meal_item_ai_est_macros.sql"
+	src := filepath.Join("..", "..", "migrations")
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(t.TempDir(), "migrations")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if e.Name() != newest {
+			copyMigration(t, src, dir, e.Name())
+		}
+	}
+	database, err := Open(filepath.Join(t.TempDir(), "aiest.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { database.Close() })
+	// Pass 1: the schema as it was before this migration.
+	if err := Migrate(database, dir); err != nil {
+		t.Fatal(err)
+	}
+	var has int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('nutrition_meal_items') WHERE name LIKE 'ai_est_%' AND name <> 'ai_est_grams'`).Scan(&has); err != nil || has != 0 {
+		t.Fatalf("the previous schema already has the new columns (%d, %v)", has, err)
+	}
+	exec := func(q string, args ...any) error { _, err := database.Exec(q, args...); return err }
+	if err := exec(`INSERT INTO nutrition_meals (local_date, meal_slot, created_via, idempotency_key, created_at) VALUES ('2026-11-16', 'lunch', 'camera', ?, ?)`, strings.Repeat("a", 32), nutInstant); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(`INSERT INTO nutrition_meal_items (meal_id, name, unit, amount, grams, quantity_provenance, nutrition_provenance, kcal, protein_g, ai_est_grams, created_at)
+ VALUES (1, 'Old row', 'g', 100, 100, 'user_confirmed', 'user', 130, 2.7, 120, ?)`, nutInstant); err != nil {
+		t.Fatal(err)
+	}
+	// Pass 2: the new migration runs on the database that already holds data.
+	copyMigration(t, src, dir, newest)
+	if err := Migrate(database, dir); err != nil {
+		t.Fatalf("new migration on existing data: %v", err)
+	}
+	var kcal, protein, estGrams float64
+	var nulls int
+	if err := database.QueryRow(`SELECT kcal, protein_g, ai_est_grams, (ai_est_kcal IS NULL) + (ai_est_protein_g IS NULL) + (ai_est_carbs_g IS NULL) + (ai_est_fat_g IS NULL)
+ FROM nutrition_meal_items WHERE name = 'Old row'`).Scan(&kcal, &protein, &estGrams, &nulls); err != nil {
+		t.Fatalf("old row lost: %v", err)
+	}
+	if kcal != 130 || protein != 2.7 || estGrams != 120 || nulls != 4 {
+		t.Fatalf("old row changed: kcal %v protein %v ai_est_grams %v, NULL estimate columns %d", kcal, protein, estGrams, nulls)
+	}
+	var check string
+	if err := database.QueryRow(`PRAGMA integrity_check`).Scan(&check); err != nil || check != "ok" {
+		t.Fatalf("integrity_check = %q, %v", check, err)
+	}
+	insert := func(col string, v any) error {
+		return exec(`INSERT INTO nutrition_meal_items (meal_id, name, unit, amount, grams, quantity_provenance, nutrition_provenance, `+col+`, created_at)
+ VALUES (1, 'Test rice', 'g', 100, 100, 'user_confirmed', 'user', ?, ?)`, v, nutInstant)
+	}
+	for _, col := range []string{"ai_est_kcal", "ai_est_protein_g", "ai_est_carbs_g", "ai_est_fat_g"} {
+		max := 10000.0
+		if col == "ai_est_kcal" {
+			max = 100000
+		}
+		for name, v := range map[string]any{"NULL": nil, "zero": 0, "maximum": max} {
+			if err := insert(col, v); err != nil {
+				t.Errorf("%s %s: %v", col, name, err)
+			}
+		}
+		for name, v := range map[string]float64{"above max": max + 1, "negative": -0.1} {
+			if err := insert(col, v); err == nil || !strings.Contains(err.Error(), "CHECK") {
+				t.Errorf("%s %s accepted: %v", col, name, err)
+			}
 		}
 	}
 }

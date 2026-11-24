@@ -98,7 +98,33 @@ type DiaryItem struct {
 	ArchivedAt string `json:"archived_at"`
 	// AIEstGrams is the camera's estimate beside the confirmed Grams (#211).
 	AIEstGrams *float64 `json:"ai_est_grams"`
-	CreatedVia string   `json:"created_via"`
+	// AIEst* are the AI's own nutrient figures at its estimated grams (GYST-179);
+	// nil when the AI gave none, never 0.
+	AIEstKcal     *float64 `json:"ai_est_kcal"`
+	AIEstProteinG *float64 `json:"ai_est_protein_g"`
+	AIEstCarbsG   *float64 `json:"ai_est_carbs_g"`
+	AIEstFatG     *float64 `json:"ai_est_fat_g"`
+	CreatedVia    string   `json:"created_via"`
+}
+
+// AIAccuracyStat is the gap between the AI estimate and the saved value of one
+// measure over the items of a week that have both. Bias and MAE are nil, not 0,
+// when no item has both (NULL is not zero).
+type AIAccuracyStat struct {
+	Paired int      `json:"paired"`
+	Bias   *float64 `json:"bias"` // mean of saved - estimate
+	MAE    *float64 `json:"mae"`  // mean of |saved - estimate|
+}
+
+// AIAccuracyWeek is one Monday-start week of camera items (GYST-179).
+type AIAccuracyWeek struct {
+	WeekStart string         `json:"week_start"`
+	Items     int            `json:"items"`
+	Grams     AIAccuracyStat `json:"grams"`
+	Kcal      AIAccuracyStat `json:"kcal"`
+	ProteinG  AIAccuracyStat `json:"protein_g"`
+	CarbsG    AIAccuracyStat `json:"carbs_g"`
+	FatG      AIAccuracyStat `json:"fat_g"`
 }
 
 // NewDiaryItem is the input for logging one food into a new meal.

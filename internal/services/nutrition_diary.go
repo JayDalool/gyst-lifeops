@@ -120,6 +120,25 @@ func (s *Service) SearchFoods(ctx context.Context, query string) ([]FoodChoice, 
 	return out, nil
 }
 
+// SearchCatalogueFoods is SearchFoods without My foods: only catalogue rows a
+// diary item can point at ("nf:"). The photo review swaps and adds by grams, and
+// a My food has no gram weight to scale (GYST-179). It only reads.
+func (s *Service) SearchCatalogueFoods(ctx context.Context, query string) ([]FoodChoice, error) {
+	q := NormalizeFoodName(query)
+	if q == "" || utf8.RuneCountInString(q) > diarySearchMaxChars {
+		return nil, healthInvalid("search text must be 1 to 80 characters")
+	}
+	found, err := s.Repo.SearchGramScalableFoods(q, diarySearchLimit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]FoodChoice, 0, len(found))
+	for _, f := range found {
+		out = append(out, FoodChoice{Ref: "nf:" + strconv.FormatInt(f.ID, 10), NutritionFood: f})
+	}
+	return out, nil
+}
+
 // checkScaled refuses a scaled entry that the database limits would reject,
 // with a message instead of a constraint error.
 func checkScaled(n models.Nutrients, grams *float64) error {

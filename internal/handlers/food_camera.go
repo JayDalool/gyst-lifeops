@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,7 +42,10 @@ type cameraNonce struct {
 	session string
 	expires time.Time
 	est     []*float64
-	state   int
+	// estNut is the AI's own nutrition per item, parallel to est. Always nil
+	// today: the photo AI supplies none until GYST-180.
+	estNut []*models.Nutrients
+	state  int
 }
 
 // cameraStore holds issued nonces in memory. The zero value is ready. A
@@ -60,6 +62,10 @@ func sessionKey(session string) string {
 }
 
 func (c *cameraStore) issue(session string, est []*float64, now time.Time) string {
+	return c.issueWithNutrition(session, est, nil, now)
+}
+
+func (c *cameraStore) issueWithNutrition(session string, est []*float64, estNut []*models.Nutrients, now time.Time) string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		panic("crypto/rand unavailable: " + err.Error())
@@ -84,7 +90,7 @@ func (c *cameraStore) issue(session string, est []*float64, now time.Time) strin
 		}
 		delete(c.m, oldest)
 	}
-	c.m[nonce] = &cameraNonce{session: sessionKey(session), expires: now.Add(cameraNonceTTL), est: est}
+	c.m[nonce] = &cameraNonce{session: sessionKey(session), expires: now.Add(cameraNonceTTL), est: est, estNut: estNut}
 	return nonce
 }
 
@@ -226,6 +232,9 @@ type cameraConfirm struct {
 	Nonce string              `json:"nonce"`
 	Slot  string              `json:"slot"`
 	Items []cameraConfirmItem `json:"items"`
+	// Portion is the whole-meal slider; absent means x1. A text value fails to
+	// decode and is refused with the other unreadable reviews.
+	Portion *float64 `json:"portion"`
 }
 
 // healthFoodPhotoConfirm saves a reviewed photo meal: POST
@@ -264,7 +273,7 @@ func (h *Handler) healthFoodPhotoConfirm(w http.ResponseWriter, r *http.Request)
 	if in.Slot == "" {
 		in.Slot = slotForHour(h.Service.Now().In(h.Service.Location()).Hour())
 	}
-	meal := services.CameraMeal{IdempotencyKey: in.Nonce, MealSlot: in.Slot}
+	meal := services.CameraMeal{IdempotencyKey: in.Nonce, MealSlot: in.Slot, Portion: in.Portion}
 	seen := map[int]bool{}
 	for _, it := range in.Items {
 		if it.Idx != nil {
@@ -278,8 +287,14 @@ func (h *Handler) healthFoodPhotoConfirm(w http.ResponseWriter, r *http.Request)
 			Nutrients: models.Nutrients{Kcal: it.Kcal, ProteinG: it.P, CarbsG: it.C, FatG: it.F, FiberG: it.Fib}}
 		if it.Idx != nil && *it.Idx >= 0 && *it.Idx < len(n.est) {
 			ci.AIEstGrams = n.est[*it.Idx]
+			if *it.Idx < len(n.estNut) {
+				ci.AIEstNutrients = n.estNut[*it.Idx]
+			}
 		}
-		h.linkPrefill(&ci, it.FoodRef)
+		if err := h.linkPrefill(&ci, it.FoodRef); err != nil {
+			writeJSONError(w, http.StatusBadRequest, "Check the review: "+err.Error()+".")
+			return
+		}
 		meal.Items = append(meal.Items, ci)
 	}
 	out, err := h.Service.AddCameraMeal(r.Context(), diaryActor(r), meal)
@@ -306,37 +321,97 @@ func writeCameraDone(w http.ResponseWriter, already bool) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "already": already, "redirect": redirect})
 }
 
-// linkPrefill points the item at the catalogue food it was prefilled from,
-// but only when the values still equal that food's data for these grams (to
-// the 0.1 shown in the review). Anything else stays Jay's own ("user", no
-// food), so an edited value is never attributed to the database.
-func (h *Handler) linkPrefill(ci *services.CameraItem, ref string) {
+// errDatabaseMacros is the refusal for a posted nutrient that disagrees with
+// the database food it claims to come from.
+var errDatabaseMacros = errors.New("nutrition of a database food can't be edited; change the grams instead")
+
+// linkPrefill points the item at the catalogue food it was prefilled from. The
+// nutrition of such an item is the database's, so the server computes it from
+// the grams and stores its own figure: a posted value that differs by more than
+// the review's rounding is refused (never silently kept as "user"), and one
+// that is close is replaced. A ref that does not resolve (unknown, superseded,
+// archived, a My food) is ignored and the item stays Jay's own free-form row.
+// GYST-179: a forged or edited value is never attributed to the database.
+func (h *Handler) linkPrefill(ci *services.CameraItem, ref string) error {
 	kind, raw, _ := strings.Cut(ref, ":")
 	id, err := strconv.ParseInt(raw, 10, 64)
 	if kind != "nf" || err != nil || id <= 0 {
-		return
+		return nil
 	}
 	f, err := h.Service.Repo.GetNutritionFood(id)
 	if err != nil || f.SupersededAt != "" || f.ArchivedAt != "" ||
 		(f.Provider == "user" && strings.HasPrefix(f.ProviderID, "health_food:")) {
-		return
+		return nil
 	}
 	per, ok := per100Of(f)
 	if !ok {
-		return
+		return nil
 	}
-	scaled := scalePer(per, ci.Grams/100)
-	same := func(got, want *float64) bool {
-		if got == nil || want == nil {
-			return got == nil && want == nil
-		}
-		return math.Abs(*got-*want) <= 0.051
+	// The script scales the grams as typed; the stored grams are rounded to 0.1
+	// first, so compare against the posted grams and store from the rounded.
+	if services.NutrientsContradict(ci.Nutrients, services.CameraScale(per, ci.Grams, 100)) {
+		return errDatabaseMacros
 	}
-	n := ci.Nutrients
-	if !same(n.Kcal, scaled.Kcal) || !same(n.ProteinG, scaled.ProteinG) || !same(n.CarbsG, scaled.CarbsG) ||
-		!same(n.FatG, scaled.FatG) || !same(n.FiberG, scaled.FiberG) {
-		return
-	}
+	ci.Nutrients = services.RoundNutrients(services.CameraScale(per, services.Round1(ci.Grams), 100))
 	foodID, ver := f.ID, f.Version
 	ci.FoodID, ci.FoodVersion, ci.NutritionProv = &foodID, &ver, f.DataProvenance
+	return nil
+}
+
+const (
+	photoFoodsBytes   = 1 << 10
+	photoFoodsResults = 8
+)
+
+// healthFoodPhotoFoods searches the catalogue for the review's Swap and Add: POST
+// /health/nutrition/photo/foods with {"q": "..."}. POST with a body, not a URL,
+// so the search text never reaches a proxy log or the browser history; nothing
+// is logged here and nothing is written. No AI is called.
+func (h *Handler) healthFoodPhotoFoods(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "POST")
+		methodNotAllowed(w)
+		return
+	}
+	if requireSameOrigin(w, r) {
+		return
+	}
+	var in struct {
+		Q string `json:"q"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, photoFoodsBytes)
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			writeJSONError(w, http.StatusRequestEntityTooLarge, "That search is too long.")
+			return
+		}
+		writeJSONError(w, http.StatusBadRequest, "That search could not be read.")
+		return
+	}
+	found, err := h.Service.SearchCatalogueFoods(r.Context(), in.Q)
+	var invalid *services.HealthValidationError
+	switch {
+	case errors.As(err, &invalid):
+		writeJSONError(w, http.StatusBadRequest, "Type 1 to 80 characters to search.")
+		return
+	case err != nil:
+		h.log().Error("camera food search failed", "request_id", requestIDFrom(r.Context()))
+		writeJSONError(w, http.StatusInternalServerError, "Search is not available right now.")
+		return
+	}
+	out := make([]photoMatch, 0, photoFoodsResults)
+	for _, f := range found {
+		per, ok := per100Of(f.NutritionFood) // only foods a gram row can be scaled from
+		if !ok {
+			continue
+		}
+		out = append(out, photoMatch{Ref: f.Ref, Name: f.Name, Source: "database", Per100: per})
+		if len(out) == photoFoodsResults {
+			break
+		}
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(out)
 }

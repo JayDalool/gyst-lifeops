@@ -512,8 +512,19 @@ func TestHealthNavAssets(t *testing.T) {
 		}
 	}
 	v := regexp.MustCompile(`/static/css/ui-health-v3\.css\?v=[\w.-]+`).FindAllString(layout+" "+strings.Join(assets, " "), -1)
-	if len(v) != 2 || v[0] != v[1] || v[0] == "/static/css/ui-health-v3.css?v=hv3-11" {
-		t.Errorf("ui-health-v3.css changed: it needs one new ?v= in layout.html and SHELL, got %v", v)
+	if len(v) != 2 || v[0] != v[1] {
+		t.Errorf("ui-health-v3.css needs one ?v= in layout.html and SHELL, got %v", v)
+	}
+	// The stylesheet's bytes are pinned to the ?v it ships under. A changed file with the old pin leaves
+	// installed apps on a cached copy (GYST-179: the screen CSS shipped under hv3-12 until review caught
+	// it), so change the file, bump ?v in layout.html and SHELL, move CACHE, then update this pair.
+	const hv3Version, hv3Hash = "hv3-13", "df6c09e91b789063f1c2ccee77c26597506572c45a6d0ff005f09eb0e457fc30"
+	sum := sha256.Sum256([]byte(readStatic(t, "css/ui-health-v3.css")))
+	if got := hex.EncodeToString(sum[:]); got != hv3Hash {
+		t.Errorf("ui-health-v3.css changed (sha256 %s): bump ?v in layout.html and SHELL, move CACHE, and update hv3Version and hv3Hash here", got)
+	}
+	if len(v) == 2 && v[0] != "/static/css/ui-health-v3.css?v="+hv3Version {
+		t.Errorf("ui-health-v3.css has these bytes only under ?v=%s, got %s", hv3Version, v[0])
 	}
 	if cache == "lifeops-shell-v82-aurora" {
 		t.Error("CACHE must move, so installed apps drop the old shell")
@@ -526,8 +537,8 @@ func TestHealthNavAssets(t *testing.T) {
 			rest = append(rest, line)
 		}
 	}
-	sum := sha256.Sum256([]byte(strings.Join(rest, "\n")))
-	if got := hex.EncodeToString(sum[:]); got != "6d3cf41526bbc0ce188ae0730e211d41ee1a17d66022ae546e3d1945ebe25d24" {
+	swSum := sha256.Sum256([]byte(strings.Join(rest, "\n")))
+	if got := hex.EncodeToString(swSum[:]); got != "6d3cf41526bbc0ce188ae0730e211d41ee1a17d66022ae546e3d1945ebe25d24" {
 		t.Errorf("service-worker.js changed outside CACHE and SHELL (sha256 %s)", got)
 	}
 }
