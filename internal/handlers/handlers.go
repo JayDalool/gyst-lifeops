@@ -357,7 +357,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/today", http.StatusPermanentRedirect)
 	case "checklist":
 		if len(segments) != 1 {
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		}
 		h.today(w, r)
@@ -439,7 +439,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else if len(segments) == 3 && segments[1] == "foods" {
 			h.healthFood(w, r, segments[2])
 		} else {
-			http.NotFound(w, r)
+			notFound(w, r)
 		}
 	case "roadmap":
 		h.roadmap(w, r, segments)
@@ -450,7 +450,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "learn":
 		// Alias of the course list (GYST-073); /courses stays valid.
 		if len(segments) != 1 {
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		}
 		h.courseList(w, r)
@@ -479,13 +479,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.pushAPI(w, r, segments)
 		}
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 	}
 }
 
 func (h *Handler) pushAPI(w http.ResponseWriter, r *http.Request, segments []string) {
 	if len(segments) != 3 || segments[1] != "push" {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -540,7 +540,7 @@ func (h *Handler) pushAPI(w http.ResponseWriter, r *http.Request, segments []str
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"ok":true}`))
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 	}
 }
 
@@ -745,7 +745,7 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 
 	id, ok := parseID(segmentAt(segments, 1))
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 
@@ -794,7 +794,7 @@ func (h *Handler) tasks(w http.ResponseWriter, r *http.Request, segments []strin
 	case "checklist":
 		h.taskChecklist(w, r, id, segments)
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 	}
 }
 
@@ -805,7 +805,7 @@ func (h *Handler) taskChecklist(w http.ResponseWriter, r *http.Request, taskID i
 	}
 	itemID, ok := parseID(segments[3])
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	status := "pending"
@@ -1082,7 +1082,7 @@ func (h *Handler) doTaskToday(w http.ResponseWriter, r *http.Request, id int64) 
 	}
 	if _, err := h.Service.Repo.TaskByID(id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		}
 		serverError(w, err)
@@ -1210,7 +1210,7 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 
 	id, ok := parseID(segmentAt(segments, 1))
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 
@@ -1229,7 +1229,7 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request, segments []st
 	case "items":
 		h.projectItems(w, r, id, segments)
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 	}
 }
 
@@ -1410,7 +1410,7 @@ func (h *Handler) externalLinks(w http.ResponseWriter, r *http.Request, segments
 	}
 	id, ok := parseID(segmentAt(segments, 1))
 	if !ok || len(segments) != 3 {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	switch segments[2] {
@@ -1434,7 +1434,7 @@ func (h *Handler) externalLinks(w http.ResponseWriter, r *http.Request, segments
 		if err := h.Service.SyncExternalLink(ctx, id); err != nil {
 			switch {
 			case errors.Is(err, sql.ErrNoRows):
-				http.Error(w, "not found", http.StatusNotFound)
+				recordNotFound(w)
 			case errors.Is(err, providers.ErrNotConfigured):
 				http.Error(w, "That provider is not configured, so the link can't be refreshed.", http.StatusBadGateway)
 			default:
@@ -1452,7 +1452,7 @@ func (h *Handler) externalLinks(w http.ResponseWriter, r *http.Request, segments
 			return
 		}
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	http.Redirect(w, r, redirectTarget, http.StatusSeeOther)
@@ -1688,7 +1688,7 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 	}
 
 	if len(segments) != 5 {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	itemID, ok := parseID(segments[3])
@@ -1753,7 +1753,7 @@ func (h *Handler) projectItems(w http.ResponseWriter, r *http.Request, projectID
 			return
 		}
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if action == "complete" {
@@ -1812,7 +1812,7 @@ func (h *Handler) goals(w http.ResponseWriter, r *http.Request, segments []strin
 
 	id, ok := parseID(segmentAt(segments, 1))
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 
@@ -1829,7 +1829,7 @@ func (h *Handler) goals(w http.ResponseWriter, r *http.Request, segments []strin
 	case "archive":
 		h.archiveGoal(w, r, id)
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 	}
 }
 
@@ -2245,7 +2245,7 @@ func (h *Handler) settings(w http.ResponseWriter, r *http.Request, segments []st
 	}
 
 	if len(segments) != 1 {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if r.Method != http.MethodGet {
@@ -2264,7 +2264,7 @@ func (h *Handler) roadmaps(w http.ResponseWriter, r *http.Request, segments []st
 
 	id, ok := parseID(segmentAt(segments, 1))
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if len(segments) == 3 {
@@ -2296,7 +2296,7 @@ func (h *Handler) roadmaps(w http.ResponseWriter, r *http.Request, segments []st
 			return
 		}
 	}
-	http.NotFound(w, r)
+	notFound(w, r)
 }
 
 func roadmapFromRequest(r *http.Request) (models.Roadmap, error) {
@@ -2404,7 +2404,7 @@ func (h *Handler) roadmap(w http.ResponseWriter, r *http.Request, segments []str
 	case "milestones":
 		h.roadmapMilestones(w, r, segments)
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 	}
 }
 
@@ -2439,7 +2439,7 @@ func (h *Handler) exportRoadmap(w http.ResponseWriter, r *http.Request, segments
 		return
 	}
 	if len(segments) != 3 || (segments[2] != "public" && segments[2] != "private") {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	public := segments[2] == "public"
@@ -2487,12 +2487,12 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 		return
 	}
 	if len(segments) < 4 {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	projectID, ok := parseID(segments[2])
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 
@@ -2511,12 +2511,12 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 	}
 
 	if len(segments) != 6 || segments[3] != "items" {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	itemID, ok := parseID(segments[4])
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	projectBefore, _ := h.Service.Repo.ProjectByID(projectID)
@@ -2550,7 +2550,7 @@ func (h *Handler) roadmapProjects(w http.ResponseWriter, r *http.Request, segmen
 			return
 		}
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if action == "complete" {
@@ -2577,12 +2577,12 @@ func (h *Handler) roadmapMilestones(w http.ResponseWriter, r *http.Request, segm
 		return
 	}
 	if len(segments) != 4 {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	milestoneID, ok := parseID(segments[2])
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	switch segments[3] {
@@ -2597,7 +2597,7 @@ func (h *Handler) roadmapMilestones(w http.ResponseWriter, r *http.Request, segm
 			return
 		}
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	redirectAfter(w, r, "/roadmap")
@@ -2609,7 +2609,7 @@ func (h *Handler) trackers(w http.ResponseWriter, r *http.Request, segments []st
 		return
 	}
 	if len(segments) != 3 || segments[2] != "toggle" {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -3197,13 +3197,20 @@ func methodNotAllowed(w http.ResponseWriter) {
 
 // serverError answers 500 with a generic message and the request reference.
 // The error itself goes only to the log, through the RequestLog middleware.
+//
+// GYST-188: for a signed-in browser page view (flagged by markPageView) the answer is the styled
+// page in state_pages.go; every other caller gets the plain text it always got.
 func serverError(w http.ResponseWriter, err error) {
+	noteError(w, err)
+	if writeStatePage(w, http.StatusInternalServerError, false) {
+		return
+	}
 	writeError(w, http.StatusInternalServerError, "Something went wrong.", err)
 }
 
 func notFoundOrError(w http.ResponseWriter, err error) {
 	if errors.Is(err, sql.ErrNoRows) {
-		http.Error(w, "not found", http.StatusNotFound)
+		recordNotFound(w)
 		return
 	}
 	serverError(w, err)

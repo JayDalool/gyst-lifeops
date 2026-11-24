@@ -63,6 +63,8 @@ const IDS = [
   'spark',   // GYST-187: Coach
   'upload',  // GYST-187: Import a plan
   'box',     // GYST-187: Archive
+  'out',     // GYST-188: the signed-out banner of the sign-in page (round 7's drawing)
+  'eye',     // GYST-188: the show-password button (round 7's drawing)
 ];
 
 // Round 7's sprite uses only these. Anything else (script, image, use, foreignObject, style, a, ...)
@@ -120,7 +122,16 @@ function checkTemplates(files, ids = IDS) {
       else if (name !== 'ui_gallery.html') problems.push(`${name}: vn.icon needs a literal name, found ${arg || 'nothing'}`);
     }
     // The sprite has one way in. A hand-written reference would skip this check and the version.
-    if (name !== 'ui_icons.html' && /icons\.svg[?#]/.test(text)) problems.push(`${name}: reference the sprite through {{template "vn.icon" "name"}} only`);
+    // GYST-188: login.html is parsed alone by renderLogin (the sign-in handler is not changed to load the helper),
+    // so it names the sprite itself; each reference must carry the helper's own version and a symbol that exists.
+    if (name === 'login.html') {
+      const version = def && /icons\.svg\?v=([\w.-]+)#/.exec(def[1]);
+      for (const [, v, id] of text.matchAll(/icons\.svg\?v=([\w.-]+)#i-([a-z0-9-]+)/g)) {
+        if (!version || v !== version[1]) problems.push(`${name}: sprite version ${v} is not the helper's ${version && version[1]}`);
+        if (!ids.includes(id)) problems.push(`${name}: sprite symbol "${id}" is not in the sprite`);
+      }
+      if ((text.match(/icons\.svg/g) || []).length !== (text.match(/icons\.svg\?v=[\w.-]+#i-[a-z0-9-]+/g) || []).length) problems.push(`${name}: every sprite reference needs a version and a symbol`);
+    } else if (name !== 'ui_icons.html' && /icons\.svg[?#]/.test(text)) problems.push(`${name}: reference the sprite through {{template "vn.icon" "name"}} only`);
   }
   return problems;
 }
@@ -150,6 +161,9 @@ function main() {
   caught(checkTemplates({ ...good, 'x.html': '<use href="/static/icons.svg#i-check"/>' }), /through \{\{template/, 'a hand-written sprite reference');
   caught(checkTemplates({ 'ui_icons.html': (files['ui_icons.html'] || '').replace('/static/icons.svg', 'https://example.test/icons.svg') }), /must use href/, 'a sprite on another origin');
   assert.deepEqual(checkTemplates({ ...good, 'x.html': '{{template "vn.icon" "check"}}' }), [], 'self-test: a known icon name was refused');
+  caught(checkTemplates({ ...good, 'login.html': '<use href="/static/icons.svg?v=old-1#i-eye"/>' }), /is not the helper's/, 'a stale sprite version on the sign-in page');
+  caught(checkTemplates({ ...good, 'login.html': '<use href="/static/icons.svg?v=r7-6#i-nope"/>' }), /"nope" is not in the sprite/, 'an unknown symbol on the sign-in page');
+  assert.deepEqual(checkTemplates({ ...good, 'login.html': '<use href="/static/icons.svg?v=r7-6#i-eye"/>' }), [], 'self-test: the sign-in page reference was refused');
 
   for (const p of problems) console.error('FAIL ' + p);
   if (problems.length) return 1;

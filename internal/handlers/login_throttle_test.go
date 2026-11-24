@@ -338,12 +338,18 @@ func TestLoginErrorTextUnchanged(t *testing.T) {
 	if got := refused.Header().Get("Retry-After"); got != "" {
 		t.Errorf("Retry-After = %q, want none", got)
 	}
-	// The refusal page is the 401 page with only the message swapped: no
-	// counts, times or hints can hide anywhere else in it.
-	got := strings.Replace(refused.Body.String(), throttleText, "MSG", 1)
-	base := strings.Replace(fresh.Body.String(), wrongText, "MSG", 1)
-	if got != base {
-		t.Errorf("refused page differs from the 401 page beyond the message:\n%s", got)
+	// GYST-188 (ruled by the technical review, Q1=A): the sign-in page now draws a banner of its own
+	// kind for each state (amber and a clock for "too many tries", red for a wrong password), so the
+	// old "equal but for the sentence" check cannot hold. What D4 promises is kept: the refusal page is
+	// the 401 page once the banner and the wrong-password mark are removed, so no counts, times or hints
+	// can hide anywhere else in it. TestThrottledPageIsTheSameForRightAndWrongPassword and
+	// TestThrottledPageIsIdenticalAcrossEveryRefusalKind guard the other half of D4.
+	strip := func(s string) string { return invalidRE.ReplaceAllString(bannerRE.ReplaceAllString(s, ""), "") }
+	if strip(refused.Body.String()) != strip(fresh.Body.String()) {
+		t.Errorf("refused page differs from the 401 page beyond the banner and aria-invalid:\n%s", refused.Body.String())
+	}
+	if strings.Contains(refused.Body.String(), "aria-invalid") || !strings.Contains(fresh.Body.String(), `aria-invalid="true"`) {
+		t.Error("only the wrong-password page marks the field invalid")
 	}
 	for _, banned := range []string{"remaining", "minute", "second", "retry", "locked"} {
 		if strings.Contains(strings.ToLower(refused.Body.String()), banned) {
@@ -395,5 +401,77 @@ func TestThrottleIgnoresNonAttempts(t *testing.T) {
 	want(t, "still allowed", pub(h, wrongPW, "203.0.113.10"), http.StatusUnauthorized)
 	if h.loginLimiter.Keys() != 1 {
 		t.Fatalf("keys = %d, want only the one real attempt", h.loginLimiter.Keys())
+	}
+}
+
+// D4: a refusal never depends on the password. The right and a wrong password, sent while blocked, get
+// the same status, headers and body, and neither reaches the password check (no session, no new
+// wrong-password row, the limiter's failure count unchanged).
+func TestThrottledPageIsTheSameForRightAndWrongPassword(t *testing.T) {
+	rig := newAuditRig(t)
+	failFive(t, rig.h, rig.clk, "203.0.113.90")
+	wrongRows := func() int {
+		n := 0
+		for _, row := range rig.rows(t) {
+			if row.Detail == auditDetailWrongPW {
+				n++
+			}
+		}
+		return n
+	}
+	before := wrongRows()
+	right := pub(rig.h, testPassword, "203.0.113.90")
+	wrong := pub(rig.h, wrongPW, "203.0.113.90")
+	want(t, "right password while blocked", right, http.StatusTooManyRequests)
+	want(t, "wrong password while blocked", wrong, http.StatusTooManyRequests)
+	if right.Body.String() != wrong.Body.String() {
+		t.Error("the throttled body depends on the password")
+	}
+	if responseShape(right) != responseShape(wrong) {
+		t.Errorf("throttled headers differ:\n%s\n%s", responseShape(right), responseShape(wrong))
+	}
+	if after := wrongRows(); after != before {
+		t.Errorf("wrong-password rows %d -> %d: the password was checked while blocked", before, after)
+	}
+}
+
+// D4: no count, time or hint can tell one refusal from another: the first-delay refusal, the 15-minute
+// block early and late, the global ceiling and a missing limiter all send the same page.
+func TestThrottledPageIsIdenticalAcrossEveryRefusalKind(t *testing.T) {
+	bodies := map[string]string{}
+	shapes := map[string]string{}
+	record := func(name string, rec *httptest.ResponseRecorder) {
+		want(t, name, rec, http.StatusTooManyRequests)
+		bodies[name], shapes[name] = rec.Body.String(), responseShape(rec)
+	}
+
+	h, _ := throttledHandler(t)
+	want(t, "one failure", pub(h, wrongPW, "203.0.113.91"), http.StatusUnauthorized)
+	record("first delay", pub(h, wrongPW, "203.0.113.91"))
+
+	h, clk := throttledHandler(t)
+	t5 := failFive(t, h, clk, "203.0.113.92")
+	clk.Advance(time.Minute)
+	record("block at +1m", pub(h, testPassword, "203.0.113.92"))
+	clk.Advance(t5.Add(14*time.Minute + 59*time.Second).Sub(clk.Now()))
+	record("block at +14m59s", pub(h, wrongPW, "203.0.113.92"))
+
+	h, clk = throttledHandler(t)
+	engageGlobal(t, h, clk)
+	record("global ceiling", pub(h, wrongPW, "203.0.113.93"))
+
+	h, _ = throttledHandler(t)
+	h.loginLimiter = nil
+	record("no limiter", pub(h, wrongPW, "203.0.113.94"))
+
+	var first string
+	for name, body := range bodies {
+		if first == "" {
+			first = name
+			continue
+		}
+		if body != bodies[first] || shapes[name] != shapes[first] {
+			t.Errorf("%q and %q refusals differ", first, name)
+		}
 	}
 }

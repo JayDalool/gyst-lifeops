@@ -118,7 +118,7 @@ func TestHealthKeepsMainTabBarAndHasOneSwitcher(t *testing.T) {
 			if s.path == path {
 				want += ` aria-current="page"`
 			}
-			want += `><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-5#i-` + s.icon + `"/></svg><span>` + s.label + `</span></a>`
+			want += `><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-6#i-` + s.icon + `"/></svg><span>` + s.label + `</span></a>`
 			if !strings.Contains(sw, want) {
 				t.Errorf("%s: switcher lacks %s", name, want)
 			}
@@ -318,7 +318,7 @@ func TestHealthSummaryRowsAndBackLinks(t *testing.T) {
 	}
 	// 13B DD-15 (design review F6): a row's tile icon comes from round 7's sprite, as round 7 draws it.
 	for href, icon := range map[string]string{"/health/plan": "target", "/health/more": "more", "/health/coach": "sec"} {
-		want := `<span class="hv3-tile sm"><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-5#i-` + icon + `"/></svg></span>`
+		want := `<span class="hv3-tile sm"><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-6#i-` + icon + `"/></svg></span>`
 		if !strings.Contains(row(body, href), want) {
 			t.Errorf("Summary: the %s row's tile must draw the sprite's %s", href, icon)
 		}
@@ -494,8 +494,8 @@ func TestHealthNavStyles(t *testing.T) {
 // exact URL the helper emits; the new stylesheet is listed; the worker changes nowhere else.
 func TestHealthNavAssets(t *testing.T) {
 	m := regexp.MustCompile(`<use href="(/static/icons\.svg\?v=[\w.-]+)#i-\{\{\.\}\}"/>`).FindStringSubmatch(readTemplate(t, "ui_icons.html"))
-	if m == nil || m[1] != "/static/icons.svg?v=r7-5" {
-		t.Fatalf("vn.icon emits %v, want /static/icons.svg?v=r7-5", m)
+	if m == nil || m[1] != "/static/icons.svg?v=r7-6" {
+		t.Fatalf("vn.icon emits %v, want /static/icons.svg?v=r7-6", m)
 	}
 	layout := readTemplate(t, "layout.html")
 	cache, assets := shellAssets(t)
@@ -530,16 +530,19 @@ func TestHealthNavAssets(t *testing.T) {
 		t.Error("CACHE must move, so installed apps drop the old shell")
 	}
 	// The fetch, push and notification handlers are as GYST-168 left them: only the cache name and
-	// the list may differ. Update this hash only with a change the ticket asks for.
+	// the list (and, from GYST-188, the offline page) may differ. This hash was re-taken in GYST-188 as sha256 of
+	// master's worker minus its CACHE, SHELL and OFFLINE lines, so it proves everything else is unchanged. Update it only with a change the ticket asks for.
 	var rest []string
 	for _, line := range strings.Split(readStatic(t, "service-worker.js"), "\n") {
-		if !strings.HasPrefix(line, "const CACHE = ") && !strings.HasPrefix(line, "const SHELL = ") {
+		// GYST-188: OFFLINE (and the comment above it) is the offline page, which that ticket restyled. Its own
+		// checks are TestOfflinePageIsInert and check-ui-shell.cjs, so the hash covers everything else.
+		if !strings.HasPrefix(line, "const CACHE = ") && !strings.HasPrefix(line, "const SHELL = ") && !strings.HasPrefix(line, "const OFFLINE = ") && !strings.HasPrefix(line, "// GYST-188 (a4, Jay's answer 30)") {
 			rest = append(rest, line)
 		}
 	}
 	swSum := sha256.Sum256([]byte(strings.Join(rest, "\n")))
-	if got := hex.EncodeToString(swSum[:]); got != "6d3cf41526bbc0ce188ae0730e211d41ee1a17d66022ae546e3d1945ebe25d24" {
-		t.Errorf("service-worker.js changed outside CACHE and SHELL (sha256 %s)", got)
+	if got := hex.EncodeToString(swSum[:]); got != "c4922f4736308dce84b2998653e8c3c46325a054e4709ed9a0094b65cfaa00fd" {
+		t.Errorf("service-worker.js changed outside CACHE, SHELL and OFFLINE (sha256 %s)", got)
 	}
 }
 

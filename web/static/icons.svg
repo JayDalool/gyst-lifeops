@@ -44,4 +44,6 @@
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800z"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4.500M8 8.500l4-4 4 4M5 15v3.500a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V15"/></symbol>
   <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4.500H6a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h4M14 8l4 4-4 4M18 12H9.500"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.500 12S6 5.500 12 5.500 21.500 12 21.500 12 18 18.500 12 18.500 2.500 12 2.500 12z"/><circle cx="12" cy="12" r="2.800"/></symbol>
 </svg>

@@ -150,7 +150,7 @@ func (h *Handler) healthChecklistItemAction(w http.ResponseWriter, r *http.Reque
 	}
 	id, ok := parseID(rawID)
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	var err error
@@ -162,11 +162,11 @@ func (h *Handler) healthChecklistItemAction(w http.ResponseWriter, r *http.Reque
 	case "remove":
 		err = h.Service.Repo.DeactivateHealthChecklistItem(id)
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if errors.Is(err, sql.ErrNoRows) {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	} else if err != nil {
 		serverError(w, err)
@@ -232,12 +232,12 @@ func (h *Handler) healthFood(w http.ResponseWriter, r *http.Request, rawID strin
 	}
 	id, ok := parseID(rawID)
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	existing, err := h.Service.Repo.GetHealthFood(id)
 	if errors.Is(err, sql.ErrNoRows) {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	} else if err != nil {
 		serverError(w, err)

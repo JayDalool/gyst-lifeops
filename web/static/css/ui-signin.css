@@ -1,0 +1,71 @@
+/* GYST-188 (specs a3 and a4): the sign-in page and the bare state pages (Not found, Error). Tokens only:
+   no literal colour here, so both schemes and every Look come from ui-tokens.css and ui-accents.css.
+   Linked by login.html and by the state-page template in internal/handlers/state_pages.go only; it is
+   not in the service worker's SHELL on purpose, because nothing here is needed offline. */
+
+/* ---------- Sign in (a3) ---------- */
+body.gyst-signin { margin: 0; background: var(--vn-canvas); color: var(--vn-ink); font-family: var(--vn-font); }
+.gyst-signin *, .gyst-signin *::before, .gyst-signin *::after { box-sizing: border-box; }
+.gyst-signin :where(h1, p) { margin: 0; }
+.gyst-signin :where(button, input) { font: inherit; }
+/* 1fr / auto / 2fr rests the column in the upper third and lets a long page (Text size 2) scroll from the top. */
+.gyst-signin-main { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: 1fr auto 2fr; justify-items: center; padding: calc(24px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px)); }
+.gyst-signin-col { grid-row: 2; width: 100%; max-width: 380px; display: grid; gap: 14px; }
+.gyst-signin-brand { display: flex; align-items: center; gap: 10px; font: 600 var(--vn-t-head)/var(--vn-t-head-lh) var(--vn-font); letter-spacing: -.02em; }
+.gyst-signin-brand::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--vn-accent); }
+h1.gyst-signin-title { font: 600 var(--vn-t-title)/var(--vn-t-title-lh) var(--vn-font); letter-spacing: -.03em; margin: 6px 0 0; }
+.gyst-signin-sub { margin: -8px 0 0; font-size: var(--vn-t-sub); line-height: var(--vn-t-sub-lh); color: var(--vn-ink-2); }
+/* The banner component is shared; only its corner and alignment differ here (a3 section 4). */
+.gyst-signin .gyst-banner { border-radius: var(--vn-r-md); align-items: flex-start; }
+.gyst-signin .gyst-banner b { display: block; font-weight: 500; color: var(--vn-ink); }
+.gyst-signin-field { display: grid; gap: 4px; }
+.gyst-signin-label { padding-left: 2px; font: 500 var(--vn-t-cap)/var(--vn-t-cap-lh) var(--vn-font); color: var(--vn-ink-2); }
+.gyst-signin-row { display: flex; align-items: center; gap: 6px; }
+.gyst-signin-input, .gyst-signin-show { background: var(--vn-surface); box-shadow: inset 0 0 0 1px var(--vn-ink-3); border: 0; border-radius: var(--vn-r-md); }
+/* 16 px at least, or iPhone zooms the page when the field takes focus. */
+.gyst-signin-input { flex: 1; min-width: 0; width: 100%; min-height: 48px; padding: 0 14px; font-size: max(16px, var(--vn-t-body)); color: var(--vn-ink); }
+.gyst-signin-input[aria-invalid="true"] { box-shadow: inset 0 0 0 1.5px var(--vn-crit); }
+.gyst-signin-input:focus-visible { outline: 2px solid var(--vn-accent); outline-offset: 0; }
+.gyst-signin-show { flex: none; width: 48px; height: 48px; display: grid; place-items: center; padding: 0; color: var(--vn-ink-2); cursor: pointer; }
+/* display above would beat the hidden attribute, and the button must stay hidden until signin.js runs. */
+.gyst-signin-show[hidden] { display: none; }
+.gyst-signin-show[aria-pressed="true"] { background: var(--vn-accent-soft); color: var(--vn-accent-text); box-shadow: inset 0 0 0 1px var(--vn-accent-text); }
+.gyst-signin-show:focus-visible, .gyst-signin-submit:focus-visible { outline: 2px solid var(--vn-accent); outline-offset: 2px; }
+.gyst-signin-submit { width: 100%; min-height: 44px; border: 0; border-radius: var(--vn-r-md); background: var(--vn-accent); color: var(--vn-on-accent); font: 500 var(--vn-t-body)/1 var(--vn-font); cursor: pointer; transition: transform var(--vn-fast); }
+.gyst-signin-submit:active { transform: scale(.97); }
+.gyst-signin-hint { font-size: var(--vn-t-foot); line-height: var(--vn-t-foot-lh); color: var(--vn-ink-2); }
+.gyst-signin-hint b { font-weight: 500; color: var(--vn-ink); }
+@media (hover: hover) { .gyst-signin-submit:hover { background: color-mix(in srgb, var(--vn-accent) 86%, var(--vn-ink)); } }
+@media (min-width: 700px) {
+  .gyst-signin-col { max-width: 420px; padding: 28px; border-radius: var(--vn-r-xl); background: var(--vn-surface); box-shadow: var(--vn-e1); }
+  .gyst-signin-input, .gyst-signin-show { background: var(--vn-surface-2); }
+  .gyst-signin-input[aria-invalid="true"] { box-shadow: inset 0 0 0 1.5px var(--vn-crit); }
+  .gyst-signin-show[aria-pressed="true"] { background: var(--vn-accent-soft); }
+}
+@media (prefers-reduced-motion: reduce) { .gyst-signin-submit { transition: none; } .gyst-signin-submit:active { transform: none; } }
+:root[data-motion="reduced"] .gyst-signin-submit { transition: none; }
+:root[data-motion="reduced"] .gyst-signin-submit:active { transform: none; }
+
+/* ---------- Page states (a4): Not found and Error ---------- */
+body.gyst-statepage { margin: 0; background: var(--vn-canvas); color: var(--vn-ink); font-family: var(--vn-font); min-height: 100vh; min-height: 100dvh; padding: env(safe-area-inset-top, 0px) calc(16px + env(safe-area-inset-right, 0px)) calc(var(--vn-bar-clear, 0px) + 24px) calc(16px + env(safe-area-inset-left, 0px)); }
+.gyst-statepage *, .gyst-statepage *::before, .gyst-statepage *::after { box-sizing: border-box; }
+.gyst-statepage :where(h1, p) { margin: 0; }
+.gyst-state-top { max-width: 560px; margin: 0 auto; min-height: 44px; display: flex; align-items: center; padding-top: 8px; }
+.gyst-statepage a.gyst-brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 600 17px/22px var(--vn-font); letter-spacing: -.02em; color: var(--vn-ink); text-decoration: none; }
+.gyst-statepage a.gyst-brand::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--vn-accent); }
+.gyst-state-main { max-width: 560px; margin: 0 auto; }
+.gyst-state-kicker { margin-top: 12px; font: 500 var(--vn-t-foot)/var(--vn-t-foot-lh) var(--vn-font); color: var(--vn-ink-2); }
+.gyst-state-card { margin-top: 12px; background: var(--vn-surface); border-radius: var(--vn-r-lg); box-shadow: var(--vn-e1); padding: var(--vn-pad); }
+.gyst-state8 { display: grid; justify-items: center; text-align: center; gap: 8px; padding: 36px 16px 28px; }
+.gyst-state8-icon { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 6px; background: var(--vn-surface-2); color: var(--vn-ink-2); }
+.gyst-state8-icon[data-state="crit"] { background: var(--vn-crit-soft); color: var(--vn-crit-text); }
+.gyst-state8-icon .vn-icon { width: 24px; height: 24px; }
+h1.gyst-state8-title { font: 600 var(--vn-t-head)/var(--vn-t-head-lh) var(--vn-font); letter-spacing: -.02em; }
+.gyst-state8-text { max-width: 40ch; font-size: var(--vn-t-sub); line-height: var(--vn-t-sub-lh); color: var(--vn-ink-2); }
+.gyst-state8-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+a.gyst-state-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--vn-r-md); background: var(--vn-accent); color: var(--vn-on-accent); font: 500 var(--vn-t-body)/1 var(--vn-font); text-decoration: none; }
+a.gyst-state-btn.is-quiet { background: var(--vn-surface-2); color: var(--vn-ink); }
+.gyst-statepage a:focus-visible { outline: 2px solid var(--vn-accent); outline-offset: 2px; }
+.gyst-state8-ref { margin-top: 6px; font-size: var(--vn-t-cap); line-height: var(--vn-t-cap-lh); color: var(--vn-ink-2); font-variant-numeric: tabular-nums; }
+.gyst-state8-ref span { user-select: all; }
+@media (min-width: 1024px) { body.gyst-statepage { padding-bottom: 48px; } .gyst-state-top { padding-top: 48px; } }

@@ -1,42 +1,54 @@
 <!doctype html>
-<html lang="en" data-gyst-theme="dark">
+<html lang="en" data-theme="light" data-gyst-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Sign in · GYST</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <meta name="theme-color" content="#080d16">
+  <meta name="theme-color" content="#F1EFF9" data-light="#F1EFF9" data-dark="#09080F">
   <meta name="robots" content="noindex, nofollow">
+  {{/* GYST-188: external and in the head, so the page follows the stored theme or the OS before first paint. The CSP allows no inline script. */}}
+  <script src="/static/js/theme.js?v=appearance-2"></script>
   <link rel="preload" href="/static/fonts/Geist-Variable.woff2?v=1.3.0" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/static/css/styles.css?v=aurora-1">
   <link rel="stylesheet" href="/static/css/ui-tokens.css?v=aurora-1">
   <link rel="stylesheet" href="/static/css/ui-accents.css?v=aurora-1">
+  <link rel="stylesheet" href="/static/css/ui-components.css?v=icons-1.aurora-1">
+  <link rel="stylesheet" href="/static/css/ui-signin.css?v=signin-1">
+  <script defer src="/static/js/signin.js?v=signin-1"></script>
 </head>
-<body class="login-page">
-  <main class="login-shell">
-    <form class="login-card" method="post" action="/login" autocomplete="on">
-      <h1 class="login-brand">GYST</h1>
-      <p class="login-sub">Sign in to continue</p>
-
+<body class="gyst-signin">
+  <main class="gyst-signin-main">
+    <form class="gyst-signin-col" method="post" action="/login" autocomplete="on">
+      <p class="gyst-signin-brand">GYST</p>
+      <h1 class="gyst-signin-title">Sign in</h1>
+      <p class="gyst-signin-sub">One private account. The password is checked on your own server.</p>
+      {{- /* One banner at most, so a banner is the only thing that differs between the pages. The bold sentence is auth.go's own, word for word; the sentence after it is fixed text chosen by Kind (a3 section 6). */ -}}
       {{if .Error}}
-        <p class="login-error" role="alert">{{.Error}}</p>
-      {{end}}
-
-      <label class="login-label" for="password">Password</label>
-      <input
-        class="login-input"
-        id="password"
-        name="password"
-        type="password"
-        autocomplete="current-password"
-        required
-        autofocus
-        {{if .Error}}aria-describedby="login-error"{{end}}>
+        <div class="gyst-banner" id="login-error" role="alert" data-state="{{if or (eq .Kind "throttled") (eq .Kind "unconfigured")}}warn{{else}}crit{{end}}">
+          {{if eq .Kind "throttled"}}<svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-6#i-clock"/></svg>{{else}}<svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-6#i-alert"/></svg>{{end}}
+          <span class="gyst-banner-copy"><b>{{.Error}}</b>{{if eq .Kind "wrong"}} Check it and try again.{{else if eq .Kind "throttled"}} Your data is untouched.{{end}}</span>
+        </div>
+      {{- else if .SignedOut}}
+        <div class="gyst-banner" role="status">
+          <svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-6#i-out"/></svg>
+          <span class="gyst-banner-copy"><b>You were signed out.</b> If you were saving something, it was not saved. Sign in and do it again.</span>
+        </div>
+      {{- end}}
+      <div class="gyst-signin-field">
+        <label class="gyst-signin-label" for="password">Password</label>
+        <div class="gyst-signin-row">
+          <input class="gyst-signin-input" id="password" name="password" type="password" autocomplete="current-password" enterkeyhint="go" required autofocus{{if .Error}} aria-describedby="login-error"{{end}}{{if eq .Kind "wrong"}} aria-invalid="true"{{end}}>
+          <button class="gyst-signin-show" type="button" data-signin-show aria-pressed="false" aria-label="Show password" hidden>
+            <svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-6#i-eye"/></svg>
+          </button>
+        </div>
+      </div>
 
       {{if .Next}}<input type="hidden" name="next" value="{{.Next}}">{{end}}
 
-      <button class="login-submit" type="submit">Sign in</button>
+      <button class="gyst-signin-submit" type="submit">Sign in</button>
+      <p class="gyst-signin-hint">{{if and .SignedOut .Next}}After sign-in you go back to <b>where you were</b>.{{else}}Forgot it? The password can only be changed on the server.{{end}}</p>
     </form>
   </main>
 </body>

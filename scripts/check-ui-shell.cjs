@@ -28,7 +28,9 @@ async function workerChecks() {
   }
   for (const path of ['/today','/health','/health/plan','/more','/settings','/login','/logout']) {
     await request(path);assert.equal(cached.size,0,'private navigation cached');
-    online=false;const response=await request(path);assert.equal(response.status,503);assert.match(await response.text(),/You’re offline/);online=true;
+    online=false;const response=await request(path);assert.equal(response.status,503);
+    assert.equal(response.headers.get('Content-Type'),'text/html; charset=utf-8');assert.equal(response.headers.get('Cache-Control'),'no-store');
+    offlinePage(await response.text());online=true;
   }
   assert.equal(await request('/api/health/sync',{mode:'cors'}),undefined);
   assert.equal(await request('/api/health/sync',{mode:'cors',method:'POST',authorization:true}),undefined);
@@ -760,4 +762,40 @@ function dayReloadChecks() {
     assert.equal(p.resume('2026-11-02T07:00:00Z'), 1, 'fallback did not reload on the browser\'s next day');
   }
 }
-(async()=>{await workerChecks();tapTargetChecks();themeChecks();keyboardChecks();allPagesChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();dayReloadChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers, launcher, All pages filter and day reload passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+// GYST-188 (a4, Jay's answer 30): the offline page is a plain page with Try again, built while the network is down, so it
+// carries its own style and icon and nothing that runs or loads: no script, no src, no outside reference, one empty href.
+function offlinePage(html) {
+  assert.match(html, /<h1>You are offline<\/h1>/);
+  assert(html.includes('<a href="">Try again</a>'), 'Try again must link to the page itself');
+  assert.match(html, /<style>[\s\S]*prefers-color-scheme:dark[\s\S]*<\/style>/);
+  assert.match(html, /<svg /);
+  assert(!/<script|\ssrc=|<link|<img|<iframe|<use|@import|url\(|https?:|\son[a-z]+=/i.test(html), 'the offline page must be inert and self-contained');
+  for (const m of html.matchAll(/href="([^"]*)"/g)) assert.equal(m[1], '', 'only the empty href');
+  // Aurora's literal pairs (a4 section 4), light and dark.
+  for (const lit of ['#F1EFF9','#FFFFFF','#0D0C16','#4D4961','#FDF1E1','#A64C07','#6163F2','#09080F','#13111F','#F3F2F5','#A7A5B6','#33260C','#FCD062','#96A2FE','#0B0D12']) assert(html.includes(lit), 'missing ' + lit);
+}
+// GYST-188 c5 (spec a3 section 7): signin.js shows the show button and flips the field, and does nothing else.
+function signinChecks() {
+  const code = fs.readFileSync('web/static/js/signin.js', 'utf8');
+  for (const bad of [/\bfetch\b/, /XMLHttpRequest/, /sendBeacon/, /WebSocket/, /EventSource/, /localStorage|sessionStorage|indexedDB/, /document\.cookie/, /innerHTML|outerHTML|insertAdjacentHTML/, /document\.write/, /\beval\b|\bFunction\s*\(/, /setTimeout|setInterval|requestAnimationFrame/, /import\s*\(|importScripts/, /location\s*[.=]|history\./])
+    assert(!bad.test(code), 'signin.js must not use ' + bad);
+  assert(code.split('\n').length <= 16, 'signin.js stays about ten lines');
+  function run(present) {
+    const events = {}, clicks = {};
+    const button = {hidden: true, attrs: {'aria-pressed': 'false'}, setAttribute(k, v) { this.attrs[k] = v; }, addEventListener(n, f) { clicks[n] = f; }};
+    const input = {type: 'password'};
+    vm.runInNewContext(code, {document: {
+      addEventListener: (n, f) => { events[n] = f; },
+      querySelector: sel => { assert.equal(sel, '[data-signin-show]'); return present ? button : null; },
+      getElementById: id => { assert.equal(id, 'password'); return input; },
+    }});
+    events.DOMContentLoaded();
+    return {button, input, click: () => clicks.click()};
+  }
+  const s = run(true);
+  assert.equal(s.button.hidden, false, 'the button is unhidden when the script runs');
+  s.click(); assert.equal(s.input.type, 'text'); assert.equal(s.button.attrs['aria-pressed'], 'true');
+  s.click(); assert.equal(s.input.type, 'password'); assert.equal(s.button.attrs['aria-pressed'], 'false');
+  const none = run(false); assert.equal(none.button.hidden, true, 'no button: nothing happens');
+}
+(async()=>{await workerChecks();signinChecks();tapTargetChecks();themeChecks();keyboardChecks();allPagesChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();dayReloadChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers, launcher, All pages filter and day reload passed, and the offline page and show-password script are inert');})().catch(error=>{console.error(error);process.exitCode=1;});

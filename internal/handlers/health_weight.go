@@ -105,11 +105,11 @@ func (h *Handler) healthWeightUndo(w http.ResponseWriter, r *http.Request, rawID
 	}
 	id, err := strconv.ParseInt(rawID, 10, 64)
 	if err != nil || id <= 0 {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if err := h.Service.UndoManualWeightEntry(id); errors.Is(err, sql.ErrNoRows) {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	} else if err != nil {
 		serverError(w, err)

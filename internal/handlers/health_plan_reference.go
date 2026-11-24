@@ -166,11 +166,11 @@ func (h *Handler) healthReferenceArchive(w http.ResponseWriter, r *http.Request,
 	}
 	id, ok := parseID(rawID)
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if err := h.Service.ArchiveHealthReferenceTarget(id); errors.Is(err, sql.ErrNoRows) {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	} else if err != nil {
 		serverError(w, err)
