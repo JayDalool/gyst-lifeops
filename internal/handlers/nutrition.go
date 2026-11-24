@@ -57,11 +57,14 @@ type nutritionData struct {
 	HasNutrition bool
 	Week         []nutritionDay
 	WeekLabel    string
-	TargetLine   int    // target as % of chart height; 0 when no target
-	WeekAvg      string // average of complete logged days before today; empty when none
-	WeekLogged   int    // complete logged days before today (partial days excluded)
-	WeekWithin   int
-	WeekPartial  int // past days with a partial total, shown but not counted (#69)
+	// WeekEstimateNote is "Includes AI estimates on 3 of 7 days" (GYST-180);
+	// empty when no day of the week has an estimated item.
+	WeekEstimateNote string
+	TargetLine       int    // target as % of chart height; 0 when no target
+	WeekAvg          string // average of complete logged days before today; empty when none
+	WeekLogged       int    // complete logged days before today (partial days excluded)
+	WeekWithin       int
+	WeekPartial      int // past days with a partial total, shown but not counted (#69)
 	// Close-the-gap suggestions (#62): shown only when protein eaten and a
 	// protein target are both known and eaten is below target.
 	ShowGap  bool
@@ -147,9 +150,13 @@ func buildNutritionWeekDays(data *nutritionData, days []models.DayIntake, today 
 	}
 	byDate := map[string]*float64{}
 	partial := map[string]bool{}
+	estimatedDays := 0
 	for _, in := range days {
 		switch in.Source {
 		case models.IntakeSourceGYST:
+			if in.Estimated.Items > 0 {
+				estimatedDays++
+			}
 			byDate[in.Date] = in.Counted.Kcal
 			partial[in.Date] = in.Counted.Kcal != nil && in.Missing.Kcal > 0
 		case models.IntakeSourceAppleHealth:
@@ -175,6 +182,7 @@ func buildNutritionWeekDays(data *nutritionData, days []models.DayIntake, today 
 	}
 	top *= 1.1
 	var sum float64
+	data.WeekEstimateNote = estimateDaysNote(estimatedDays, len(values), "")
 	data.WeekLabel = "Calories by day, oldest first:"
 	for i, v := range values {
 		d := day.AddDate(0, 0, i-6)

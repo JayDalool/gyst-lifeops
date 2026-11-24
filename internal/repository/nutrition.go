@@ -41,14 +41,18 @@ func (r *Repository) immediateTx(ctx context.Context, fn func(conn *sql.Conn) er
 
 // NutritionDayTotals sums the live items (live item in a live meal) per local
 // day from..to inclusive. A day with no live item is absent. Each sum is nil
-// when no item has the nutrient; Gaps counts the items that lack it.
+// when no item has the nutrient; Gaps counts the items that lack it. Estimated
+// is the AI-estimate subset (GYST-180): the one place provenance is counted.
 func (r *Repository) NutritionDayTotals(from, to string) (map[string]models.NutritionDayTotals, error) {
 	rows, err := r.db.Query(`SELECT m.local_date, COUNT(*),
  SUM(i.kcal), COUNT(*) - COUNT(i.kcal),
  SUM(i.protein_g), COUNT(*) - COUNT(i.protein_g),
  SUM(i.carbs_g), COUNT(*) - COUNT(i.carbs_g),
  SUM(i.fat_g), COUNT(*) - COUNT(i.fat_g),
- SUM(i.fiber_g), COUNT(*) - COUNT(i.fiber_g)
+ SUM(i.fiber_g), COUNT(*) - COUNT(i.fiber_g),
+ SUM(CASE WHEN i.nutrition_provenance = 'ai_estimate' THEN 1 ELSE 0 END),
+ SUM(CASE WHEN i.nutrition_provenance = 'ai_estimate' THEN i.kcal END),
+ SUM(CASE WHEN i.nutrition_provenance = 'ai_estimate' THEN i.protein_g END)
  FROM nutrition_meal_items i JOIN nutrition_meals m ON m.id = i.meal_id
  WHERE i.archived_at IS NULL AND m.archived_at IS NULL AND m.local_date >= ? AND m.local_date <= ?
  GROUP BY m.local_date`, from, to)
@@ -61,7 +65,8 @@ func (r *Repository) NutritionDayTotals(from, to string) (map[string]models.Nutr
 		var t models.NutritionDayTotals
 		if err := rows.Scan(&t.Date, &t.Items,
 			&t.Sum.Kcal, &t.Gaps.Kcal, &t.Sum.ProteinG, &t.Gaps.ProteinG, &t.Sum.CarbsG, &t.Gaps.CarbsG,
-			&t.Sum.FatG, &t.Gaps.FatG, &t.Sum.FiberG, &t.Gaps.FiberG); err != nil {
+			&t.Sum.FatG, &t.Gaps.FatG, &t.Sum.FiberG, &t.Gaps.FiberG,
+			&t.Estimated.Items, &t.Estimated.Kcal, &t.Estimated.ProteinG); err != nil {
 			return nil, err
 		}
 		out[t.Date] = t

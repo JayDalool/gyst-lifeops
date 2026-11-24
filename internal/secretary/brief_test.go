@@ -544,3 +544,44 @@ func TestBriefNeverSyncsCalendar(t *testing.T) {
 		t.Fatalf("%d calendar syncs, %d fetches, or tables changed", syncs.Load(), fake.Fetches())
 	}
 }
+
+// estimatedHealth is FakeHealth whose food total includes AI photo estimates
+// (GYST-180). Fictional numbers.
+type estimatedHealth struct{ secretarytest.FakeHealth }
+
+func (f estimatedHealth) BriefHealth() (secretary.HealthBrief, error) {
+	b, err := f.FakeHealth.BriefHealth()
+	items, kcal, protein := 2, "410", "21"
+	b.FoodAIEstimatedItems, b.FoodAIEstimatedKcal, b.FoodAIEstimatedProteinG = &items, &kcal, &protein
+	return b, err
+}
+
+// food.ai_estimated is present only with estimated items, holds exactly these
+// aggregate keys, and changes nothing else in food.
+func TestDayBriefFoodAIEstimatedKeys(t *testing.T) {
+	e := secretarytest.New(t)
+	plain := briefCatalogue(t, e, secretarytest.FakeHealth{}, nil)
+	_, m := build(t, plain, "today")
+	food := m["health"].(map[string]any)["food"].(map[string]any)
+	if _, ok := food["ai_estimated"]; ok {
+		t.Fatalf("ai_estimated without estimates: %v", food)
+	}
+	base := len(food)
+	est, err := secretary.New(secretary.Deps{Service: e.Svc, Health: estimatedHealth{}, Budget: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(est.Wait)
+	raw, m := build(t, est, "today")
+	food = m["health"].(map[string]any)["food"].(map[string]any)
+	ai, ok := food["ai_estimated"].(map[string]any)
+	if !ok || len(food) != base+1 {
+		t.Fatalf("food: %v", food)
+	}
+	if len(ai) != 4 || ai["items"] != float64(2) || ai["kcal"] != "410" || ai["protein_g"] != "21" || ai["note"] == "" {
+		t.Fatalf("ai_estimated: %v", ai)
+	}
+	if len(raw) > secretary.BriefBudget {
+		t.Fatalf("brief %d bytes over budget %d", len(raw), secretary.BriefBudget)
+	}
+}

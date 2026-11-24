@@ -120,6 +120,11 @@ type HealthTodayView struct {
 	// shown for comparison, never counted.
 	ReferenceKcal HealthMetricView
 
+	// Estimated is the AI-estimated share of today's counted food (GYST-180);
+	// not Present when the day has none. Screens, the Coach and the brief read
+	// only this.
+	Estimated HealthEstimateView
+
 	// CalState is the calorie card's status (#70).
 	CalState healthCalorieState
 	// caloriesLeft is target − eaten at displayed precision; only meaningful
@@ -255,6 +260,7 @@ func buildHealthTodayView(today models.HealthTodayResponse, now time.Time) Healt
 	}
 	eaten, gaps := intake.Counted, intake.Missing
 	view.IntakeSource = intake.Source
+	view.Estimated = buildEstimateView(intake.Estimated)
 	view.ReferenceKcal = absentMetric("kcal")
 	if intake.Source == models.IntakeSourceGYST && intake.Reference != nil {
 		view.ReferenceKcal = metricFromFloat(intake.Reference.Kcal, "kcal")

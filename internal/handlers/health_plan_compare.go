@@ -25,6 +25,8 @@ type cycleComparison struct {
 	WeightStart, WeightEnd                 string
 	DaysUsed                               int
 	DaysText                               string
+	// EstimateNote is "Includes AI estimates on 2 of 5 days counted" (GYST-180).
+	EstimateNote string
 }
 
 type runningMean struct {
@@ -100,11 +102,15 @@ func buildCycleComparison(c models.HealthCycle, days []models.DayIntake, weights
 		}
 	}
 	var kcal, protein, fiber runningMean
+	estimated := 0
 	for _, d := range days {
 		if d.Date == today || !dayComplete(d, loc) {
 			continue
 		}
 		v.DaysUsed++
+		if d.Estimated.Items > 0 {
+			estimated++
+		}
 		kcal.add(d.Counted.Kcal)
 		// A sum with a gap (an item without that nutrient) is partial: skip it.
 		if d.Missing.ProteinG == 0 {
@@ -116,6 +122,7 @@ func buildCycleComparison(c models.HealthCycle, days []models.DayIntake, weights
 	}
 	// Protein and fibre average only the complete days that recorded them.
 	v.AvgKcal, v.AvgProtein, v.AvgFiber = kcal.text(" kcal", true), protein.text(" g", false), fiber.text(" g", false)
+	v.EstimateNote = estimateDaysNote(estimated, v.DaysUsed, "counted")
 	switch v.DaysUsed {
 	case 0:
 		v.DaysText = "No complete days counted"

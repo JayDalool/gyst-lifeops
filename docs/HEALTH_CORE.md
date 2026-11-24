@@ -159,6 +159,18 @@ week and the Coach all read `DayIntake`; `HealthToday().Observed` takes eaten
 kcal from `Intake.Counted`. `POST /api/health/sync` and its COALESCE upsert are
 unchanged.
 
+**AI estimates are labelled from one field** (GYST-180). `DayIntake.Estimated`
+`{Items, Kcal, ProteinG}` is the part of a GYST day's total that comes from
+items stored with `nutrition_provenance = 'ai_estimate'` (Apple Health and empty
+days have none). `NutritionDayTotals` is the only place that counts it; it is a
+subset of `Counted`, never added to it, and an item Jay edited is `user` and
+leaves the count. Every screen that shows the total (Nutrition, Health ring and
+macros, the diary, the Last 7 days bar, the plan comparison, the Today tile)
+says "Includes AI estimates: n items, about x kcal" from `HealthTodayView.Estimated`,
+and the Coach and the Secretary's brief read the same field as aggregates only
+(counts and sums, no names, photos, ids or dates), present only when
+`items > 0`. A test fails when a new reader of `DayIntake` does not carry it.
+
 Writes (`services/nutrition_diary.go`) are transactional, act on today's items
 only, and write an audit row after commit (see ARCHITECTURE.md, Audit events).
 Restoring a removed item works within 10 minutes. Rollback: deploy the older

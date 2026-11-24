@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBriefCapsFit(t *testing.T) {
@@ -74,5 +75,20 @@ func TestBriefSectionOverItsCapIsDropped(t *testing.T) {
 	out, err := finalize(b, map[string]int{"mail": capMail}, BriefBudget)
 	if err != nil || !strings.Contains(string(out), `"cut":["mail"]`) || strings.Contains(string(out), "xxxx") {
 		t.Fatalf("%s %v", out, err)
+	}
+}
+
+// GYST-180: the health section stays inside its cap with food.ai_estimated and
+// every other value at its longest.
+func TestBriefHealthWithAIEstimatedFitsItsCap(t *testing.T) {
+	s := func(v string) *string { return &v }
+	n := 15
+	h := HealthBrief{Stale: true, FoodEatenKcal: s("12,345"), FoodTargetKcal: s("12,345"), FoodBudgetLeftKcal: s("12,345"), FoodOverBudgetByKcal: s("12,345"),
+		ProteinEatenG: s("1,234"), ProteinTargetG: s("1,234"), Steps: s("123,456"), StepsSource: "phone", BurnedSoFarKcal: s("12,345"), EnergyBalanceSoFarKcal: s("−12,345"),
+		WaterLoggedL: s("12.5"), WaterTargetL: s("12.5"), WeightKg: s("123.4"),
+		FoodAIEstimatedItems: &n, FoodAIEstimatedKcal: s("12,345"), FoodAIEstimatedProteinG: s("1,234")}
+	raw := briefHealth(h, true, true, func(time.Time) any { return "2026-11-24T23:59" })
+	if len(raw) > capHealth {
+		t.Fatalf("health section %d bytes, cap %d: %s", len(raw), capHealth, raw)
 	}
 }

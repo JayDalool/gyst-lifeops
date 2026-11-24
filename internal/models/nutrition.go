@@ -10,6 +10,9 @@ const (
 	IntakeSourceNone        = "none"
 )
 
+// NutritionProvenanceAIEstimate marks item nutrition the photo AI estimated.
+const NutritionProvenanceAIEstimate = "ai_estimate"
+
 // Nutrients is one set of the five tracked nutrients.
 type Nutrients struct {
 	Kcal     *float64 `json:"kcal"`
@@ -37,10 +40,22 @@ type NutrientGaps struct {
 // NutritionDayTotals is the sum of the live items of one local day. A sum is
 // nil when no live item has that nutrient.
 type NutritionDayTotals struct {
-	Date  string       `json:"date"`
-	Items int          `json:"items"`
-	Sum   Nutrients    `json:"sum"`
-	Gaps  NutrientGaps `json:"gaps"`
+	Date      string          `json:"date"`
+	Items     int             `json:"items"`
+	Sum       Nutrients       `json:"sum"`
+	Gaps      NutrientGaps    `json:"gaps"`
+	Estimated EstimatedIntake `json:"estimated"`
+}
+
+// EstimatedIntake is the part of a GYST day's total that comes from AI macro
+// estimates: the live items whose nutrition_provenance is "ai_estimate"
+// (GYST-180). It is a subset of Counted, never added to it. Kcal and ProteinG
+// are nil when no such item has the value. It is the single source every
+// screen, the Coach and the Secretary label from; nothing recounts provenance.
+type EstimatedIntake struct {
+	Items    int      `json:"items"`
+	Kcal     *float64 `json:"kcal"`
+	ProteinG *float64 `json:"protein_g"`
 }
 
 // DayIntake is the one counted intake of a local day. Source says where
@@ -56,6 +71,9 @@ type DayIntake struct {
 	Items     int                  `json:"items"`
 	Reference *Nutrients           `json:"reference"`
 	Snapshot  *DailyHealthSnapshot `json:"snapshot"`
+	// Estimated is the AI-estimated share of Counted (GYST days only; an Apple
+	// Health or empty day has none).
+	Estimated EstimatedIntake `json:"estimated"`
 }
 
 // NutritionFood is one immutable catalogue row. Values are per 100 g when

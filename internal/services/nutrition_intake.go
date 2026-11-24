@@ -36,6 +36,7 @@ func ResolveDayIntake(date string, gyst *models.NutritionDayTotals, snap *models
 	if gyst != nil && gyst.Items > 0 {
 		out.Source, out.Resolved = models.IntakeSourceGYST, true
 		out.Counted, out.Missing, out.Items = gyst.Sum, gyst.Gaps, gyst.Items
+		out.Estimated = gyst.Estimated
 		if apple.Any() {
 			ref := apple
 			out.Reference = &ref

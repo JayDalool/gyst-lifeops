@@ -52,8 +52,13 @@ type HealthBrief struct {
 
 	FoodEatenKcal, FoodTargetKcal, FoodBudgetLeftKcal, FoodOverBudgetByKcal *string
 	ProteinEatenG, ProteinTargetG                                           *string
-	Steps                                                                   *string
-	StepsSource                                                             string // "watch", "phone" or ""
+	// FoodAIEstimated* are the AI-estimated share of the food total (GYST-180):
+	// counts and sums only, nil when the day has none. The brief then says so
+	// in food.ai_estimated; without them the key is absent.
+	FoodAIEstimatedItems                         *int
+	FoodAIEstimatedKcal, FoodAIEstimatedProteinG *string
+	Steps                                        *string
+	StepsSource                                  string // "watch", "phone" or ""
 	// BurnedSoFarKcal is observed resting plus active energy.
 	BurnedSoFarKcal *string
 	// EnergyBalanceSoFarKcal is observed so far, not a final deficit.
@@ -311,9 +316,14 @@ func briefHealth(h HealthBrief, ok, today bool, asOf func(time.Time) any) json.R
 	if h.StepsSource != "" {
 		source = h.StepsSource
 	}
+	food := map[string]any{"eaten": h.FoodEatenKcal, "target": h.FoodTargetKcal, "left": h.FoodBudgetLeftKcal, "over_by": h.FoodOverBudgetByKcal}
+	if h.FoodAIEstimatedItems != nil && *h.FoodAIEstimatedItems > 0 {
+		food["ai_estimated"] = map[string]any{"items": *h.FoodAIEstimatedItems, "kcal": h.FoodAIEstimatedKcal, "protein_g": h.FoodAIEstimatedProteinG,
+			"note": "eaten and balance include AI photo estimates; approximate"}
+	}
 	return mustJSON(map[string]any{
 		"as_of": asOf(h.AsOf), "stale": h.Stale || h.AsOf.IsZero(), "available": true,
-		"food":    map[string]any{"eaten": h.FoodEatenKcal, "target": h.FoodTargetKcal, "left": h.FoodBudgetLeftKcal, "over_by": h.FoodOverBudgetByKcal},
+		"food":    food,
 		"protein": map[string]any{"eaten_g": h.ProteinEatenG, "target_g": h.ProteinTargetG},
 		"steps":   map[string]any{"count": h.Steps, "source": source},
 		"burned":  h.BurnedSoFarKcal, "balance": h.EnergyBalanceSoFarKcal,

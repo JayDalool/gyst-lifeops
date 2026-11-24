@@ -200,6 +200,11 @@ func (c coachHealth) BriefHealth() (secretary.HealthBrief, error) {
 			out.FoodBudgetLeftKcal = &budget
 		}
 	}
+	if t.Estimated.Present {
+		items := t.Estimated.Items
+		out.FoodAIEstimatedItems = &items
+		out.FoodAIEstimatedKcal, out.FoodAIEstimatedProteinG = str(t.Estimated.Kcal), str(t.Estimated.ProteinG)
+	}
 	for _, m := range t.Nutrients {
 		if m.Short() == "Protein" {
 			out.ProteinEatenG, out.ProteinTargetG = str(m.Consumed), str(m.Target)

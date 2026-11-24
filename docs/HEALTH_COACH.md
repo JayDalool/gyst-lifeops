@@ -141,4 +141,10 @@ the review screen) and nothing is written to the diary.
   nutrient field it returns is discarded. Items are validated (roles, 0-3000 g,
   confidence 0-1, at most 15 items, string lengths); invalid items are dropped.
 - Rate limit: one at a time, 3 s apart, 40 an hour (separate from the Coach).
+- Coach and Secretary context (GYST-180): when today's counted food includes
+  AI photo estimates, `get_health_today` carries `calories_kcal.ai_estimated`
+  `{items, kcal, protein_g, note}` and the day brief `health.food.ai_estimated`;
+  both are absent when there are none. They are aggregates of values already in
+  the totals, with no food names, photos, ids or dates, and the note tells the
+  model to treat the totals as approximate.
 - Failures log a fixed category only, never the image, prompt or output.
