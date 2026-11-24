@@ -297,8 +297,7 @@
     // values counted as AI; a value typed back to the estimate counts again).
     function aiField(k) {
       if (match || aiEst == null || aiEst[k] == null) return false;
-      var g = gramsNow();
-      return g > 0 && nut[k].value.trim() === M.prefillEst(aiEst[k], est, g);
+      return M.estimateHolds(nut[k].value, aiEst[k], est, gramsNow());
     }
     // aiDriven: every estimated field is still the AI's and nothing else was
     // typed, which is when the server stores the item as an AI estimate.
@@ -307,11 +306,11 @@
     }
     function aiAny() { return AI_FIELDS.some(aiField); }
     // _aiShare is what the meal total counts, like the day total: undefined when
-    // neither calories nor protein is still the AI's, else the kcal still
-    // estimated (null when only protein is).
+    // none of the four values is still the AI's, else the kcal still estimated
+    // (null when kcal itself is not).
     li._aiShare = function () {
-      var k = aiField('kcal'), p = aiField('protein_g');
-      if (!k && !p) return undefined;
+      var k = aiField('kcal');
+      if (!aiAny()) return undefined;
       if (!k) return null;
       var v = macroVal('kcal');
       return v == null || isNaN(v) ? null : v;

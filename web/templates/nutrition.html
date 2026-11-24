@@ -71,8 +71,8 @@
     <a class="hv3-btn small" href="https://www.myfitnesspal.com/" target="_blank" rel="noopener noreferrer">Open {{template "gyst.icon" "external-link"}}<span class="hv3-sr">MyFitnessPal (opens in a new tab)</span></a>
   </section>
 </div>
-<script defer src="/static/js/food-camera-math.js?v=cam-5"></script>
-<script defer src="/static/js/food-camera.js?v=cam-5"></script>
+<script defer src="/static/js/food-camera-math.js?v=cam-6"></script>
+<script defer src="/static/js/food-camera.js?v=cam-6"></script>
 <p class="hv3-foot">Daily totals only from Apple Health. A day counts your GYST diary when it has food, otherwise the Apple Health total; they are never added together.</p>
 </div>
 {{end}}
@@ -93,7 +93,7 @@
     <ul class="hv3-group">
       {{range .Items}}
       <li>
-        <div class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{.Amount}} · {{if .Kcal}}{{if .AIEstimate}}about {{end}}{{.Kcal}} kcal{{else}}kcal unknown{{end}}{{if .AIEstimate}} <span class="hv3-chip">AI estimate</span>{{end}}</span></span>
+        <div class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{.Amount}} · {{if .Kcal}}{{if .AIKcal}}about {{end}}{{.Kcal}} kcal{{else}}kcal unknown{{end}}{{if .AIAny}} <span class="hv3-chip">AI estimate</span>{{end}}</span></span>
           <form method="post" action="/health/nutrition/items/{{.ID}}/archive"><button class="hv3-btn small secondary" type="submit">Remove<span class="hv3-sr"> {{.Name}}</span></button></form></div>
         <details class="hv3-disclose"><summary>Edit amount<span class="hv3-sr"> of {{.Name}}</span></summary>
           <form class="hv3-form" method="post" action="/health/nutrition/items/{{.ID}}">

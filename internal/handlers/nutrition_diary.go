@@ -33,9 +33,10 @@ type diaryItemView struct {
 	AmountIn string // the number alone, for the edit field
 	UnitName string // "grams" or "servings"
 	Kcal     string // "" when unknown
-	// AIEstimate marks a row whose nutrition is an AI estimate (GYST-180); its
-	// calories read "about N kcal" and carry a chip.
-	AIEstimate bool
+	// Per-value labels (GYST-180), from models.DiaryItem.Estimated, the rule the
+	// day total uses: calories read "about N kcal" only while they are still the
+	// estimate, and any still-estimated value shows the chip.
+	AIKcal, AIAny bool
 }
 
 type diaryGroupView struct {
@@ -162,7 +163,8 @@ func (h *Handler) fillDiary(r *http.Request, data *nutritionData) string {
 			if it.Kcal != nil {
 				v.Kcal = formatThousands(*it.Kcal)
 			}
-			v.AIEstimate = it.NutritionProvenance == models.NutritionProvenanceAIEstimate
+			est := it.Estimated()
+			v.AIKcal, v.AIAny = est.Kcal, est.Any()
 			g.Items = append(g.Items, v)
 		}
 		if len(g.Items) > 0 {

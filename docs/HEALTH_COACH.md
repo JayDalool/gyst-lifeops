@@ -153,10 +153,13 @@ the review screen) and nothing is written to the diary.
   labelled "AI estimate" and editable, and it is held server-side per review.
   Saving it unedited stores `ai_est_*` and nutrition provenance `ai_estimate`;
   any edit makes the item `user` and leaves `ai_est_*` as the AI gave them. The
-  disclosure is per value: a calorie or protein value that still equals the
-  estimate scaled to the saved grams (rounded to 0.1 like the script) keeps
-  counting in `DayIntake.Estimated`, so editing only protein keeps the calories
-  labelled; re-entering both removes the item from the label. An estimate with no
+  disclosure is per value (`models.EstimateHolds`, one rule for the day total,
+  the diary rows and the review): a value that still equals the estimate scaled
+  to the saved grams (rounded to 0.1 like the script) is still an estimate. An
+  item counts in `DayIntake.Estimated` while any of its four values is; the kcal
+  and protein subtotals take only the values that are, so editing only protein
+  keeps the calories labelled; re-entering all four removes the item. The day
+  total and its estimated share are read in one snapshot. An estimate with no
   positive `est_grams` is dropped, and each estimate number is read on its own,
   so an out-of-range one never fails the reply.
   Roughly 60% more output tokens per photo (about +30 tokens per item); the

@@ -112,6 +112,10 @@ for (const r of rows) {
     if (got !== r.posted[k]) { bad++; console.log('MISMATCH', r.est_grams, r.grams_typed, k, got, r.posted[k]); }
   }
 }
+// estimateHolds compares parsed numbers like the server (Codex round b).
+const holds = [['350', 350, 200, 200, true], ['350.0', 350, 200, 200, true], ['350,0', 350, 200, 200, true], ['350.04', 350, 200, 200, false],
+  ['175', 350, 200, 100, true], ['', 350, 200, 200, false], ['x', 350, 200, 200, false], ['0.1', 0.05, 100, 100, true], ['350', null, 200, 200, false], ['350', 350, 200, 0, false]];
+for (const [t, v, e, g, want] of holds) { if (M.estimateHolds(t, v, e, g) !== want) { bad++; console.log('HOLDS', t, v, e, g, want); } }
 // The day-total sentence and its whole-number rounding match the Go side
 // (handlers.estimateNote, formatThousands).
 const notes = [[0, 410, ''], [2, 410, 'Includes AI estimates: 2 items, about 410 kcal'], [1, 1234.5, 'Includes AI estimates: 1 item, about 1,235 kcal'], [3, null, 'Includes AI estimates: 3 items'], [2, 0.4, 'Includes AI estimates: 2 items, about 0 kcal']];

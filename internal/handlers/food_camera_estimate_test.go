@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"lifeops-tracker/internal/healthcoach"
@@ -123,7 +124,9 @@ func TestCameraPartialEditKeepsUntouchedValuesCountedAsEstimates(t *testing.T) {
 		{"no edit", nil, "ai_estimate", 1, ptr(600), ptr(30)},
 		{"protein edited", map[string]any{"protein_g": 31}, "user", 1, ptr(600), nil},
 		{"kcal edited", map[string]any{"kcal": 550}, "user", 1, nil, ptr(30)},
-		{"both edited", map[string]any{"kcal": 550, "protein_g": 31}, "user", 0, nil, nil},
+		{"kcal and protein replaced, carbs and fat left", map[string]any{"kcal": 550, "protein_g": 31}, "user", 1, nil, nil},
+		{"only fat left", map[string]any{"kcal": 550, "protein_g": 31, "carbs_g": 59}, "user", 1, nil, nil},
+		{"all four replaced", map[string]any{"kcal": 550, "protein_g": 31, "carbs_g": 59, "fat_g": 17}, "user", 0, nil, nil},
 		{"fibre added", map[string]any{"fiber_g": 4}, "user", 1, ptr(600), ptr(30)},
 	}
 	for _, c := range cases {
@@ -184,5 +187,31 @@ func TestCameraEstimateWithoutGramsIsNotKept(t *testing.T) {
 	rv := cameraAnalyze(t, h, res)
 	if rv.Items[0].Est != nil || h.camera.m[rv.Nonce].estNut[0] != nil {
 		t.Fatalf("estimate kept without grams: %+v", rv.Items[0])
+	}
+}
+
+// Codex round b: the diary row labels each value by the rule the day total
+// uses: "about" only while calories are still the estimate, the chip while any
+// value is.
+func TestDiaryRowLabelsFollowThePerValueRule(t *testing.T) {
+	for _, c := range []struct {
+		name        string
+		edit        map[string]any
+		about, chip bool
+	}{
+		{"no edit", nil, true, true},
+		{"protein edited", map[string]any{"protein_g": 31}, true, true},
+		{"kcal edited", map[string]any{"kcal": 550}, false, true},
+		{"everything edited", map[string]any{"kcal": 550, "protein_g": 31, "carbs_g": 59, "fat_g": 17}, false, false},
+	} {
+		h := testHandler(t)
+		confirmStew(t, h, analyzeStew(t, h).Nonce, c.edit)
+		body := estGetPage(t, h, "/health/nutrition")
+		if got := strings.Contains(body, "about 600 kcal") || strings.Contains(body, "about 550 kcal"); got != c.about {
+			t.Errorf("%s: about = %v", c.name, got)
+		}
+		if got := strings.Contains(body, "AI estimate</span>"); got != c.chip {
+			t.Errorf("%s: chip = %v", c.name, got)
+		}
 	}
 }

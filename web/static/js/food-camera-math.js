@@ -22,6 +22,15 @@
   function prefillEst(v, estG, g) {
     return v == null || !(estG > 0) || !(g > 0) ? '' : num(v * g / estG);
   }
+  // estimateHolds is the server's "still the AI's estimate" rule for a typed
+  // field: the number typed (as a number, so 350 and 350.0 agree) equals the
+  // estimate scaled to the grams and rounded to 0.1, within 1e-6 like
+  // services.nutrientsEqual.
+  function estimateHolds(text, v, estG, g) {
+    var typed = parseAmount(text);
+    if (v == null || !(estG > 0) || !(g > 0) || isNaN(typed)) return false;
+    return Math.abs(typed - Math.round(v * g / estG * 10) / 10) <= 1e-6;
+  }
   // whole is a calorie figure as the server prints it (formatThousands):
   // rounded to a whole number with thousands commas.
   function whole(v) {
@@ -78,7 +87,7 @@
     var n = 0;
     return {next: function () { return ++n; }, invalidate: function () { n++; }, isCurrent: function (id) { return id === n; }};
   }
-  var api = {num: num, prefill: prefill, prefillEst: prefillEst, whole: whole, estimateNote: estimateNote, parseAmount: parseAmount, typedRatio: typedRatio, captureRatios: captureRatios, followValues: followValues, latest: latest};
+  var api = {num: num, prefill: prefill, prefillEst: prefillEst, estimateHolds: estimateHolds, whole: whole, estimateNote: estimateNote, parseAmount: parseAmount, typedRatio: typedRatio, captureRatios: captureRatios, followValues: followValues, latest: latest};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FoodCameraMath = api;
 })(typeof self !== 'undefined' ? self : this);

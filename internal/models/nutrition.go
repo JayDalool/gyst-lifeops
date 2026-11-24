@@ -1,5 +1,7 @@
 package models
 
+import "math"
+
 // Food diary (Issue #207). All nutrient values are nullable: nil means
 // "not recorded", never zero.
 
@@ -155,4 +157,45 @@ type NewDiaryItem struct {
 	Unit               string
 	Amount             float64
 	QuantityProvenance string
+}
+
+// EstimatedValues says which of an item's four AI-estimable values are still
+// the AI's (GYST-180).
+type EstimatedValues struct{ Kcal, ProteinG, CarbsG, FatG bool }
+
+// Any reports whether at least one value is still an estimate.
+func (e EstimatedValues) Any() bool { return e.Kcal || e.ProteinG || e.CarbsG || e.FatG }
+
+// EstimateHolds is the ONE rule for "this saved value is still the AI's
+// estimate": it equals the estimate scaled to the saved grams and rounded to
+// 0.1, in the order of services.CameraScale and food-camera-math.js (v*g/base,
+// then round). The day totals, the diary rows and the Coach all classify
+// through it, so a value never counts in one place and not in another.
+func EstimateHolds(saved, est *float64, grams, estGrams float64) bool {
+	if saved == nil || est == nil || !(grams > 0) || !(estGrams > 0) {
+		return false
+	}
+	return math.Abs(*saved-math.Round(*est*grams/estGrams*10)/10) <= 1e-9
+}
+
+// ItemEstimated classifies one live item. Only items saved from a photo review
+// with the AI's numbers kept (provenance ai_estimate, or user after an edit)
+// can hold estimates; a database or label item never does.
+func ItemEstimated(provenance string, grams, estGrams *float64, saved, est Nutrients) EstimatedValues {
+	if (provenance != NutritionProvenanceAIEstimate && provenance != "user") || grams == nil || estGrams == nil {
+		return EstimatedValues{}
+	}
+	return EstimatedValues{
+		Kcal:     EstimateHolds(saved.Kcal, est.Kcal, *grams, *estGrams),
+		ProteinG: EstimateHolds(saved.ProteinG, est.ProteinG, *grams, *estGrams),
+		CarbsG:   EstimateHolds(saved.CarbsG, est.CarbsG, *grams, *estGrams),
+		FatG:     EstimateHolds(saved.FatG, est.FatG, *grams, *estGrams),
+	}
+}
+
+// Estimated classifies a diary item the same way the day total does.
+func (it DiaryItem) Estimated() EstimatedValues {
+	return ItemEstimated(it.NutritionProvenance, it.Grams, it.AIEstGrams,
+		Nutrients{Kcal: it.Kcal, ProteinG: it.ProteinG, CarbsG: it.CarbsG, FatG: it.FatG},
+		Nutrients{Kcal: it.AIEstKcal, ProteinG: it.AIEstProteinG, CarbsG: it.AIEstCarbsG, FatG: it.AIEstFatG})
 }
