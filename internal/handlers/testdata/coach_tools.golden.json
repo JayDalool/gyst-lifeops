@@ -651,7 +651,7 @@
   },
   "schemas": {
     "get_daily_checklist": {
-      "description": "Today's checklist: Jay's own habits (done or not) and measured targets.",
+      "description": "Today's checklist: Jay's own habits (done or not) and measured targets. When the measured protein includes AI estimates from meal photos, ai_estimated says how much; treat that protein as approximate.",
       "name": "get_daily_checklist",
       "properties": null,
       "required": null
@@ -684,7 +684,7 @@
       "required": null
     },
     "get_health_today": {
-      "description": "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight.",
+      "description": "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight. When the food totals include AI estimates from meal photos, calories_kcal.ai_estimated says how many items and how much; treat those totals as approximate.",
       "name": "get_health_today",
       "properties": null,
       "required": null

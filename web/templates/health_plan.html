@@ -139,6 +139,7 @@
         <thead><tr><th scope="col"></th><th scope="col">Calories</th><th scope="col">Protein</th><th scope="col">Fiber</th></tr></thead>
         <tbody><tr><th scope="row">Target</th><td>{{.TargetKcal}}</td><td>{{.TargetProtein}}</td><td>{{.TargetFiber}}</td></tr>
         <tr><th scope="row">Average</th><td>{{.AvgKcal}}</td><td>{{.AvgProtein}}</td><td>{{.AvgFiber}}</td></tr></tbody></table>
+      {{if .EstimateNote}}<p class="meta">{{.EstimateNote}}</p>{{end}}
       <p class="meta">7-day weight average at start: {{.WeightStart}} · at end: {{.WeightEnd}}</p>
     </li>
     {{else}}<li><p class="meta">No cycles to compare yet.</p></li>{{end}}

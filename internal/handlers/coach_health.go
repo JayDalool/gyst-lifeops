@@ -159,14 +159,22 @@ func (c coachHealth) FoodProducts() (any, error) {
 
 func (c coachHealth) DailyChecklist() (any, error) {
 	out := []map[string]any{}
+	estimated := false
 	for _, r := range c.data.Checklist {
 		item := map[string]any{"name": r.Name, "done": r.Done}
 		if r.Measured {
 			item["measured"] = r.Value
+			estimated = estimated || r.Estimate != ""
 		}
 		out = append(out, item)
 	}
-	return map[string]any{"items": out}, nil
+	res := map[string]any{"items": out}
+	// The measured protein row includes AI estimates (GYST-180): the same
+	// aggregate as get_health_today, counts and sums only.
+	if estimated {
+		res["ai_estimated"] = c.data.Today.Estimated.aiEstimated(aiChecklistCoachNote)
+	}
+	return res, nil
 }
 
 // BriefHealth is today's Health for the Secretary's day brief. It reads the
@@ -199,6 +207,11 @@ func (c coachHealth) BriefHealth() (secretary.HealthBrief, error) {
 		} else {
 			out.FoodBudgetLeftKcal = &budget
 		}
+	}
+	if t.Estimated.Present {
+		items := t.Estimated.Items
+		out.FoodAIEstimatedItems = &items
+		out.FoodAIEstimatedKcal, out.FoodAIEstimatedProteinG = str(t.Estimated.Kcal), str(t.Estimated.ProteinG)
 	}
 	for _, m := range t.Nutrients {
 		if m.Short() == "Protein" {

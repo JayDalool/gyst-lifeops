@@ -42,7 +42,7 @@ func buildTodayHealthSnapshot(view HealthTodayView, err error) TodayHealthSnapsh
 		label, detail string
 		metric        HealthMetricView
 	}{
-		{"Food remaining", "Food target minus consumed", view.FoodRemaining},
+		{"Food remaining", foodRemainingDetail(view), view.FoodRemaining},
 		{stepsLabel, "Activity measurement", steps},
 	} {
 		status := out.Status
@@ -55,6 +55,15 @@ func buildTodayHealthSnapshot(view HealthTodayView, err error) TodayHealthSnapsh
 		out.Metrics = append(out.Metrics, UIMetric{Label: item.label, Detail: item.detail, Value: item.metric.Value, Unit: item.metric.Unit, Present: item.metric.Present, Status: status})
 	}
 	return out
+}
+
+// foodRemainingDetail adds the AI-estimate label to the tile that is computed
+// from the day's food total (GYST-180).
+func foodRemainingDetail(view HealthTodayView) string {
+	if view.Estimated.Present {
+		return "Food target minus consumed · includes AI estimates"
+	}
+	return "Food target minus consumed"
 }
 
 // ListPending is the checklist's pending rows: every pending occurrence except

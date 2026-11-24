@@ -137,8 +137,41 @@ the review screen) and nothing is written to the diary.
   (only `http://127.0.0.1:<port>/`, otherwise the program refuses to start) and
   `cmd/fakeanthropic`, a loopback fake (`-mode=ok|credit|spend`). The Dockerfile,
   Makefile, compose file and CI never use the tag.
-- The model identifies only. Calories and macros are never requested, and any
-  nutrient field it returns is discarded. Items are validated (roles, 0-3000 g,
+- The model identifies and, since GYST-180, estimates calories, protein, carbs
+  and fat for the grams it gives (`est_kcal`, `est_protein_g`, `est_carbs_g`,
+  `est_fat_g`, each a number or null, same pattern as `est_grams`). Only the
+  instruction and the schema changed: the model, the one photo and the user
+  sentence are the same, pinned by request goldens for both adapters
+  (`internal/healthcoach/testdata`). Items are validated (roles, 0-3000 g,
   confidence 0-1, at most 15 items, string lengths); invalid items are dropped.
+  An estimate is dropped, and the item kept, when `est_grams` is null, any of
+  the four is missing, not a number or negative, calories exceed 100,000 or a
+  macro 10,000 g, protein+carbs+fat outweigh the grams by more than 1 g, or
+  calories are more than 50% (plus 25) away from 4p+4c+9f. Unknown fields are
+  ignored. A food that matches GYST's own data takes the database values and the
+  AI's macros are discarded; an unmatched food shows the estimate prefilled,
+  labelled "AI estimate" and editable, and it is held server-side per review.
+  Saving it unedited stores `ai_est_*` and nutrition provenance `ai_estimate`;
+  any edit makes the item `user` and leaves `ai_est_*` as the AI gave them. The
+  disclosure is per value (`models.EstimateHolds`, one rule for the day total,
+  the diary rows and the review): a value that still equals the estimate scaled
+  to the saved grams (rounded to 0.1 like the script) is still an estimate. An
+  item counts in `DayIntake.Estimated` while any of its four values is; the kcal
+  and protein subtotals take only the values that are, so editing only protein
+  keeps the calories labelled; re-entering all four removes the item. The day
+  total and its estimated share are read in one snapshot. An estimate with no
+  positive `est_grams` is dropped, and each estimate number is read on its own,
+  so an out-of-range one never fails the reply.
+  Roughly 60% more output tokens per photo (about +30 tokens per item); the
+  model setting is unchanged.
 - Rate limit: one at a time, 3 s apart, 40 an hour (separate from the Coach).
+- Coach and Secretary context (GYST-180): when today's counted food includes
+  AI photo estimates, `get_health_today` carries `calories_kcal.ai_estimated`
+  `{items, kcal, protein_g, note}` and the day brief `health.food.ai_estimated`;
+  both are absent when there are none. They are aggregates of values already in
+  the totals, with no food names, photos, ids or dates, and the note tells the
+  model to treat the totals as approximate. `get_daily_checklist` carries the
+  same `ai_estimated` (`items`, `kcal`, `protein_g`, `note`: counts and sums
+  only) when its measured protein row still includes AI estimates, and omits it
+  otherwise.
 - Failures log a fixed category only, never the image, prompt or output.

@@ -143,6 +143,7 @@
   function tag(text, warn) { return el('span', 'hv3-chip' + (warn ? ' warn' : ''), text); }
   var num = M.num; // pure maths, shared with the Go golden-table test
   var FIELDS = [['kcal', 'kcal'], ['protein_g', 'Protein g'], ['carbs_g', 'Carbs g'], ['fat_g', 'Fat g'], ['fiber_g', 'Fiber g']];
+  var AI_FIELDS = ['kcal', 'protein_g', 'carbs_g', 'fat_g'];
   var STEP = 10, MAX_GRAMS = 100000;
   function round1(v) { return Math.round(v * 10) / 10; }
   var parseNum = M.parseAmount;
@@ -182,6 +183,12 @@
     var match = match0 || (it && it.match ? it.match : null);
     var base = null;               // grams at x1
     var ratio = {};                // free-form: nutrient per gram when last set
+    // GYST-180: the AI's own nutrition for this food at `est` grams, only for a
+    // food with no database match. aiKeys marks the fields still showing it;
+    // typing in a field hands that field to the owner for good.
+    var aiEst = !match && est != null && it && it.est_nutrition ? it.est_nutrition : null;
+    var aiKeys = {};
+    if (aiEst) AI_FIELDS.forEach(function (k) { if (aiEst[k] != null) aiKeys[k] = true; });
     var tags = el('div', 'hv3-cam-tags');
     var grid = el('div', 'hv3-cam-grid');
     var name = field('Name', 'name', 'text', 'wide');
@@ -242,6 +249,7 @@
           // The owner's typing is never rewritten: only the ratio is noted, and
           // the other fields move when the grams or the portion change.
           x.input.addEventListener('input', function () {
+            delete aiKeys[f[0]];
             var r = M.typedRatio(x.input.value, gramsNow());
             if (r != null) ratio[f[0]] = r; else delete ratio[f[0]];
             refreshTags(); updateTotal();
@@ -249,6 +257,7 @@
           g2.appendChild(x.label);
         });
         macroBox.appendChild(g2);
+        if (aiEst) macroBox.appendChild(el('p', 'hv3-s', 'AI estimate for these grams: a guess, so change any value that looks wrong.'));
       }
     }
     // followGrams moves the macros with the grams: a database food by its
@@ -261,6 +270,10 @@
           var v = g > 0 ? M.prefill(match.per_100g[k], g) : '';
           dd[k].textContent = v === '' ? '—' : v;
           dd[k]._v = v;
+        } else if (aiKeys[k]) {
+          // Also when the grams are cleared or 0: the AI fields go blank, the
+          // owner's own typing stays (they left aiKeys when typed).
+          nut[k].value = M.followAI(aiKeys, aiEst, est, g)[k];
         } else if (g > 0 && ratio[k] != null) {
           nut[k].value = M.followValues(ratio, g)[k];
         }
@@ -271,7 +284,8 @@
     function captureNow() {
       if (match) return;
       var texts = {};
-      FIELDS.forEach(function (f) { texts[f[0]] = nut[f[0]].value; });
+      // A field still showing the AI estimate follows the estimate, not a ratio.
+      FIELDS.forEach(function (f) { if (!aiKeys[f[0]]) texts[f[0]] = nut[f[0]].value; });
       ratio = M.captureRatios(ratio, texts, gramsNow());
     }
     function macroVal(k) {
@@ -280,6 +294,29 @@
       return t === '' ? null : parseNum(t);
     }
     li._macro = macroVal;
+    // aiField: this field still shows the AI's number for the grams now (the
+    // server's rule for "still an estimate", so a partial edit keeps the other
+    // values counted as AI; a value typed back to the estimate counts again).
+    function aiField(k) {
+      if (match || aiEst == null || aiEst[k] == null) return false;
+      return M.estimateHolds(nut[k].value, aiEst[k], est, gramsNow());
+    }
+    // aiDriven: every estimated field is still the AI's and nothing else was
+    // typed, which is when the server stores the item as an AI estimate.
+    function aiDriven() {
+      return !match && aiEst != null && AI_FIELDS.every(aiField) && nut.fiber_g.value.trim() === '';
+    }
+    function aiAny() { return AI_FIELDS.some(aiField); }
+    // _aiShare is what the meal total counts, like the day total: undefined when
+    // none of the four values is still the AI's, else the kcal still estimated
+    // (null when kcal itself is not).
+    li._aiShare = function () {
+      var k = aiField('kcal');
+      if (!aiAny()) return undefined;
+      if (!k) return null;
+      var v = macroVal('kcal');
+      return v == null || isNaN(v) ? null : v;
+    };
     function refreshTags() {
       tags.textContent = '';
       if (it) {
@@ -291,6 +328,9 @@
       else if (est != null && portion === 1 && g === round1(est)) tags.appendChild(tag('AI estimate'));
       else tags.appendChild(tag('You confirmed grams'));
       if (match) tags.appendChild(tag('Nutrition from ' + match.source + ': ' + match.name));
+      else if (aiDriven()) tags.appendChild(tag('Nutrition: AI estimate'));
+      else if (aiAny()) tags.appendChild(tag('Nutrition: partly AI estimate, partly yours'));
+      else if (aiEst) tags.appendChild(tag('Nutrition: yours (edited from an AI estimate)'));
       else if (FIELDS.some(function (f) { return nut[f[0]].value !== ''; })) tags.appendChild(tag('Nutrition: yours'));
       else tags.appendChild(tag('No nutrition yet', true));
     }
@@ -366,7 +406,7 @@
     // swapTo replaces the food, keeping the grams and the photo item (idx), so
     // the AI's own grams estimate stays attached to this row.
     li._swapTo = function (m) {
-      match = m; ratio = {};
+      match = m; ratio = {}; aiEst = null; aiKeys = {}; // a database food replaces the estimate
       name.input.value = m.name;
       buildMacros(); relabel(); refresh(true);
       announce('Swapped to ' + m.name);
@@ -390,7 +430,10 @@
 
   function updateTotal() {
     var kcal = 0, prot = 0, anyK = false, anyP = false, missK = false;
+    var aiItems = 0, aiKcal = 0, aiAnyK = false;
     rowEls().forEach(function (li) {
+      var a = li._aiShare();
+      if (a !== undefined) { aiItems++; if (a != null) { aiKcal += a; aiAnyK = true; } }
       var k = li._macro('kcal'), p = li._macro('protein_g');
       if (k == null || isNaN(k)) missK = true; else { kcal += k; anyK = true; }
       if (p != null && !isNaN(p)) { prot += p; anyP = true; }
@@ -398,6 +441,8 @@
     var t = 'Meal: ' + (anyK ? Math.round(kcal) + ' kcal' : 'no kcal yet');
     if (anyP) t += ', ' + num(prot) + ' g protein';
     if (anyK && missK) t += ' (plus foods with no kcal)';
+    // GYST-180: same sentence, same rounding, as the day total after saving.
+    if (aiItems > 0) t += ' · ' + M.estimateNote(aiItems, aiAnyK ? aiKcal : null);
     totalEl.textContent = t;
   }
 

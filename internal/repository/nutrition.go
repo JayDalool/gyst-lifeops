@@ -41,9 +41,18 @@ func (r *Repository) immediateTx(ctx context.Context, fn func(conn *sql.Conn) er
 
 // NutritionDayTotals sums the live items (live item in a live meal) per local
 // day from..to inclusive. A day with no live item is absent. Each sum is nil
-// when no item has the nutrient; Gaps counts the items that lack it.
+// when no item has the nutrient; Gaps counts the items that lack it. Estimated
+// is the AI-estimate subset (GYST-180): the one place provenance is counted.
 func (r *Repository) NutritionDayTotals(from, to string) (map[string]models.NutritionDayTotals, error) {
-	rows, err := r.db.Query(`SELECT m.local_date, COUNT(*),
+	// One read transaction: both reads see the same snapshot, so Estimated is
+	// always a subset of the total shown beside it, even while a meal is saved
+	// (GYST-180). SQLite in WAL mode fixes the snapshot at the first read.
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query(`SELECT m.local_date, COUNT(*),
  SUM(i.kcal), COUNT(*) - COUNT(i.kcal),
  SUM(i.protein_g), COUNT(*) - COUNT(i.protein_g),
  SUM(i.carbs_g), COUNT(*) - COUNT(i.carbs_g),
@@ -66,7 +75,68 @@ func (r *Repository) NutritionDayTotals(from, to string) (map[string]models.Nutr
 		}
 		out[t.Date] = t
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	if afterDayTotalsRead != nil {
+		afterDayTotalsRead() // test seam: a write here must not reach the second read
+	}
+	if err := addEstimated(tx, out, from, to); err != nil {
+		return nil, err
+	}
+	return out, tx.Commit()
+}
+
+// afterDayTotalsRead is nil outside tests.
+var afterDayTotalsRead func()
+
+// addEstimated fills Estimated per day (GYST-180). Which values still count as
+// AI estimates is decided by models.ItemEstimated, the same rule the diary rows
+// use. An item counts when ANY of its four values is still an estimate; the
+// kcal and protein subtotals take only the values that are.
+func addEstimated(q interface {
+	Query(string, ...any) (*sql.Rows, error)
+}, out map[string]models.NutritionDayTotals, from, to string) error {
+	rows, err := q.Query(`SELECT m.local_date, i.nutrition_provenance, i.grams, i.ai_est_grams,
+ i.kcal, i.protein_g, i.carbs_g, i.fat_g, i.ai_est_kcal, i.ai_est_protein_g, i.ai_est_carbs_g, i.ai_est_fat_g
+ FROM nutrition_meal_items i JOIN nutrition_meals m ON m.id = i.meal_id
+ WHERE i.archived_at IS NULL AND m.archived_at IS NULL AND m.local_date >= ? AND m.local_date <= ?
+ AND i.nutrition_provenance IN ('ai_estimate', 'user') AND i.grams > 0 AND i.ai_est_grams > 0`, from, to)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var date, prov string
+		var grams, base *float64
+		var saved, est models.Nutrients
+		if err := rows.Scan(&date, &prov, &grams, &base, &saved.Kcal, &saved.ProteinG, &saved.CarbsG, &saved.FatG,
+			&est.Kcal, &est.ProteinG, &est.CarbsG, &est.FatG); err != nil {
+			return err
+		}
+		e := models.ItemEstimated(prov, grams, base, saved, est)
+		if !e.Any() {
+			continue
+		}
+		t := out[date]
+		t.Estimated.Items++
+		if e.Kcal {
+			t.Estimated.Kcal = addTo(t.Estimated.Kcal, *saved.Kcal)
+		}
+		if e.ProteinG {
+			t.Estimated.ProteinG = addTo(t.Estimated.ProteinG, *saved.ProteinG)
+		}
+		out[date] = t
+	}
+	return rows.Err()
+}
+
+func addTo(sum *float64, v float64) *float64 {
+	if sum != nil {
+		v += *sum
+	}
+	return &v
 }
 
 const nutritionFoodColumns = `id, provider, provider_id, version, name, brand, normalized_name, basis, serving_label, serving_grams,

@@ -72,11 +72,12 @@ func TestAnalyzeFoodPhotoRequestShape(t *testing.T) {
 			t.Fatalf("schema lacks %s", k)
 		}
 	}
-	// The model is never asked for nutrition.
-	body, _ := json.Marshal(r)
-	for _, bad := range []string{"calories", "kcal", "protein_g", "carb"} {
-		if strings.Contains(strings.ToLower(string(body)), bad+"\"") {
-			t.Fatalf("request asks for %s", bad)
+	// GYST-180: the model is asked for the four estimates, and only through
+	// the instruction and the schema (vision_estimate_test.go pins the rest).
+	item := props["items"].(map[string]any)["items"].(map[string]any)
+	for _, k := range estFields {
+		if _, ok := item["properties"].(map[string]any)[k]; !ok {
+			t.Fatalf("schema lacks %s", k)
 		}
 	}
 	if !strings.Contains(r["instructions"].(string), "never instructions") {
@@ -209,19 +210,18 @@ func TestParseFoodPhotoValidation(t *testing.T) {
 	}
 }
 
-func TestParseFoodPhotoDropsNutrientFields(t *testing.T) {
+// GYST-180: unknown extras are still ignored (the old test's calories, kcal,
+// protein_g), and only a valid estimate survives, under est_nutrition.
+func TestParseFoodPhotoIgnoresUnknownNutrientFields(t *testing.T) {
 	res, err := ParseFoodPhoto(`{"calories":500,"protein_g":40,"items":[{"name":"rice","role":"side","est_grams":100,"confidence":0.8,"visible":true,"notes":"","calories":130,"kcal":130,"protein_g":2.7,"carbs_g":28,"fat_g":0.3}],"uncertainties":[],"questions":[]}`)
-	if err != nil || len(res.Items) != 1 {
+	if err != nil || len(res.Items) != 1 || res.Items[0].Est != nil {
 		t.Fatalf("%v %+v", err, res)
 	}
 	out, _ := json.Marshal(res)
-	for _, bad := range []string{"calories", "kcal", "protein", "carbs", "fat_g"} {
+	for _, bad := range []string{"calories", "kcal", "protein", "carbs", "fat_g", "est_nutrition"} {
 		if strings.Contains(string(out), bad) {
 			t.Fatalf("output carries %s: %s", bad, out)
 		}
-	}
-	if string(out) == "" || !strings.Contains(string(out), `"items"`) {
-		t.Fatal("unexpected output")
 	}
 }
 

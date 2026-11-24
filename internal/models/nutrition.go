@@ -1,5 +1,7 @@
 package models
 
+import "math"
+
 // Food diary (Issue #207). All nutrient values are nullable: nil means
 // "not recorded", never zero.
 
@@ -9,6 +11,9 @@ const (
 	IntakeSourceAppleHealth = "apple_health"
 	IntakeSourceNone        = "none"
 )
+
+// NutritionProvenanceAIEstimate marks item nutrition the photo AI estimated.
+const NutritionProvenanceAIEstimate = "ai_estimate"
 
 // Nutrients is one set of the five tracked nutrients.
 type Nutrients struct {
@@ -37,10 +42,22 @@ type NutrientGaps struct {
 // NutritionDayTotals is the sum of the live items of one local day. A sum is
 // nil when no live item has that nutrient.
 type NutritionDayTotals struct {
-	Date  string       `json:"date"`
-	Items int          `json:"items"`
-	Sum   Nutrients    `json:"sum"`
-	Gaps  NutrientGaps `json:"gaps"`
+	Date      string          `json:"date"`
+	Items     int             `json:"items"`
+	Sum       Nutrients       `json:"sum"`
+	Gaps      NutrientGaps    `json:"gaps"`
+	Estimated EstimatedIntake `json:"estimated"`
+}
+
+// EstimatedIntake is the part of a GYST day's total that comes from AI macro
+// estimates: the live items whose nutrition_provenance is "ai_estimate"
+// (GYST-180). It is a subset of Counted, never added to it. Kcal and ProteinG
+// are nil when no such item has the value. It is the single source every
+// screen, the Coach and the Secretary label from; nothing recounts provenance.
+type EstimatedIntake struct {
+	Items    int      `json:"items"`
+	Kcal     *float64 `json:"kcal"`
+	ProteinG *float64 `json:"protein_g"`
 }
 
 // DayIntake is the one counted intake of a local day. Source says where
@@ -56,6 +73,9 @@ type DayIntake struct {
 	Items     int                  `json:"items"`
 	Reference *Nutrients           `json:"reference"`
 	Snapshot  *DailyHealthSnapshot `json:"snapshot"`
+	// Estimated is the AI-estimated share of Counted (GYST days only; an Apple
+	// Health or empty day has none).
+	Estimated EstimatedIntake `json:"estimated"`
 }
 
 // NutritionFood is one immutable catalogue row. Values are per 100 g when
@@ -137,4 +157,45 @@ type NewDiaryItem struct {
 	Unit               string
 	Amount             float64
 	QuantityProvenance string
+}
+
+// EstimatedValues says which of an item's four AI-estimable values are still
+// the AI's (GYST-180).
+type EstimatedValues struct{ Kcal, ProteinG, CarbsG, FatG bool }
+
+// Any reports whether at least one value is still an estimate.
+func (e EstimatedValues) Any() bool { return e.Kcal || e.ProteinG || e.CarbsG || e.FatG }
+
+// EstimateHolds is the ONE rule for "this saved value is still the AI's
+// estimate": it equals the estimate scaled to the saved grams and rounded to
+// 0.1, in the order of services.CameraScale and food-camera-math.js (v*g/base,
+// then round). The day totals, the diary rows and the Coach all classify
+// through it, so a value never counts in one place and not in another.
+func EstimateHolds(saved, est *float64, grams, estGrams float64) bool {
+	if saved == nil || est == nil || !(grams > 0) || !(estGrams > 0) {
+		return false
+	}
+	return math.Abs(*saved-math.Round(*est*grams/estGrams*10)/10) <= 1e-9
+}
+
+// ItemEstimated classifies one live item. Only items saved from a photo review
+// with the AI's numbers kept (provenance ai_estimate, or user after an edit)
+// can hold estimates; a database or label item never does.
+func ItemEstimated(provenance string, grams, estGrams *float64, saved, est Nutrients) EstimatedValues {
+	if (provenance != NutritionProvenanceAIEstimate && provenance != "user") || grams == nil || estGrams == nil {
+		return EstimatedValues{}
+	}
+	return EstimatedValues{
+		Kcal:     EstimateHolds(saved.Kcal, est.Kcal, *grams, *estGrams),
+		ProteinG: EstimateHolds(saved.ProteinG, est.ProteinG, *grams, *estGrams),
+		CarbsG:   EstimateHolds(saved.CarbsG, est.CarbsG, *grams, *estGrams),
+		FatG:     EstimateHolds(saved.FatG, est.FatG, *grams, *estGrams),
+	}
+}
+
+// Estimated classifies a diary item the same way the day total does.
+func (it DiaryItem) Estimated() EstimatedValues {
+	return ItemEstimated(it.NutritionProvenance, it.Grams, it.AIEstGrams,
+		Nutrients{Kcal: it.Kcal, ProteinG: it.ProteinG, CarbsG: it.CarbsG, FatG: it.FatG},
+		Nutrients{Kcal: it.AIEstKcal, ProteinG: it.AIEstProteinG, CarbsG: it.AIEstCarbsG, FatG: it.AIEstFatG})
 }

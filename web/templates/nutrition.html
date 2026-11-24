@@ -19,6 +19,7 @@
     <p class="hv3-kcal-v">{{if .Consumed.Present}}{{.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}<small>{{if .Target.Present}} / {{.Target.Value}} kcal{{else}} kcal{{end}}</small></p>
     {{if .Target.Present}}<div class="hv3-bar lg{{if not .HasBar}} empty{{else if eq .State "warn"}} warn{{end}}" role="img" aria-label="{{.ProgressAria}}"><i style="width:{{if .HasBar}}{{if gt .Percent 100}}100{{else}}{{.Percent}}{{end}}{{else}}0{{end}}%"></i></div>{{end}}
     <p class="hv3-s">{{if .Consumed.Present}}Eaten today, {{$.Today.IntakeNote}}{{if .Gaps}} · {{.PartialNote}}{{end}}{{else if eq $.Today.IntakeSource "gyst"}}kcal unknown for today's items{{else}}No food logged yet today{{end}}</p>
+    {{if $.Today.Estimated.Present}}<p class="hv3-s" id="kcal-estimate">{{template "gyst.icon" "info"}} {{$.Today.Estimated.Note}}</p>{{end}}
     {{end}}
   </section>
 
@@ -36,11 +37,13 @@
       </div>
       {{end}}
     </div>
+    {{if .Today.Estimated.Present}}<p class="hv3-s" id="macro-estimate">{{template "gyst.icon" "info"}} {{.Today.Estimated.Note}}</p>{{end}}
   </section>
 
   {{if .ShowGap}}
   <section class="hv3-card hv3-gap hv3-span" aria-labelledby="gap-title">
     <div class="hv3-card-h"><h2 id="gap-title" class="hv3-k">{{template "gyst.icon" "check"}}Close the protein gap</h2><span class="hv3-chip">{{.GapLeft}} g to go</span></div>
+    {{if .Today.Estimated.Present}}<p class="hv3-s" id="gap-estimate">{{.Today.Estimated.Note}}</p>{{end}}
     {{if .GapFoods}}
     <ul class="hv3-gap-list">{{range .GapFoods}}<li><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{if .Serving}}{{.Serving}} · {{end}}{{if .Kcal}}{{.Kcal}} kcal{{else}}kcal unknown{{end}}{{if and .BudgetKnown .Kcal}}{{if .Fits}} · fits your budget{{else}} · over your budget left{{end}}{{end}}</span></span><b class="hv3-gap-p">+{{.Protein}} g</b></li>{{end}}</ul>
     <p class="hv3-s">From your foods, per serving, best protein per calorie first. <a href="/health/foods">My foods</a></p>
@@ -58,6 +61,7 @@
     </div>
     <div class="hv3-kdays" aria-hidden="true">{{range .Week}}<span{{if .IsToday}} class="today"{{end}}>{{.Letter}}</span>{{end}}</div>
     <p class="hv3-s">{{if .WeekLogged}}{{if .TargetLine}}{{.WeekWithin}} of {{.WeekLogged}} logged days within target · {{end}}{{end}}{{if .WeekPartial}}{{.WeekPartial}} partial {{if eq .WeekPartial 1}}day{{else}}days{{end}}, not counted · {{end}}{{if or .WeekLogged .WeekPartial}}today so far{{else}}No food logged in the previous six days{{end}}</p>
+    {{if .WeekEstimateNote}}<p class="hv3-s" id="week-estimate">{{.WeekEstimateNote}}</p>{{end}}
   </section>
   {{end}}
 
@@ -67,8 +71,8 @@
     <a class="hv3-btn small" href="https://www.myfitnesspal.com/" target="_blank" rel="noopener noreferrer">Open {{template "gyst.icon" "external-link"}}<span class="hv3-sr">MyFitnessPal (opens in a new tab)</span></a>
   </section>
 </div>
-<script defer src="/static/js/food-camera-math.js?v=cam-3"></script>
-<script defer src="/static/js/food-camera.js?v=cam-3"></script>
+<script defer src="/static/js/food-camera-math.js?v=cam-7"></script>
+<script defer src="/static/js/food-camera.js?v=cam-7"></script>
 <p class="hv3-foot">Daily totals only from Apple Health. A day counts your GYST diary when it has food, otherwise the Apple Health total; they are never added together.</p>
 </div>
 {{end}}
@@ -77,6 +81,7 @@
 {{with .Diary}}
   <section class="hv3-card hv3-span" id="diary" aria-labelledby="diary-title">
     <div class="hv3-card-h"><h2 id="diary-title" class="hv3-k">{{template "gyst.icon" "utensils"}}Today's food</h2>{{if .Count}}<span class="hv3-chip">{{.Count}} {{if eq .Count 1}}item{{else}}items{{end}}</span>{{end}}</div>
+    {{if $.Today.Estimated.Present}}<p class="hv3-s" id="diary-estimate">{{$.Today.Estimated.Note}}</p>{{end}}
     {{if .Error}}<p class="hv3-banner warn" role="alert" id="diary-error">{{template "gyst.icon" "circle-alert"}}<span>{{.Error}}</span></p>{{end}}
     {{if .Added}}<p class="hv3-banner" role="status">{{template "gyst.icon" "check"}}<span>Added.</span></p>{{end}}
     {{if .Already}}<p class="hv3-banner" role="status">{{template "gyst.icon" "info"}}<span>Already added.</span></p>{{end}}
@@ -88,7 +93,7 @@
     <ul class="hv3-group">
       {{range .Items}}
       <li>
-        <div class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{.Amount}} · {{if .Kcal}}{{.Kcal}} kcal{{else}}kcal unknown{{end}}</span></span>
+        <div class="hv3-row"><span class="hv3-row-copy"><span class="hv3-strong">{{.Name}}</span><span class="hv3-s">{{.Amount}} · {{if .Kcal}}{{if .AIKcal}}about {{end}}{{.Kcal}} kcal{{else}}kcal unknown{{end}}{{if .AIAny}} <span class="hv3-chip">AI estimate</span>{{end}}</span></span>
           <form method="post" action="/health/nutrition/items/{{.ID}}/archive"><button class="hv3-btn small secondary" type="submit">Remove<span class="hv3-sr"> {{.Name}}</span></button></form></div>
         <details class="hv3-disclose"><summary>Edit amount<span class="hv3-sr"> of {{.Name}}</span></summary>
           <form class="hv3-form" method="post" action="/health/nutrition/items/{{.ID}}">
@@ -108,7 +113,7 @@
     <p class="hv3-banner" id="cam-status" role="status" hidden></p>
     <p class="hv3-banner warn" id="cam-error" role="alert" hidden><span id="cam-error-text"></span><a id="cam-error-link" href="/settings#ai" hidden>Settings › AI provider</a></p>
     <div id="cam-body" hidden>
-      <p class="hv3-s">The AI names what it sees and guesses grams. Adjust grams with the minus and plus buttons, or scale the whole meal with the slider. Nothing is saved until you press Save meal.</p>
+      <p class="hv3-s">The AI names what it sees and guesses grams and nutrition. A guess is labelled as an AI estimate. Adjust grams with the minus and plus buttons, or scale the whole meal with the slider. Nothing is saved until you press Save meal.</p>
       <ul class="hv3-cam-notes" id="cam-notes"></ul>
       <section class="hv3-cam-portion" aria-label="Whole meal portion">
         <label for="cam-portion">Whole meal portion</label>

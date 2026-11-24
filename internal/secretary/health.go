@@ -43,7 +43,7 @@ func healthSpecs(r HealthReader) []ToolSpec {
 		}
 	}
 	return []ToolSpec{
-		{Name: "get_health_today", Description: "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight.",
+		{Name: "get_health_today", Description: "Today's calories (eaten, target, budget left), burned so far, energy balance so far, macros, steps, exercise minutes, water logged vs target and latest weight. When the food totals include AI estimates from meal photos, calories_kcal.ai_estimated says how many items and how much; treat those totals as approximate.",
 			Run: plain(r.Today)},
 		{Name: "get_health_plan", Description: "The current health plan: dates and daily targets (calories, macros, steps, strength and cardio sessions per week), plus reference_targets: outside recommendations (for example a dietitian) labelled with their source, all not_active. Never present a reference target as the active plan.",
 			Run: plain(r.Plan)},
@@ -77,7 +77,7 @@ func healthSpecs(r HealthReader) []ToolSpec {
 			Run: plain(r.HevyRoutines)},
 		{Name: "get_food_products", Description: "Foods and products Jay usually has, with per-serving nutrition (null = unknown).",
 			Run: plain(r.FoodProducts)},
-		{Name: "get_daily_checklist", Description: "Today's checklist: Jay's own habits (done or not) and measured targets.",
+		{Name: "get_daily_checklist", Description: "Today's checklist: Jay's own habits (done or not) and measured targets. When the measured protein includes AI estimates from meal photos, ai_estimated says how much; treat that protein as approximate.",
 			Run: plain(r.DailyChecklist)},
 	}
 }

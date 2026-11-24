@@ -130,6 +130,10 @@ func coachToday(data HealthData) map[string]any {
 		}
 		cal[key] = t.BudgetAbs
 	}
+	// Only when the day's food includes AI estimates; absent otherwise.
+	if est := t.Estimated.aiEstimated(aiEstimatedCoachNote); est != nil {
+		cal["ai_estimated"] = est
+	}
 	return map[string]any{
 		"date":                          t.Date,
 		"apple_health_last_sync":        map[bool]string{true: t.LastSynced, false: "none today"}[t.HasLastSynced],

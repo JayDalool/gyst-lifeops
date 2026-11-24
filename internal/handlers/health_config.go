@@ -24,6 +24,9 @@ type healthChecklistRow struct {
 	Value    string // measured rows: "132 / 180 g", or "—" when not logged
 	Measured bool
 	Source   string // measured rows: what the value is measured from
+	// Estimate labels a protein row whose value includes AI estimates
+	// (GYST-180), from the same HealthTodayView.Estimated as every other surface.
+	Estimate string
 }
 
 func buildChecklistRows(items []models.HealthChecklistItem, today HealthTodayView) []healthChecklistRow {
@@ -38,6 +41,7 @@ func buildChecklistRows(items []models.HealthChecklistItem, today HealthTodayVie
 					protein = m
 				}
 			}
+			row.Estimate = today.Estimated.ProteinNote
 			row.Done = protein.HasBar && protein.State == "ok"
 			row.Value = "—"
 			if protein.Consumed.Present {

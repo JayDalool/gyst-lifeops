@@ -178,9 +178,25 @@ func (s *Service) AddCameraMeal(ctx context.Context, actor DiaryActor, in Camera
 					// to 0.1): any difference, even 0.1, is Jay's entry and is
 					// kept as posted (docs/RULES.md 3.2).
 					shown := RoundNutrients(CameraScale(*n, it.Grams, est))
+					stored := RoundNutrients(CameraScale(*n, grams, est))
 					if nutrientsEqual(it.Nutrients, shown) {
-						row.Nutrients = RoundNutrients(CameraScale(*n, grams, est))
+						row.Nutrients = stored
 						row.NutritionProv = "ai_estimate"
+					} else {
+						// A partial edit makes the item Jay's (provenance user),
+						// but a value he left as shown is still the estimate:
+						// store the server's own scaling for it so the day total
+						// can tell which values are still AI (GYST-180).
+						keep := func(posted, show, st *float64) *float64 {
+							if posted != nil && show != nil && math.Abs(*posted-*show) <= 1e-6 {
+								return st
+							}
+							return posted
+						}
+						row.Nutrients.Kcal = keep(it.Nutrients.Kcal, shown.Kcal, stored.Kcal)
+						row.Nutrients.ProteinG = keep(it.Nutrients.ProteinG, shown.ProteinG, stored.ProteinG)
+						row.Nutrients.CarbsG = keep(it.Nutrients.CarbsG, shown.CarbsG, stored.CarbsG)
+						row.Nutrients.FatG = keep(it.Nutrients.FatG, shown.FatG, stored.FatG)
 					}
 				}
 			}

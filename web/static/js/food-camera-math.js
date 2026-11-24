@@ -14,6 +14,48 @@
   function prefill(per, g) {
     return per == null ? '' : num(per * g / 100);
   }
+  // prefillEst is the nutrient shown for an AI estimate that holds `v` for
+  // `estG` grams, at the grams `g` as typed. Same operation order as the Go
+  // side (services.CameraScale): (v*g)/estG, then to 0.1. GYST-180/GYST-192:
+  // the server compares what the form posts with its own figure to the last
+  // digit, so this must not be rewritten as v * (g / estG).
+  function prefillEst(v, estG, g) {
+    return v == null || !(estG > 0) || !(g > 0) ? '' : num(v * g / estG);
+  }
+  // followAI is what the fields still showing the AI estimate (aiKeys) show at
+  // the grams `g`: the scaled estimate, or blank when the grams are cleared or 0,
+  // so an AI number is never left standing as if the owner had typed it. Fields
+  // the owner typed (not in aiKeys) are not in the result and are left alone.
+  function followAI(aiKeys, aiEst, estG, g) {
+    var out = {};
+    for (var k in aiKeys) if (aiKeys[k] && aiEst && aiEst[k] != null) out[k] = prefillEst(aiEst[k], estG, g);
+    return out;
+  }
+  // estimateHolds is the server's "still the AI's estimate" rule for a typed
+  // field: the number typed (as a number, so 350 and 350.0 agree) equals the
+  // estimate scaled to the grams and rounded to 0.1, within 1e-6 like
+  // services.nutrientsEqual.
+  function estimateHolds(text, v, estG, g) {
+    var typed = parseAmount(text);
+    if (v == null || !(estG > 0) || !(g > 0) || isNaN(typed)) return false;
+    return Math.abs(typed - Math.round(v * g / estG * 10) / 10) <= 1e-6;
+  }
+  // whole is a calorie figure as the server prints it (formatThousands):
+  // rounded to a whole number with thousands commas.
+  function whole(v) {
+    var r = Math.round(v);
+    if (r === 0) r = 0; // never "-0"
+    var s = String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return r < 0 ? '\u2212' + s : s;
+  }
+  // estimateNote is the day-total label of the Go side (handlers.estimateNote):
+  // "Includes AI estimates: 2 items, about 410 kcal"; kcal null leaves it out.
+  function estimateNote(items, kcal) {
+    if (!(items > 0)) return '';
+    var n = 'Includes AI estimates: ' + items + (items === 1 ? ' item' : ' items');
+    if (kcal != null) n += ', about ' + whole(kcal) + ' kcal';
+    return n;
+  }
   // parseAmount reads a typed amount: digits with an optional decimal part,
   // comma or point. NaN for anything else (including blank).
   function parseAmount(v) {
@@ -54,7 +96,7 @@
     var n = 0;
     return {next: function () { return ++n; }, invalidate: function () { n++; }, isCurrent: function (id) { return id === n; }};
   }
-  var api = {num: num, prefill: prefill, parseAmount: parseAmount, typedRatio: typedRatio, captureRatios: captureRatios, followValues: followValues, latest: latest};
+  var api = {num: num, prefill: prefill, prefillEst: prefillEst, followAI: followAI, estimateHolds: estimateHolds, whole: whole, estimateNote: estimateNote, parseAmount: parseAmount, typedRatio: typedRatio, captureRatios: captureRatios, followValues: followValues, latest: latest};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FoodCameraMath = api;
 })(typeof self !== 'undefined' ? self : this);

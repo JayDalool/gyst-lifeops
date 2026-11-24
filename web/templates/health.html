@@ -40,13 +40,14 @@
         <div class="eaten"><span class="hv3-cal-ico" aria-hidden="true">{{template "gyst.icon" "utensils"}}</span><dt>Eaten</dt>
           <dd>{{if .Today.Calories.Consumed.Present}}{{.Today.Calories.Consumed.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
           <p>{{if .Today.CalorieTarget.Present}}of {{.Today.CalorieTarget.Value}} target{{else}}No target set{{end}}</p>
-          {{if and .Today.Calories.Consumed.Present .Today.IntakeNote}}<p>{{.Today.IntakeNote}}{{if .Today.Calories.Gaps}} · {{.Today.Calories.PartialNote}}{{end}}</p>{{end}}</div>
+          {{if and .Today.Calories.Consumed.Present .Today.IntakeNote}}<p>{{.Today.IntakeNote}}{{if .Today.Calories.Gaps}} · {{.Today.Calories.PartialNote}}{{end}}</p>{{end}}
+          {{if .Today.Estimated.Present}}<p>{{.Today.Estimated.Note}}</p>{{end}}</div>
         <div class="burn"><span class="hv3-cal-ico" aria-hidden="true">{{template "gyst.icon" "flame"}}</span><dt>Burned so far</dt>
           <dd>{{if .Today.ObservedBurn.Present}}{{.Today.ObservedBurn.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
           <p>{{if and .Today.RestingEnergy.Present .Today.ActiveEnergy.Present}}{{.Today.RestingEnergy.Value}} resting + {{.Today.ActiveEnergy.Value}} active{{else if .Today.ActiveEnergy.Present}}{{.Today.ActiveEnergy.Value}} active · resting not received{{else}}Not received{{end}}</p></div>
         <div class="bal"><span class="hv3-cal-ico" aria-hidden="true">{{template "gyst.icon" "chart-column"}}</span><dt>Balance so far</dt>
           <dd>{{if .Today.ObservedEnergy.Present}}{{.Today.ObservedEnergy.Value}}{{else}}<span class="hv3-absent">—</span>{{end}}</dd>
-          <p>{{if .Today.ObservedEnergy.Present}}Observed, not final{{else}}Needs food and burn data{{end}}</p></div>
+          <p>{{if .Today.ObservedEnergy.Present}}Observed, not final{{if .Today.Estimated.Present}} · includes AI estimates{{end}}{{else}}Needs food and burn data{{end}}</p></div>
       </dl>
     </div>
     <details class="hv3-disclose">
@@ -114,6 +115,7 @@
       </a>
       {{end}}
     </div>
+    {{if .Today.Estimated.Present}}<p class="hv3-s">{{.Today.Estimated.Note}}</p>{{end}}
   </section>
 
   <div class="hv3-duo">
@@ -158,11 +160,12 @@
         <span class="hv3-dot-btn measured{{if .Done}} done{{end}}" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
         <span class="lbl" title="{{.Name}}">{{.Name}}</span>
         <span class="val">{{.Value}}</span>
-        <span class="hv3-sr">Measured from {{.Source}}{{if .Done}}, target met{{else}}, not met yet{{end}}</span>
+        <span class="hv3-sr">Measured from {{.Source}}{{if .Estimate}}. {{.Estimate}}{{end}}{{if .Done}}, target met{{else}}, not met yet{{end}}</span>
         {{end}}
       </li>
       {{end}}
     </ul>
+    {{range .Checklist}}{{if .Estimate}}<p class="hv3-s" id="checklist-estimate">{{.Estimate}}</p>{{end}}{{end}}
     {{else}}
     <div class="hv3-cl2-h"><span class="hv3-cl2-badge" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
       <div><h2 id="checklist-title">Daily checklist</h2><p class="hv3-s">Add your own daily habits and a protein target.</p></div>

@@ -17,8 +17,8 @@ import (
 )
 
 const foods = `{"items":[` +
-	`{"name":"Test lentil stew","role":"main","est_grams":250,"confidence":0.8,"visible":true,"notes":"Fictional"},` +
-	`{"name":"Test flatbread","role":"side","est_grams":null,"confidence":0.6,"visible":true,"notes":""}],` +
+	`{"name":"Test lentil stew","role":"main","est_grams":250,"est_kcal":350,"est_protein_g":14,"est_carbs_g":40,"est_fat_g":14,"confidence":0.8,"visible":true,"notes":"Fictional"},` +
+	`{"name":"Test flatbread","role":"side","est_grams":null,"est_kcal":null,"est_protein_g":null,"est_carbs_g":null,"est_fat_g":null,"confidence":0.6,"visible":true,"notes":""}],` +
 	`"uncertainties":["Fictional reply from the fake provider"],"questions":[]}`
 
 func message(text string) string {
