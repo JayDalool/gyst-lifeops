@@ -240,8 +240,11 @@ func TestGalaxyProjectsBarRulesAndSceneFiles(t *testing.T) {
 	}
 	// The screen height in ui-galaxy.css is what actually sizes the stage on phone and tablet.
 	gcss, _ := os.ReadFile("../../web/static/css/ui-galaxy.css")
-	if !strings.Contains(string(gcss), "calc(100svh - var(--gyst-header-clearance) - var(--gyst-nav-clearance) - var(--gyst-subnav-clearance,0px))") {
+	if !strings.Contains(string(gcss), "max(calc(420px - var(--gyst-subnav-clearance,0px)), calc(100svh - var(--gyst-header-clearance) - var(--gyst-nav-clearance) - var(--gyst-subnav-clearance,0px)))") {
 		t.Fatal("Galaxy screen height must subtract the bar clearance")
+	}
+	if !strings.Contains(string(gcss), "min-height:calc(280px - var(--gyst-subnav-clearance,0px))") {
+		t.Fatal("stage floor must give the bar's height back too, or the stage overflows the screen on short viewports")
 	}
 	if strings.Count(s, "var(--gyst-subnav-clearance)") != 2 {
 		t.Fatal("both stage height lines (vh and dvh) must subtract the bar")
