@@ -88,7 +88,7 @@ func TestCameraAIEstimateNutritionProvenanceAndKeptEstimate(t *testing.T) {
 	est := nut(200, 10, 30, 5) // at 100 g
 	// Untouched: posted values are the estimate scaled to 150 g (within the tolerance).
 	got := cameraSave(t, s, nil, CameraItem{Name: "Test stew", Grams: 150, AIEstGrams: cp(100), AIEstNutrients: est,
-		Nutrients: models.Nutrients{Kcal: cp(300.04), ProteinG: cp(15), CarbsG: cp(45), FatG: cp(7.5)}})[0]
+		Nutrients: models.Nutrients{Kcal: cp(300), ProteinG: cp(15), CarbsG: cp(45), FatG: cp(7.5)}})[0]
 	if got.NutritionProvenance != "ai_estimate" || *got.Kcal != 300 || *got.CarbsG != 45 {
 		t.Fatalf("unedited: %+v", got)
 	}
@@ -142,5 +142,40 @@ func TestDiaryEditAmountLeavesAIEstimateAlone(t *testing.T) {
 	}
 	if *after.AIEstGrams != 120 || *after.AIEstKcal != 150 || *after.AIEstProteinG != 9 || *after.AIEstCarbsG != 20 || *after.AIEstFatG != 2 {
 		t.Fatalf("Edit amount changed the AI estimate: %+v", after)
+	}
+}
+
+// Codex P2 on #278: an owner edit of 0.1 inside the old 0.11 tolerance was
+// overwritten with the estimate and labelled ai_estimate. The owner's entry wins
+// (docs/RULES.md 3.2): only the exact displayed value keeps the AI label.
+func TestCameraAIEstimateSmallOwnerEditIsKept(t *testing.T) {
+	s, _ := diaryService(t)
+	est := &models.Nutrients{Kcal: cp(15)}
+	for name, posted := range map[string]float64{"+0.1": 15.1, "-0.1": 14.9, "+0.05": 15.05} {
+		it := cameraSave(t, s, nil, CameraItem{Name: "Test sauce", Grams: 100, AIEstGrams: cp(100), AIEstNutrients: est,
+			Nutrients: models.Nutrients{Kcal: cp(posted)}})[0]
+		if it.NutritionProvenance != "user" || *it.Kcal != posted || *it.AIEstKcal != 15 {
+			t.Errorf("%s: %+v", name, it)
+		}
+	}
+	it := cameraSave(t, s, nil, CameraItem{Name: "Test sauce", Grams: 100, AIEstGrams: cp(100), AIEstNutrients: est, Nutrients: models.Nutrients{Kcal: cp(15)}})[0]
+	if it.NutritionProvenance != "ai_estimate" {
+		t.Errorf("displayed value must keep the AI label: %+v", it)
+	}
+}
+
+// Codex P2 on #278: values recomputed at the stored (rounded) grams can leave
+// the CHECK range even when the posted ones were inside it; that must be the
+// review's 400, not a database constraint error.
+func TestCameraFinalNutrientsAreRangeChecked(t *testing.T) {
+	s, _ := diaryService(t)
+	// 104 kcal at 0.1 g: at the posted 96.1538 g the review shows 100000 (within
+	// range), but the stored 96.2 g rescales to 100048.
+	_, err := s.AddCameraMeal(context.Background(), DiaryActor{}, CameraMeal{IdempotencyKey: newKey(), MealSlot: "dinner", Items: []CameraItem{{
+		Name: "Test oil", Grams: 96.1538, AIEstGrams: cp(0.1), AIEstNutrients: &models.Nutrients{Kcal: cp(104)},
+		Nutrients: models.Nutrients{Kcal: cp(100000)}}}})
+	var inv *HealthValidationError
+	if !errors.As(err, &inv) {
+		t.Fatalf("want the review's validation error, got %v", err)
 	}
 }

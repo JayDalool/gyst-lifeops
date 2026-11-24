@@ -116,6 +116,34 @@ func (r *Repository) SearchNutritionFoods(normalized string, limit int) ([]model
 	return out, rows.Err()
 }
 
+// SearchGramScalableFoods is SearchNutritionFoods limited, before the LIMIT, to
+// foods a gram row can be scaled from: per 100 g, or per serving with a gram
+// weight, with at least one nutrient, and not the mirror of a My food. Filtering
+// after the LIMIT let ineligible matches hide eligible ones (GYST-179).
+func (r *Repository) SearchGramScalableFoods(normalized string, limit int) ([]models.NutritionFood, error) {
+	like := escapeLike(normalized)
+	rows, err := r.db.Query(`SELECT `+nutritionFoodColumns+` FROM nutrition_foods
+ WHERE superseded_at IS NULL AND archived_at IS NULL AND normalized_name LIKE ? ESCAPE '\'
+ AND NOT (provider = 'user' AND provider_id LIKE 'health\_food:%' ESCAPE '\')
+ AND (basis = 'per_100g' OR (basis = 'per_serving' AND serving_grams IS NOT NULL AND serving_grams > 0))
+ AND (kcal IS NOT NULL OR protein_g IS NOT NULL OR carbs_g IS NOT NULL OR fat_g IS NOT NULL OR fiber_g IS NOT NULL)
+ ORDER BY (normalized_name LIKE ? ESCAPE '\') DESC, length(normalized_name), name, id
+ LIMIT ?`, "%"+like+"%", like+"%", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.NutritionFood{}
+	for rows.Next() {
+		f, err := scanNutritionFood(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, f)
+	}
+	return out, rows.Err()
+}
+
 func sameFloat(a, b *float64) bool {
 	if a == nil || b == nil {
 		return a == nil && b == nil

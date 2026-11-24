@@ -280,3 +280,30 @@ func TestCameraFoodSearchNeedsASession(t *testing.T) {
 		t.Fatalf("with a session: %d %s", rec.Code, rec.Body.String())
 	}
 }
+
+// Codex P2 on #278: more than 20 matches that cannot be scaled by grams must not
+// hide an eligible one behind the SQL limit.
+func TestCameraFoodSearchFindsEligibleFoodBehindIneligibleOnes(t *testing.T) {
+	h := testHandler(t)
+	at := clock.FormatInstant(h.Service.Now())
+	up := func(id, name string, f models.NutritionFood) {
+		f.Provider, f.ProviderID, f.Name, f.NormalizedName, f.DataProvenance, f.DatasetVersion = "cnf", id, name, strings.ToLower(name), "database", "test"
+		if _, err := h.Service.Repo.UpsertNutritionFoodVersion(context.Background(), f, at); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 25; i++ { // short names sort first; per serving with no gram weight, or no nutrients
+		n := "Yqz " + string(rune('a'+i))
+		if i%2 == 0 {
+			up("in-"+n, n, models.NutritionFood{Basis: "per_serving", Nutrients: models.Nutrients{Kcal: gramsPtr(90)}})
+		} else {
+			up("in-"+n, n, models.NutritionFood{Basis: "per_100g"})
+		}
+	}
+	up("ok-1", "Yqz good lentils with a long name", models.NutritionFood{Basis: "per_100g", Nutrients: models.Nutrients{Kcal: gramsPtr(100)}})
+	w := foodsPost(h, `{"q":"yqz"}`, nil)
+	var res []photoMatch
+	if err := json.Unmarshal(w.Body.Bytes(), &res); err != nil || len(res) != 1 || !strings.Contains(res[0].Name, "good lentils") {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+}

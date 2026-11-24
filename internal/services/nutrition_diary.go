@@ -128,15 +128,12 @@ func (s *Service) SearchCatalogueFoods(ctx context.Context, query string) ([]Foo
 	if q == "" || utf8.RuneCountInString(q) > diarySearchMaxChars {
 		return nil, healthInvalid("search text must be 1 to 80 characters")
 	}
-	found, err := s.Repo.SearchNutritionFoods(q, diarySearchLimit)
+	found, err := s.Repo.SearchGramScalableFoods(q, diarySearchLimit)
 	if err != nil {
 		return nil, err
 	}
-	out := []FoodChoice{}
+	out := make([]FoodChoice, 0, len(found))
 	for _, f := range found {
-		if f.Provider == "user" && strings.HasPrefix(f.ProviderID, "health_food:") {
-			continue
-		}
 		out = append(out, FoodChoice{Ref: "nf:" + strconv.FormatInt(f.ID, 10), NutritionFood: f})
 	}
 	return out, nil

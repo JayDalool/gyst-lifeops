@@ -101,11 +101,11 @@ func NutrientsContradict(posted, expected models.Nutrients) bool {
 	return false
 }
 
-// nutrientsMatch is true when every nutrient is present on both sides and
-// within the tolerance, or absent on both.
-func nutrientsMatch(posted, expected models.Nutrients) bool {
-	for _, p := range nutrientPairs(posted, expected) {
-		if (p[0] == nil) != (p[1] == nil) || (p[0] != nil && math.Abs(*p[0]-*p[1]) > CameraMacroTolerance) {
+// nutrientsEqual is true when every nutrient is present on both sides with the
+// same value (to float noise), or absent on both.
+func nutrientsEqual(posted, shown models.Nutrients) bool {
+	for _, p := range nutrientPairs(posted, shown) {
+		if (p[0] == nil) != (p[1] == nil) || (p[0] != nil && math.Abs(*p[0]-*p[1]) > 1e-6) {
 			return false
 		}
 	}
@@ -173,14 +173,22 @@ func (s *Service) AddCameraMeal(ctx context.Context, actor DiaryActor, in Camera
 				row.AIEst = n // kept as the AI gave them, whatever Jay does next
 				if !matched {
 					// Unedited AI nutrition stays "ai_estimate", stored as the
-					// server's own scaling; any difference makes it Jay's.
-					want := CameraScale(*n, it.Grams, est)
-					if nutrientsMatch(it.Nutrients, want) {
+					// server's own scaling. "Unedited" means exactly the value
+					// the review displayed (the estimate at the posted grams,
+					// to 0.1): any difference, even 0.1, is Jay's entry and is
+					// kept as posted (docs/RULES.md 3.2).
+					shown := RoundNutrients(CameraScale(*n, it.Grams, est))
+					if nutrientsEqual(it.Nutrients, shown) {
 						row.Nutrients = RoundNutrients(CameraScale(*n, grams, est))
 						row.NutritionProv = "ai_estimate"
 					}
 				}
 			}
+		}
+		// The final values (rescaled at the stored grams) face the same limits as
+		// the table's CHECKs, so a value that crossed them is the review's 400.
+		if err := checkScaled(row.Nutrients, row.Grams); err != nil {
+			return DiaryResult{}, err
 		}
 		rows = append(rows, row)
 	}
