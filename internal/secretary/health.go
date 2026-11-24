@@ -77,7 +77,7 @@ func healthSpecs(r HealthReader) []ToolSpec {
 			Run: plain(r.HevyRoutines)},
 		{Name: "get_food_products", Description: "Foods and products Jay usually has, with per-serving nutrition (null = unknown).",
 			Run: plain(r.FoodProducts)},
-		{Name: "get_daily_checklist", Description: "Today's checklist: Jay's own habits (done or not) and measured targets.",
+		{Name: "get_daily_checklist", Description: "Today's checklist: Jay's own habits (done or not) and measured targets. When the measured protein includes AI estimates from meal photos, ai_estimated says how much; treat that protein as approximate.",
 			Run: plain(r.DailyChecklist)},
 	}
 }

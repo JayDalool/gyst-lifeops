@@ -131,7 +131,7 @@ func coachToday(data HealthData) map[string]any {
 		cal[key] = t.BudgetAbs
 	}
 	// Only when the day's food includes AI estimates; absent otherwise.
-	if est := t.Estimated.aiEstimated(); est != nil {
+	if est := t.Estimated.aiEstimated(aiEstimatedCoachNote); est != nil {
 		cal["ai_estimated"] = est
 	}
 	return map[string]any{

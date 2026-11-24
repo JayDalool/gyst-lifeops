@@ -280,3 +280,77 @@ func TestNoHandlerCountsEstimateProvenance(t *testing.T) {
 		}
 	}
 }
+
+// Review round: the checklist's measured protein row shows AI protein, so it
+// says so from the same field, and the Coach's checklist tool carries the
+// aggregate, counts and sums only. Only protein still equal to the estimate
+// counts (the shared per-value rule, one snapshot with the day total).
+func TestChecklistProteinRowAndCoachToolDiscloseAIProtein(t *testing.T) {
+	h, _ := diaryHandlerWithSyncedDay(t)
+	if _, err := h.Service.AddHealthChecklistItem("Protein target", "protein"); err != nil {
+		t.Fatal(err)
+	}
+	coachList := func() map[string]any {
+		out, err := briefOf(t, h).DailyChecklist()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out.(map[string]any)
+	}
+	if body := estGetPage(t, h, "/health"); strings.Contains(body, `id="checklist-estimate"`) {
+		t.Fatal("label without estimates")
+	}
+	if _, ok := coachList()["ai_estimated"]; ok {
+		t.Fatal("coach checklist discloses without estimates")
+	}
+
+	addEstimateMeal(t, h, "b", 200, 240) // protein 10 + 12 = 22 g, still the estimate
+	body := estGetPage(t, h, "/health")
+	if !strings.Contains(body, `id="checklist-estimate"`) || !strings.Contains(body, "Includes AI estimates: about 22 g protein") {
+		t.Fatal("protein row not labelled")
+	}
+	view := estTodayView(t, h)
+	if view.Estimated.ProteinNote != "Includes AI estimates: about 22 g protein" {
+		t.Fatalf("note %q", view.Estimated.ProteinNote)
+	}
+	ai, ok := coachList()["ai_estimated"].(map[string]any)
+	if !ok || !reflect.DeepEqual(keysOf(ai), []string{"items", "kcal", "note", "protein_g"}) || ai["protein_g"] != "22" || ai["note"] != aiChecklistCoachNote {
+		t.Fatalf("coach checklist ai_estimated: %v", coachList())
+	}
+	raw, _ := json.Marshal(coachList())
+	for _, bad := range []string{"Test stew", "photo\"", "nonce", "ai_est_"} {
+		if strings.Contains(string(raw), bad) {
+			t.Errorf("%q leaked", bad)
+		}
+	}
+	// Same numbers as the other surfaces: one source.
+	if ai["items"] != view.Estimated.Items {
+		t.Fatalf("items %v vs %d", ai["items"], view.Estimated.Items)
+	}
+}
+
+func TestChecklistProteinNotLabelledOnceProteinIsReEntered(t *testing.T) {
+	h, _ := diaryHandlerWithSyncedDay(t)
+	_, _ = h.Service.AddHealthChecklistItem("Protein target", "protein")
+	est := &models.Nutrients{Kcal: estCP(200), ProteinG: estCP(10), CarbsG: estCP(20), FatG: estCP(5)}
+	edited := models.Nutrients{Kcal: estCP(200), ProteinG: estCP(12), CarbsG: estCP(20), FatG: estCP(5)} // protein typed over
+	if _, err := h.Service.AddCameraMeal(context.Background(), services.DiaryActor{}, services.CameraMeal{IdempotencyKey: strings.Repeat("e", 32), MealSlot: "dinner",
+		Items: []services.CameraItem{{Name: "Test stew", Grams: 100, AIEstGrams: estCP(100), AIEstNutrients: est, Nutrients: edited}}}); err != nil {
+		t.Fatal(err)
+	}
+	if body := estGetPage(t, h, "/health"); strings.Contains(body, `id="checklist-estimate"`) {
+		t.Fatal("re-entered protein still labelled as estimate")
+	}
+	if _, ok := mustChecklist(t, h)["ai_estimated"]; ok {
+		t.Fatal("coach discloses re-entered protein")
+	}
+}
+
+func mustChecklist(t *testing.T, h *Handler) map[string]any {
+	t.Helper()
+	out, err := briefOf(t, h).DailyChecklist()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out.(map[string]any)
+}

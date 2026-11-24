@@ -125,10 +125,10 @@ type rawFoodPhoto struct {
 		Confidence *float64 `json:"confidence"`
 		Visible    *bool    `json:"visible"`
 		Notes      *string  `json:"notes"`
-		// The estimate fields decode as any so a wrong type (text) drops the
-		// estimate, not the whole reply or the item (GYST-180).
-		// RawMessage, converted one by one, so 1e309 or any other bad value
-		// drops this item's estimate and never the whole reply (GYST-180).
+		// The estimate fields stay json.RawMessage and are converted one by one
+		// (estimateNumber), so a wrong type (text), 1e309 or any other bad value
+		// drops that item's estimate only, never the item or the whole reply
+		// (GYST-180).
 		EstKcal     json.RawMessage `json:"est_kcal"`
 		EstProteinG json.RawMessage `json:"est_protein_g"`
 		EstCarbsG   json.RawMessage `json:"est_carbs_g"`

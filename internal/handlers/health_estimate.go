@@ -21,6 +21,9 @@ type HealthEstimateView struct {
 	ProteinG HealthMetricView
 	// Note is "Includes AI estimates: 2 items, about 410 kcal".
 	Note string
+	// ProteinNote labels a protein figure (the checklist row): "Includes AI
+	// estimates: about 22 g protein". Empty when no protein is still estimated.
+	ProteinNote string
 }
 
 func itemsText(n int) string {
@@ -47,8 +50,12 @@ func buildEstimateView(e models.EstimatedIntake) HealthEstimateView {
 	if e.Items <= 0 {
 		return HealthEstimateView{}
 	}
-	return HealthEstimateView{Present: true, Items: e.Items, Kcal: metricFromFloat(e.Kcal, "kcal"),
+	v := HealthEstimateView{Present: true, Items: e.Items, Kcal: metricFromFloat(e.Kcal, "kcal"),
 		ProteinG: metricFromFloat(e.ProteinG, "g"), Note: estimateNote(e)}
+	if e.ProteinG != nil {
+		v.ProteinNote = "Includes AI estimates: about " + formatThousands(*e.ProteinG) + " g protein"
+	}
+	return v
 }
 
 // estimateDaysNote labels a multi-day figure: "Includes AI estimates on 3 of
@@ -67,7 +74,7 @@ func estimateDaysNote(withEstimates, of int, suffix string) string {
 // aiEstimated is the Coach's and the brief's aggregate: counts and totals of
 // values already inside the day's totals, never names, photos, ids or dates.
 // It is nil (key absent) when the day has no estimated item.
-func (e HealthEstimateView) aiEstimated() map[string]any {
+func (e HealthEstimateView) aiEstimated(note string) map[string]any {
 	if !e.Present {
 		return nil
 	}
@@ -75,10 +82,12 @@ func (e HealthEstimateView) aiEstimated() map[string]any {
 		"items":     e.Items,
 		"kcal":      metricOrNil(e.Kcal),
 		"protein_g": metricOrNil(e.ProteinG),
-		"note":      aiEstimatedCoachNote,
+		"note":      note,
 	}
 }
 
 // aiEstimatedCoachNote tells the model how to treat the numbers. The totals it
 // sends (eaten, budget, energy balance) all use the same intake.
+const aiChecklistCoachNote = "The protein value in this checklist includes AI estimates from meal photos; treat it as approximate, not measured."
+
 const aiEstimatedCoachNote = "These totals include AI estimates from meal photos; treat as approximate, not measured. energy_balance_so_far and budget use the same total."

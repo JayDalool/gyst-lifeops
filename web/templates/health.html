@@ -160,11 +160,12 @@
         <span class="hv3-dot-btn measured{{if .Done}} done{{end}}" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
         <span class="lbl" title="{{.Name}}">{{.Name}}</span>
         <span class="val">{{.Value}}</span>
-        <span class="hv3-sr">Measured from {{.Source}}{{if .Done}}, target met{{else}}, not met yet{{end}}</span>
+        <span class="hv3-sr">Measured from {{.Source}}{{if .Estimate}}. {{.Estimate}}{{end}}{{if .Done}}, target met{{else}}, not met yet{{end}}</span>
         {{end}}
       </li>
       {{end}}
     </ul>
+    {{range .Checklist}}{{if .Estimate}}<p class="hv3-s" id="checklist-estimate">{{.Estimate}}</p>{{end}}{{end}}
     {{else}}
     <div class="hv3-cl2-h"><span class="hv3-cl2-badge" aria-hidden="true">{{template "gyst.icon" "check"}}</span>
       <div><h2 id="checklist-title">Daily checklist</h2><p class="hv3-s">Add your own daily habits and a protein target.</p></div>

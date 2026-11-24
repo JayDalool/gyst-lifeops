@@ -89,6 +89,18 @@ func TestCameraAIRoundingGoldenTableServerSide(t *testing.T) {
 				t.Errorf("row %d %s at %s g: stored %v, want %v", i, k, row.GramsTyped, *got, row.Stored[k])
 			}
 		}
+		// Every row: the shared rule (models.EstimateHolds, behind the day total
+		// and the diary rows) sees all four stored values as still the estimate.
+		// A changed formula order makes some row of the table fail here.
+		if e := it.Estimated(); !(e.Kcal && e.ProteinG && e.CarbsG && e.FatG) {
+			t.Errorf("row %d (%s g, est %v g): EstimateHolds on the stored item: %+v", i, row.GramsTyped, est, e)
+		}
+		for k, got := range map[string]*float64{"kcal": it.Kcal, "protein_g": it.ProteinG, "carbs_g": it.CarbsG, "fat_g": it.FatG} {
+			e := row.Est[k]
+			if !models.EstimateHolds(got, &e, *it.Grams, est) {
+				t.Errorf("row %d %s: EstimateHolds false on stored %v", i, k, *got)
+			}
+		}
 		// The AI's own numbers are kept exactly as given.
 		if *it.AIEstKcal != row.Est["kcal"] || *it.AIEstFatG != row.Est["fat_g"] {
 			t.Errorf("row %d: kept estimate changed", i)
@@ -116,6 +128,14 @@ for (const r of rows) {
 const holds = [['350', 350, 200, 200, true], ['350.0', 350, 200, 200, true], ['350,0', 350, 200, 200, true], ['350.04', 350, 200, 200, false],
   ['175', 350, 200, 100, true], ['', 350, 200, 200, false], ['x', 350, 200, 200, false], ['0.1', 0.05, 100, 100, true], ['350', null, 200, 200, false], ['350', 350, 200, 0, false]];
 for (const [t, v, e, g, want] of holds) { if (M.estimateHolds(t, v, e, g) !== want) { bad++; console.log('HOLDS', t, v, e, g, want); } }
+// The script's rule agrees on every row: what the review shows for the typed
+// grams is still "the estimate".
+for (const r of rows) {
+  const g = parseFloat(r.grams_typed.replace(',', '.'));
+  for (const k of ['kcal', 'protein_g', 'carbs_g', 'fat_g']) {
+    if (!M.estimateHolds(r.posted[k], r.est[k], r.est_grams, g)) { bad++; console.log('ROW HOLDS', r.est_grams, r.grams_typed, k, r.posted[k]); }
+  }
+}
 // The day-total sentence and its whole-number rounding match the Go side
 // (handlers.estimateNote, formatThousands).
 const notes = [[0, 410, ''], [2, 410, 'Includes AI estimates: 2 items, about 410 kcal'], [1, 1234.5, 'Includes AI estimates: 1 item, about 1,235 kcal'], [3, null, 'Includes AI estimates: 3 items'], [2, 0.4, 'Includes AI estimates: 2 items, about 0 kcal']];

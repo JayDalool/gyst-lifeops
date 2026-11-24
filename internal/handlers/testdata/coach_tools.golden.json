@@ -651,7 +651,7 @@
   },
   "schemas": {
     "get_daily_checklist": {
-      "description": "Today's checklist: Jay's own habits (done or not) and measured targets.",
+      "description": "Today's checklist: Jay's own habits (done or not) and measured targets. When the measured protein includes AI estimates from meal photos, ai_estimated says how much; treat that protein as approximate.",
       "name": "get_daily_checklist",
       "properties": null,
       "required": null
