@@ -1,3 +1,4 @@
+- [ ] GYST-186 · Tasks hub switch on installed iPhone app · https://github.com/JayDalool/gyst-lifeops/issues/272
 - [ ] GYST-178 · Installed iPhone app: tab bar, home indicator, keyboard open · https://gyst.zaylolabs.com/today
 - [ ] GYST-174 · iPhone Health: main tabs stay, four-icon switcher, Plan row · https://gyst.zaylolabs.com/health
 - [ ] GYST-154 · Health plan: "2,000" kcal target saves as 2000 · https://github.com/JayDalool/gyst-lifeops/pull/260

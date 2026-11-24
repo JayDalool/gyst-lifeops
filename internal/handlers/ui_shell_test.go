@@ -155,9 +155,9 @@ func TestProjectsAreaSubNavigation(t *testing.T) {
 		path, current string
 		inPage        bool
 	}{
-		{"/projects", "/projects", true},
-		{"/projects?status=completed", "/projects", true},
-		{"/roadmap", "/roadmap", true},
+		{"/projects", "/projects", false},
+		{"/projects?status=completed", "/projects", false},
+		{"/roadmap", "/roadmap", false},
 		{fmt.Sprintf("/projects/%d", project.ID), "/projects", false},
 		{"/projects/new", "/projects", false},
 		{"/roadmaps/new", "/roadmap", false},
@@ -205,8 +205,8 @@ func TestProjectsAreaSubNavigation(t *testing.T) {
 	shellSegments := strings.Count(base.Body.String(), `class="gyst-segment"`)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/projects", nil))
-	if !strings.Contains(rec.Body.String(), `<nav class="projects-roadmaps" aria-label="Project status">`) || strings.Count(rec.Body.String(), `class="gyst-segment"`)-shellSegments != 3 {
-		t.Fatal("projects status filter must use the pill links, leaving one segmented control")
+	if !strings.Contains(rec.Body.String(), `<nav class="projects-roadmaps" aria-label="Project status">`) || strings.Count(rec.Body.String(), `class="gyst-segment"`)-shellSegments != 0 {
+		t.Fatal("projects status filter must use the pill links, leaving no segmented control (GYST-186 moved the switch to the Tasks hub)")
 	}
 	for _, path := range []string{"/health", "/today", "/courses"} {
 		rec := httptest.NewRecorder()
