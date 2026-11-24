@@ -22,6 +22,15 @@
   function prefillEst(v, estG, g) {
     return v == null || !(estG > 0) || !(g > 0) ? '' : num(v * g / estG);
   }
+  // followAI is what the fields still showing the AI estimate (aiKeys) show at
+  // the grams `g`: the scaled estimate, or blank when the grams are cleared or 0,
+  // so an AI number is never left standing as if the owner had typed it. Fields
+  // the owner typed (not in aiKeys) are not in the result and are left alone.
+  function followAI(aiKeys, aiEst, estG, g) {
+    var out = {};
+    for (var k in aiKeys) if (aiKeys[k] && aiEst && aiEst[k] != null) out[k] = prefillEst(aiEst[k], estG, g);
+    return out;
+  }
   // estimateHolds is the server's "still the AI's estimate" rule for a typed
   // field: the number typed (as a number, so 350 and 350.0 agree) equals the
   // estimate scaled to the grams and rounded to 0.1, within 1e-6 like
@@ -87,7 +96,7 @@
     var n = 0;
     return {next: function () { return ++n; }, invalidate: function () { n++; }, isCurrent: function (id) { return id === n; }};
   }
-  var api = {num: num, prefill: prefill, prefillEst: prefillEst, estimateHolds: estimateHolds, whole: whole, estimateNote: estimateNote, parseAmount: parseAmount, typedRatio: typedRatio, captureRatios: captureRatios, followValues: followValues, latest: latest};
+  var api = {num: num, prefill: prefill, prefillEst: prefillEst, followAI: followAI, estimateHolds: estimateHolds, whole: whole, estimateNote: estimateNote, parseAmount: parseAmount, typedRatio: typedRatio, captureRatios: captureRatios, followValues: followValues, latest: latest};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FoodCameraMath = api;
 })(typeof self !== 'undefined' ? self : this);

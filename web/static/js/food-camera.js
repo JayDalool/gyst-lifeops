@@ -270,8 +270,10 @@
           var v = g > 0 ? M.prefill(match.per_100g[k], g) : '';
           dd[k].textContent = v === '' ? '—' : v;
           dd[k]._v = v;
-        } else if (g > 0 && aiKeys[k]) {
-          nut[k].value = M.prefillEst(aiEst[k], est, g);
+        } else if (aiKeys[k]) {
+          // Also when the grams are cleared or 0: the AI fields go blank, the
+          // owner's own typing stays (they left aiKeys when typed).
+          nut[k].value = M.followAI(aiKeys, aiEst, est, g)[k];
         } else if (g > 0 && ratio[k] != null) {
           nut[k].value = M.followValues(ratio, g)[k];
         }

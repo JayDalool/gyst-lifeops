@@ -86,8 +86,10 @@ func (e HealthEstimateView) aiEstimated(note string) map[string]any {
 	}
 }
 
-// aiEstimatedCoachNote tells the model how to treat the numbers. The totals it
-// sends (eaten, budget, energy balance) all use the same intake.
+// aiChecklistCoachNote is the note of the checklist tool's ai_estimated: its
+// measured protein row includes AI estimates.
 const aiChecklistCoachNote = "The protein value in this checklist includes AI estimates from meal photos; treat it as approximate, not measured."
 
+// aiEstimatedCoachNote tells the model how to treat the numbers. The totals it
+// sends (eaten, budget, energy balance) all use the same intake.
 const aiEstimatedCoachNote = "These totals include AI estimates from meal photos; treat as approximate, not measured. energy_balance_so_far and budget use the same total."

@@ -161,11 +161,16 @@ unchanged.
 
 **AI estimates are labelled from one field** (GYST-180). `DayIntake.Estimated`
 `{Items, Kcal, ProteinG}` is the part of a GYST day's total that comes from
-items stored with `nutrition_provenance = 'ai_estimate'` (Apple Health and empty
-days have none). `NutritionDayTotals` is the only place that counts it; it is a
-subset of `Counted`, never added to it, and an item Jay edited is `user` and
-leaves the count. Every screen that shows the total (Nutrition, Health ring and
-macros, the diary, the Last 7 days bar, the plan comparison, the Today tile)
+values the photo AI estimated (Apple Health and empty days have none). The rule
+is per value (`models.EstimateHolds`): a saved value is still an estimate while
+it equals the AI's estimate scaled to the saved grams and rounded to 0.1, so a
+partly edited item (provenance `user`, `ai_est_*` kept) still counts for the
+values that are still estimated; an item counts while any of its four values is,
+and the kcal and protein subtotals take only those. `NutritionDayTotals` is the
+only place that counts it (in the same read snapshot as the totals); it is a
+subset of `Counted`, never added to it. Every screen that shows the total (Nutrition, Health ring and
+macros, the Health checklist's protein row, the diary rows per value, the Last 7
+days bar, the plan comparison, the Today tile)
 says "Includes AI estimates: n items, about x kcal" from `HealthTodayView.Estimated`,
 and the Coach and the Secretary's brief read the same field as aggregates only
 (counts and sums, no names, photos, ids or dates), present only when

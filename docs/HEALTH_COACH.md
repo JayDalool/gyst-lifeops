@@ -170,5 +170,8 @@ the review screen) and nothing is written to the diary.
   `{items, kcal, protein_g, note}` and the day brief `health.food.ai_estimated`;
   both are absent when there are none. They are aggregates of values already in
   the totals, with no food names, photos, ids or dates, and the note tells the
-  model to treat the totals as approximate.
+  model to treat the totals as approximate. `get_daily_checklist` carries the
+  same `ai_estimated` (`items`, `kcal`, `protein_g`, `note`: counts and sums
+  only) when its measured protein row still includes AI estimates, and omits it
+  otherwise.
 - Failures log a fixed category only, never the image, prompt or output.

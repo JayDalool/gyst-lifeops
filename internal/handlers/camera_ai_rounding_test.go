@@ -128,6 +128,14 @@ for (const r of rows) {
 const holds = [['350', 350, 200, 200, true], ['350.0', 350, 200, 200, true], ['350,0', 350, 200, 200, true], ['350.04', 350, 200, 200, false],
   ['175', 350, 200, 100, true], ['', 350, 200, 200, false], ['x', 350, 200, 200, false], ['0.1', 0.05, 100, 100, true], ['350', null, 200, 200, false], ['350', 350, 200, 0, false]];
 for (const [t, v, e, g, want] of holds) { if (M.estimateHolds(t, v, e, g) !== want) { bad++; console.log('HOLDS', t, v, e, g, want); } }
+// Codex round c: cleared or zero grams blank the AI-filled fields only.
+const kept = M.followAI({kcal: true, protein_g: true}, {kcal: 350, protein_g: 14, carbs_g: 40}, 250, 125);
+if (kept.kcal !== '175' || kept.protein_g !== '7' || 'carbs_g' in kept) { bad++; console.log('FOLLOW', JSON.stringify(kept)); }
+for (const g of [NaN, 0, -5]) {
+  const blank = M.followAI({kcal: true, protein_g: true}, {kcal: 350, protein_g: 14}, 250, g);
+  if (blank.kcal !== '' || blank.protein_g !== '' || Object.keys(blank).length !== 2) { bad++; console.log('BLANK', g, JSON.stringify(blank)); }
+}
+if (Object.keys(M.followAI({}, {kcal: 350}, 250, NaN)).length !== 0) { bad++; console.log('owner fields touched'); }
 // The script's rule agrees on every row: what the review shows for the typed
 // grams is still "the estimate".
 for (const r of rows) {
