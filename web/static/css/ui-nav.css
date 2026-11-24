@@ -169,8 +169,8 @@ a.gyst-tile[data-sec="health"] .gyst-tile-icon { background: var(--vn-s-health);
 a.gyst-tile[data-sec="learn"] .gyst-tile-icon { background: var(--vn-s-learn); }
 a.gyst-tile[data-sec="system"] .gyst-tile-icon { background: var(--vn-s-system); }
 a.gyst-tile:active .gyst-tile-icon { transform: scale(.94); }
-/* Two lines, then clipped; overflow-wrap lets a long word break inside the tile instead of widening the page. */
-.gyst-tile-name { max-width: 100%; font: 500 var(--vn-t-cap)/var(--vn-t-cap-lh) var(--vn-font); overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+/* Spec a1 clamps a name to two lines. That clipped words at Text size 2 (measured at 320 and 390: "Daily checklist" lost its second word), and the acceptance rule is that no word is clipped, so the name wraps fully and the tile grows instead. Every name is 15 characters or fewer, so at the default size none needs a third line. hyphens: auto breaks a long word where the browser knows how; overflow-wrap: anywhere is the last resort, so a word never widens the page. */
+.gyst-tile-name { max-width: 100%; font: 500 var(--vn-t-cap)/var(--vn-t-cap-lh) var(--vn-font); hyphens: auto; overflow-wrap: anywhere; }
 .gyst-launch-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 16px 28px; text-align: center; }
 .gyst-launch-empty-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--vn-surface-2); color: var(--vn-ink-2); }
 .gyst-launch-empty-icon .vn-icon { width: 24px; height: 24px; }
