@@ -70,9 +70,9 @@ nav.gyst-hub[data-sec="work"] > a[aria-current="page"] .vn-icon { color: var(--v
 .gyst-tabs { display: none; }
 /* Light glass is the token as it is. The dark bar mixes the Look's own surface at 85%, because --glass
    (70%) let a label fall to 2.38:1 over a bright accent button; a label is 4.5:1 or better as painted. */
-:root { --vn-bar-glass: var(--vn-glass); }
-@media (prefers-color-scheme: dark) { :root:not([data-gyst-theme="light"]) { --vn-bar-glass: color-mix(in srgb, var(--vn-surface) 85%, transparent); } }
-:root[data-gyst-theme="dark"] { --vn-bar-glass: color-mix(in srgb, var(--vn-surface) 85%, transparent); }
+:root { --vn-bar-glass: var(--vn-glass); --vn-s-on: #FFFFFF; }
+@media (prefers-color-scheme: dark) { :root:not([data-gyst-theme="light"]) { --vn-bar-glass: color-mix(in srgb, var(--vn-surface) 85%, transparent); --vn-s-on: #0B0D12; } }
+:root[data-gyst-theme="dark"] { --vn-bar-glass: color-mix(in srgb, var(--vn-surface) 85%, transparent); --vn-s-on: #0B0D12; }
 @media not all and (min-width: 1024px) {
   /* The phone queries below are the exact complement of ui-shell.css's desktop query (min-width: 1024px), so at a fractional width between 1023 and 1024 (browser zoom) exactly one of the bar and the sidebar shows (Codex P3). */
   /* Clearance is written here, not by script: app.js sets --gyst-nav-clearance from .gyst-primary, which is
@@ -124,3 +124,66 @@ nav.gyst-hub[data-sec="work"] > a[aria-current="page"] .vn-icon { color: var(--v
 @media (prefers-reduced-transparency: reduce) { nav.gyst-tabbar { background: var(--vn-elevated); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 @media (prefers-reduced-motion: reduce) { .gyst-plus { transition: none; } .gyst-plus:active { transform: none; } }
 :root[data-motion="reduced"] .gyst-plus:active { transform: none; }
+
+/* ---------- All pages (GYST-187, spec a1) ----------
+   The launcher behind the All tab: search, a Pinned row, then every built page as a tile in its group.
+   --vn-s-on (above, on the same three theme scopes as --vn-bar-glass) is the icon colour on a section fill;
+   --vn-on-accent cannot serve because it follows the accent. A tile takes only its section's colours: identity,
+   never a state colour. Sizes read --vn-t-* so the page follows Text size; the grid keeps its columns and the
+   tile grows taller instead. */
+.gyst-launch { display: block; max-width: 100%; }
+/* [hidden] must win over every display rule below (nav.js and the no-script Results view both rely on it). */
+.gyst-launch [hidden] { display: none !important; }
+.gyst-launch-date { margin: 0; font: 500 var(--vn-t-foot)/var(--vn-t-foot-lh) var(--vn-font); color: var(--vn-ink-2); }
+h1.gyst-launch-title { margin: 2px 0 0; font: 600 var(--vn-t-title)/var(--vn-t-title-lh) var(--vn-font); letter-spacing: -.03em; color: var(--vn-ink); overflow-wrap: anywhere; }
+p.gyst-launch-sub { margin: 4px 0 14px; font: 400 var(--vn-t-sub)/var(--vn-t-sub-lh) var(--vn-font); color: var(--vn-ink-2); }
+form.gyst-launch-search { margin: 0 0 16px; }
+form.gyst-launch-search label { display: flex; align-items: center; gap: 10px; box-sizing: border-box; min-height: 44px; padding: 0 12px; border-radius: var(--vn-r-md); background: var(--vn-surface-2); color: var(--vn-ink-3); }
+form.gyst-launch-search label:focus-within { outline: 2px solid var(--vn-accent); outline-offset: 0; }
+form.gyst-launch-search .vn-icon { flex: none; width: 20px; height: 20px; }
+/* 16 px at least, so iOS does not zoom the page when the field takes focus. */
+form.gyst-launch-search input { flex: 1; min-width: 0; min-height: 44px; margin: 0; padding: 0; border: 0; outline: 0; box-shadow: none; background: transparent; color: var(--vn-ink); font: 400 max(16px, var(--vn-t-body))/1.2 var(--vn-font); -webkit-appearance: none; appearance: none; }
+form.gyst-launch-search input::placeholder { color: var(--vn-ink-3); opacity: 1; }
+h2.gyst-launch-sec { display: flex; align-items: center; gap: 8px; margin: 18px 4px 8px; min-height: 20px; font: 600 var(--vn-t-foot)/var(--vn-t-foot-lh) var(--vn-font); color: var(--vn-ink-2); }
+h2.gyst-launch-sec::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 3px; background: var(--vn-ink-3); }
+.gyst-launch-n { margin-left: auto; font-weight: 400; color: var(--vn-ink-3); }
+h2.gyst-launch-sec[data-sec="plan"] { color: var(--vn-s-plan-t); }
+h2.gyst-launch-sec[data-sec="plan"]::before { background: var(--vn-s-plan); }
+h2.gyst-launch-sec[data-sec="work"] { color: var(--vn-s-work-t); }
+h2.gyst-launch-sec[data-sec="work"]::before { background: var(--vn-s-work); }
+h2.gyst-launch-sec[data-sec="health"] { color: var(--vn-s-health-t); }
+h2.gyst-launch-sec[data-sec="health"]::before { background: var(--vn-s-health); }
+h2.gyst-launch-sec[data-sec="learn"] { color: var(--vn-s-learn-t); }
+h2.gyst-launch-sec[data-sec="learn"]::before { background: var(--vn-s-learn); }
+h2.gyst-launch-sec[data-sec="system"] { color: var(--vn-s-system-t); }
+h2.gyst-launch-sec[data-sec="system"]::before { background: var(--vn-s-system); }
+ul.gyst-launch-grid { list-style: none; margin: 0; padding: 8px 6px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; background: var(--vn-surface); border-radius: var(--vn-r-lg); box-shadow: var(--vn-e1); }
+ul.gyst-launch-grid > li { min-width: 0; display: flex; }
+a.gyst-tile { flex: 1; box-sizing: border-box; display: grid; justify-items: center; align-content: start; gap: 5px; min-width: 0; min-height: 104px; padding: 8px 2px 6px; border-radius: 16px; text-align: center; color: var(--vn-ink); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+:root a.gyst-tile:focus-visible { outline: 2px solid var(--vn-accent); outline-offset: -2px; border-radius: 16px; }
+.gyst-tile-icon { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--vn-s-system); color: var(--vn-s-on); box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), inset 0 -8px 14px rgb(0 0 0 / 10%); transition: transform var(--vn-fast) var(--vn-ease); }
+.gyst-tile-icon .vn-icon { width: 24px; height: 24px; stroke-width: 1.9; }
+a.gyst-tile[data-sec="plan"] .gyst-tile-icon { background: var(--vn-s-plan); }
+a.gyst-tile[data-sec="work"] .gyst-tile-icon { background: var(--vn-s-work); }
+a.gyst-tile[data-sec="health"] .gyst-tile-icon { background: var(--vn-s-health); }
+a.gyst-tile[data-sec="learn"] .gyst-tile-icon { background: var(--vn-s-learn); }
+a.gyst-tile[data-sec="system"] .gyst-tile-icon { background: var(--vn-s-system); }
+a.gyst-tile:active .gyst-tile-icon { transform: scale(.94); }
+/* Spec a1 clamps a name to two lines. That clipped words at Text size 2 (measured at 320 and 390: "Daily checklist" lost its second word), and the acceptance rule is that no word is clipped, so the name wraps fully and the tile grows instead. Every name is 15 characters or fewer, so at the default size none needs a third line. hyphens: auto breaks a long word where the browser knows how; overflow-wrap: anywhere is the last resort, so a word never widens the page. */
+.gyst-tile-name { max-width: 100%; font: 500 var(--vn-t-cap)/var(--vn-t-cap-lh) var(--vn-font); hyphens: auto; overflow-wrap: anywhere; }
+.gyst-launch-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 16px 28px; text-align: center; }
+.gyst-launch-empty-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--vn-surface-2); color: var(--vn-ink-2); }
+.gyst-launch-empty-icon .vn-icon { width: 24px; height: 24px; }
+.gyst-launch-empty-head { margin: 0; font: 600 var(--vn-t-head)/var(--vn-t-head-lh) var(--vn-font); color: var(--vn-ink); }
+.gyst-launch-empty-text { margin: 0; max-width: 40ch; font: 400 var(--vn-t-sub)/var(--vn-t-sub-lh) var(--vn-font); color: var(--vn-ink-2); overflow-wrap: anywhere; }
+form.gyst-launch-out { margin: 24px 0 0; }
+@media (min-width: 700px) {
+  .gyst-launch { max-width: 760px; margin-inline: auto; }
+  ul.gyst-launch-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .gyst-launch { max-width: 980px; margin-inline: 0; }
+}
+@media (hover: hover) { a.gyst-tile:hover { background: color-mix(in srgb, var(--vn-ink) 4%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .gyst-tile-icon { transition: none; } a.gyst-tile:active .gyst-tile-icon { transform: none; } }
+:root[data-motion="reduced"] a.gyst-tile:active .gyst-tile-icon { transform: none; }

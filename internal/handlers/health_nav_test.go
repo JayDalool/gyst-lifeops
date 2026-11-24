@@ -118,7 +118,7 @@ func TestHealthKeepsMainTabBarAndHasOneSwitcher(t *testing.T) {
 			if s.path == path {
 				want += ` aria-current="page"`
 			}
-			want += `><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-4#i-` + s.icon + `"/></svg><span>` + s.label + `</span></a>`
+			want += `><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-5#i-` + s.icon + `"/></svg><span>` + s.label + `</span></a>`
 			if !strings.Contains(sw, want) {
 				t.Errorf("%s: switcher lacks %s", name, want)
 			}
@@ -318,7 +318,7 @@ func TestHealthSummaryRowsAndBackLinks(t *testing.T) {
 	}
 	// 13B DD-15 (design review F6): a row's tile icon comes from round 7's sprite, as round 7 draws it.
 	for href, icon := range map[string]string{"/health/plan": "target", "/health/more": "more", "/health/coach": "sec"} {
-		want := `<span class="hv3-tile sm"><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-4#i-` + icon + `"/></svg></span>`
+		want := `<span class="hv3-tile sm"><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-5#i-` + icon + `"/></svg></span>`
 		if !strings.Contains(row(body, href), want) {
 			t.Errorf("Summary: the %s row's tile must draw the sprite's %s", href, icon)
 		}
@@ -449,7 +449,10 @@ func TestHealthNavStyles(t *testing.T) {
 		}
 		// GYST-178: the + and the mark's dot are the only accent-filled things in the file; the switcher and
 		// the phone tab bar are selections and read no accent or state token. Nothing reads a state token.
-		accentOK := r.Selector == ".gyst-plus" || strings.HasPrefix(r.Selector, ".gyst-plus:") || r.Selector == ".gyst-brand::before"
+		// GYST-187: the All pages search field and tiles draw their focus ring in the accent (spec a1 section 4),
+		// and only the ring: a ring is not identity or state.
+		accentOK := r.Selector == ".gyst-plus" || strings.HasPrefix(r.Selector, ".gyst-plus:") || r.Selector == ".gyst-brand::before" ||
+			((strings.Contains(r.Selector, "gyst-launch-search") || strings.Contains(r.Selector, "a.gyst-tile")) && strings.Contains(r.Selector, ":focus"))
 		if strings.Contains(r.Selector, "gyst-tabbar") {
 			tabbarRules++
 		}
@@ -473,7 +476,7 @@ func TestHealthNavStyles(t *testing.T) {
 
 	// Never on Galaxy: its page must not gain a stylesheet.
 	layout := readTemplate(t, "layout.html")
-	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-7">{{end}}`
+	link := `{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-8">{{end}}`
 	if !strings.Contains(layout, link) || strings.Count(layout, "ui-nav.css") != 1 {
 		t.Errorf("layout.html must link ui-nav.css once, as %s", link)
 	}
@@ -481,7 +484,7 @@ func TestHealthNavStyles(t *testing.T) {
 		t.Error("/galaxy links ui-nav.css")
 	}
 	for _, path := range []string{"/health", "/today"} {
-		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-7">`) {
+		if !strings.Contains(cfgGet(t, h, path), `<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-8">`) {
 			t.Errorf("%s does not link ui-nav.css", path)
 		}
 	}
@@ -491,8 +494,8 @@ func TestHealthNavStyles(t *testing.T) {
 // exact URL the helper emits; the new stylesheet is listed; the worker changes nowhere else.
 func TestHealthNavAssets(t *testing.T) {
 	m := regexp.MustCompile(`<use href="(/static/icons\.svg\?v=[\w.-]+)#i-\{\{\.\}\}"/>`).FindStringSubmatch(readTemplate(t, "ui_icons.html"))
-	if m == nil || m[1] != "/static/icons.svg?v=r7-4" {
-		t.Fatalf("vn.icon emits %v, want /static/icons.svg?v=r7-4", m)
+	if m == nil || m[1] != "/static/icons.svg?v=r7-5" {
+		t.Fatalf("vn.icon emits %v, want /static/icons.svg?v=r7-5", m)
 	}
 	layout := readTemplate(t, "layout.html")
 	cache, assets := shellAssets(t)
@@ -502,7 +505,7 @@ func TestHealthNavAssets(t *testing.T) {
 		count[path]++
 		count[a]++
 	}
-	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-7"} {
+	for _, a := range []string{m[1], "/static/css/ui-nav.css?v=nav-8"} {
 		path, _, _ := strings.Cut(a, "?")
 		if count[a] != 1 || count[path] != 1 {
 			t.Errorf("SHELL must hold %s exactly once and under no other version", a)

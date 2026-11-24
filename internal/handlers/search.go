@@ -12,18 +12,6 @@ import (
 // answers a signed-out fetch with 401 JSON, and the response is never cached.
 // It is read-only (no GalaxyData) and returns Health page names, never values.
 
-// searchTerms adds hidden match words to a few destinations.
-var searchTerms = map[string]string{
-	"/today":        "home daily missions",
-	"/galaxy":       "projects planets worlds",
-	"/more":         "menu tools",
-	"/projects/new": "create add",
-	"/plan-import":  "ai chatgpt markdown plan tasks checklist",
-	"/courses":      "study learning",
-	"/settings":     "prayer preferences appearance theme",
-	"/tasks":        "missions all",
-}
-
 type searchResponse struct {
 	Groups []services.SearchGroup `json:"groups"`
 }
@@ -71,42 +59,38 @@ func (h *Handler) searchAPI(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(searchResponse{Groups: groups})
 }
 
+// searchSuggestions names four pages from the one page list, so a rename there reaches the command bar.
 func searchSuggestions() services.SearchGroup {
 	g := services.SearchGroup{Label: services.SearchGroupSuggest}
-	for _, s := range []struct{ label, href string }{{"Today", "/today"}, {"Projects", "/projects"}, {"Galaxy", "/galaxy"}, {"Health", "/health"}} {
-		g.Items = append(g.Items, services.SearchItem{Label: s.label, Meta: "Page", Href: s.href})
+	for _, id := range suggestionIDs {
+		for _, p := range allPages {
+			if p.ID == id {
+				g.Items = append(g.Items, services.SearchItem{Label: p.Name, Meta: "Page", Href: p.URL})
+			}
+		}
 	}
 	return g
 }
 
 // searchFixed lists the destinations that are not rows in the database: the
-// More pages, Health pages by name, Galaxy and the apps this host may open.
+// pages of the one page list (ui_shell.go), All pages, the create forms and the apps this host may open.
 func (h *Handler) searchFixed(r *http.Request) ([]services.SearchSource, error) {
 	var out []services.SearchSource
 	seen := map[string]bool{}
-	add := func(group, label, href, meta string) {
+	add := func(group, label, href, meta, terms string) {
 		if seen[href] {
 			return
 		}
 		seen[href] = true
-		out = append(out, services.SearchSource{Group: group, Item: services.SearchItem{Label: label, Meta: meta, Href: href}, Terms: searchTerms[href]})
+		out = append(out, services.SearchSource{Group: group, Item: services.SearchItem{Label: label, Meta: meta, Href: href}, Terms: terms})
 	}
-	for _, section := range moreSections() {
-		for _, row := range section.Rows {
-			if section.Title == "Health" {
-				add(services.SearchGroupHealth, row.Label, row.URL, "Health")
-			} else {
-				add(services.SearchGroupPages, row.Label, row.URL, "Page")
-			}
-		}
+	for _, src := range pageSources(h.pagesNow()) {
+		add(src.Group, src.Item.Label, src.Item.Href, src.Item.Meta, src.Terms)
 	}
-	add(services.SearchGroupHealth, "Foods", "/health/foods", "Health")
-	add(services.SearchGroupHealth, "More health", "/health/more", "Health")
-	if h.coach() != nil {
-		add(services.SearchGroupHealth, "Health coach", "/health/coach", "Health")
+	add(services.SearchGroupPages, allPagesLabel, "/more", "Page", allPagesTerms)
+	for _, c := range createShortcuts {
+		add(services.SearchGroupPages, c.Name, c.URL, "Page", c.Terms)
 	}
-	add(services.SearchGroupPages, "More", "/more", "Page")
-	add(services.SearchGroupPages, "New project", "/projects/new", "Page")
 
 	load := h.appRegistry
 	if load == nil {

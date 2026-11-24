@@ -106,14 +106,14 @@ func TestSearchAPIGalaxyResult(t *testing.T) {
 	}
 }
 
-// The More tab is found by its name; "menu" still finds it, but no result
+// All pages (GYST-187) is found by its name and by "more" and "menu"; no result
 // carries the old Menu label.
 func TestSearchAPIMoreLabel(t *testing.T) {
 	h := testHandler(t)
 	found := func(b searchBody) bool {
 		for _, g := range b.Groups {
 			for _, it := range g.Items {
-				if it.Label == "More" && it.Href == "/more" {
+				if it.Label == allPagesLabel && it.Href == "/more" {
 					return true
 				}
 			}
@@ -123,7 +123,7 @@ func TestSearchAPIMoreLabel(t *testing.T) {
 	for _, q := range []string{"more", "menu"} {
 		body, _ := doSearch(t, h, "", q)
 		if !found(body) {
-			t.Fatalf("q=%s: want More /more, got %+v", q, body)
+			t.Fatalf("q=%s: want All pages /more, got %+v", q, body)
 		}
 		for _, g := range body.Groups {
 			for _, it := range g.Items {

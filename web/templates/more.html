@@ -1,9 +1,25 @@
+{{/* All pages (GYST-187, spec a1). Every name, address and icon comes from the one page list in ui_shell.go; nothing here spells a page. The tile's data-search is the same text the server filter matches, which nav.js reads, so a word finds the same page with and without script. No counts (Jay's answer 28). */}}
+{{/* check-icons.cjs wants a literal name at every vn.icon call, so the list's icon id picks its literal call here; TestAllPagesRendersSpec fails when a list icon is missing from this chain. */}}
+{{define "launch.icon"}}{{if eq . "home"}}{{template "vn.icon" "home"}}{{else if eq . "tasks"}}{{template "vn.icon" "tasks"}}{{else if eq . "bell"}}{{template "vn.icon" "bell"}}{{else if eq . "cal"}}{{template "vn.icon" "cal"}}{{else if eq . "folder"}}{{template "vn.icon" "folder"}}{{else if eq . "flag"}}{{template "vn.icon" "flag"}}{{else if eq . "orbit"}}{{template "vn.icon" "orbit"}}{{else if eq . "ship"}}{{template "vn.icon" "ship"}}{{else if eq . "bars"}}{{template "vn.icon" "bars"}}{{else if eq . "heart"}}{{template "vn.icon" "heart"}}{{else if eq . "fork"}}{{template "vn.icon" "fork"}}{{else if eq . "apple"}}{{template "vn.icon" "apple"}}{{else if eq . "gym"}}{{template "vn.icon" "gym"}}{{else if eq . "trend"}}{{template "vn.icon" "trend"}}{{else if eq . "target"}}{{template "vn.icon" "target"}}{{else if eq . "check"}}{{template "vn.icon" "check"}}{{else if eq . "user"}}{{template "vn.icon" "user"}}{{else if eq . "spark"}}{{template "vn.icon" "spark"}}{{else if eq . "more"}}{{template "vn.icon" "more"}}{{else if eq . "book"}}{{template "vn.icon" "book"}}{{else if eq . "gear"}}{{template "vn.icon" "gear"}}{{else if eq . "upload"}}{{template "vn.icon" "upload"}}{{else if eq . "box"}}{{template "vn.icon" "box"}}{{else if eq . "ext"}}{{template "vn.icon" "ext"}}{{end}}{{end}}
+{{define "launch.tile"}}<li><a class="gyst-tile" data-sec="{{.Sec}}" data-search="{{.Search}}" href="{{.URL}}"><span class="gyst-tile-icon">{{template "launch.icon" .Icon}}</span><span class="gyst-tile-name">{{.Name}}</span></a></li>{{end}}
 {{define "content"}}
-<div class="gyst-scope gyst-more">
-  <header class="gyst-header"><div><h1 class="gyst-page-title">More</h1><p class="gyst-caption">Find a page by what you want to do.</p></div></header>
-  <div class="gyst-more-grid">
-    {{range .Sections}}<section class="gyst-stack"><h2 class="gyst-section-title">{{.Title}}</h2><ul class="gyst-list">{{range .Rows}}{{template "gyst.row" .}}{{end}}</ul></section>{{end}}
+<div class="gyst-scope gyst-launch">
+  <p class="gyst-launch-date">{{.DateLine}}</p>
+  <h1 class="gyst-launch-title">{{.Greeting}}</h1>
+  <p class="gyst-launch-sub">Every page, one tap from here.</p>
+  <form class="gyst-launch-search" role="search" method="get" action="/more">
+    <label><span class="gyst-app-sr">Search pages</span>{{template "vn.icon" "search"}}<input type="search" name="q" value="{{.Query}}" placeholder="Search pages" enterkeyhint="go" autocomplete="off" data-launch-filter></label>
+  </form>
+  <p class="gyst-app-sr" role="status" aria-live="polite" data-launch-live>{{.Live}}</p>
+  <div data-launch-groups{{if .Searching}} hidden{{end}}>
+    {{if .Pinned}}<section aria-labelledby="launch-pinned"><h2 class="gyst-launch-sec" id="launch-pinned">Pinned<span class="gyst-launch-n">after the tab bar</span></h2><ul class="gyst-launch-grid">{{range .Pinned}}{{template "launch.tile" .}}{{end}}</ul></section>{{end}}
+    {{range .Groups}}<section aria-labelledby="launch-{{.ID}}"><h2 class="gyst-launch-sec" id="launch-{{.ID}}" data-sec="{{.ID}}">{{.Title}}<span class="gyst-launch-n">{{len .Tiles}}</span></h2><ul class="gyst-launch-grid">{{range .Tiles}}{{template "launch.tile" .}}{{end}}</ul></section>{{end}}
   </div>
-  <form method="post" action="/logout"><button class="gyst-button gyst-button--secondary" type="submit">Sign out</button></form>
+  <section aria-labelledby="launch-results" data-launch-results{{if not .Searching}} hidden{{end}}>
+    <h2 class="gyst-launch-sec" id="launch-results"{{if not .Results}} hidden{{end}}>Results<span class="gyst-launch-n" data-launch-count>{{len .Results}}</span></h2>
+    <ul class="gyst-launch-grid" data-launch-list{{if not .Results}} hidden{{end}}>{{range .Results}}{{template "launch.tile" .}}{{end}}</ul>
+    <div class="gyst-launch-empty" data-launch-empty{{if .Results}} hidden{{end}}><span class="gyst-launch-empty-icon">{{template "vn.icon" "search"}}</span><p class="gyst-launch-empty-head">No page matches</p><p class="gyst-launch-empty-text">Nothing for “<span data-launch-query>{{.Query}}</span>”. Try “tasks”, “food” or “month”.</p></div>
+  </section>
+  <form method="post" action="/logout" class="gyst-launch-out"><button class="gyst-button gyst-button--secondary" type="submit">Sign out</button></form>
 </div>
 {{end}}

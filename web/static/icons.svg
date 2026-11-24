@@ -38,4 +38,10 @@
   <symbol id="i-all" viewBox="0 0 24 24"><path d="M5.500 5.500h.01M12 5.500h.01M18.500 5.500h.01M5.500 12h.01M12 12h.01M18.500 12h.01M5.500 18.500h.01M12 18.500h.01M18.500 18.500h.01" stroke-width="3"/></symbol>
   <symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 19.500V12M10 19.500V5M15 19.500v-9M20 19.500V8"/></symbol>
   <symbol id="i-orbit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="9.500" ry="4.500" transform="rotate(-25 12 12)"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4M6 5h11l-2 4 2 4H6"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.500 20a7.500 7.500 0 0 1 15 0"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800z"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4.500M8 8.500l4-4 4 4M5 15v3.500a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V15"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></symbol>
 </svg>

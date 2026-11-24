@@ -2700,6 +2700,7 @@ func (h *Handler) renderStatus(w http.ResponseWriter, status int, page string, d
 		"niceNumber":     niceNumber,
 		"healthTab":      healthTab,
 		"coachEnabled":   func() bool { return h.coach() != nil },
+		"allPagesLabel":  func() string { return allPagesLabel },
 		// deref reads an optional number; templates guard with {{if}} first.
 		"deref": func(v *float64) float64 {
 			if v == nil {

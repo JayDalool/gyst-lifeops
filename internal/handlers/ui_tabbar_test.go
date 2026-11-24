@@ -83,7 +83,8 @@ func TestPhoneTabBarMarkupAndCurrentTab(t *testing.T) {
 func TestGalaxyIsSentNoTabBar(t *testing.T) {
 	h := testHandler(t)
 	body := cfgGet(t, h, "/galaxy")
-	for _, banned := range []string{"gyst-tabs", "gyst-plus", "nav.js", "ui-nav.css", "data-light", "data-dark", "icons.svg"} {
+	// GYST-187: All pages adds nothing to /galaxy: no launcher markup, no All pages label, the old title and the label More.
+	for _, banned := range []string{"gyst-tabs", "gyst-plus", "nav.js", "ui-nav.css", "data-light", "data-dark", "icons.svg", "All pages", "gyst-launch", "gyst-tile"} {
 		if strings.Contains(body, banned) {
 			t.Errorf("/galaxy contains %q", banned)
 		}
@@ -94,40 +95,59 @@ func TestGalaxyIsSentNoTabBar(t *testing.T) {
 	if strings.Count(body, `aria-label="Primary"`) != 1 {
 		t.Error("/galaxy must keep its one five-tab bar")
 	}
+	if !strings.Contains(body, "<span>More</span>") || !strings.Contains(body, "<title>GYST · Plan. Track. Build. Grow.</title>") {
+		t.Error("/galaxy must keep the label More and its old title")
+	}
 }
 
 // c3: the + opens Capture through the launcher's own attributes; the launcher is not edited.
 func TestPlusUsesLauncherAttributes(t *testing.T) {
 	js := readStatic(t, "js/nav.js")
-	sel := regexp.MustCompile(`querySelector(?:All)?\(\s*'([^']+)'|closest\(\s*"([^"]+)"`).FindAllStringSubmatch(js, -1)
+	sel := regexp.MustCompile(`querySelector(?:All)?\(\s*'([^']+)'|closest\(\s*["']([^"']+)["']`).FindAllStringSubmatch(js, -1)
 	var got []string
 	for _, m := range sel {
 		got = append(got, m[1]+m[2])
 	}
-	if strings.Join(got, "|") != `[data-nav-add]|[data-launcher-mode="capture"]` {
-		t.Errorf("nav.js selectors = %v, want only [data-nav-add] and [data-launcher-mode=\"capture\"]", got)
+	// GYST-187 widened this list on purpose: the All pages search reads its own data-launch-* hooks and tiles. The +
+	// still reaches the launcher only through its two attributes, and nothing below calls a launcher function.
+	want := []string{"[data-launch-filter]", ".gyst-launch", "[data-launch-groups]", "[data-launch-results]", "[data-launch-list]", ".gyst-launch-sec", "[data-launch-count]", "[data-launch-empty]", "[data-launch-query]", "[data-launch-live]", ".gyst-tile", "a", "[data-nav-add]", `[data-launcher-mode="capture"]`}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Errorf("nav.js selectors = %v, want %v", got, want)
 	}
 	if regexp.MustCompile(`\b(open|close|setMode|launcher)\w*\(`).MatchString(strings.ReplaceAll(js, "closest(", "")) {
 		t.Error("nav.js must not call a launcher function")
 	}
 	layout := readTemplate(t, "layout.html")
-	nav := `{{if ne .Page "galaxy"}}<script defer src="/static/js/nav.js?v=nav-3"></script>{{end}}`
+	nav := `{{if ne .Page "galaxy"}}<script defer src="/static/js/nav.js?v=nav-4"></script>{{end}}`
 	i, j := strings.Index(layout, "launcher.js"), strings.Index(layout, nav)
 	if j < 0 || i < 0 || j < i || strings.Count(layout, "nav.js") != 1 {
 		t.Error("layout.html must load nav.js once, after launcher.js, and not on /galaxy")
 	}
 }
 
-// c4: every page is at most two taps away: All opens the More list, and the list reaches the pages that were three taps away
-// pages that used to be three taps from outside Health.
+// c4 (GYST-178, rewritten by GYST-187): every page listed on All pages is two taps away (All, then the tile). The four
+// create forms are not tiles (spec a1 section 11); they stay three taps away (All, the list, its New button), so each
+// list page must still link its form, and each form must still answer, and the command bar still finds them (search_test.go).
 func TestMoreListReachesFoodsAndProfile(t *testing.T) {
 	h := testHandler(t)
 	body := cfgGet(t, h, "/more")
-	for _, href := range []string{"/health/foods", "/health/profile", "/projects/new", "/courses/new", "/roadmaps/new", "/goals/new", "/checklist", "/settings", "/projects", "/galaxy", "/roadmap", "/goals", "/courses", "/health/nutrition", "/health/training", "/health/progress", "/health/plan", "/analytics", "/plan-import", "/archive", "/apps", "/reminders", "/monthly"} {
+	for _, href := range []string{"/health/foods", "/health/profile", "/health/checklist", "/settings", "/projects", "/galaxy", "/roadmap", "/goals", "/courses", "/health/nutrition", "/health/training", "/health/progress", "/health/plan", "/analytics", "/plan-import", "/archive", "/apps", "/reminders", "/monthly"} {
 		if !strings.Contains(body, `href="`+href+`"`) {
 			t.Errorf("/more does not link %s", href)
 		}
 		cfgGet(t, h, href)
+	}
+	for list, form := range map[string]string{"/projects": "/projects/new", "/courses": "/courses/new", "/roadmap": "/roadmaps/new", "/goals": "/goals/new"} {
+		if !strings.Contains(cfgGet(t, h, list), `href="`+form+`"`) {
+			t.Errorf("%s no longer links its form %s: the form would be four taps away", list, form)
+		}
+		cfgGet(t, h, form)
+		if strings.Contains(body, `href="`+form+`"`) {
+			t.Errorf("/more draws the form %s as a tile; forms are reached from their list", form)
+		}
+	}
+	if cfgGet(t, h, "/checklist") == "" {
+		t.Error("/checklist (Today's alias) stopped answering")
 	}
 }
 
