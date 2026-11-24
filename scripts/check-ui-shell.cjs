@@ -5,6 +5,7 @@ const vm = require('node:vm');
 const worker = fs.readFileSync('web/static/service-worker.js', 'utf8');
 async function workerChecks() {
   const handlers = {}, cached = new Map(), removed = [];
+  const fetchArgs = [];
   let online = true, networkResponse = () => new Response('network', {headers: {'Content-Type':'text/css'}});
   const context = {
     URL, Response, Promise,
@@ -15,7 +16,7 @@ async function workerChecks() {
       open:async()=>({addAll:async paths=>{for (const path of paths) {assert(path.startsWith('/static/'));assert(!path.includes('three.'));assert(!path.includes('galaxy.js'));}},put:async(req,res)=>cached.set(req.url,await res.text())}),
       match:async req=>cached.has(req.url)?new Response(cached.get(req.url)):undefined
     },
-    fetch:async()=>{if (!online) throw Error('offline');const r=networkResponse();Object.defineProperty(r,'type',{value:'basic'});return r;}
+    fetch:async(...args)=>{fetchArgs.push(args);if (!online) throw Error('offline');const r=networkResponse();Object.defineProperty(r,'type',{value:'basic'});return r;}
   };
   vm.runInNewContext(worker, context);
   await new Promise((resolve,reject)=>handlers.install({waitUntil:p=>p.then(resolve,reject)}));
@@ -27,7 +28,9 @@ async function workerChecks() {
     return response;
   }
   for (const path of ['/today','/health','/health/plan','/more','/settings','/login','/logout']) {
-    await request(path);assert.equal(cached.size,0,'private navigation cached');
+    fetchArgs.length=0;await request(path);assert.equal(cached.size,0,'private navigation cached');
+    // GYST-188: a navigation is fetched as the original request with no init, which keeps Sec-Fetch-Mode: navigate; fetch(request, {...}) would make it same-origin and the styled 404 and 500 pages would never show with the worker active.
+    assert.equal(fetchArgs.length,1);assert.equal(fetchArgs[0].length,1,'navigation fetch must pass the request alone');assert.equal(fetchArgs[0][0].mode,'navigate');
     online=false;const response=await request(path);assert.equal(response.status,503);
     assert.equal(response.headers.get('Content-Type'),'text/html; charset=utf-8');assert.equal(response.headers.get('Cache-Control'),'no-store');
     offlinePage(await response.text());online=true;

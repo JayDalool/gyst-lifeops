@@ -1,6 +1,6 @@
 // Cache only public static assets. Private pages, API responses and redirects
 // never enter CacheStorage, including pages viewed before signing out.
-const CACHE = "lifeops-shell-v89-signin";
+const CACHE = "lifeops-shell-v90-signin";
 const SHELL = ["/static/css/styles.css?v=aurora-1", "/static/css/ui-tokens.css?v=aurora-1", "/static/css/ui-accents.css?v=aurora-1", "/static/css/ui-pins.css?v=aurora-1", "/static/css/ui-components.css?v=icons-1.aurora-1", "/static/css/ui-shell.css?v=projects-nav-1.launcher-5.aurora-1.galaxy-bar-1", "/static/css/ui-nav.css?v=nav-8", "/static/css/ui-today.css?v=now-1.aurora-1", "/static/css/ui-projects.css?v=projects-nav-1.aurora-1", "/static/css/ui-galaxy.css?v=galaxywin-4", "/static/css/ui-health.css?v=weight-1.aurora-1", "/static/css/ui-training.css?v=train-2.aurora-1", "/static/css/ui-health-v3.css?v=hv3-13", "/static/css/ui-courses.css?v=ui-10.aurora-1", "/static/js/theme.js?v=appearance-2", "/static/js/charts.js?v=ui-2.aurora-1", "/static/js/app.js?v=launcher-5.now-1.dayends-1", "/static/js/launcher.js?v=launcher-5", "/static/js/nav.js?v=nav-4", "/static/js/completion-toast.js?v=toast-1","/static/js/ui-overlay.js?v=now-1", "/static/favicon.svg", "/static/icons.svg?v=r7-6", "/static/fonts/Geist-Variable.woff2?v=1.3.0"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("lifeops-shell-") && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
@@ -11,7 +11,8 @@ self.addEventListener("fetch", event => {
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin || request.headers.has("Authorization")) return;
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request, {cache: "no-store"}).catch(() => new Response(OFFLINE, {status: 503, headers: {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store"}})));
+    // GYST-188: the original request, with no init. fetch(request, {cache}) builds a new Request, which the Fetch spec turns from navigate into same-origin, so the server saw Sec-Fetch-Mode: same-origin and Dest: empty (a script fetch) and rightly refused the styled 404 and 500 pages. Without the worker the browser fetches a navigation exactly this way.
+    event.respondWith(fetch(request).catch(() => new Response(OFFLINE, {status: 503, headers: {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store"}})));
     return;
   }
   if (!url.pathname.startsWith("/static/")) return;

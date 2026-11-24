@@ -172,6 +172,14 @@ func TestPageViewPredicate(t *testing.T) {
 		{"Accept html q=0.0 mid-list", "GET", "/today", map[string]string{"Accept": "text/html;q=0.0, */*"}, false},
 		{"Accept near-miss text/htmlx", "GET", "/today", map[string]string{"Accept": "text/htmlx"}, false},
 		{"Accept uppercase with spaces", "GET", "/today", map[string]string{"Accept": "application/json ,  Text/HTML ; q=1"}, true},
+		// GYST-188: what a service worker's fetch(request, {cache: "no-store"}) sent for a navigation, which
+		// is a script fetch and must stay unflagged; the worker now sends the original navigation headers.
+		{"worker re-fetch with init (same-origin, empty)", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "same-origin", "Sec-Fetch-Dest": "empty", "Sec-Fetch-Site": "same-origin"}, false},
+		{"worker re-fetch of the navigation request (Chrome: navigate, empty)", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "empty", "Sec-Fetch-Site": "same-origin"}, true},
+		{"navigate with dest iframe", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "iframe"}, false},
+		{"navigate with dest script", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "script"}, false},
+		{"cors with dest empty", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "cors", "Sec-Fetch-Dest": "empty"}, false},
+		{"same-origin with dest document", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "same-origin", "Sec-Fetch-Dest": "document"}, false},
 		{"cors", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "cors"}, false},
 		{"no-cors", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "no-cors"}, false},
 		{"same-origin", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "same-origin"}, false},

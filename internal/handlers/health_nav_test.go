@@ -531,7 +531,7 @@ func TestHealthNavAssets(t *testing.T) {
 	}
 	// The fetch, push and notification handlers are as GYST-168 left them: only the cache name and
 	// the list (and, from GYST-188, the offline page) may differ. This hash was re-taken in GYST-188 as sha256 of
-	// master's worker minus its CACHE, SHELL and OFFLINE lines, so it proves everything else is unchanged. Update it only with a change the ticket asks for.
+	// master's worker minus its CACHE, SHELL and OFFLINE lines, with one deliberate change since: the navigation fetch passes the original request with no init (so the browser keeps Sec-Fetch-Mode: navigate), and a comment says why. Push, notificationclick and the static handler are unchanged. Update it only with a change the ticket asks for.
 	var rest []string
 	for _, line := range strings.Split(readStatic(t, "service-worker.js"), "\n") {
 		// GYST-188: OFFLINE (and the comment above it) is the offline page, which that ticket restyled. Its own
@@ -541,7 +541,7 @@ func TestHealthNavAssets(t *testing.T) {
 		}
 	}
 	swSum := sha256.Sum256([]byte(strings.Join(rest, "\n")))
-	if got := hex.EncodeToString(swSum[:]); got != "c4922f4736308dce84b2998653e8c3c46325a054e4709ed9a0094b65cfaa00fd" {
+	if got := hex.EncodeToString(swSum[:]); got != "0a580e3bae06dab7a356720782e4e361b6620e60d3d996dbe0bcd12a5b21e679" {
 		t.Errorf("service-worker.js changed outside CACHE, SHELL and OFFLINE (sha256 %s)", got)
 	}
 }

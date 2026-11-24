@@ -50,10 +50,23 @@ func markPageView(w http.ResponseWriter, r *http.Request, path string) {
 	if !acceptsHTML(r.Header.Get("Accept")) {
 		return
 	}
-	if mode := r.Header.Get("Sec-Fetch-Mode"); mode != "" && mode != "navigate" {
-		return
-	}
-	if dest := r.Header.Get("Sec-Fetch-Dest"); dest != "" && dest != "document" {
+	// Sec-Fetch-Mode: navigate is the proof of a page load: a script's fetch() or XHR is cors, same-origin or
+	// no-cors, and a script cannot build a navigate-mode request (the Request constructor refuses it). A
+	// service worker that re-fetches the navigation it was handed keeps mode navigate, but Chrome then
+	// labels the destination "empty" instead of "document" (measured with the worker active, GYST-188), so
+	// "empty" is accepted only together with navigate. Without Sec-Fetch-Mode (an older client) the
+	// destination must be absent or document, so a bare "empty" is still a fetch and never flagged.
+	mode, dest := r.Header.Get("Sec-Fetch-Mode"), r.Header.Get("Sec-Fetch-Dest")
+	switch {
+	case mode == "navigate":
+		if dest != "" && dest != "document" && dest != "empty" {
+			return
+		}
+	case mode == "":
+		if dest != "" && dest != "document" {
+			return
+		}
+	default:
 		return
 	}
 	rec.page = &pageView{
