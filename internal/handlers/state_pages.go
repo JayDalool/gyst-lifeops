@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"html/template"
 	"log"
+	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -45,7 +47,7 @@ func markPageView(w http.ResponseWriter, r *http.Request, path string) {
 	if path == "/api" || strings.HasPrefix(path, "/api/") {
 		return
 	}
-	if !strings.Contains(strings.ToLower(r.Header.Get("Accept")), "text/html") {
+	if !acceptsHTML(r.Header.Get("Accept")) {
 		return
 	}
 	if mode := r.Header.Get("Sec-Fetch-Mode"); mode != "" && mode != "navigate" {
@@ -59,6 +61,25 @@ func markPageView(w http.ResponseWriter, r *http.Request, path string) {
 		retry: safeNextPath(r.URL.RequestURI()),
 		back:  safeNextPath(sameHostReferer(r, "")),
 	}
+}
+
+// acceptsHTML is true only when text/html is listed as its own media type with a quality above zero. A
+// substring match would flag `application/json, text/html;q=0` (a caller that refuses HTML) and
+// `text/htmlx`; those keep today's plain text (Codex P3 on GYST-188).
+func acceptsHTML(accept string) bool {
+	for _, part := range strings.Split(accept, ",") {
+		media, params, err := mime.ParseMediaType(strings.TrimSpace(part))
+		if err != nil || media != "text/html" {
+			continue
+		}
+		if q, ok := params["q"]; ok {
+			if v, err := strconv.ParseFloat(q, 64); err != nil || v <= 0 {
+				continue
+			}
+		}
+		return true
+	}
+	return false
 }
 
 type statePageData struct {
@@ -150,6 +171,9 @@ func writeStatePage(w http.ResponseWriter, status int, notFound bool) bool {
 	w.Header().Del("Content-Length")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	// A signed-in page for one person's request: no cache may keep it for another (Codex P2). The plain-text
+	// fallbacks add no header, so they stay as they were.
+	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_, _ = w.Write(buf.Bytes())
 	return true

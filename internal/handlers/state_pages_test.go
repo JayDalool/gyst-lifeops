@@ -69,6 +69,9 @@ func TestNotFoundPageForASignedInPageView(t *testing.T) {
 		if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
 			t.Errorf("%s: no nosniff", path)
 		}
+		if rec.Header().Get("Cache-Control") != "no-store" {
+			t.Errorf("%s: Cache-Control = %q, want no-store on a signed-in page", path, rec.Header().Get("Cache-Control"))
+		}
 	}
 	if len(rig.lines(t)) != 0 {
 		t.Errorf("a 404 logged: %s", rig.buf.String())
@@ -98,6 +101,9 @@ func TestServerErrorPageForASignedInPageView(t *testing.T) {
 	}
 	if !requestIDPattern.MatchString(id) {
 		t.Errorf("X-Request-Id = %q", id)
+	}
+	if rec.Header().Get("Cache-Control") != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store on a signed-in page", rec.Header().Get("Cache-Control"))
 	}
 	lower := strings.ToLower(body)
 	for _, leak := range []string{"no such table", "sql", "tasks_gone"} {
@@ -161,6 +167,11 @@ func TestPageViewPredicate(t *testing.T) {
 		{"no Sec-Fetch headers, Accept text/html", "GET", "/today", map[string]string{"Accept": html}, true},
 		{"HEAD", "HEAD", "/today", map[string]string{"Accept": html}, true},
 		{"document form post", "POST", "/tasks/new", map[string]string{"Accept": html, "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document"}, true},
+		{"Accept html with q=0.5", "GET", "/today", map[string]string{"Accept": "application/json, text/html;q=0.5"}, true},
+		{"Accept html refused with q=0", "GET", "/today", map[string]string{"Accept": "application/json, text/html;q=0"}, false},
+		{"Accept html q=0.0 mid-list", "GET", "/today", map[string]string{"Accept": "text/html;q=0.0, */*"}, false},
+		{"Accept near-miss text/htmlx", "GET", "/today", map[string]string{"Accept": "text/htmlx"}, false},
+		{"Accept uppercase with spaces", "GET", "/today", map[string]string{"Accept": "application/json ,  Text/HTML ; q=1"}, true},
 		{"cors", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "cors"}, false},
 		{"no-cors", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "no-cors"}, false},
 		{"same-origin", "GET", "/today", map[string]string{"Accept": html, "Sec-Fetch-Mode": "same-origin"}, false},
@@ -255,6 +266,9 @@ func TestNonPageViewsKeepTheTextAnswers(t *testing.T) {
 		if !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/plain") {
 			t.Errorf("%s: Content-Type %q", c.name, rec.Header().Get("Content-Type"))
 		}
+		if cc := rec.Header().Get("Cache-Control"); cc != "" {
+			t.Errorf("%s: the plain-text answer gained Cache-Control %q", c.name, cc)
+		}
 	}
 }
 
@@ -311,8 +325,8 @@ func TestHelpersFallBackToTodaysText(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	serverError(rec, err)
-	if rec.Code != 500 || rec.Body.String() != "Something went wrong.\n" {
-		t.Errorf("no recorder: %d %q", rec.Code, rec.Body.String())
+	if rec.Code != 500 || rec.Body.String() != "Something went wrong.\n" || rec.Header().Get("Cache-Control") != "" {
+		t.Errorf("no recorder: %d %q %v", rec.Code, rec.Body.String(), rec.Header())
 	}
 	rec = httptest.NewRecorder()
 	notFound(rec, httptest.NewRequest("GET", "/x", nil))
