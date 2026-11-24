@@ -1,12 +1,11 @@
 {{define "content"}}
 <div class="page-head">
   <div>
-    <p class="kicker">Task library</p>
     <h1 class="page-title">Tasks</h1>
-    <p class="page-sub">Every active task, filterable by state.</p>
   </div>
   <a class="btn ghost" href="/tasks/new">New task</a>
 </div>
+{{template "gyst.hub" "tasks"}}
 
 <nav class="pill-row" aria-label="Filter by status">
   <a href="/tasks" {{if eq .StatusFilter "all"}}aria-current="true"{{end}}>All</a>

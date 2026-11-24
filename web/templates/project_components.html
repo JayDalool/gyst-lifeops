@@ -16,4 +16,10 @@
 {{if and (not .Main) (not .Upcoming)}}<p class="gyst-caption">No projects match this view. Choose another status or roadmap.</p>{{end}}
 {{end}}
 {{/* GYST-VN-039 Projects area sub-navigation, phone and tablet. The desktop sidebar group is in ui_shell.html. Development joins only once it has a destination. */}}
+{{/* GYST-186 Tasks hub: the one Tasks, Projects, Galaxy switch (spec a2). Called with "tasks" or "projects"; data-sec picks the section colour of the open tab's icon (ui-nav.css). Plain links: Galaxy is never current here. */}}
+{{define "gyst.hub"}}<nav class="gyst-switcher gyst-hub" aria-label="Views" data-sec="{{if eq . "tasks"}}plan{{else}}work{{end}}">
+  <a href="/tasks"{{if eq . "tasks"}} aria-current="page"{{end}}>{{template "vn.icon" "tasks"}}<span>Tasks</span></a>
+  <a href="/projects"{{if eq . "projects"}} aria-current="page"{{end}}>{{template "vn.icon" "folder"}}<span>Projects</span></a>
+  <a href="/galaxy">{{template "vn.icon" "orbit"}}<span>Galaxy</span></a>
+</nav>{{end}}
 {{define "gyst.projects-subnav"}}<nav class="gyst-scope gyst-segments gyst-subnav gyst-projects-subnav" aria-label="Projects areas"><a class="gyst-segment" href="/projects"{{if eq . "projects"}} aria-current="page"{{end}}>Projects</a><a class="gyst-segment" href="/galaxy"{{if eq . "galaxy"}} aria-current="page"{{end}}>Galaxy</a><a class="gyst-segment" href="/roadmap"{{if eq . "roadmaps"}} aria-current="page"{{end}}>Roadmaps</a></nav>{{end}}

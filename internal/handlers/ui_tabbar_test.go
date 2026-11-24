@@ -36,7 +36,7 @@ func TestPhoneTabBarMarkupAndCurrentTab(t *testing.T) {
 		{"/tasks", "/tasks"}, {"/tasks/new", "/tasks"},
 		{"/health", "/health"}, {"/health/nutrition", "/health"}, {"/health/progress", "/health"}, {"/health/training", "/health"},
 		{"/health/plan", "/health"}, {"/health/more", "/health"}, {"/health/foods", "/health"}, {"/health/profile", "/health"},
-		{"/projects", "/more"}, {"/projects/new", "/more"}, {"/roadmap", "/more"}, {"/goals", "/more"},
+		{"/projects", "/tasks"}, {"/projects/new", "/tasks"}, {"/roadmap", "/more"}, {"/goals", "/more"},
 		{"/courses", "/more"}, {"/learn", "/more"}, {"/more", "/more"}, {"/monthly", "/more"}, {"/reminders", "/more"},
 		{"/analytics", "/more"}, {"/archive", "/more"}, {"/apps", "/more"}, {"/plan-import", "/more"}, {"/settings", "/more"},
 	}

@@ -56,6 +56,7 @@ const IDS = [
   'undo',    // undo-2
   'all',     // GYST-178: the All tab of the phone tab bar, a 3x3 grid of dots (13B DD-18)
   'bars',    // chart-column
+  'orbit',   // GYST-186: the Galaxy tab of the Tasks hub switch
 ];
 
 // Round 7's sprite uses only these. Anything else (script, image, use, foreignObject, style, a, ...)

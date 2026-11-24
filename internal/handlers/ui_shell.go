@@ -20,13 +20,14 @@ func primarySection(page string) string {
 }
 
 // phoneTab names the tab of the phone tab bar a page belongs to (GYST-178, 13B DD-18). Only
-// today, tasks and health have a tab of their own; All is the fallback because it is always
+// today, tasks and health have a tab of their own, and Projects pages (list, detail, forms) count
+// as Tasks because Projects lives inside the Tasks hub (GYST-186); roadmap stays under All; All is the fallback because it is always
 // last and reaches every other page through the More list. Galaxy never renders the bar.
 func phoneTab(page string) string {
 	switch page {
 	case "today", "dashboard":
 		return "today"
-	case "tasks":
+	case "tasks", "projects":
 		return "tasks"
 	case "health":
 		return "health"

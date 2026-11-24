@@ -45,6 +45,18 @@ nav.gyst-switcher > a[aria-current="page"] .vn-icon { color: var(--vn-s-health-t
 /* The focus ring keeps the colour and width the page already gives links. It is drawn inside the
    tab, so the next tab and the track's edge never cover it, and the tab keeps its own corners. */
 :root nav.gyst-switcher > a:focus-visible { outline-offset: -2px; border-radius: calc(var(--vn-r-md) - 3px); }
+/* ---------- Tasks hub switch (GYST-186, spec a2) ----------
+   The same track as Health's, with three tabs: Tasks, Projects, Galaxy. Every rule says nav.gyst-switcher.gyst-hub
+   so it beats the base rule's max-width 520 and margin 0 (a bare .gyst-hub would lose on specificity). The
+   Projects page head is header.gyst-header, not .page-head, so both heads get the 16 px of air above. */
+nav.gyst-switcher.gyst-hub { max-width: 380px; margin: 0 0 var(--vn-s4); }
+:root :is(.page-head, .gyst-header) + nav.gyst-hub { margin-top: var(--vn-s4); }
+/* The open tab's icon takes the page's section colour; these beat the Health rule above, which hard-codes its own. */
+nav.gyst-hub[data-sec="plan"] > a[aria-current="page"] .vn-icon { color: var(--vn-s-plan-t); }
+nav.gyst-hub[data-sec="work"] > a[aria-current="page"] .vn-icon { color: var(--vn-s-work-t); }
+/* Three short words need less room than Health's four: three across down to 16em, then stacked. */
+@container (max-width: 21.5em) { nav.gyst-switcher.gyst-hub > a { flex-basis: 0; } }
+@container (max-width: 16em) { nav.gyst-switcher.gyst-hub > a { flex-basis: 100%; } }
 /* From 700 px (13B DD-17) there is room for the icon beside the word, as drawn. */
 @media (min-width: 700px) { nav.gyst-switcher > a { flex-direction: row; gap: 4px; padding: 0 4px; } }
 
