@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"math"
 	"strings"
 
 	"lifeops-tracker/internal/models"
@@ -49,10 +50,7 @@ func (r *Repository) NutritionDayTotals(from, to string) (map[string]models.Nutr
  SUM(i.protein_g), COUNT(*) - COUNT(i.protein_g),
  SUM(i.carbs_g), COUNT(*) - COUNT(i.carbs_g),
  SUM(i.fat_g), COUNT(*) - COUNT(i.fat_g),
- SUM(i.fiber_g), COUNT(*) - COUNT(i.fiber_g),
- SUM(CASE WHEN i.nutrition_provenance = 'ai_estimate' THEN 1 ELSE 0 END),
- SUM(CASE WHEN i.nutrition_provenance = 'ai_estimate' THEN i.kcal END),
- SUM(CASE WHEN i.nutrition_provenance = 'ai_estimate' THEN i.protein_g END)
+ SUM(i.fiber_g), COUNT(*) - COUNT(i.fiber_g)
  FROM nutrition_meal_items i JOIN nutrition_meals m ON m.id = i.meal_id
  WHERE i.archived_at IS NULL AND m.archived_at IS NULL AND m.local_date >= ? AND m.local_date <= ?
  GROUP BY m.local_date`, from, to)
@@ -65,13 +63,73 @@ func (r *Repository) NutritionDayTotals(from, to string) (map[string]models.Nutr
 		var t models.NutritionDayTotals
 		if err := rows.Scan(&t.Date, &t.Items,
 			&t.Sum.Kcal, &t.Gaps.Kcal, &t.Sum.ProteinG, &t.Gaps.ProteinG, &t.Sum.CarbsG, &t.Gaps.CarbsG,
-			&t.Sum.FatG, &t.Gaps.FatG, &t.Sum.FiberG, &t.Gaps.FiberG,
-			&t.Estimated.Items, &t.Estimated.Kcal, &t.Estimated.ProteinG); err != nil {
+			&t.Sum.FatG, &t.Gaps.FatG, &t.Sum.FiberG, &t.Gaps.FiberG); err != nil {
 			return nil, err
 		}
 		out[t.Date] = t
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := r.addEstimated(out, from, to); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// addEstimated fills Estimated per day (GYST-180): the one place that decides
+// what counts as an AI estimate. A value counts when its item keeps the AI's own
+// numbers (ai_est_*) and the saved value still equals the estimate scaled to the
+// saved grams and rounded to 0.1, the server's rule (CameraScale, RoundNutrients;
+// same operation order as food-camera-math.js). An item whose protein was edited
+// still counts its calories, and a value Jay re-entered differently does not.
+// An item counts when its calories or protein still count.
+func (r *Repository) addEstimated(out map[string]models.NutritionDayTotals, from, to string) error {
+	rows, err := r.db.Query(`SELECT m.local_date, i.grams, i.ai_est_grams, i.kcal, i.ai_est_kcal, i.protein_g, i.ai_est_protein_g
+ FROM nutrition_meal_items i JOIN nutrition_meals m ON m.id = i.meal_id
+ WHERE i.archived_at IS NULL AND m.archived_at IS NULL AND m.local_date >= ? AND m.local_date <= ?
+ AND i.nutrition_provenance IN ('ai_estimate', 'user') AND i.grams > 0 AND i.ai_est_grams > 0
+ AND (i.ai_est_kcal IS NOT NULL OR i.ai_est_protein_g IS NOT NULL)`, from, to)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	still := func(saved, est sql.NullFloat64, grams, base float64) bool {
+		if !saved.Valid || !est.Valid {
+			return false
+		}
+		return math.Abs(saved.Float64-math.Round(est.Float64*grams/base*10)/10) <= 1e-9
+	}
+	for rows.Next() {
+		var date string
+		var grams, base sql.NullFloat64
+		var kcal, estKcal, prot, estProt sql.NullFloat64
+		if err := rows.Scan(&date, &grams, &base, &kcal, &estKcal, &prot, &estProt); err != nil {
+			return err
+		}
+		t := out[date]
+		k, p := still(kcal, estKcal, grams.Float64, base.Float64), still(prot, estProt, grams.Float64, base.Float64)
+		if !k && !p {
+			continue
+		}
+		t.Estimated.Items++
+		if k {
+			v := kcal.Float64
+			if t.Estimated.Kcal != nil {
+				v += *t.Estimated.Kcal
+			}
+			t.Estimated.Kcal = &v
+		}
+		if p {
+			v := prot.Float64
+			if t.Estimated.ProteinG != nil {
+				v += *t.Estimated.ProteinG
+			}
+			t.Estimated.ProteinG = &v
+		}
+		out[date] = t
+	}
+	return rows.Err()
 }
 
 const nutritionFoodColumns = `id, provider, provider_id, version, name, brand, normalized_name, basis, serving_label, serving_grams,

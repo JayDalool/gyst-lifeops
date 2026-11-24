@@ -108,23 +108,42 @@ func TestCameraConfirmKeepsEstimateAndProvenance(t *testing.T) {
 	}
 }
 
-// Edited: Jay's own value; ai_est_* stay what the AI gave; the day total no
-// longer counts the item as an estimate.
-func TestCameraEditedEstimateBecomesUserAndLeavesTheCount(t *testing.T) {
-	h := testHandler(t)
-	rv := analyzeStew(t, h)
-	confirmStew(t, h, rv.Nonce, map[string]any{"kcal": 550})
-	items, _ := h.Service.ListDiaryItems(h.Service.TodayString())
-	it := items[0]
-	if it.NutritionProvenance != "user" || *it.Kcal != 550 || *it.AIEstKcal != 400 || *it.AIEstFatG != 12 {
-		t.Fatalf("edited: %+v", it)
+// Edited: the item is Jay's (user) and ai_est_* stay what the AI gave, but each
+// value still equal to the scaled estimate keeps counting and stays disclosed
+// (Codex P1). A value he re-entered differently does not.
+func TestCameraPartialEditKeepsUntouchedValuesCountedAsEstimates(t *testing.T) {
+	ptr := func(v float64) *float64 { return &v }
+	cases := []struct {
+		name      string
+		edit      map[string]any
+		prov      string
+		items     int
+		kcal, pro *float64
+	}{
+		{"no edit", nil, "ai_estimate", 1, ptr(600), ptr(30)},
+		{"protein edited", map[string]any{"protein_g": 31}, "user", 1, ptr(600), nil},
+		{"kcal edited", map[string]any{"kcal": 550}, "user", 1, nil, ptr(30)},
+		{"both edited", map[string]any{"kcal": 550, "protein_g": 31}, "user", 0, nil, nil},
+		{"fibre added", map[string]any{"fiber_g": 4}, "user", 1, ptr(600), ptr(30)},
 	}
-	in, _ := h.Service.DayIntake(h.Service.TodayString())
-	if in.Estimated.Items != 0 || in.Estimated.Kcal != nil {
-		t.Fatalf("an edited item still counts as an estimate: %+v", in.Estimated)
-	}
-	if *in.Counted.Kcal != 550 {
-		t.Fatalf("counted %v", *in.Counted.Kcal)
+	for _, c := range cases {
+		h := testHandler(t)
+		confirmStew(t, h, analyzeStew(t, h).Nonce, c.edit)
+		items, _ := h.Service.ListDiaryItems(h.Service.TodayString())
+		it := items[0]
+		if it.NutritionProvenance != c.prov || *it.AIEstKcal != 400 || *it.AIEstProteinG != 20 || *it.AIEstFatG != 12 {
+			t.Fatalf("%s: %+v", c.name, it)
+		}
+		in, _ := h.Service.DayIntake(h.Service.TodayString())
+		e := in.Estimated
+		same := func(a, b *float64) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
+		if e.Items != c.items || !same(e.Kcal, c.kcal) || !same(e.ProteinG, c.pro) {
+			t.Errorf("%s: estimated %+v kcal %v protein %v", c.name, e, deref(e.Kcal), deref(e.ProteinG))
+		}
+		// The item stays in the day's counted total whatever is disclosed.
+		if in.Counted.Kcal == nil {
+			t.Errorf("%s: counted lost", c.name)
+		}
 	}
 }
 

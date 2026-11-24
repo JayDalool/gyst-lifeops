@@ -152,7 +152,13 @@ the review screen) and nothing is written to the diary.
   AI's macros are discarded; an unmatched food shows the estimate prefilled,
   labelled "AI estimate" and editable, and it is held server-side per review.
   Saving it unedited stores `ai_est_*` and nutrition provenance `ai_estimate`;
-  any edit makes the item `user` and leaves `ai_est_*` as the AI gave them.
+  any edit makes the item `user` and leaves `ai_est_*` as the AI gave them. The
+  disclosure is per value: a calorie or protein value that still equals the
+  estimate scaled to the saved grams (rounded to 0.1 like the script) keeps
+  counting in `DayIntake.Estimated`, so editing only protein keeps the calories
+  labelled; re-entering both removes the item from the label. An estimate with no
+  positive `est_grams` is dropped, and each estimate number is read on its own,
+  so an out-of-range one never fails the reply.
   Roughly 60% more output tokens per photo (about +30 tokens per item); the
   model setting is unchanged.
 - Rate limit: one at a time, 3 s apart, 40 an hour (separate from the Coach).

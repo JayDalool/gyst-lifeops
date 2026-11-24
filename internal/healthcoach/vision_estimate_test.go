@@ -149,3 +149,32 @@ func TestRequestsCarryEstimateInstructionAndSchema(t *testing.T) {
 		t.Error("OpenAI instructions lack the estimate instruction")
 	}
 }
+
+// Codex P2: no positive grams means no basis for the numbers; the food stays.
+func TestParseFoodPhotoDropsEstimateWithoutPositiveGrams(t *testing.T) {
+	for _, g := range []string{"0", "0.0"} {
+		it := parseOne(t, itemJSON(g, "0", "0", "0", "0"))
+		if it.Est != nil || it.EstGrams == nil {
+			t.Errorf("est_grams %s: %+v", g, it)
+		}
+	}
+}
+
+// Codex P2: a number outside float64 or any other bad value drops that item's
+// estimate only, never the reply, through a real provider reply.
+func TestEstimateOutOfRangeNumberNeverFailsTheReply(t *testing.T) {
+	reply := `{"items":[` + itemJSON("200", "1e309", "20", "30", "12") + `,` + itemJSON("200", "320", "20", "30", "12") + `,` +
+		itemJSON("200", "[1]", "20", "30", "12") + `,` + itemJSON("200", "-1e999", "20", "30", "12") + `],"uncertainties":[],"questions":[]}`
+	a, _ := newFake(t, textMessage("end_turn", reply))
+	res, err := a.AnalyzeFoodPhoto(context.Background(), fakeJPEG)
+	if err != nil || len(res.Items) != 4 {
+		t.Fatalf("reply failed or lost items: %v %+v", err, res.Items)
+	}
+	if res.Items[0].Est != nil || res.Items[1].Est == nil || res.Items[2].Est != nil || res.Items[3].Est != nil {
+		t.Fatalf("estimates: %+v", res.Items)
+	}
+	o, _ := newOAIFake(t, jsonReply(200, visionReply(reply)))
+	if res, err := o.AnalyzeFoodPhoto(context.Background(), fakeJPEG); err != nil || len(res.Items) != 4 {
+		t.Fatalf("OpenAI path: %v", err)
+	}
+}

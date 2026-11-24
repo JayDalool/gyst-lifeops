@@ -292,16 +292,29 @@
       return t === '' ? null : parseNum(t);
     }
     li._macro = macroVal;
-    // aiDriven: every estimated field is still the AI's number and nothing else
-    // was typed, which is exactly when the server stores the item as an AI
-    // estimate. Fibre is not estimated, so a typed fibre value makes it Jay's.
-    function aiDriven() {
-      return !match && aiEst != null && AI_FIELDS.every(function (k) { return aiKeys[k]; }) && nut.fiber_g.value.trim() === '';
+    // aiField: this field still shows the AI's number for the grams now (the
+    // server's rule for "still an estimate", so a partial edit keeps the other
+    // values counted as AI; a value typed back to the estimate counts again).
+    function aiField(k) {
+      if (match || aiEst == null || aiEst[k] == null) return false;
+      var g = gramsNow();
+      return g > 0 && nut[k].value.trim() === M.prefillEst(aiEst[k], est, g);
     }
-    li._aiKcal = function () {
-      if (!aiDriven()) return undefined;
-      var k = macroVal('kcal');
-      return k == null || isNaN(k) ? null : k;
+    // aiDriven: every estimated field is still the AI's and nothing else was
+    // typed, which is when the server stores the item as an AI estimate.
+    function aiDriven() {
+      return !match && aiEst != null && AI_FIELDS.every(aiField) && nut.fiber_g.value.trim() === '';
+    }
+    function aiAny() { return AI_FIELDS.some(aiField); }
+    // _aiShare is what the meal total counts, like the day total: undefined when
+    // neither calories nor protein is still the AI's, else the kcal still
+    // estimated (null when only protein is).
+    li._aiShare = function () {
+      var k = aiField('kcal'), p = aiField('protein_g');
+      if (!k && !p) return undefined;
+      if (!k) return null;
+      var v = macroVal('kcal');
+      return v == null || isNaN(v) ? null : v;
     };
     function refreshTags() {
       tags.textContent = '';
@@ -315,6 +328,7 @@
       else tags.appendChild(tag('You confirmed grams'));
       if (match) tags.appendChild(tag('Nutrition from ' + match.source + ': ' + match.name));
       else if (aiDriven()) tags.appendChild(tag('Nutrition: AI estimate'));
+      else if (aiAny()) tags.appendChild(tag('Nutrition: partly AI estimate, partly yours'));
       else if (aiEst) tags.appendChild(tag('Nutrition: yours (edited from an AI estimate)'));
       else if (FIELDS.some(function (f) { return nut[f[0]].value !== ''; })) tags.appendChild(tag('Nutrition: yours'));
       else tags.appendChild(tag('No nutrition yet', true));
@@ -417,7 +431,7 @@
     var kcal = 0, prot = 0, anyK = false, anyP = false, missK = false;
     var aiItems = 0, aiKcal = 0, aiAnyK = false;
     rowEls().forEach(function (li) {
-      var a = li._aiKcal();
+      var a = li._aiShare();
       if (a !== undefined) { aiItems++; if (a != null) { aiKcal += a; aiAnyK = true; } }
       var k = li._macro('kcal'), p = li._macro('protein_g');
       if (k == null || isNaN(k)) missK = true; else { kcal += k; anyK = true; }

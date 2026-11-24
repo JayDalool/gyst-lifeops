@@ -27,7 +27,9 @@ func TestDayIntakeEstimatedCountsOnlyLiveAIEstimateItems(t *testing.T) {
 	if in.Source != models.IntakeSourceGYST || in.Items != 4 {
 		t.Fatalf("intake %+v", in)
 	}
-	if in.Estimated.Items != 2 || *in.Estimated.Kcal != 320 || *in.Estimated.ProteinG != 14 {
+	// "Test edited" changed only kcal: its protein (10) still equals the
+	// estimate, so it counts for protein and not for kcal (Codex P1).
+	if in.Estimated.Items != 3 || *in.Estimated.Kcal != 320 || *in.Estimated.ProteinG != 24 {
 		t.Fatalf("estimated %+v", in.Estimated)
 	}
 	if *in.Counted.Kcal != 520 { // Estimated is a subset of the counted total, never added to it
@@ -47,7 +49,7 @@ func TestDayIntakeEstimatedCountsOnlyLiveAIEstimateItems(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if in.Estimated.Items != 1 || *in.Estimated.Kcal != 200 {
+	if in.Estimated.Items != 2 || *in.Estimated.Kcal != 200 || *in.Estimated.ProteinG != 20 {
 		t.Fatalf("after removal %+v", in.Estimated)
 	}
 }

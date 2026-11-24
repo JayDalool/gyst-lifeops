@@ -95,9 +95,16 @@ func plausibleEstimate(e FoodEstimate, grams float64) bool {
 
 // estimateNumber reads one estimate field: a JSON number, nothing else (text,
 // bool, null and missing are all "no number").
-func estimateNumber(v any) (float64, bool) {
-	f, ok := v.(float64)
-	return f, ok
+func estimateNumber(raw json.RawMessage) (float64, bool) {
+	t := strings.TrimSpace(string(raw))
+	if t == "" || t == "null" {
+		return 0, false
+	}
+	var f float64
+	if json.Unmarshal(raw, &f) != nil { // text, bool, object, or out of float64 range
+		return 0, false
+	}
+	return f, true
 }
 
 // FoodPhotoResult is the validated analysis. Slices are never nil.
@@ -120,10 +127,12 @@ type rawFoodPhoto struct {
 		Notes      *string  `json:"notes"`
 		// The estimate fields decode as any so a wrong type (text) drops the
 		// estimate, not the whole reply or the item (GYST-180).
-		EstKcal     any `json:"est_kcal"`
-		EstProteinG any `json:"est_protein_g"`
-		EstCarbsG   any `json:"est_carbs_g"`
-		EstFatG     any `json:"est_fat_g"`
+		// RawMessage, converted one by one, so 1e309 or any other bad value
+		// drops this item's estimate and never the whole reply (GYST-180).
+		EstKcal     json.RawMessage `json:"est_kcal"`
+		EstProteinG json.RawMessage `json:"est_protein_g"`
+		EstCarbsG   json.RawMessage `json:"est_carbs_g"`
+		EstFatG     json.RawMessage `json:"est_fat_g"`
 	} `json:"items"`
 	Uncertainties []string `json:"uncertainties"`
 	Questions     []string `json:"questions"`
@@ -166,7 +175,8 @@ func ParseFoodPhoto(text string) (FoodPhotoResult, error) {
 		item := FoodPhotoItem{Name: name, Role: *it.Role, EstGrams: it.EstGrams, Confidence: c, Visible: *it.Visible, Notes: notes}
 		// An estimate needs the grams it is for and all four numbers; any
 		// failure drops the estimate only, never the item.
-		if g := it.EstGrams; g != nil {
+		// No positive gram basis means no basis to scale or check the numbers.
+		if g := it.EstGrams; g != nil && *g > 0 {
 			k, ok1 := estimateNumber(it.EstKcal)
 			p, ok2 := estimateNumber(it.EstProteinG)
 			ca, ok3 := estimateNumber(it.EstCarbsG)
