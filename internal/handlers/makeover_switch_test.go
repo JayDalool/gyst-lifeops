@@ -735,27 +735,27 @@ func TestGeistFontSelfHosted(t *testing.T) {
 	}
 }
 
-// The sign-in page stays dark on any OS setting through a static attribute:
-// no data-theme keeps the legacy side dark, data-gyst-theme="dark" selects the
-// dark tokens. It has no script and its form is untouched.
-func TestLoginPageStaysDarkWithoutScript(t *testing.T) {
+// GYST-188 replaced the old "sign in stays dark with no script" test: the page now follows the stored
+// theme or the OS through theme.js (a3 section 4), so it carries layout.html's light attributes and the
+// browser-bar pair, and loads theme.js as an external script in the head. It still has no inline script
+// (the CSP forbids one) and the form keeps its fields in order. The rendered-page checks are in
+// login_page_test.go; this one reads the template source.
+func TestLoginTemplateFollowsTheTheme(t *testing.T) {
 	login := readTemplate(t, "login.html")
-	if strings.Contains(strings.ToLower(login), "<script") {
-		t.Error("login.html must not contain a script")
-	}
-	if !strings.Contains(login, `<html lang="en" data-gyst-theme="dark">`) {
-		t.Error(`login.html must set data-gyst-theme="dark" statically and no data-theme`)
+	if !strings.Contains(login, `<html lang="en" data-theme="light" data-gyst-theme="light">`) {
+		t.Error(`login.html must start from the same light attributes as layout.html, so theme.js can set either scheme`)
 	}
 	order := []string{
-		// Exception E3: the browser bar colour is left as it was; it moves with the shell chunk (R2).
-		`<meta name="theme-color" content="#080d16">`,
-		`<link rel="stylesheet" href="/static/css/styles.css?v=`,
+		`<meta name="theme-color" content="#F1EFF9" data-light="#F1EFF9" data-dark="#09080F">`,
+		`<script src="/static/js/theme.js?v=appearance-2"></script>`,
 		`<link rel="stylesheet" href="/static/css/ui-tokens.css?v=`,
 		`<link rel="stylesheet" href="/static/css/ui-accents.css?v=`,
-		`<form class="login-card" method="post" action="/login" autocomplete="on">`,
+		`<link rel="stylesheet" href="/static/css/ui-components.css?v=`,
+		`<link rel="stylesheet" href="/static/css/ui-signin.css?v=signin-1">`,
+		`<form class="gyst-signin-col" method="post" action="/login" autocomplete="on">`,
 		`name="password"`, `type="password"`, `autocomplete="current-password"`,
 		`{{if .Next}}<input type="hidden" name="next" value="{{.Next}}">{{end}}`,
-		`<button class="login-submit" type="submit">Sign in</button>`,
+		`<button class="gyst-signin-submit" type="submit">Sign in</button>`,
 	}
 	at := 0
 	for _, part := range order {
@@ -764,6 +764,11 @@ func TestLoginPageStaysDarkWithoutScript(t *testing.T) {
 			t.Fatalf("login.html lacks %s (or it is out of order)", part)
 		}
 		at += i
+	}
+	for _, tag := range regexp.MustCompile(`(?i)<script[^>]*>`).FindAllString(login, -1) {
+		if !strings.Contains(tag, ` src="/static/js/`) {
+			t.Errorf("login.html has an inline or off-site script: %s", tag)
+		}
 	}
 }
 

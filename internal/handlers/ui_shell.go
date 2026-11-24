@@ -242,7 +242,7 @@ func buildMore(pages []pageDef, now time.Time, q string) moreData {
 
 func (h *Handler) more(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/more" && r.URL.Path != "/more/" {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if r.Method != http.MethodGet {

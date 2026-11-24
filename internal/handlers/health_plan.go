@@ -177,7 +177,7 @@ func (h *Handler) healthPlan(w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &invalid) {
 			data.Error = invalid.Error()
 		} else if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		} else {
 			serverError(w, err)
@@ -194,12 +194,12 @@ func (h *Handler) healthPlan(w http.ResponseWriter, r *http.Request) {
 		if id := r.URL.Query().Get("id"); id != "" {
 			number, err := strconv.ParseInt(id, 10, 64)
 			if err != nil || number <= 0 {
-				http.NotFound(w, r)
+				notFound(w, r)
 				return
 			}
 			cycle, err = h.Service.GetHealthCycle(number)
 			if errors.Is(err, sql.ErrNoRows) {
-				http.NotFound(w, r)
+				notFound(w, r)
 				return
 			}
 			if err != nil {

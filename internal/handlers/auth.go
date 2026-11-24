@@ -39,9 +39,15 @@ func (h *Handler) admitLogin(bucket, key, label string) *authlimit.Attempt {
 	return attempt
 }
 
+// loginPageData is only what the template draws. Kind names which banner to
+// show and SignedOut whether the visitor carried a session cookie (GYST-188);
+// neither is read by any branch below, so the page can change without the
+// sign-in decisions changing.
 type loginPageData struct {
-	Error string
-	Next  string
+	Error     string
+	Kind      string // "", "wrong", "throttled", "unreadable" or "unconfigured"
+	SignedOut bool
+	Next      string
 }
 
 // renderLogin draws the login page from its own template rather than the app
@@ -110,7 +116,8 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, defaultIfEmpty(next, "/"), http.StatusSeeOther)
 			return
 		}
-		h.renderLogin(w, http.StatusOK, loginPageData{Next: next})
+		// SignedOut reads the cookie header only: no database read, log or audit line (GYST-188 c3).
+		h.renderLogin(w, http.StatusOK, loginPageData{Next: next, SignedOut: !h.AuthDisabled && sessionToken(r) != ""})
 		return
 	}
 
@@ -121,7 +128,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 8<<10)
 	if err := r.ParseForm(); err != nil {
-		h.renderLogin(w, http.StatusBadRequest, loginPageData{Error: "That form could not be read. Try again.", Next: next})
+		h.renderLogin(w, http.StatusBadRequest, loginPageData{Error: "That form could not be read. Try again.", Kind: "unreadable", Next: next})
 		return
 	}
 	if formNext := safeNextPath(r.PostForm.Get("next")); formNext != "" {
@@ -133,6 +140,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		// not a wrong password, and the operator is the only person who sees it.
 		h.renderLogin(w, http.StatusServiceUnavailable, loginPageData{
 			Error: "No password is configured. Set GYST_PASSWORD_HASH on the server.",
+			Kind:  "unconfigured",
 			Next:  next,
 		})
 		return
@@ -153,7 +161,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 				Outcome: services.AuditOutcomeDenied, Detail: auditDetailThrottle,
 			}, ingress)
 		}
-		h.renderLogin(w, http.StatusTooManyRequests, loginPageData{Error: throttledMessage, Next: next})
+		h.renderLogin(w, http.StatusTooManyRequests, loginPageData{Error: throttledMessage, Kind: "throttled", Next: next})
 		return
 	}
 	defer attempt.Release() // a server error or panic must not leak the slot
@@ -169,7 +177,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 			Outcome: services.AuditOutcomeFailed, Detail: auditDetailWrongPW,
 		}, ingress)
 		h.authEvent(r, "login.failed", ingress, client, slog.LevelWarn)
-		h.renderLogin(w, http.StatusUnauthorized, loginPageData{Error: "Incorrect password.", Next: next})
+		h.renderLogin(w, http.StatusUnauthorized, loginPageData{Error: "Incorrect password.", Kind: "wrong", Next: next})
 		return
 	}
 

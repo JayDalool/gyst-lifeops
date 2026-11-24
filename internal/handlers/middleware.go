@@ -107,6 +107,10 @@ func (h *Handler) Authenticated() http.Handler {
 
 		if h.AuthDisabled {
 			h.log().Warn("authentication disabled (GYST_AUTH_DISABLED); serving unauthenticated", "event", "auth.disabled", "method", r.Method, "route", routeLabel(path), "request_id", requestIDFrom(r.Context()))
+			// Auth off is local work: the exempt routes keep their text answers here too.
+			if !authExemptPath(path) {
+				markPageView(w, r, path)
+			}
 			h.ServeHTTP(w, r)
 			return
 		}
@@ -134,6 +138,9 @@ func (h *Handler) Authenticated() http.Handler {
 			return
 		}
 
+		// GYST-188: only a request that got this far (valid session, same origin) can be answered with the
+		// styled 404 and 500 pages. Nothing is written or changed here; the flag is a field on the recorder.
+		markPageView(w, r, path)
 		h.ServeHTTP(w, r)
 	})
 }

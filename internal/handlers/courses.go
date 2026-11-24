@@ -57,7 +57,7 @@ func (h *Handler) courses(w http.ResponseWriter, r *http.Request, segments []str
 
 	id, ok := parseID(segmentAt(segments, 1))
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 
@@ -80,7 +80,7 @@ func (h *Handler) courses(w http.ResponseWriter, r *http.Request, segments []str
 	case "blocks":
 		h.courseBlocks(w, r, id, segments)
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 	}
 }
 
@@ -109,7 +109,7 @@ func (h *Handler) courseDetail(w http.ResponseWriter, r *http.Request, id int64)
 	}
 	course, blocks, err := h.Service.CourseDetail(id)
 	if errors.Is(err, sql.ErrNoRows) {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if err != nil {
@@ -164,7 +164,7 @@ func (h *Handler) editCourse(w http.ResponseWriter, r *http.Request, id int64) {
 	case http.MethodGet:
 		course, err := h.Service.Repo.CourseByID(id)
 		if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		}
 		if err != nil {
@@ -244,12 +244,12 @@ func (h *Handler) courseBlocks(w http.ResponseWriter, r *http.Request, courseID 
 
 	// POST /courses/{id}/blocks/{blockID}/{action}
 	if len(segments) != 5 {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	blockID, ok := parseID(segments[3])
 	if !ok {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 
@@ -286,7 +286,7 @@ func (h *Handler) courseBlocks(w http.ResponseWriter, r *http.Request, courseID 
 	case "postpone":
 		block, err := h.Service.Repo.LearningBlockByID(blockID)
 		if errors.Is(err, sql.ErrNoRows) || (err == nil && block.CourseID != courseID) {
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		}
 		if err != nil {
@@ -306,7 +306,7 @@ func (h *Handler) courseBlocks(w http.ResponseWriter, r *http.Request, courseID 
 			return
 		}
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	redirectAfter(w, r, fmt.Sprintf("/courses/%d#block-%d", courseID, blockID))
@@ -326,7 +326,7 @@ func (h *Handler) publicFeedsBlocked(w http.ResponseWriter, r *http.Request) boo
 	if h.AllowPublicFeeds {
 		return false
 	}
-	http.NotFound(w, r)
+	notFound(w, r)
 	return true
 }
 
@@ -409,7 +409,7 @@ func (h *Handler) calendarFeed(w http.ResponseWriter, r *http.Request, segments 
 		return
 	}
 	if len(segments) < 3 || segments[1] != "feed" {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 
@@ -417,7 +417,7 @@ func (h *Handler) calendarFeed(w http.ResponseWriter, r *http.Request, segments 
 	switch len(segments) {
 	case 3: // {token}.ics  -> unified
 		if !strings.HasSuffix(segments[2], ".ics") {
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		}
 		token = strings.TrimSuffix(segments[2], ".ics")
@@ -430,16 +430,16 @@ func (h *Handler) calendarFeed(w http.ResponseWriter, r *http.Request, segments 
 		case "projects.ics":
 			scope = "projects"
 		default:
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		}
 	default:
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 
 	if !h.validCalendarToken(token) {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 

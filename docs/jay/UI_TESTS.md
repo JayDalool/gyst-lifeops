@@ -1,3 +1,4 @@
+- [ ] GYST-188 · Installed iPhone app: sign in, show password, offline page · https://github.com/JayDalool/gyst-lifeops/issues/276
 - [ ] GYST-179 · Adjust food before logging on iPhone app · https://github.com/JayDalool/gyst-lifeops/issues/269
 - [ ] GYST-177 · Projects, Galaxy, Roadmaps bar on Galaxy, iPhone app · https://github.com/JayDalool/gyst-lifeops/issues/267
 - [ ] GYST-187 · All pages tiles and search on installed iPhone app · https://github.com/JayDalool/gyst-lifeops/issues/274

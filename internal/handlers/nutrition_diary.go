@@ -221,12 +221,12 @@ func (h *Handler) nutritionItems(w http.ResponseWriter, r *http.Request, rest []
 	if len(rest) > 0 {
 		var err error
 		if id, err = strconv.ParseInt(rest[0], 10, 64); err != nil || id <= 0 {
-			http.NotFound(w, r)
+			notFound(w, r)
 			return
 		}
 	}
 	if len(rest) > 2 || (len(rest) == 2 && rest[1] != "archive" && rest[1] != "restore") {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	var err error

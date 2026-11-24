@@ -56,6 +56,9 @@ type respRecorder struct {
 	status      int
 	wroteHeader bool
 	err         error
+	// page is set by markPageView for a signed-in browser page view (GYST-188); the 404 and 500
+	// helpers read it, and nothing else does.
+	page *pageView
 }
 
 func (r *respRecorder) WriteHeader(status int) {

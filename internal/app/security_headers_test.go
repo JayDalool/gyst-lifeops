@@ -37,7 +37,7 @@ func TestSecurityHeadersThroughAppHandler(t *testing.T) {
 func TestIconSpriteIsServedSameOrigin(t *testing.T) {
 	a := healthzApp(t)
 	rec := httptest.NewRecorder()
-	a.Handler.ServeHTTP(rec, httptest.NewRequest("GET", "/static/icons.svg?v=r7-5", nil))
+	a.Handler.ServeHTTP(rec, httptest.NewRequest("GET", "/static/icons.svg?v=r7-6", nil))
 	if rec.Code != 200 {
 		t.Fatalf("GET /static/icons.svg = %d", rec.Code)
 	}

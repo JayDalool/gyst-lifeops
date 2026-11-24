@@ -47,7 +47,7 @@ func appURL(a services.App, onTailnet bool, host string) string {
 // reaches the template or the response body.
 func (h *Handler) apps(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/apps" && r.URL.Path != "/apps/" {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	if r.Method != http.MethodGet {

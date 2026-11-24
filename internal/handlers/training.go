@@ -299,7 +299,7 @@ func (h *Handler) training(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !valid {
-		http.NotFound(w, r)
+		notFound(w, r)
 		return
 	}
 	now, location := h.Service.Now(), h.Service.Location()
