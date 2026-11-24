@@ -78,7 +78,7 @@ func TestMoreMethodAndReachability(t *testing.T) {
 	}
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/more", nil))
-	for _, path := range []string{"/checklist", "/projects", "/courses", "/health", "/health/nutrition", "/health/training", "/health/progress", "/health/plan", "/today", "/tasks", "/reminders", "/monthly", "/galaxy", "/roadmap", "/goals", "/analytics", "/plan-import", "/archive", "/apps", "/settings"} {
+	for _, path := range []string{"/health/checklist", "/health/foods", "/health/profile", "/health/more", "/projects", "/courses", "/health", "/health/nutrition", "/health/training", "/health/progress", "/health/plan", "/today", "/tasks", "/reminders", "/monthly", "/galaxy", "/roadmap", "/goals", "/analytics", "/plan-import", "/archive", "/apps", "/settings"} {
 		if !strings.Contains(rec.Body.String(), `href="`+path+`"`) {
 			t.Fatalf("More missing %s", path)
 		}
@@ -115,7 +115,7 @@ func TestNavigationCleanupAndContextActions(t *testing.T) {
 		if !strings.Contains(body[mainStart:mainStart+mainEnd], `href="`+tc.action+`"`) {
 			t.Fatalf("%s lost contextual action %s", tc.page, tc.action)
 		}
-		if !strings.Contains(primaryMarkup(t, body), "<span>More</span>") {
+		if !strings.Contains(primaryMarkup(t, body), "<span>"+allPagesLabel+"</span>") {
 			t.Fatal("More label missing")
 		}
 	}

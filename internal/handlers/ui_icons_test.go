@@ -37,7 +37,7 @@ func TestVNIconHelper(t *testing.T) {
 	if err = tmpl.ExecuteTemplate(&out, "vn.icon", "home"); err != nil {
 		t.Fatal(err)
 	}
-	want := `<svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-4#i-home"/></svg>`
+	want := `<svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-5#i-home"/></svg>`
 	if out.String() != want {
 		t.Fatalf("vn.icon rendered\n%s\nwant\n%s", out.String(), want)
 	}
@@ -63,7 +63,7 @@ func TestUIGalleryShowsIconSet(t *testing.T) {
 	body := string(galleryHTML(t))
 	ids := spriteIDs(t)
 	for _, id := range ids {
-		if !strings.Contains(body, `<use href="/static/icons.svg?v=r7-4#i-`+id+`"/></svg><code>`+id+`</code>`) {
+		if !strings.Contains(body, `<use href="/static/icons.svg?v=r7-5#i-`+id+`"/></svg><code>`+id+`</code>`) {
 			t.Errorf("gallery does not show icon %s with its name", id)
 		}
 	}

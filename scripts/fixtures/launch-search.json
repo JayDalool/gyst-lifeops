@@ -1,0 +1,217 @@
+{
+ "Pages": [
+  {
+   "URL": "/today",
+   "Haystack": "today plan daily checklist focus now home missions"
+  },
+  {
+   "URL": "/tasks",
+   "Haystack": "tasks plan all tasks to do late new task add missions"
+  },
+  {
+   "URL": "/reminders",
+   "Haystack": "reminders plan alerts"
+  },
+  {
+   "URL": "/monthly",
+   "Haystack": "monthly view plan calendar month"
+  },
+  {
+   "URL": "/projects",
+   "Haystack": "projects work worlds new project add create"
+  },
+  {
+   "URL": "/goals",
+   "Haystack": "goals work milestones new goal add"
+  },
+  {
+   "URL": "/galaxy",
+   "Haystack": "galaxy work map space planets projects worlds"
+  },
+  {
+   "URL": "/roadmap",
+   "Haystack": "roadmaps work journey new roadmap add"
+  },
+  {
+   "URL": "/analytics",
+   "Haystack": "analytics work stats xp charts"
+  },
+  {
+   "URL": "/health",
+   "Haystack": "health health summary"
+  },
+  {
+   "URL": "/health/nutrition",
+   "Haystack": "nutrition health food diary calories protein"
+  },
+  {
+   "URL": "/health/foods",
+   "Haystack": "my foods health foods products saved meals"
+  },
+  {
+   "URL": "/health/training",
+   "Haystack": "training health workout hevy routines gym"
+  },
+  {
+   "URL": "/health/progress",
+   "Haystack": "progress health weight steps"
+  },
+  {
+   "URL": "/health/plan",
+   "Haystack": "health plan health targets cycles cut"
+  },
+  {
+   "URL": "/health/checklist",
+   "Haystack": "daily checklist health habits"
+  },
+  {
+   "URL": "/health/profile",
+   "Haystack": "coach profile health age height goal weight food rules"
+  },
+  {
+   "URL": "/health/coach",
+   "Haystack": "coach health ask ai health coach"
+  },
+  {
+   "URL": "/health/more",
+   "Haystack": "health extras health more health integrations"
+  },
+  {
+   "URL": "/courses",
+   "Haystack": "courses learn learn lessons study learning add course"
+  },
+  {
+   "URL": "/settings",
+   "Haystack": "settings system appearance prayer calendar feed preferences theme"
+  },
+  {
+   "URL": "/plan-import",
+   "Haystack": "import a plan system upload plan file ai chatgpt markdown tasks checklist"
+  },
+  {
+   "URL": "/archive",
+   "Haystack": "archive system done old restore"
+  },
+  {
+   "URL": "/apps",
+   "Haystack": "apps system other apps links tools"
+  }
+ ],
+ "Cases": [
+  {
+   "Query": "month",
+   "Expect": [
+    "/monthly"
+   ]
+  },
+  {
+   "Query": "calendar",
+   "Expect": [
+    "/monthly",
+    "/settings"
+   ]
+  },
+  {
+   "Query": "  Checklist ",
+   "Expect": [
+    "/today",
+    "/health/checklist",
+    "/plan-import"
+   ]
+  },
+  {
+   "Query": "workout",
+   "Expect": [
+    "/health/training"
+   ]
+  },
+  {
+   "Query": "ZZZ",
+   "Expect": []
+  },
+  {
+   "Query": "",
+   "Expect": []
+  },
+  {
+   "Query": "   ",
+   "Expect": []
+  },
+  {
+   "Query": "food",
+   "Expect": [
+    "/health/nutrition",
+    "/health/foods",
+    "/health/profile"
+   ]
+  },
+  {
+   "Query": "health",
+   "Expect": [
+    "/health",
+    "/health/nutrition",
+    "/health/foods",
+    "/health/training",
+    "/health/progress",
+    "/health/plan",
+    "/health/checklist",
+    "/health/profile",
+    "/health/coach",
+    "/health/more"
+   ]
+  },
+  {
+   "Query": "a",
+   "Expect": [
+    "/today",
+    "/tasks",
+    "/reminders",
+    "/monthly",
+    "/projects",
+    "/goals",
+    "/galaxy",
+    "/roadmap",
+    "/analytics",
+    "/health",
+    "/health/nutrition",
+    "/health/foods",
+    "/health/training",
+    "/health/progress",
+    "/health/plan",
+    "/health/checklist",
+    "/health/profile",
+    "/health/coach",
+    "/health/more",
+    "/courses",
+    "/settings",
+    "/plan-import",
+    "/archive",
+    "/apps"
+   ]
+  },
+  {
+   "Query": "Éclair",
+   "Expect": []
+  },
+  {
+   "Query": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "Expect": []
+  },
+  {
+   "Query": "xp",
+   "Expect": [
+    "/analytics"
+   ]
+  },
+  {
+   "Query": "ai",
+   "Expect": [
+    "/today",
+    "/health/training",
+    "/health/checklist",
+    "/health/coach",
+    "/plan-import"
+   ]
+  }
+ ]
+}

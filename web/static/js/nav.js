@@ -39,7 +39,23 @@
   function refocusPlus(prev, next, activeIsDocument, fromPlus) {
     return prev === "open" && next === "closed" && activeIsDocument === true && fromPlus === true;
   }
-  root.GYSTNav = { kbState: kbState, focusKind: focusKind, refocusPlus: refocusPlus };
+
+  // All pages search (GYST-187, spec a1 section 7). The query is trimmed, capped at 100 characters (as the
+  // server's NormalizeSearchQuery caps it) and lower-cased, then looked for inside each tile's data-search,
+  // which the server wrote from the same text its own filter uses. Returns the indexes of the matches; an
+  // empty query matches nothing, because the page then shows its groups instead of results.
+  function norm(query) {
+    return Array.from(String(query == null ? "" : query).trim()).slice(0, 100).join("").trim().toLowerCase();
+  }
+  function filterPages(query, haystacks) {
+    var q = norm(query), found = [];
+    if (!q) return found;
+    for (var i = 0; i < haystacks.length; i++) if (String(haystacks[i]).indexOf(q) >= 0) found.push(i);
+    return found;
+  }
+  function liveText(count) { return count === 0 ? "No page matches" : count === 1 ? "1 page" : count + " pages"; }
+
+  root.GYSTNav = { kbState: kbState, focusKind: focusKind, refocusPlus: refocusPlus, filterPages: filterPages, norm: norm, liveText: liveText };
   if (!root.document) return;
 
   var doc = root.document, vv = root.visualViewport;
@@ -70,6 +86,54 @@
     // but a capture listener on the document runs before the dialog's own listeners.
     doc.addEventListener("close", function () { setState("closed"); }, true);
     update();
+  }
+
+  // The filter only reads and shows what the server drew; it makes no request and never changes the address.
+  // Without script the same field is a GET form, so Enter reloads /more?q= with the same Results group.
+  var field = doc.querySelector('[data-launch-filter]');
+  if (field) {
+    var page = field.closest ? field.closest('.gyst-launch') : null;
+    var groups = page && page.querySelector('[data-launch-groups]');
+    var results = page && page.querySelector('[data-launch-results]');
+    var list = results && results.querySelector('[data-launch-list]');
+    var heading = results && results.querySelector('.gyst-launch-sec');
+    var count = results && results.querySelector('[data-launch-count]');
+    var empty = results && results.querySelector('[data-launch-empty]');
+    var shown = page && page.querySelector('[data-launch-query]');
+    var live = page && page.querySelector('[data-launch-live]');
+    if (groups && results && list && heading && count && empty && shown && live) {
+      var liveTimer = 0;
+      var showFor = function (query) {
+        var q = norm(query), seen = {}, tiles = [];
+        Array.prototype.forEach.call(groups.querySelectorAll('.gyst-tile'), function (a) {
+          var href = a.getAttribute("href");
+          if (!seen[href]) { seen[href] = true; tiles.push(a); } // Pinned repeats a page its group already draws
+        });
+        var hit = q ? filterPages(q, tiles.map(function (a) { return a.getAttribute("data-search"); })) : [];
+        while (list.firstChild) list.removeChild(list.firstChild);
+        hit.forEach(function (i) { list.appendChild(tiles[i].parentNode.cloneNode(true)); });
+        groups.hidden = q !== "";
+        results.hidden = q === "";
+        heading.hidden = list.hidden = hit.length === 0;
+        empty.hidden = hit.length > 0;
+        count.textContent = String(hit.length);
+        shown.textContent = String(query).trim();
+        root.clearTimeout(liveTimer);
+        liveTimer = root.setTimeout(function () { live.textContent = q ? liveText(hit.length) : ""; }, 300);
+      };
+      field.addEventListener("input", function () { showFor(field.value); });
+      field.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          field.value = "";
+          showFor("");
+          event.preventDefault();
+        } else if (event.key === "Enter") {
+          var first = norm(field.value) ? list.querySelector('a') : null;
+          if (first) { event.preventDefault(); root.location.assign(first.getAttribute("href")); }
+        }
+      });
+      if (norm(field.value)) showFor(field.value); // a restored field (back from a page) shows its results
+    }
   }
 
   doc.addEventListener("click", function (event) {

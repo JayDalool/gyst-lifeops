@@ -57,6 +57,12 @@ const IDS = [
   'all',     // GYST-178: the All tab of the phone tab bar, a 3x3 grid of dots (13B DD-18)
   'bars',    // chart-column
   'orbit',   // GYST-186: the Galaxy tab of the Tasks hub switch
+  'flag',    // GYST-187: the Goals tile of All pages (round 7's drawing)
+  'cal',     // GYST-187: Monthly view
+  'user',    // GYST-187: Coach profile
+  'spark',   // GYST-187: Coach
+  'upload',  // GYST-187: Import a plan
+  'box',     // GYST-187: Archive
 ];
 
 // Round 7's sprite uses only these. Anything else (script, image, use, foreignObject, style, a, ...)

@@ -99,6 +99,27 @@ function themeChecks() {
   }
   }
 }
+// GYST-187 (Issue #274): the All pages filter in nav.js must give the same pages as the Go filter for every case in the
+// checked-in table, which a Go test proves is today's output (TestLauncherFilterFixtureIsCurrent). The page has no inline
+// script or handler attribute (CSP script-src self), and the filter makes no request.
+function allPagesChecks() {
+  const ctx = {}; ctx.globalThis = ctx;
+  const src = fs.readFileSync('web/static/js/nav.js', 'utf8');
+  vm.runInNewContext(src, ctx);
+  const {filterPages, norm, liveText} = ctx.GYSTNav;
+  const table = JSON.parse(fs.readFileSync('scripts/fixtures/launch-search.json', 'utf8'));
+  const hay = table.Pages.map(p => p.Haystack);
+  for (const c of table.Cases) {
+    const got = Array.from(filterPages(c.Query, hay)).map(i => table.Pages[i].URL);
+    assert.deepEqual(got, Array.from(c.Expect), 'nav.js and the server filter disagree for ' + JSON.stringify(c.Query));
+  }
+  assert.equal(norm('  Month  '), 'month'); assert.equal(norm(null), ''); assert.equal(norm('a'.repeat(150)).length, 100);
+  assert.equal(filterPages('', hay).length, 0, 'a blank query shows the groups, not results');
+  assert.equal(liveText(0), 'No page matches'); assert.equal(liveText(1), '1 page'); assert.equal(liveText(5), '5 pages');
+  assert(!/\b(fetch|XMLHttpRequest|sendBeacon|history\.(push|replace)State)\b/.test(src), 'the filter must not make a request or change the address');
+  const page = fs.readFileSync('web/templates/more.html', 'utf8');
+  assert(!/<script|\son[a-z]+\s*=|javascript:/i.test(page), 'more.html must hold no inline script or handler attribute');
+}
 // GYST-178 (Codex P2 on PR 270): the phone tab bar hides only while the on-screen keyboard is up. The decision is one
 // pure function in nav.js: layout height, visual viewport height and the focused control's kind in, open/closed out.
 function keyboardChecks() {
@@ -407,9 +428,9 @@ function healthNavChecks() {
   assert(!read('web/templates/ui_shell.html').includes('hv3-tabbar'), 'ui_shell.html still renders the Health-only tab bar');
   // ui-nav.css is never sent for Galaxy, and has one version.
   const layout = read('web/templates/layout.html');
-  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-7">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
+  assert(layout.includes('{{if ne .Page "galaxy"}}<link rel="stylesheet" href="/static/css/ui-nav.css?v=nav-8">{{end}}'), 'layout.html must link ui-nav.css only off Galaxy');
   assert.equal(layout.split('ui-nav.css').length - 1, 1, 'layout.html names ui-nav.css once');
-  assert(worker.includes('"/static/css/ui-nav.css?v=nav-7"'), 'the service worker list lacks ui-nav.css');
+  assert(worker.includes('"/static/css/ui-nav.css?v=nav-8"'), 'the service worker list lacks ui-nav.css');
 }
 function overlayChecks() {
   const src = fs.readFileSync('web/static/js/ui-overlay.js', 'utf8');
@@ -739,4 +760,4 @@ function dayReloadChecks() {
     assert.equal(p.resume('2026-11-02T07:00:00Z'), 1, 'fallback did not reload on the browser\'s next day');
   }
 }
-(async()=>{await workerChecks();tapTargetChecks();themeChecks();keyboardChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();dayReloadChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers, launcher and day reload passed');})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{await workerChecks();tapTargetChecks();themeChecks();keyboardChecks();allPagesChecks();motionChecks();toastChecks();overlayChecks();launcherChecks();await launcherRaceChecks();dayReloadChecks();console.log('UI shell: private/offline cache policy, 44px tap targets, appearance setting, motion preference, completion toast, overlay helpers, launcher, All pages filter and day reload passed');})().catch(error=>{console.error(error);process.exitCode=1;});
