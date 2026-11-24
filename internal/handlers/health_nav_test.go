@@ -531,17 +531,17 @@ func TestHealthNavAssets(t *testing.T) {
 	}
 	// The fetch, push and notification handlers are as GYST-168 left them: only the cache name and
 	// the list (and, from GYST-188, the offline page) may differ. This hash was re-taken in GYST-188 as sha256 of
-	// master's worker minus its CACHE, SHELL and OFFLINE lines, with one deliberate change since: the navigation fetch passes the original request with no init (so the browser keeps Sec-Fetch-Mode: navigate), and a comment says why. Push, notificationclick and the static handler are unchanged. Update it only with a change the ticket asks for.
+	// master's worker minus its CACHE, SHELL and OFFLINE lines. GYST-188 added only comment lines (the offline page and the note above the navigation fetch), so the worker's code, navigation fetch included, is still master's byte for byte. Update it only with a change the ticket asks for.
 	var rest []string
 	for _, line := range strings.Split(readStatic(t, "service-worker.js"), "\n") {
 		// GYST-188: OFFLINE (and the comment above it) is the offline page, which that ticket restyled. Its own
 		// checks are TestOfflinePageIsInert and check-ui-shell.cjs, so the hash covers everything else.
-		if !strings.HasPrefix(line, "const CACHE = ") && !strings.HasPrefix(line, "const SHELL = ") && !strings.HasPrefix(line, "const OFFLINE = ") && !strings.HasPrefix(line, "// GYST-188 (a4, Jay's answer 30)") {
+		if !strings.HasPrefix(line, "const CACHE = ") && !strings.HasPrefix(line, "const SHELL = ") && !strings.HasPrefix(line, "const OFFLINE = ") && !strings.HasPrefix(line, "// GYST-188 (a4, Jay's answer 30)") && !strings.HasPrefix(line, "    // GYST-188: navigations stay network-only") {
 			rest = append(rest, line)
 		}
 	}
 	swSum := sha256.Sum256([]byte(strings.Join(rest, "\n")))
-	if got := hex.EncodeToString(swSum[:]); got != "0a580e3bae06dab7a356720782e4e361b6620e60d3d996dbe0bcd12a5b21e679" {
+	if got := hex.EncodeToString(swSum[:]); got != "c4922f4736308dce84b2998653e8c3c46325a054e4709ed9a0094b65cfaa00fd" {
 		t.Errorf("service-worker.js changed outside CACHE, SHELL and OFFLINE (sha256 %s)", got)
 	}
 }

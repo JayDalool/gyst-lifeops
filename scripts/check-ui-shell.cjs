@@ -29,8 +29,8 @@ async function workerChecks() {
   }
   for (const path of ['/today','/health','/health/plan','/more','/settings','/login','/logout']) {
     fetchArgs.length=0;await request(path);assert.equal(cached.size,0,'private navigation cached');
-    // GYST-188: a navigation is fetched as the original request with no init, which keeps Sec-Fetch-Mode: navigate; fetch(request, {...}) would make it same-origin and the styled 404 and 500 pages would never show with the worker active.
-    assert.equal(fetchArgs.length,1);assert.equal(fetchArgs[0].length,1,'navigation fetch must pass the request alone');assert.equal(fetchArgs[0][0].mode,'navigate');
+    // GYST-188: navigations are network-only, separate from CacheStorage: the fetch bypasses the browser's HTTP cache (a 308 or plain 404 with no Cache-Control would otherwise be answered from disk).
+    assert.equal(fetchArgs.length,1);assert.equal(fetchArgs[0][0].mode,'navigate');assert.equal(fetchArgs[0][1]&&fetchArgs[0][1].cache,'no-store','navigation fetch must bypass the HTTP cache');
     online=false;const response=await request(path);assert.equal(response.status,503);
     assert.equal(response.headers.get('Content-Type'),'text/html; charset=utf-8');assert.equal(response.headers.get('Cache-Control'),'no-store');
     offlinePage(await response.text());online=true;

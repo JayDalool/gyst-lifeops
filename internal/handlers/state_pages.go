@@ -50,20 +50,25 @@ func markPageView(w http.ResponseWriter, r *http.Request, path string) {
 	if !acceptsHTML(r.Header.Get("Accept")) {
 		return
 	}
-	// Sec-Fetch-Mode: navigate is the proof of a page load: a script's fetch() or XHR is cors, same-origin or
-	// no-cors, and a script cannot build a navigate-mode request (the Request constructor refuses it). A
-	// service worker that re-fetches the navigation it was handed keeps mode navigate, but Chrome then
-	// labels the destination "empty" instead of "document" (measured with the worker active, GYST-188), so
-	// "empty" is accepted only together with navigate. Without Sec-Fetch-Mode (an older client) the
-	// destination must be absent or document, so a bare "empty" is still a fetch and never flagged.
+	// Two kinds of request are page views, and a script's own fetch is neither:
+	//  1. A browser navigation: Sec-Fetch-Mode navigate (or no Sec-Fetch headers at all, an older client) with
+	//     the destination absent or "document". A script's fetch() and XHR are cors, same-origin or no-cors, and
+	//     a script cannot send mode navigate.
+	//  2. The service worker's network-only re-fetch of a navigation: fetch(request, {cache: "no-store"}) makes
+	//     the Fetch spec turn mode navigate into same-origin, with dest "empty" and Cache-Control: no-cache
+	//     (measured in Chrome with the worker active, GYST-188). That is accepted only when all three show. A
+	//     default fetch() from a script is mode cors, so none of the app's scripts match; a script would have
+	//     to pass {mode: "same-origin", cache: "no-store"} and ask for text/html on purpose (none does, and the
+	//     only difference it would see is an HTML 404 or 500 page in place of plain text, for its own signed-in
+	//     session). A client that sends other headers keeps today's plain text.
 	mode, dest := r.Header.Get("Sec-Fetch-Mode"), r.Header.Get("Sec-Fetch-Dest")
-	switch {
-	case mode == "navigate":
-		if dest != "" && dest != "document" && dest != "empty" {
+	switch mode {
+	case "navigate", "":
+		if dest != "" && dest != "document" {
 			return
 		}
-	case mode == "":
-		if dest != "" && dest != "document" {
+	case "same-origin":
+		if dest != "empty" || !strings.Contains(strings.ToLower(r.Header.Get("Cache-Control")), "no-cache") {
 			return
 		}
 	default:
