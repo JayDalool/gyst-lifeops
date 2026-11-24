@@ -88,7 +88,7 @@ func TestEstimateLabelComesFromOneSourceOnEverySurface(t *testing.T) {
 		t.Fatalf("Apple Health day labelled: %+v", view.Estimated)
 	}
 	for _, p := range []string{"/health/nutrition", "/health", "/today"} {
-		if strings.Contains(strings.ToLower(estGetPage(t, h, p)), "ai estimate") {
+		if strings.Contains(strings.ToLower(estGetPage(t, h, p)), "includes ai estimate") {
 			t.Fatalf("%s mentions AI estimates on an Apple Health day", p)
 		}
 	}

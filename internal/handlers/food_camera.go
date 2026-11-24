@@ -20,8 +20,8 @@ import (
 // AI food camera review and save (Issue #211). Analyze (food_photo.go) returns
 // what the model identified plus a one-time nonce. Nothing is saved until
 // POST /health/nutrition/photo/confirm carries that nonce with the items Jay
-// reviewed. The AI's gram estimates stay on the server, keyed by the nonce, so
-// the stored "AI estimate" cannot be edited from the browser. The nonce doubles
+// reviewed. The AI's gram and nutrition estimates stay on the server, keyed by
+// the nonce, so the stored "AI estimate" cannot be edited from the browser. The nonce doubles
 // as the meal's idempotency key.
 
 const (
@@ -42,8 +42,8 @@ type cameraNonce struct {
 	session string
 	expires time.Time
 	est     []*float64
-	// estNut is the AI's own nutrition per item, parallel to est. Always nil
-	// today: the photo AI supplies none until GYST-180.
+	// estNut is the AI's own nutrition per item (at est's grams), parallel to
+	// est. Set only for items with no database match (GYST-180); nil otherwise.
 	estNut []*models.Nutrients
 	state  int
 }
@@ -161,16 +161,28 @@ type photoReview struct {
 }
 
 // buildPhotoReview matches each identified name against GYST's foods and
-// issues the nonce. A name with no per-100 g match gets none: the review asks
-// Jay for the values rather than inventing them.
+// issues the nonce. A food with a per-100 g match takes the database values and
+// the AI's own macros are discarded here, so they never reach the browser or
+// the nonce (GYST-180, criterion 2). A food with no match carries the AI's
+// estimate, kept server-side beside the grams it is for, and shown labelled as
+// an AI estimate; with no estimate either, the review asks Jay for the values.
 func (h *Handler) buildPhotoReview(r *http.Request, res healthcoach.FoodPhotoResult) photoReview {
 	out := photoReview{Items: make([]photoReviewItem, 0, len(res.Items)), Uncertainties: res.Uncertainties, Questions: res.Questions}
 	est := make([]*float64, len(res.Items))
+	estNut := make([]*models.Nutrients, len(res.Items))
 	for i, it := range res.Items {
 		est[i] = it.EstGrams
-		out.Items = append(out.Items, photoReviewItem{FoodPhotoItem: it, Idx: i, Match: h.matchFood(r, it.Name), AskGrams: it.Confidence < 0.5 || !it.Visible})
+		match := h.matchFood(r, it.Name)
+		if match != nil || it.EstGrams == nil {
+			it.Est = nil
+		}
+		if it.Est != nil {
+			kcal, p, c, f := it.Est.Kcal, it.Est.ProteinG, it.Est.CarbsG, it.Est.FatG
+			estNut[i] = &models.Nutrients{Kcal: &kcal, ProteinG: &p, CarbsG: &c, FatG: &f}
+		}
+		out.Items = append(out.Items, photoReviewItem{FoodPhotoItem: it, Idx: i, Match: match, AskGrams: it.Confidence < 0.5 || !it.Visible})
 	}
-	out.Nonce = h.camera.issue(sessionToken(r), est, h.Service.Now())
+	out.Nonce = h.camera.issueWithNutrition(sessionToken(r), est, estNut, h.Service.Now())
 	return out
 }
 

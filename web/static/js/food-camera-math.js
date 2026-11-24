@@ -14,6 +14,30 @@
   function prefill(per, g) {
     return per == null ? '' : num(per * g / 100);
   }
+  // prefillEst is the nutrient shown for an AI estimate that holds `v` for
+  // `estG` grams, at the grams `g` as typed. Same operation order as the Go
+  // side (services.CameraScale): (v*g)/estG, then to 0.1. GYST-180/GYST-192:
+  // the server compares what the form posts with its own figure to the last
+  // digit, so this must not be rewritten as v * (g / estG).
+  function prefillEst(v, estG, g) {
+    return v == null || !(estG > 0) || !(g > 0) ? '' : num(v * g / estG);
+  }
+  // whole is a calorie figure as the server prints it (formatThousands):
+  // rounded to a whole number with thousands commas.
+  function whole(v) {
+    var r = Math.round(v);
+    if (r === 0) r = 0; // never "-0"
+    var s = String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return r < 0 ? '\u2212' + s : s;
+  }
+  // estimateNote is the day-total label of the Go side (handlers.estimateNote):
+  // "Includes AI estimates: 2 items, about 410 kcal"; kcal null leaves it out.
+  function estimateNote(items, kcal) {
+    if (!(items > 0)) return '';
+    var n = 'Includes AI estimates: ' + items + (items === 1 ? ' item' : ' items');
+    if (kcal != null) n += ', about ' + whole(kcal) + ' kcal';
+    return n;
+  }
   // parseAmount reads a typed amount: digits with an optional decimal part,
   // comma or point. NaN for anything else (including blank).
   function parseAmount(v) {
@@ -54,7 +78,7 @@
     var n = 0;
     return {next: function () { return ++n; }, invalidate: function () { n++; }, isCurrent: function (id) { return id === n; }};
   }
-  var api = {num: num, prefill: prefill, parseAmount: parseAmount, typedRatio: typedRatio, captureRatios: captureRatios, followValues: followValues, latest: latest};
+  var api = {num: num, prefill: prefill, prefillEst: prefillEst, whole: whole, estimateNote: estimateNote, parseAmount: parseAmount, typedRatio: typedRatio, captureRatios: captureRatios, followValues: followValues, latest: latest};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FoodCameraMath = api;
 })(typeof self !== 'undefined' ? self : this);
