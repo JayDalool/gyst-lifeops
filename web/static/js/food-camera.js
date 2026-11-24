@@ -104,6 +104,7 @@
   input.addEventListener('change', function () {
     var file = input.files && input.files[0];
     if (!file || busy) return;
+    closeFind();
     busy = true;
     show(panel, true); show(body, false); setStatus('Preparing photo…');
     list.textContent = '';
@@ -144,10 +145,7 @@
   var FIELDS = [['kcal', 'kcal'], ['protein_g', 'Protein g'], ['carbs_g', 'Carbs g'], ['fat_g', 'Fat g'], ['fiber_g', 'Fiber g']];
   var STEP = 10, MAX_GRAMS = 100000;
   function round1(v) { return Math.round(v * 10) / 10; }
-  function parseNum(v) {
-    var s = String(v).trim().replace(',', '.');
-    return /^\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
-  }
+  var parseNum = M.parseAmount;
 
   // One polite live region for every spoken change; debounced so holding a
   // stepper does not queue a sentence per tap.
@@ -241,11 +239,12 @@
         FIELDS.forEach(function (f) {
           var x = field(f[1], f[0], 'num');
           nut[f[0]] = x.input;
+          // The owner's typing is never rewritten: only the ratio is noted, and
+          // the other fields move when the grams or the portion change.
           x.input.addEventListener('input', function () {
-            var g = gramsNow();
-            var v = parseNum(x.input.value);
-            if (g > 0 && v >= 0) ratio[f[0]] = v / g; else delete ratio[f[0]];
-            refresh(true);
+            var r = M.typedRatio(x.input.value, gramsNow());
+            if (r != null) ratio[f[0]] = r; else delete ratio[f[0]];
+            refreshTags(); updateTotal();
           });
           g2.appendChild(x.label);
         });
@@ -263,9 +262,17 @@
           dd[k].textContent = v === '' ? '—' : v;
           dd[k]._v = v;
         } else if (g > 0 && ratio[k] != null) {
-          nut[k].value = num(ratio[k] * g);
+          nut[k].value = M.followValues(ratio, g)[k];
         }
       });
+    }
+    // captureNow fixes a ratio for nutrients typed before any grams, at the
+    // grams as they stand now (before a step or the slider moves them).
+    function captureNow() {
+      if (match) return;
+      var texts = {};
+      FIELDS.forEach(function (f) { texts[f[0]] = nut[f[0]].value; });
+      ratio = M.captureRatios(ratio, texts, gramsNow());
     }
     function macroVal(k) {
       if (match) return dd[k]._v === '' || dd[k]._v == null ? null : parseFloat(dd[k]._v);
@@ -314,6 +321,7 @@
     }
     li._applyPortion = function () {
       if (base == null) return;
+      captureNow();
       gi.value = num(round1(base * portion));
       refresh(true);
     };
@@ -330,6 +338,7 @@
       if (!(g > 0)) return;
       var n = round1(g + d);
       if (n <= 0 || n > MAX_GRAMS) return;
+      captureNow();
       setShown(n, false);
       refresh(false);
     }
@@ -347,6 +356,7 @@
     rm.addEventListener('click', function () {
       var n = label();
       var next = li.nextElementSibling || li.previousElementSibling;
+      if (findTarget === li) closeFind(); // its Swap chooser must not outlive the row
       li.remove();
       announce('Removed ' + n);
       updateTotal();
@@ -410,8 +420,9 @@
 
   // Swap / Add chooser over the catalogue search (POST, so the text never
   // sits in a URL). Result text goes in with textContent only.
-  var findTarget = null, findTrigger = null, findTimer = 0, findSeq = 0;
+  var findTarget = null, findTrigger = null, findTimer = 0, findReq = M.latest();
   function openFind(row, trigger) {
+    clearTimeout(findTimer); findReq.invalidate(); // answers for the previous row or mode are stale
     findTarget = row; findTrigger = trigger;
     findOwn.hidden = !!row;
     findQ.value = ''; findList.textContent = ''; findNote.textContent = '';
@@ -420,7 +431,7 @@
     findQ.focus();
   }
   function closeFind() {
-    clearTimeout(findTimer); findSeq++;
+    clearTimeout(findTimer); findReq.invalidate();
     if (find.hidden) return;
     find.hidden = true;
     var t = findTrigger; findTrigger = null; findTarget = null;
@@ -428,7 +439,7 @@
   }
   function runFind() {
     var q = findQ.value.trim();
-    var seq = ++findSeq;
+    var seq = findReq.next();
     findList.textContent = '';
     if (!q) { findNote.textContent = ''; return; }
     if (q.length > 80) { findNote.textContent = 'Use 80 characters or fewer.'; return; }
@@ -440,7 +451,7 @@
       if (!res.ok) throw new Error('search');
       return res.json();
     }).then(function (items) {
-      if (seq !== findSeq) return;
+      if (!findReq.isCurrent(seq)) return;
       findList.textContent = '';
       findNote.textContent = items.length ? items.length + (items.length === 1 ? ' food found' : ' foods found') : 'No match. Try another word.';
       items.forEach(function (m) {
@@ -453,7 +464,7 @@
         li.appendChild(b); findList.appendChild(li);
       });
     }).catch(function () {
-      if (seq === findSeq) findNote.textContent = 'Search is not available. Nothing was changed.';
+      if (findReq.isCurrent(seq)) findNote.textContent = 'Search is not available. Nothing was changed.';
     });
   }
   function choose(m) {
@@ -468,7 +479,12 @@
     announce('Added ' + m.name + '. Enter grams.');
     row._focus();
   }
-  findQ.addEventListener('input', function () { clearTimeout(findTimer); findTimer = setTimeout(runFind, 250); });
+  findQ.addEventListener('input', function () {
+    // A changed query drops the old results and any answer still on its way.
+    clearTimeout(findTimer); findReq.invalidate();
+    findList.textContent = ''; findNote.textContent = '';
+    findTimer = setTimeout(runFind, 250);
+  });
   find.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { ev.preventDefault(); closeFind(); } });
   findClose.addEventListener('click', closeFind);
   findOwn.addEventListener('click', function () {
@@ -478,6 +494,7 @@
   });
 
   function render(data) {
+    closeFind(); // a new photo replaces the review; its old chooser goes with it
     nonce = data.nonce;
     setStatus('');
     notes.textContent = '';

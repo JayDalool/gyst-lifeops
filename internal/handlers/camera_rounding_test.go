@@ -144,3 +144,67 @@ process.exit(bad === 0 ? 0 : 1);
 	}
 	t.Logf("node: %s", out)
 }
+
+// Codex round 2 on the review script (GYST-179): the pure logic the screen
+// relies on, run under node like the golden table. The DOM wiring is covered by
+// the browser pass recorded in the PR; these pin the rules.
+func TestCameraScriptLogic(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Fatalf("node is required for the script-logic check: %v", err)
+	}
+	runner := filepath.Join(t.TempDir(), "logic.js")
+	const js = `const assert = require('assert');
+const M = require(process.argv[2]);
+
+// 1. Typing a nutrient only notes a ratio; "0.05" stays exactly as typed
+// because nothing computes a value to write back into the field.
+assert.strictEqual(M.typedRatio('0.05', 100), 0.0005);
+assert.strictEqual(M.typedRatio('15,5', 100), 0.155);   // a comma decimal
+assert.strictEqual(M.typedRatio('abc', 100), null);
+assert.strictEqual(M.typedRatio('', 100), null);
+assert.strictEqual(M.typedRatio('12', NaN), null);        // no grams yet: nothing to note
+assert.strictEqual(M.typedRatio('12', 0), null);
+// Following only touches fields that have a ratio; the others are left alone.
+const only = M.followValues({kcal: 2}, 110);
+assert.deepStrictEqual(Object.keys(only), ['kcal']);
+assert.strictEqual(only.kcal, '220');
+
+// 2. Nutrients typed before grams are captured at the grams as they stand
+// before a step or the slider, then scale. 200 kcal typed, grams 100 typed,
+// stepper to 110: 220. The slider at x1.2 after that: base 110 -> 132 g.
+let ratio = M.captureRatios({}, {kcal: '200', protein_g: '', carbs_g: 'x'}, 100);
+assert.deepStrictEqual(Object.keys(ratio), ['kcal']);
+assert.strictEqual(ratio.kcal, 2);
+assert.strictEqual(M.followValues(ratio, 110).kcal, '220');
+assert.strictEqual(M.followValues(ratio, 132).kcal, '264');
+// An existing ratio is never replaced by what a field shows after rounding.
+ratio = M.captureRatios({kcal: 2.0004}, {kcal: '200'}, 100);
+assert.strictEqual(ratio.kcal, 2.0004);
+// No grams: nothing is captured (grams typed digit by digit must not fix "1" of "150").
+assert.deepStrictEqual(M.captureRatios({}, {kcal: '200'}, NaN), {});
+// The input object is not changed.
+const before = {kcal: 1}; M.captureRatios(before, {fat_g: '5'}, 10);
+assert.deepStrictEqual(before, {kcal: 1});
+
+// 3. Search answers: only the newest request id counts; a changed query, row
+// or mode invalidates everything still in flight.
+const req = M.latest();
+const a = req.next();
+assert.ok(req.isCurrent(a));
+const b = req.next();
+assert.ok(!req.isCurrent(a) && req.isCurrent(b));
+req.invalidate();                       // chooser reopened for another row, or closed
+assert.ok(!req.isCurrent(b));
+const c = req.next();
+assert.ok(req.isCurrent(c) && !req.isCurrent(a));
+console.log('ok');
+`
+	if err := os.WriteFile(runner, []byte(js), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	math, _ := filepath.Abs(filepath.Join("..", "..", "web", "static", "js", "food-camera-math.js"))
+	if out, err := exec.Command(node, runner, math).CombinedOutput(); err != nil {
+		t.Fatalf("script logic check failed: %v\n%s", err, out)
+	}
+}
