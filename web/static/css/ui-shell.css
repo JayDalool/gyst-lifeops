@@ -1,5 +1,5 @@
 /* UI-1 shell. Page components retain their existing CSS until their own phase. */
-:root { --gyst-topbar-height: 64px; --gyst-header-clearance: calc(65px + var(--gyst-safe-top)); --gyst-nav-clearance: 0px; --gyst-sidebar-width: 208px; }
+:root { --gyst-topbar-height: 64px; --gyst-header-clearance: calc(65px + var(--gyst-safe-top)); --gyst-nav-clearance: 0px; --gyst-subnav-clearance: 0px; --gyst-sidebar-width: 208px; }
 [data-gyst-theme="dark"] .gyst-scope { color-scheme: dark; }
 :root .gyst-app { background: var(--gyst-bg); }
 .gyst-skip { position: fixed; top: 8px; left: 16px; z-index: 1000; transform: translateY(-160%); min-height: 44px; padding: 12px 16px; color: #fff; background: #2563eb; border-radius: 12px; }
@@ -30,10 +30,12 @@
 :root body.galaxy-page .galaxy-stage { --text: #e7f2fb; --muted: #b5c0d0; --quiet: #a6b4c5; --accent: #53c6e4; --border: #344155; --border-strong: #64748b; }
 /* Galaxy keeps its scene and controls; only its available shell rectangle changes. */
 :root body.galaxy-page .wrap.gyst-main { padding-top: 0; padding-inline: 0; max-width: none; }
-:root body.galaxy-page .galaxy-stage { height: calc(100vh - var(--gyst-header-clearance) - var(--gyst-nav-clearance)); height: calc(100dvh - var(--gyst-header-clearance) - var(--gyst-nav-clearance)); min-height: 0; }
+:root body.galaxy-page .galaxy-stage { height: calc(100vh - var(--gyst-header-clearance) - var(--gyst-nav-clearance) - var(--gyst-subnav-clearance)); height: calc(100dvh - var(--gyst-header-clearance) - var(--gyst-nav-clearance) - var(--gyst-subnav-clearance)); min-height: 0; }
 /* GYST-VN-039 Projects areas: a sticky segmented control below 1024 px, sidebar sub-items (as Health's) at 1024 px and wider. */
 .gyst-projects-sub { display: none; }
 .gyst-projects-subnav { position: sticky; top: var(--gyst-safe-top); z-index: 90; }
+/* GYST-177: on Galaxy the bar is static (the top bar is not sticky, so a sticky bar would cover the stage's zoom and Reset view once the page scrolls) and takes the gutter that Galaxy's main drops. Stage height gives back its 4 + 44 + 4 px so scrollHeight stays as before the bar. */
+:root body.galaxy-page .gyst-projects-subnav { position: static; margin-inline: max(16px,var(--gyst-safe-left)) max(16px,var(--gyst-safe-right)); }
 :root .page-head + .gyst-projects-subnav { margin-top: var(--vn-s4); }
 /* Desktop uses a sidebar; phone and tablet use the same five bottom links. */
 @media (min-width: 1024px) {
@@ -61,6 +63,7 @@
   :root .wrap.gyst-main { padding-bottom: calc(var(--gyst-nav-clearance) + 24px); }
 
   .gyst-more { gap: 24px; }
+  :root body.galaxy-page { --gyst-subnav-clearance: 52px; }
   :root body.galaxy-page .galaxy-hub, :root body.galaxy-page.galaxy-nav-hidden .galaxy-hub { top: 16px; }
   :root body.galaxy-page .galaxy-context { bottom: 48px; max-height: 40%; overflow: auto; }
   :root .lifeops-toast { bottom: calc(var(--gyst-nav-clearance) + 16px); }

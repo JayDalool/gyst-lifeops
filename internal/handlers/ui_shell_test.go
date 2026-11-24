@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -143,8 +145,8 @@ func TestProjectsArea(t *testing.T) {
 }
 
 // GYST-VN-039 (#124): Projects, Galaxy and Roadmaps are one tap apart. The
-// in-page control is on the Projects and Roadmaps lists; the Galaxy page gets
-// it after #9 (Jay's split). The sidebar group is on every Projects page.
+// in-page control is on the Galaxy page only (GYST-177, after GYST-186 moved
+// Projects and Roadmaps to the Tasks hub). The sidebar group is on every Projects page.
 func TestProjectsAreaSubNavigation(t *testing.T) {
 	h := testHandler(t)
 	project := models.Project{Name: "Fictional Orbit", Status: "active", ProjectKind: "main"}
@@ -161,7 +163,7 @@ func TestProjectsAreaSubNavigation(t *testing.T) {
 		{fmt.Sprintf("/projects/%d", project.ID), "/projects", false},
 		{"/projects/new", "/projects", false},
 		{"/roadmaps/new", "/roadmap", false},
-		{"/galaxy", "/galaxy", false},
+		{"/galaxy", "/galaxy", true},
 	} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tt.path, nil))
@@ -215,4 +217,54 @@ func TestProjectsAreaSubNavigation(t *testing.T) {
 			t.Fatalf("%s must not render the Projects areas navigation", path)
 		}
 	}
+}
+
+// GYST-177: the Galaxy bar is static and outside the stage; the stage gives back its height; scene code is untouched.
+func TestGalaxyProjectsBarRulesAndSceneFiles(t *testing.T) {
+	css, _ := os.ReadFile("../../web/static/css/ui-shell.css")
+	s := string(css)
+	if !strings.Contains(s, "--gyst-subnav-clearance: 0px") {
+		t.Fatal("root clearance must default to 0px so other pages are unchanged")
+	}
+	if strings.Count(s, "--gyst-subnav-clearance: 52px") != 1 || !strings.Contains(s, ":root body.galaxy-page { --gyst-subnav-clearance: 52px; }") {
+		t.Fatal("52px clearance belongs only under body.galaxy-page")
+	}
+	// the 52px rule must sit inside the below-1024px query
+	i := strings.Index(s, "--gyst-subnav-clearance: 52px")
+	q := strings.LastIndex(s[:i], "@media")
+	if !strings.HasPrefix(s[q:], "@media (max-width: 1023px)") {
+		t.Fatalf("clearance is outside the phone and tablet query: %q", s[q:q+40])
+	}
+	if !strings.Contains(s, ":root body.galaxy-page .gyst-projects-subnav { position: static; margin-inline: max(16px,var(--gyst-safe-left)) max(16px,var(--gyst-safe-right)); }") {
+		t.Fatal("Galaxy bar must be static with the safe-area gutter")
+	}
+	// The screen height in ui-galaxy.css is what actually sizes the stage on phone and tablet.
+	gcss, _ := os.ReadFile("../../web/static/css/ui-galaxy.css")
+	if !strings.Contains(string(gcss), "max(calc(420px - var(--gyst-subnav-clearance,0px)), calc(100svh - var(--gyst-header-clearance) - var(--gyst-nav-clearance) - var(--gyst-subnav-clearance,0px)))") {
+		t.Fatal("Galaxy screen height must subtract the bar clearance")
+	}
+	if !strings.Contains(string(gcss), "min-height:calc(280px - var(--gyst-subnav-clearance,0px))") {
+		t.Fatal("stage floor must give the bar's height back too, or the stage overflows the screen on short viewports")
+	}
+	if strings.Count(s, "var(--gyst-subnav-clearance)") != 2 {
+		t.Fatal("both stage height lines (vh and dvh) must subtract the bar")
+	}
+	for _, f := range []string{"galaxy.js", "galaxy-camera.js", "galaxy-gestures.js", "app.js"} {
+		got, err := os.ReadFile("../../web/static/js/" + f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := fmt.Sprintf("%x", sha256.Sum256(got))
+		if want := galaxySceneHashes[f]; sum != want {
+			t.Errorf("%s changed (GYST-177 must not touch it): %s", f, sum)
+		}
+	}
+}
+
+// Hashes of master 17ece2f. A later ticket that edits one of these updates its line on purpose.
+var galaxySceneHashes = map[string]string{
+	"galaxy.js":          "3dd964566261729bb157c7814065973f62bb126229b47d84697c8727e298541f",
+	"galaxy-camera.js":   "1560d2b97f6a34e03a3cf7a3b8212cdcadd8f70af8a83f202cd46fc3fecb05d9",
+	"galaxy-gestures.js": "b874c2b7cc445fa0f074873eaa75bb196d4b888f83dea0fb0b43444142b55fda",
+	"app.js":             "b85d40a2516c25f25c2e69a47d313ccc9e3092870df0c1e457f10b2c917498c6",
 }
