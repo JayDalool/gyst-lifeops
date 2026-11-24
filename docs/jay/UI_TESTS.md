@@ -1,3 +1,4 @@
+- [ ] GYST-179 · Adjust food before logging on iPhone app · https://github.com/JayDalool/gyst-lifeops/issues/269
 - [ ] GYST-187 · All pages tiles and search on installed iPhone app · https://github.com/JayDalool/gyst-lifeops/issues/274
 - [ ] GYST-186 · Tasks hub switch on installed iPhone app · https://github.com/JayDalool/gyst-lifeops/issues/272
 - [ ] GYST-178 · Installed iPhone app: tab bar, home indicator, keyboard open · https://gyst.zaylolabs.com/today

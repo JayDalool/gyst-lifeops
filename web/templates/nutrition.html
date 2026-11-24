@@ -67,8 +67,8 @@
     <a class="hv3-btn small" href="https://www.myfitnesspal.com/" target="_blank" rel="noopener noreferrer">Open {{template "gyst.icon" "external-link"}}<span class="hv3-sr">MyFitnessPal (opens in a new tab)</span></a>
   </section>
 </div>
-<script defer src="/static/js/food-camera-math.js?v=cam-2"></script>
-<script defer src="/static/js/food-camera.js?v=cam-2"></script>
+<script defer src="/static/js/food-camera-math.js?v=cam-3"></script>
+<script defer src="/static/js/food-camera.js?v=cam-3"></script>
 <p class="hv3-foot">Daily totals only from Apple Health. A day counts your GYST diary when it has food, otherwise the Apple Health total; they are never added together.</p>
 </div>
 {{end}}
@@ -108,12 +108,32 @@
     <p class="hv3-banner" id="cam-status" role="status" hidden></p>
     <p class="hv3-banner warn" id="cam-error" role="alert" hidden><span id="cam-error-text"></span><a id="cam-error-link" href="/settings#ai" hidden>Settings › AI provider</a></p>
     <div id="cam-body" hidden>
-      <p class="hv3-s">The AI only names what it sees and guesses grams. Nothing is saved until you press Save meal. Check each name, grams and the nutrition; leave nutrition blank if you don't know it.</p>
+      <p class="hv3-s">The AI names what it sees and guesses grams. Adjust grams with the minus and plus buttons, or scale the whole meal with the slider. Nothing is saved until you press Save meal.</p>
       <ul class="hv3-cam-notes" id="cam-notes"></ul>
+      <section class="hv3-cam-portion" aria-label="Whole meal portion">
+        <label for="cam-portion">Whole meal portion</label>
+        <div class="hv3-cam-portion-row">
+          <input id="cam-portion" class="hv3-range" type="range" min="0.5" max="2" step="0.05" value="1" aria-describedby="cam-portion-help">
+          <output id="cam-portion-out" for="cam-portion">x1.0</output>
+          <button class="hv3-btn small secondary" type="button" id="cam-portion-reset">Reset</button>
+        </div>
+        <p class="hv3-s" id="cam-portion-help">Scales every food. Change one food's grams afterwards and only that food moves.</p>
+      </section>
       <ul class="hv3-group" id="cam-items"></ul>
+      <p class="hv3-cam-total" id="cam-total"></p>
+      <p class="hv3-sr" id="cam-live" role="status" aria-live="polite"></p>
       <div class="hv3-cam-actions">
         <button class="hv3-btn small secondary" type="button" id="cam-add">Add oil, sauce or another food</button>
       </div>
+      <section class="hv3-cam-find" id="cam-find" aria-label="Find a food" hidden>
+        <label class="hv3-field"><span>Find a food in the database</span><input type="search" id="cam-find-q" autocomplete="off" maxlength="80" enterkeyhint="search"></label>
+        <p class="hv3-s" id="cam-find-note" role="status"></p>
+        <ul class="hv3-cam-results" id="cam-find-list"></ul>
+        <div class="hv3-cam-actions">
+          <button class="hv3-btn small secondary" type="button" id="cam-find-own" hidden>Type my own numbers</button>
+          <button class="hv3-btn small secondary" type="button" id="cam-find-close">Close</button>
+        </div>
+      </section>
       <form class="hv3-form" id="cam-form">
         <label class="hv3-field"><span>Meal</span><select id="cam-slot">{{range .Slots}}<option value="{{.Slot}}"{{if eq .Slot $.Diary.Preslot}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
         <button class="hv3-btn" type="submit" id="cam-save">Save meal</button>
