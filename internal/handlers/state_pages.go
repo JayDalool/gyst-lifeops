@@ -69,6 +69,9 @@ type statePageData struct {
 	Back      string
 }
 
+// Error is announced by role="alert" on the content block, not on <main>: spec a4 section 10 puts it on <main>, but axe
+// refuses that (aria-allowed-role, and <main> stops being a landmark), and an alert is still announced from the block.
+//
 // The tab bar below is a literal copy of ui_shell.html's nav.gyst-tabbar without aria-current: these
 // pages cannot render the shell (no layout, no data). TestStatePageTabBarMatchesShell fails when they drift.
 var statePage = template.Must(template.New("state").Parse(`<!doctype html>
@@ -90,10 +93,10 @@ var statePage = template.Must(template.New("state").Parse(`<!doctype html>
 <link rel="stylesheet" href="/static/css/ui-signin.css?v=signin-1">
 </head>
 <body class="gyst-statepage">
-<div class="gyst-state-top"><a class="gyst-brand" href="/today">GYST</a></div>
-<main class="gyst-state-main"{{if not .NotFound}} role="alert"{{end}}>
+<header class="gyst-state-top"><a class="gyst-brand" href="/today">GYST</a></header>
+<main class="gyst-state-main">
 <p class="gyst-state-kicker">{{if .NotFound}}404 · Not found{{else}}Error{{end}}</p>
-<div class="gyst-state-card"><div class="gyst-state8">
+<div class="gyst-state-card"><div class="gyst-state8"{{if not .NotFound}} role="alert"{{end}}>
 <span class="gyst-state8-icon"{{if not .NotFound}} data-state="crit"{{end}}><svg class="vn-icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v=r7-6#i-{{if .NotFound}}search{{else}}alert{{end}}"/></svg></span>
 {{if .NotFound}}<h1 class="gyst-state8-title">Page not found</h1>
 <p class="gyst-state8-text">This link points to something that is not here. It may have been deleted or moved to the Archive.</p>

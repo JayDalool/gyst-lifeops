@@ -17,6 +17,9 @@ h1.gyst-signin-title { font: 600 var(--vn-t-title)/var(--vn-t-title-lh) var(--vn
 .gyst-signin-sub { margin: -8px 0 0; font-size: var(--vn-t-sub); line-height: var(--vn-t-sub-lh); color: var(--vn-ink-2); }
 /* The banner component is shared; only its corner and alignment differ here (a3 section 4). */
 .gyst-signin .gyst-banner { border-radius: var(--vn-r-md); align-items: flex-start; }
+/* The component gives its copy a 12em floor; at Text size 2 on a 320 px phone that is wider than the screen. */
+.gyst-signin .gyst-banner { flex-wrap: nowrap; }
+.gyst-signin .gyst-banner-copy { min-width: 0; }
 .gyst-signin .gyst-banner b { display: block; font-weight: 500; color: var(--vn-ink); }
 .gyst-signin-field { display: grid; gap: 4px; }
 .gyst-signin-label { padding-left: 2px; font: 500 var(--vn-t-cap)/var(--vn-t-cap-lh) var(--vn-font); color: var(--vn-ink-2); }

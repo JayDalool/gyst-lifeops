@@ -59,7 +59,7 @@ func TestNotFoundPageForASignedInPageView(t *testing.T) {
 				t.Errorf("%s: lacks %s", path, want)
 			}
 		}
-		if strings.Contains(body, `role="alert"`) {
+		if strings.Contains(body, `role="alert"`) || strings.Contains(body, "<main role") {
 			t.Errorf("%s: a not-found page is not an alert", path)
 		}
 		// One page for every missing thing: nothing in it says which path or record was asked for.
@@ -88,7 +88,7 @@ func TestServerErrorPageForASignedInPageView(t *testing.T) {
 		t.Fatalf("status %d, styled %v: %s", rec.Code, isStatePage(body), body)
 	}
 	for _, want := range []string{
-		`<main class="gyst-state-main" role="alert">`, `<h1 class="gyst-state8-title">Something went wrong</h1>`, `<title>Error · GYST</title>`,
+		`<div class="gyst-state8" role="alert">`, `<header class="gyst-state-top">`, `<h1 class="gyst-state8-title">Something went wrong</h1>`, `<title>Error · GYST</title>`,
 		`GYST could not load this page. Nothing you saved was lost.`, `href="/tasks?view=open">Try again`, `href="/today">Go to Today`,
 		`quote reference <span>` + id + `</span>.`, `<nav aria-label="Primary" class="gyst-tabbar">`,
 	} {
