@@ -1,0 +1,1461 @@
+{
+ "note": "Fictional foods. posted = what the review script puts in the fields (run by node on food-camera-math.js); stored = round1(per100 * round1(grams) / 100), the server value. Go and node both check this table (GYST-179).",
+ "rows": [
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "150",
+   "stored_grams": 150,
+   "posted": {
+    "kcal": "174",
+    "protein_g": "13.5",
+    "carbs_g": "30.2",
+    "fat_g": "0.6",
+    "fiber_g": "11.9"
+   },
+   "stored": {
+    "kcal": 174,
+    "protein_g": 13.5,
+    "carbs_g": 30.2,
+    "fat_g": 0.6,
+    "fiber_g": 11.9
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "150.04",
+   "stored_grams": 150,
+   "posted": {
+    "kcal": "174",
+    "protein_g": "13.5",
+    "carbs_g": "30.2",
+    "fat_g": "0.6",
+    "fiber_g": "11.9"
+   },
+   "stored": {
+    "kcal": 174,
+    "protein_g": 13.5,
+    "carbs_g": 30.2,
+    "fat_g": 0.6,
+    "fiber_g": 11.9
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "150.05",
+   "stored_grams": 150.1,
+   "posted": {
+    "kcal": "174.1",
+    "protein_g": "13.5",
+    "carbs_g": "30.2",
+    "fat_g": "0.6",
+    "fiber_g": "11.9"
+   },
+   "stored": {
+    "kcal": 174.1,
+    "protein_g": 13.5,
+    "carbs_g": 30.2,
+    "fat_g": 0.6,
+    "fiber_g": 11.9
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "150.06",
+   "stored_grams": 150.1,
+   "posted": {
+    "kcal": "174.1",
+    "protein_g": "13.5",
+    "carbs_g": "30.2",
+    "fat_g": "0.6",
+    "fiber_g": "11.9"
+   },
+   "stored": {
+    "kcal": 174.1,
+    "protein_g": 13.5,
+    "carbs_g": 30.2,
+    "fat_g": 0.6,
+    "fiber_g": 11.9
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "33.35",
+   "stored_grams": 33.4,
+   "posted": {
+    "kcal": "38.7",
+    "protein_g": "3",
+    "carbs_g": "6.7",
+    "fat_g": "0.1",
+    "fiber_g": "2.6"
+   },
+   "stored": {
+    "kcal": 38.7,
+    "protein_g": 3,
+    "carbs_g": 6.7,
+    "fat_g": 0.1,
+    "fiber_g": 2.6
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "0.5",
+   "stored_grams": 0.5,
+   "posted": {
+    "kcal": "0.6",
+    "protein_g": "0",
+    "carbs_g": "0.1",
+    "fat_g": "0",
+    "fiber_g": "0"
+   },
+   "stored": {
+    "kcal": 0.6,
+    "protein_g": 0,
+    "carbs_g": 0.1,
+    "fat_g": 0,
+    "fiber_g": 0
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "0.05",
+   "stored_grams": 0.1,
+   "posted": {
+    "kcal": "0.1",
+    "protein_g": "0",
+    "carbs_g": "0",
+    "fat_g": "0",
+    "fiber_g": "0"
+   },
+   "stored": {
+    "kcal": 0.1,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "7.25",
+   "stored_grams": 7.3,
+   "posted": {
+    "kcal": "8.4",
+    "protein_g": "0.7",
+    "carbs_g": "1.5",
+    "fat_g": "0",
+    "fiber_g": "0.6"
+   },
+   "stored": {
+    "kcal": 8.5,
+    "protein_g": 0.7,
+    "carbs_g": 1.5,
+    "fat_g": 0,
+    "fiber_g": 0.6
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "99.95",
+   "stored_grams": 100,
+   "posted": {
+    "kcal": "115.9",
+    "protein_g": "9",
+    "carbs_g": "20.1",
+    "fat_g": "0.4",
+    "fiber_g": "7.9"
+   },
+   "stored": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "1234.56",
+   "stored_grams": 1234.6,
+   "posted": {
+    "kcal": "1432.1",
+    "protein_g": "111.1",
+    "carbs_g": "248.1",
+    "fat_g": "4.9",
+    "fiber_g": "97.5"
+   },
+   "stored": {
+    "kcal": 1432.1,
+    "protein_g": 111.1,
+    "carbs_g": 248.2,
+    "fat_g": 4.9,
+    "fiber_g": 97.5
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "10",
+   "stored_grams": 10,
+   "posted": {
+    "kcal": "11.6",
+    "protein_g": "0.9",
+    "carbs_g": "2",
+    "fat_g": "0",
+    "fiber_g": "0.8"
+   },
+   "stored": {
+    "kcal": 11.6,
+    "protein_g": 0.9,
+    "carbs_g": 2,
+    "fat_g": 0,
+    "fiber_g": 0.8
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "2.5",
+   "stored_grams": 2.5,
+   "posted": {
+    "kcal": "2.9",
+    "protein_g": "0.2",
+    "carbs_g": "0.5",
+    "fat_g": "0",
+    "fiber_g": "0.2"
+   },
+   "stored": {
+    "kcal": 2.9,
+    "protein_g": 0.2,
+    "carbs_g": 0.5,
+    "fat_g": 0,
+    "fiber_g": 0.2
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "180",
+   "stored_grams": 180,
+   "posted": {
+    "kcal": "208.8",
+    "protein_g": "16.2",
+    "carbs_g": "36.2",
+    "fat_g": "0.7",
+    "fiber_g": "14.2"
+   },
+   "stored": {
+    "kcal": 208.8,
+    "protein_g": 16.2,
+    "carbs_g": 36.2,
+    "fat_g": 0.7,
+    "fiber_g": 14.2
+   }
+  },
+  {
+   "food": "lentils",
+   "per100": {
+    "kcal": 116,
+    "protein_g": 9,
+    "carbs_g": 20.1,
+    "fat_g": 0.4,
+    "fiber_g": 7.9
+   },
+   "grams_typed": "1000",
+   "stored_grams": 1000,
+   "posted": {
+    "kcal": "1160",
+    "protein_g": "90",
+    "carbs_g": "201",
+    "fat_g": "4",
+    "fiber_g": "79"
+   },
+   "stored": {
+    "kcal": 1160,
+    "protein_g": 90,
+    "carbs_g": 201,
+    "fat_g": 4,
+    "fiber_g": 79
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "150",
+   "stored_grams": 150,
+   "posted": {
+    "kcal": "1350",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "150",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 1350,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 150,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "150.04",
+   "stored_grams": 150,
+   "posted": {
+    "kcal": "1350.4",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "150",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 1350,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 150,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "150.05",
+   "stored_grams": 150.1,
+   "posted": {
+    "kcal": "1350.5",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "150.1",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 1350.9,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 150.1,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "150.06",
+   "stored_grams": 150.1,
+   "posted": {
+    "kcal": "1350.5",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "150.1",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 1350.9,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 150.1,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "33.35",
+   "stored_grams": 33.4,
+   "posted": {
+    "kcal": "300.2",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "33.4",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 300.6,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 33.4,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "0.5",
+   "stored_grams": 0.5,
+   "posted": {
+    "kcal": "4.5",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "0.5",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 4.5,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 0.5,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "0.05",
+   "stored_grams": 0.1,
+   "posted": {
+    "kcal": "0.5",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "0.1",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 0.9,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 0.1,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "7.25",
+   "stored_grams": 7.3,
+   "posted": {
+    "kcal": "65.3",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "7.3",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 65.7,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 7.3,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "99.95",
+   "stored_grams": 100,
+   "posted": {
+    "kcal": "899.6",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "100",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "1234.56",
+   "stored_grams": 1234.6,
+   "posted": {
+    "kcal": "11111",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "1234.6",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 11111.4,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 1234.6,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "10",
+   "stored_grams": 10,
+   "posted": {
+    "kcal": "90",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "10",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 90,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 10,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "2.5",
+   "stored_grams": 2.5,
+   "posted": {
+    "kcal": "22.5",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "2.5",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 22.5,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 2.5,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "180",
+   "stored_grams": 180,
+   "posted": {
+    "kcal": "1620",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "180",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 1620,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 180,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "rich-oil",
+   "per100": {
+    "kcal": 900,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 100,
+    "fiber_g": null
+   },
+   "grams_typed": "1000",
+   "stored_grams": 1000,
+   "posted": {
+    "kcal": "9000",
+    "protein_g": "",
+    "carbs_g": "",
+    "fat_g": "1000",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 9000,
+    "protein_g": null,
+    "carbs_g": null,
+    "fat_g": 1000,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "150",
+   "stored_grams": 150,
+   "posted": {
+    "kcal": "375.8",
+    "protein_g": "0.5",
+    "carbs_g": "90.7",
+    "fat_g": "0.1",
+    "fiber_g": "1.7"
+   },
+   "stored": {
+    "kcal": 375.8,
+    "protein_g": 0.5,
+    "carbs_g": 90.7,
+    "fat_g": 0.1,
+    "fiber_g": 1.7
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "150.04",
+   "stored_grams": 150,
+   "posted": {
+    "kcal": "375.9",
+    "protein_g": "0.5",
+    "carbs_g": "90.7",
+    "fat_g": "0.1",
+    "fiber_g": "1.7"
+   },
+   "stored": {
+    "kcal": 375.8,
+    "protein_g": 0.5,
+    "carbs_g": 90.7,
+    "fat_g": 0.1,
+    "fiber_g": 1.7
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "150.05",
+   "stored_grams": 150.1,
+   "posted": {
+    "kcal": "375.9",
+    "protein_g": "0.5",
+    "carbs_g": "90.7",
+    "fat_g": "0.1",
+    "fiber_g": "1.7"
+   },
+   "stored": {
+    "kcal": 376,
+    "protein_g": 0.5,
+    "carbs_g": 90.7,
+    "fat_g": 0.1,
+    "fiber_g": 1.7
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "150.06",
+   "stored_grams": 150.1,
+   "posted": {
+    "kcal": "375.9",
+    "protein_g": "0.5",
+    "carbs_g": "90.7",
+    "fat_g": "0.1",
+    "fiber_g": "1.7"
+   },
+   "stored": {
+    "kcal": 376,
+    "protein_g": 0.5,
+    "carbs_g": 90.7,
+    "fat_g": 0.1,
+    "fiber_g": 1.7
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "33.35",
+   "stored_grams": 33.4,
+   "posted": {
+    "kcal": "83.5",
+    "protein_g": "0.1",
+    "carbs_g": "20.2",
+    "fat_g": "0",
+    "fiber_g": "0.4"
+   },
+   "stored": {
+    "kcal": 83.7,
+    "protein_g": 0.1,
+    "carbs_g": 20.2,
+    "fat_g": 0,
+    "fiber_g": 0.4
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "0.5",
+   "stored_grams": 0.5,
+   "posted": {
+    "kcal": "1.3",
+    "protein_g": "0",
+    "carbs_g": "0.3",
+    "fat_g": "0",
+    "fiber_g": "0"
+   },
+   "stored": {
+    "kcal": 1.3,
+    "protein_g": 0,
+    "carbs_g": 0.3,
+    "fat_g": 0,
+    "fiber_g": 0
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "0.05",
+   "stored_grams": 0.1,
+   "posted": {
+    "kcal": "0.1",
+    "protein_g": "0",
+    "carbs_g": "0",
+    "fat_g": "0",
+    "fiber_g": "0"
+   },
+   "stored": {
+    "kcal": 0.3,
+    "protein_g": 0,
+    "carbs_g": 0.1,
+    "fat_g": 0,
+    "fiber_g": 0
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "7.25",
+   "stored_grams": 7.3,
+   "posted": {
+    "kcal": "18.2",
+    "protein_g": "0",
+    "carbs_g": "4.4",
+    "fat_g": "0",
+    "fiber_g": "0.1"
+   },
+   "stored": {
+    "kcal": 18.3,
+    "protein_g": 0,
+    "carbs_g": 4.4,
+    "fat_g": 0,
+    "fiber_g": 0.1
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "99.95",
+   "stored_grams": 100,
+   "posted": {
+    "kcal": "250.4",
+    "protein_g": "0.3",
+    "carbs_g": "60.4",
+    "fat_g": "0",
+    "fiber_g": "1.1"
+   },
+   "stored": {
+    "kcal": 250.5,
+    "protein_g": 0.4,
+    "carbs_g": 60.5,
+    "fat_g": 0.1,
+    "fiber_g": 1.2
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "1234.56",
+   "stored_grams": 1234.6,
+   "posted": {
+    "kcal": "3092.6",
+    "protein_g": "4.3",
+    "carbs_g": "746.3",
+    "fat_g": "0.6",
+    "fiber_g": "14.2"
+   },
+   "stored": {
+    "kcal": 3092.7,
+    "protein_g": 4.3,
+    "carbs_g": 746.3,
+    "fat_g": 0.6,
+    "fiber_g": 14.2
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "10",
+   "stored_grams": 10,
+   "posted": {
+    "kcal": "25.1",
+    "protein_g": "0",
+    "carbs_g": "6",
+    "fat_g": "0",
+    "fiber_g": "0.1"
+   },
+   "stored": {
+    "kcal": 25.1,
+    "protein_g": 0,
+    "carbs_g": 6,
+    "fat_g": 0,
+    "fiber_g": 0.1
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "2.5",
+   "stored_grams": 2.5,
+   "posted": {
+    "kcal": "6.3",
+    "protein_g": "0",
+    "carbs_g": "1.5",
+    "fat_g": "0",
+    "fiber_g": "0"
+   },
+   "stored": {
+    "kcal": 6.3,
+    "protein_g": 0,
+    "carbs_g": 1.5,
+    "fat_g": 0,
+    "fiber_g": 0
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "180",
+   "stored_grams": 180,
+   "posted": {
+    "kcal": "450.9",
+    "protein_g": "0.6",
+    "carbs_g": "108.8",
+    "fat_g": "0.1",
+    "fiber_g": "2.1"
+   },
+   "stored": {
+    "kcal": 450.9,
+    "protein_g": 0.6,
+    "carbs_g": 108.8,
+    "fat_g": 0.1,
+    "fiber_g": 2.1
+   }
+  },
+  {
+   "food": "sweet-jam",
+   "per100": {
+    "kcal": 250.5,
+    "protein_g": 0.35,
+    "carbs_g": 60.45,
+    "fat_g": 0.05,
+    "fiber_g": 1.15
+   },
+   "grams_typed": "1000",
+   "stored_grams": 1000,
+   "posted": {
+    "kcal": "2505",
+    "protein_g": "3.5",
+    "carbs_g": "604.5",
+    "fat_g": "0.5",
+    "fiber_g": "11.5"
+   },
+   "stored": {
+    "kcal": 2505,
+    "protein_g": 3.5,
+    "carbs_g": 604.5,
+    "fat_g": 0.5,
+    "fiber_g": 11.5
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "150",
+   "stored_grams": 150,
+   "posted": {
+    "kcal": "142.5",
+    "protein_g": "30.8",
+    "carbs_g": "",
+    "fat_g": "2",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 142.5,
+    "protein_g": 30.8,
+    "carbs_g": null,
+    "fat_g": 2,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "150.04",
+   "stored_grams": 150,
+   "posted": {
+    "kcal": "142.5",
+    "protein_g": "30.8",
+    "carbs_g": "",
+    "fat_g": "2",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 142.5,
+    "protein_g": 30.8,
+    "carbs_g": null,
+    "fat_g": 2,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "150.05",
+   "stored_grams": 150.1,
+   "posted": {
+    "kcal": "142.5",
+    "protein_g": "30.8",
+    "carbs_g": "",
+    "fat_g": "2",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 142.6,
+    "protein_g": 30.8,
+    "carbs_g": null,
+    "fat_g": 2,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "150.06",
+   "stored_grams": 150.1,
+   "posted": {
+    "kcal": "142.6",
+    "protein_g": "30.8",
+    "carbs_g": "",
+    "fat_g": "2",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 142.6,
+    "protein_g": 30.8,
+    "carbs_g": null,
+    "fat_g": 2,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "33.35",
+   "stored_grams": 33.4,
+   "posted": {
+    "kcal": "31.7",
+    "protein_g": "6.8",
+    "carbs_g": "",
+    "fat_g": "0.4",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 31.7,
+    "protein_g": 6.8,
+    "carbs_g": null,
+    "fat_g": 0.4,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "0.5",
+   "stored_grams": 0.5,
+   "posted": {
+    "kcal": "0.5",
+    "protein_g": "0.1",
+    "carbs_g": "",
+    "fat_g": "0",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 0.5,
+    "protein_g": 0.1,
+    "carbs_g": null,
+    "fat_g": 0,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "0.05",
+   "stored_grams": 0.1,
+   "posted": {
+    "kcal": "0",
+    "protein_g": "0",
+    "carbs_g": "",
+    "fat_g": "0",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 0.1,
+    "protein_g": 0,
+    "carbs_g": null,
+    "fat_g": 0,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "7.25",
+   "stored_grams": 7.3,
+   "posted": {
+    "kcal": "6.9",
+    "protein_g": "1.5",
+    "carbs_g": "",
+    "fat_g": "0.1",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 6.9,
+    "protein_g": 1.5,
+    "carbs_g": null,
+    "fat_g": 0.1,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "99.95",
+   "stored_grams": 100,
+   "posted": {
+    "kcal": "95",
+    "protein_g": "20.5",
+    "carbs_g": "",
+    "fat_g": "1.3",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "1234.56",
+   "stored_grams": 1234.6,
+   "posted": {
+    "kcal": "1172.8",
+    "protein_g": "253.1",
+    "carbs_g": "",
+    "fat_g": "16",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 1172.9,
+    "protein_g": 253.1,
+    "carbs_g": null,
+    "fat_g": 16,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "10",
+   "stored_grams": 10,
+   "posted": {
+    "kcal": "9.5",
+    "protein_g": "2.1",
+    "carbs_g": "",
+    "fat_g": "0.1",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 9.5,
+    "protein_g": 2.1,
+    "carbs_g": null,
+    "fat_g": 0.1,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "2.5",
+   "stored_grams": 2.5,
+   "posted": {
+    "kcal": "2.4",
+    "protein_g": "0.5",
+    "carbs_g": "",
+    "fat_g": "0",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 2.4,
+    "protein_g": 0.5,
+    "carbs_g": null,
+    "fat_g": 0,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "180",
+   "stored_grams": 180,
+   "posted": {
+    "kcal": "171",
+    "protein_g": "36.9",
+    "carbs_g": "",
+    "fat_g": "2.3",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 171,
+    "protein_g": 36.9,
+    "carbs_g": null,
+    "fat_g": 2.3,
+    "fiber_g": null
+   }
+  },
+  {
+   "food": "lean-fish",
+   "per100": {
+    "kcal": 95,
+    "protein_g": 20.5,
+    "carbs_g": null,
+    "fat_g": 1.3,
+    "fiber_g": null
+   },
+   "grams_typed": "1000",
+   "stored_grams": 1000,
+   "posted": {
+    "kcal": "950",
+    "protein_g": "205",
+    "carbs_g": "",
+    "fat_g": "13",
+    "fiber_g": ""
+   },
+   "stored": {
+    "kcal": 950,
+    "protein_g": 205,
+    "carbs_g": null,
+    "fat_g": 13,
+    "fiber_g": null
+   }
+  }
+ ]
+}

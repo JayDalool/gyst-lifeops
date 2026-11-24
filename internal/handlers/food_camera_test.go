@@ -248,7 +248,7 @@ func TestNutritionPageHasCameraReview(t *testing.T) {
 	if rec.Code != 200 {
 		t.Fatal(rec.Code)
 	}
-	for _, want := range []string{`id="camera-input"`, `accept="image/*"`, `id="camera-review"`, `/static/js/food-camera.js`, `Save meal`} {
+	for _, want := range []string{`id="camera-input"`, `accept="image/*"`, `id="camera-review"`, `/static/js/food-camera-math.js`, `/static/js/food-camera.js`, `Save meal`} {
 		if !strings.Contains(rec.Body.String(), want) {
 			t.Errorf("page lacks %s", want)
 		}

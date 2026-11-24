@@ -187,6 +187,9 @@ type DiaryItemInsert struct {
 	QuantityProvenance, NutritionProv string
 	Nutrients                         models.Nutrients
 	AIEstGrams                        *float64 // camera estimate snapshot (#211); nil otherwise
+	// AIEst holds the AI's own nutrients at its estimated grams (GYST-179),
+	// written once here and never by a later edit. nil when it gave none.
+	AIEst *models.Nutrients
 }
 
 // DiaryMealInsert is the meal row for CreateMealWithItems.
@@ -214,10 +217,16 @@ func (r *Repository) CreateMealWithItems(ctx context.Context, m DiaryMealInsert,
 		}
 		created = true
 		for _, it := range items {
+			var est models.Nutrients
+			if it.AIEst != nil {
+				est = *it.AIEst
+			}
 			if _, e := conn.ExecContext(ctx, `INSERT INTO nutrition_meal_items (meal_id, food_id, food_version, name, unit, amount, grams,
- quantity_provenance, nutrition_provenance, kcal, protein_g, carbs_g, fat_g, fiber_g, ai_est_grams, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+ quantity_provenance, nutrition_provenance, kcal, protein_g, carbs_g, fat_g, fiber_g, ai_est_grams,
+ ai_est_kcal, ai_est_protein_g, ai_est_carbs_g, ai_est_fat_g, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				mealID, it.FoodID, it.FoodVersion, it.Name, it.Unit, it.Amount, it.Grams, it.QuantityProvenance, it.NutritionProv,
-				it.Nutrients.Kcal, it.Nutrients.ProteinG, it.Nutrients.CarbsG, it.Nutrients.FatG, it.Nutrients.FiberG, it.AIEstGrams, m.CreatedAt); e != nil {
+				it.Nutrients.Kcal, it.Nutrients.ProteinG, it.Nutrients.CarbsG, it.Nutrients.FatG, it.Nutrients.FiberG, it.AIEstGrams,
+				est.Kcal, est.ProteinG, est.CarbsG, est.FatG, m.CreatedAt); e != nil {
 				return e
 			}
 		}
@@ -291,14 +300,14 @@ func collectItemIDs(ctx context.Context, conn *sql.Conn, mealID int64, out *[]in
 }
 
 const diaryItemSelect = `SELECT i.id, i.meal_id, m.meal_slot, m.local_date, i.food_id, i.food_version, i.name, i.unit, i.amount, i.grams,
- i.quantity_provenance, i.nutrition_provenance, i.kcal, i.protein_g, i.carbs_g, i.fat_g, i.fiber_g, i.created_at, i.archived_at, m.archived_at, i.ai_est_grams, m.created_via
+ i.quantity_provenance, i.nutrition_provenance, i.kcal, i.protein_g, i.carbs_g, i.fat_g, i.fiber_g, i.created_at, i.archived_at, m.archived_at, i.ai_est_grams, i.ai_est_kcal, i.ai_est_protein_g, i.ai_est_carbs_g, i.ai_est_fat_g, m.created_via
  FROM nutrition_meal_items i JOIN nutrition_meals m ON m.id = i.meal_id`
 
 func scanDiaryItem(row scanner) (models.DiaryItem, error) {
 	var it models.DiaryItem
 	var archived, mealArchived sql.NullString
 	err := row.Scan(&it.ID, &it.MealID, &it.MealSlot, &it.LocalDate, &it.FoodID, &it.FoodVersion, &it.Name, &it.Unit, &it.Amount, &it.Grams,
-		&it.QuantityProvenance, &it.NutritionProvenance, &it.Kcal, &it.ProteinG, &it.CarbsG, &it.FatG, &it.FiberG, &it.CreatedAt, &archived, &mealArchived, &it.AIEstGrams, &it.CreatedVia)
+		&it.QuantityProvenance, &it.NutritionProvenance, &it.Kcal, &it.ProteinG, &it.CarbsG, &it.FatG, &it.FiberG, &it.CreatedAt, &archived, &mealArchived, &it.AIEstGrams, &it.AIEstKcal, &it.AIEstProteinG, &it.AIEstCarbsG, &it.AIEstFatG, &it.CreatedVia)
 	it.ArchivedAt = archived.String
 	if it.ArchivedAt == "" {
 		it.ArchivedAt = mealArchived.String // an item of an archived meal is not live
@@ -359,4 +368,51 @@ func oneRow(res sql.Result, err error) error {
 		return ErrDiaryItemState
 	}
 	return nil
+}
+
+// AIAccuracyByWeek reports, per Monday-start week of local dates in [from, to]
+// (inclusive YYYY-MM-DD), how far the saved values of live camera items are from
+// the AI's own estimate (GYST-179). The saved value is the item's current row, so
+// removed items and archived meals drop out. An average is nil, not 0, when no
+// item that week has both numbers; each measure carries its paired count.
+func (r *Repository) AIAccuracyByWeek(from, to string) ([]models.AIAccuracyWeek, error) {
+	measures := [...][2]string{{"i.grams", "i.ai_est_grams"}, {"i.kcal", "i.ai_est_kcal"}, {"i.protein_g", "i.ai_est_protein_g"},
+		{"i.carbs_g", "i.ai_est_carbs_g"}, {"i.fat_g", "i.ai_est_fat_g"}}
+	cols := ""
+	for _, m := range measures {
+		d := "(" + m[0] + " - " + m[1] + ")" // NULL when either side is NULL, so AVG and COUNT skip it
+		cols += ", COUNT(" + d + "), AVG(" + d + "), AVG(ABS" + d + ")"
+	}
+	rows, err := r.db.Query(`SELECT date(m.local_date, 'weekday 0', '-6 days') AS week_start, COUNT(*)`+cols+`
+ FROM nutrition_meal_items i JOIN nutrition_meals m ON m.id = i.meal_id
+ WHERE i.archived_at IS NULL AND m.archived_at IS NULL AND m.created_via = 'camera' AND i.ai_est_grams IS NOT NULL
+ AND m.local_date BETWEEN ? AND ?
+ GROUP BY week_start ORDER BY week_start`, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.AIAccuracyWeek{}
+	for rows.Next() {
+		var w models.AIAccuracyWeek
+		var n [5]int
+		var bias, mae [5]sql.NullFloat64
+		if err := rows.Scan(&w.WeekStart, &w.Items, &n[0], &bias[0], &mae[0], &n[1], &bias[1], &mae[1], &n[2], &bias[2], &mae[2],
+			&n[3], &bias[3], &mae[3], &n[4], &bias[4], &mae[4]); err != nil {
+			return nil, err
+		}
+		stat := func(i int) models.AIAccuracyStat {
+			s := models.AIAccuracyStat{Paired: n[i]}
+			if bias[i].Valid {
+				s.Bias = &bias[i].Float64
+			}
+			if mae[i].Valid {
+				s.MAE = &mae[i].Float64
+			}
+			return s
+		}
+		w.Grams, w.Kcal, w.ProteinG, w.CarbsG, w.FatG = stat(0), stat(1), stat(2), stat(3), stat(4)
+		out = append(out, w)
+	}
+	return out, rows.Err()
 }

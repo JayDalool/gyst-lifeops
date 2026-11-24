@@ -125,9 +125,7 @@
     return n;
   }
   function tag(text, warn) { return el('span', 'hv3-chip' + (warn ? ' warn' : ''), text); }
-  function num(v) {
-    return v == null || !isFinite(v) ? '' : String(Math.round(v * 10) / 10);
-  }
+  var num = window.FoodCameraMath.num; // pure maths, shared with the Go golden-table test
   var FIELDS = [['kcal', 'kcal'], ['protein_g', 'Protein g'], ['carbs_g', 'Carbs g'], ['fat_g', 'Fat g'], ['fiber_g', 'Fiber g']];
 
   function field(label, name, mode, extra) {
@@ -164,7 +162,7 @@
       if (!match || !(g > 0)) return;
       FIELDS.forEach(function (f) {
         var per = match.per_100g[f[0]];
-        if (!touched[f[0]]) nut[f[0]].value = per == null ? '' : num(per * g / 100);
+        if (!touched[f[0]]) nut[f[0]].value = window.FoodCameraMath.prefill(per, g);
       });
     }
     function refreshTags() {

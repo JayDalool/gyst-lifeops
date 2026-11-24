@@ -175,6 +175,18 @@ func TestCameraUntouchedPrefillKeepsFoodProvenance(t *testing.T) {
 		{"idx": 1, "name": "Test lentils edited", "grams": 100, "kcal": 90, "protein_g": 8, "food_ref": m.Ref}, // edited kcal
 	}}
 	b, _ := json.Marshal(req)
+	// GYST-179: a database food's nutrition is grams-only, so an edited kcal
+	// that still claims the food is refused (it used to save as "user").
+	if w := cameraConfirmDo(h, string(b), nil); w.Code != 400 || diaryCount(t, h) != 0 {
+		t.Fatalf("edited database item: %d %s", w.Code, w.Body.String())
+	}
+	// The refusal keeps the nonce, and an edited row as the old script sends it
+	// (no food_ref once a macro is touched) is Jay's own free-form item.
+	req["items"] = []map[string]any{
+		{"idx": 0, "name": "Test lentils", "grams": 150, "kcal": 150, "protein_g": 12, "food_ref": m.Ref},
+		{"idx": 1, "name": "Test lentils edited", "grams": 100, "kcal": 90, "protein_g": 8},
+	}
+	b, _ = json.Marshal(req)
 	if w := cameraConfirmDo(h, string(b), nil); w.Code != 200 {
 		t.Fatal(w.Body.String())
 	}
