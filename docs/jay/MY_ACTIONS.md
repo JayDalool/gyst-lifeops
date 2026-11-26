@@ -1,3 +1,12 @@
+- [ ] GYST-203 · Anthropic key on Max credits into Settings, $30 limit · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
+- [ ] GYST-204 · Choose encrypted backup place; passphrase in password manager · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
+- [ ] GYST-205 · Tell CTO which accounting app ZayloLabs uses · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
+- [ ] GYST agents · Decide first Gmail account (O2) and bill amounts (O3) · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
+- [ ] GYST agents · iPhone: GYST on Home Screen, notifications, Focus allowed · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
+- [ ] GYST agents · Count Slack workspace apps (need one free of 10) · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
+- [ ] GYST agents · Install ActivityWatch on the Windows PC · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
+- [ ] GYST agents · Google Cloud project; enable Gmail and Calendar APIs · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
+- [ ] GYST agents · Twilio: account, Canadian number, API key, $8 alert · https://claude.ai/artifact/XFNJXvEG1QMNEpkbseU3nm
 - [ ] GYST-138 · Count goals with bad or future dates on backup · https://github.com/JayDalool/gyst-lifeops/pull/230
 - [ ] AI-1 #243 · After deploy: analyse one meal photo with Claude selected · https://gyst.zaylolabs.com/health/nutrition
 - [ ] AI-1 #243 · Settings › AI provider: Anthropic, paste key; clear old photo model · https://gyst.zaylolabs.com/settings
